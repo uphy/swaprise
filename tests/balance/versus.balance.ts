@@ -14,6 +14,8 @@ function duel(left: "idle" | "casual" | CpuLevel, right: CpuLevel, seed: number)
  * 対戦が一瞬で終わらないこと。連鎖の板を段階ごとに送っていたころは normal 同士で 10 秒の試合があった。
  * 計測時: normal 同士 最短 65 秒、hard 同士 最短 25 秒（seed 1〜6）。
  * おじゃまの送出と投下を原作のタイミング（同時消しは100F待って送る・相手が静止するまで降らない）にしてからは、normal 同士 最短 84 秒、hard 同士 最短 30 秒（seed 1〜12）。
+ * easy を弱くして以前の easy を normal に、以前の normal を hard に繰り下げてからは、normal 同士 最短 84 秒、hard 同士 最短 17 秒（seed 1〜6）。
+ * hard は思考・移動間隔が緩んだ分、アクティブ連鎖の仕込み（lookahead・activeDepth）がよく決まって短い試合も出るようになった。
  */
 describe("バランス: 対戦の長さ", () => {
   it("normal 同士の試合が 30 秒未満で終わらない", () => {
@@ -23,10 +25,10 @@ describe("バランス: 対戦の長さ", () => {
     }
   });
 
-  it("hard 同士の試合が 20 秒未満で終わらない", () => {
+  it("hard 同士の試合が 15 秒未満で終わらない", () => {
     for (let seed = 1; seed <= 6; seed++) {
       const r = duel("hard", "hard", seed);
-      expect(r.sec, `seed=${seed} ${r.sec.toFixed(1)}s`).toBeGreaterThanOrEqual(20);
+      expect(r.sec, `seed=${seed} ${r.sec.toFixed(1)}s`).toBeGreaterThanOrEqual(15);
     }
   });
 });
