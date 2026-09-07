@@ -25,12 +25,14 @@ interface CpuParams {
  * 難易度ごとの手加減。以前の easy を normal、normal を hard に繰り下げ、easy はさらに遅くした
  * （カーソル移動が初心者には速すぎ、盤面が高くなる危険時だけ思考6Fまで機敏になる保険が常時効いていたため、
  * thinkDelay をどれだけ緩めても casual 相手の平均勝ち時間が193秒のままだった。dangerWait でこの保険を
- * 難易度ごとに変えられるようにし、easy だけ危険時も鈍いままにしたところ83秒まで縮んだ）。
+ * 難易度ごとに変えられるようにし、easy だけ危険時も鈍いままにした。あわせて raiseBelow を上げ、
+ * easy 自身が積極的に手動せり上げして自分の首を絞めるようにしたところ、casual 相手の平均勝ち時間が
+ * 77秒・勝率95%まで縮んだ）。
  * hard の思考・移動間隔は繰り下げた以前の normal のものだが、lookahead と activeDepth は
  * 以前の hard の値のまま残し、消去中に次の連鎖を仕込む動きは引き続き hard だけができるようにした。
  */
 export const CPU_PARAMS: Record<CpuLevel, CpuParams> = {
-  easy: { thinkDelay: 90, moveInterval: 28, depth: 1, lookahead: false, raiseBelow: 2, activeDepth: 0, dangerWait: 90 },
+  easy: { thinkDelay: 90, moveInterval: 28, depth: 1, lookahead: false, raiseBelow: 8, activeDepth: 0, dangerWait: 90 },
   normal: { thinkDelay: 100, moveInterval: 16, depth: 1, lookahead: false, raiseBelow: 2, activeDepth: 0, dangerWait: 6 },
   hard: { thinkDelay: 50, moveInterval: 10, depth: 2, lookahead: true, raiseBelow: 3, activeDepth: 2, dangerWait: 6 },
 };
@@ -474,7 +476,9 @@ export class CpuPlayer {
     private readonly board: Board,
     readonly level: CpuLevel,
   ) {
-    this.p = CPU_PARAMS[level];
+    // 値をコピーして持つ。CPU_PARAMS[level] への参照のままだと、casualPlayer（tools/sim/proxy.ts）が
+    // CPU_PARAMS.easy を一時的に書き換えて戻すトリックをしたときに、生成後の書き戻しが this.p にも及んでしまう。
+    this.p = { ...CPU_PARAMS[level] };
     this.wait = this.p.thinkDelay;
   }
 
