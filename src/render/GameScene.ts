@@ -401,7 +401,8 @@ export class GameScene extends Phaser.Scene {
         this.accumulator -= STEP_MS;
         steps++;
       }
-      const danger = this.game_.boards.some((b) => b.danger || b.panic);
+      const myBoard = this.game_.boards[0];
+      const danger = myBoard.danger || myBoard.panic;
       if (danger !== this.wasDanger) {
         this.wasDanger = danger;
         audio.setDanger(danger);

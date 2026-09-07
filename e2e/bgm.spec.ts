@@ -82,6 +82,30 @@ test("危険状態ではピンチの曲に切り替わり、抜けるとゲー�
   expect(await bgmState(page)).toEqual({ playing: "menu", tune: "menu", danger: false });
 });
 
+test("対戦: 相手だけがピンチでも曲は変わらず、自分がピンチのときだけ変わる", async ({ page }) => {
+  await page.goto("/?mode=versus&seed=11&countdown=0");
+  await page.waitForFunction(() => Boolean((window as any).__swaprise?.game));
+  await page.mouse.click(10, 10);
+  await page.waitForTimeout(300);
+  expect((await bgmState(page)).playing).toBe("game");
+
+  // 相手（boards[1]）だけを上2段まで積んでも、自分の曲は変わらない
+  await page.evaluate(() => {
+    const b = (window as any).__swaprise.game.boards[1];
+    b.setColumns([[0, 1, 2, 3, 4, 0, 1, 2, 3, 4, 0], [1], [2], [3], [4], [0]]);
+  });
+  await page.waitForTimeout(300);
+  expect(await bgmState(page)).toEqual({ playing: "game", tune: "game", danger: false });
+
+  // 自分（boards[0]）も上2段まで積むと、ピンチの曲に切り替わる
+  await page.evaluate(() => {
+    const b = (window as any).__swaprise.game.boards[0];
+    b.setColumns([[0, 1, 2, 3, 4, 0, 1, 2, 3, 4, 0], [1], [2], [3], [4], [0]]);
+  });
+  await page.waitForTimeout(300);
+  expect(await bgmState(page)).toEqual({ playing: "game", tune: "danger", danger: true });
+});
+
 test("メニューで画面が隠れると曲が止まり、戻ると鳴り直す", async ({ page }) => {
   await page.goto("/?countdown=0");
   await page.mouse.click(10, 10);
