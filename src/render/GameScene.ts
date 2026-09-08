@@ -4,6 +4,7 @@ import { recordCpuResult, recordPuzzleClear, recordScore } from "./highscore";
 import { BoardView, type HudSide } from "./BoardView";
 import { P1_KEYS, P2_KEYS, PlayerInput } from "./input";
 import { audio } from "./shared";
+import { musicDanger } from "./musicDanger";
 import { haptics } from "./haptics";
 import { TouchInput } from "./touch";
 import { applyLayout } from "./hidpi";
@@ -401,8 +402,9 @@ export class GameScene extends Phaser.Scene {
         this.accumulator -= STEP_MS;
         steps++;
       }
-      const myBoard = this.game_.boards[0];
-      const danger = myBoard.danger || myBoard.panic;
+      const danger = this.mode === "versus"
+        ? this.game_.boards.some(musicDanger)
+        : musicDanger(this.game_.boards[0]);
       if (danger !== this.wasDanger) {
         this.wasDanger = danger;
         audio.setDanger(danger);

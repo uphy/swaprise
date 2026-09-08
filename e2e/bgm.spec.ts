@@ -82,8 +82,8 @@ test("危険状態ではピンチの曲に切り替わり、抜けるとゲー�
   expect(await bgmState(page)).toEqual({ playing: "menu", tune: "menu", danger: false });
 });
 
-test("対戦: 相手だけがピンチでも曲は変わらず、自分がピンチのときだけ変わる", async ({ page }) => {
-  await page.goto("/?mode=versus&seed=11&countdown=0");
+test("CPU対戦: 相手だけがピンチでも曲は変わらず、自分がピンチのときだけ変わる", async ({ page }) => {
+  await page.goto("/?mode=cpu&cpu=easy&seed=11&countdown=0");
   await page.waitForFunction(() => Boolean((window as any).__swaprise?.game));
   await page.mouse.click(10, 10);
   await page.waitForTimeout(300);
@@ -119,4 +119,53 @@ test("メニューで画面が隠れると曲が止まり、戻ると鳴り直�
   await setHidden(page, false);
   await page.waitForTimeout(300);
   expect((await bgmState(page)).playing).toBe("menu");
+});
+
+
+test("VS対戦: 2Pのピンチでも曲が変わる", async ({ page }) => {
+  await page.goto("/?mode=versus&seed=11&countdown=0");
+  await page.waitForFunction(() => Boolean((window as any).__swaprise?.game));
+  await page.mouse.click(10, 10);
+  await page.waitForFunction(() => (window as any).__swapriseAudio.bgm?.playing === "game");
+  await page.evaluate(() => {
+    const boards = (window as any).__swaprise.game.boards;
+    boards[0].setColumns([[0, 1], [2, 3], [4, 0], [1, 2], [3, 4], [0, 1]]);
+    boards[1].setColumns([[0, 1, 2, 3, 4, 0, 1, 2, 3, 4, 0], [1], [2], [3], [4], [0]]);
+    boards.forEach((b: any) => { b.noRise = true; });
+  });
+  await page.waitForFunction(() => (window as any).__swaprise.game.boards[1].danger);
+  expect(await bgmState(page)).toEqual({ playing: "game", tune: "danger", danger: true });
+});
+
+test("VS対戦: 低い盤面へのおじゃま落下ではピンチ曲を流さず、高い位置への着地では流す", async ({ page }) => {
+  await page.goto("/?mode=versus&seed=11&countdown=0");
+  await page.waitForFunction(() => Boolean((window as any).__swaprise?.game));
+  await page.mouse.click(10, 10);
+  await page.waitForFunction(() => (window as any).__swapriseAudio.bgm?.playing === "game");
+  const result = await page.evaluate(() => {
+    const { game, scene } = (window as any).__swaprise;
+    const audio = (window as any).__swapriseAudio;
+    game.boards.forEach((b: any) => {
+      b.setColumns([[0, 1], [2, 3], [4, 0], [1, 2], [3, 4], [0, 1]]);
+      b.noRise = true;
+    });
+    const b = game.boards[0];
+    b.receiveGarbage([{ width: 6, height: 1, type: "normal" }]);
+    const tunes: string[] = [];
+    for (let i = 0; i < 100; i++) {
+      scene.update(0, 1000 / 60);
+      tunes.push(audio.bgm.tune);
+    }
+    const low = { tunes: [...new Set(tunes)], garbage: [...b.garbage.values()].map((g: any) => ({ y: g.y, state: g.state })) };
+    b.setColumns([[0, 1, 2, 3, 4, 0, 1, 2, 3, 4], [1], [2], [3], [4], [0]]);
+    b.placeGarbage(0, 12, 6, 1);
+    for (let i = 0; i < 10; i++) scene.update(0, 1000 / 60);
+    const high = { tune: audio.bgm.tune, garbage: [...b.garbage.values()].map((g: any) => ({ y: g.y, state: g.state })) };
+    scene.paused = true;
+    return { low, high };
+  });
+  expect(result.low.garbage).toEqual([{ y: 2, state: "idle" }]);
+  expect(result.low.tunes).toEqual(["game"]);
+  expect(result.high.garbage).toEqual([{ y: 10, state: "idle" }]);
+  expect(result.high.tune).toBe("danger");
 });
