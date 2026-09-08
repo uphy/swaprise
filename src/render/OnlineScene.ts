@@ -7,6 +7,7 @@ import { BOARD_H, BOARD_W, layoutFor, sameLayout, type Layout } from "./theme";
 import { haptics } from "./haptics";
 import { FONT, MENU_TYPE } from "./theme";
 import { audio } from "./shared";
+import { musicDanger } from "./musicDanger";
 import { wakeLock } from "./wakelock";
 import { shareText } from "./share";
 import {
@@ -593,7 +594,7 @@ export class OnlineScene extends Phaser.Scene {
       }
       this.prediction?.reconcile();
       const board = this.prediction!.game.boards[s.player];
-      audio.setDanger(board.danger || board.panic);
+      audio.setDanger(musicDanger(board));
     } else {
       this.accumulator = 0;
       this.touch?.clear();
