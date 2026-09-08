@@ -156,6 +156,17 @@ test("スマホで自分の盤面を大きく表示し、せり上げと回転�
     () => (window as any).__swapriseOnline.layout.phoneLandscape,
   );
   await p.screenshot({ path: "/tmp/swaprise-online-landscape.png" });
+  await p.setViewportSize({ width: 390, height: 844 });
+  await q.evaluate(() =>
+    (window as any).__swapriseOnline.session.send({ type: "surrender" }),
+  );
+  await expect(p.getByRole("status")).toContainText("勝ち");
+  expect(
+    await p
+      .getByRole("status")
+      .evaluate((el) => parseFloat(getComputedStyle(el).fontSize)),
+  ).toBeGreaterThanOrEqual(20);
+  await p.screenshot({ path: "/tmp/swaprise-online-result-large.png" });
   await a.close();
   await b.close();
 });
@@ -361,5 +372,86 @@ test("退室通信が遅れても次のランダム待機へ移れる", async ({
     () =>
       (window as any).__swapriseOnline?.queue?.readyState === WebSocket.OPEN,
   );
+  await Promise.all(contexts.map((c) => c.close()));
+});
+
+test("スマホの待機ダイアログは大きな文字と押しやすいボタンで表示する", async ({
+  browser,
+}) => {
+  const context = await browser.newContext({
+    viewport: { width: 390, height: 844 },
+    isMobile: true,
+    hasTouch: true,
+    deviceScaleFactor: 3,
+  });
+  const page = await context.newPage();
+  await enter(page);
+  await page
+    .getByRole("button", { name: "対戦相手を探す", exact: true })
+    .click();
+  const size = await page.evaluate(() => {
+    const root = document.querySelector(".online-panel")!;
+    const button = root.querySelector("button")!;
+    return {
+      width: root.getBoundingClientRect().width,
+      font: parseFloat(
+        getComputedStyle(root.querySelector("[role=status]")!).fontSize,
+      ),
+      height: button.getBoundingClientRect().height,
+    };
+  });
+  expect(size.width).toBeGreaterThanOrEqual(350);
+  expect(size.font).toBeGreaterThanOrEqual(20);
+  expect(size.height).toBeGreaterThanOrEqual(52);
+  await page.screenshot({ path: "/tmp/swaprise-online-dialog-large.png" });
+  await context.close();
+});
+
+test("自分の交換は通信の確定を待たず次のtickで描画する", async ({
+  browser,
+}) => {
+  const contexts = await Promise.all([
+    browser.newContext(),
+    browser.newContext(),
+  ]);
+  const [p, q] = await Promise.all(contexts.map((c) => c.newPage()));
+  for (const page of [p, q]) {
+    await enter(page);
+    await page
+      .getByRole("button", { name: "対戦相手を探す", exact: true })
+      .click();
+  }
+  await p.waitForFunction(
+    () => (window as any).__swapriseOnline?.session?.lockstep?.frame > 120,
+  );
+  const state = await p.evaluate(() => {
+    const s = (window as any).__swapriseOnline;
+    s.game.loop.sleep();
+    const board = s.session.lockstep.game.boards[s.session.player];
+    board.setColumns([
+      [0, 1],
+      [2, 3],
+      [4, 0],
+      [1, 2],
+      [3, 4],
+      [0, 1],
+    ]);
+    s.prediction?.reset();
+    s.accumulator = 0;
+    s.playerInput.poll = () => ({
+      moveX: 0,
+      moveY: 0,
+      swap: true,
+      raise: false,
+      cursorTo: { x: 0, y: 0 },
+    });
+    s.update(0, 1000 / 60);
+    return {
+      visible: s.views[s.session.player].board.cell(0, 0).state,
+      confirmed: board.cell(0, 0).state,
+    };
+  });
+  expect(state.visible).toBe("swapping");
+  expect(state.confirmed).not.toBe("swapping");
   await Promise.all(contexts.map((c) => c.close()));
 });

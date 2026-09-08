@@ -115,6 +115,13 @@ export class Board {
   private stopRaiseFree = false;
   private dropSide = 0;
 
+  /** 予測の巻き戻し用。乱数のprototypeと盤面オブジェクトの参照は維持する。 */
+  copyFrom(source: Board): void {
+    const { rng, ...state } = source;
+    Object.assign(this, structuredClone(state));
+    this.rng.copyFrom(rng);
+  }
+
   /** 同期検査用。将来のtickへ影響する状態をすべて含める。 */
   syncState(): unknown {
     return [this.cells, this.nextRow, this.cursor, this.riseProgress, this.stopTimer, this.shakeTimer,

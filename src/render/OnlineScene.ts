@@ -16,11 +16,13 @@ import {
   type Connection,
 } from "../net/session";
 import { GAME_VERSION, displayName, type ServerMessage } from "../net/protocol";
+import { Prediction } from "../net/prediction";
 import { NO_INPUT } from "../core/types";
 import "./online.css";
 /** ロビーとオンライン盤面。ローカル対戦のポーズ・再開始処理は呼ばない。 */
 export class OnlineScene extends Phaser.Scene {
   session: OnlineSession | null = null;
+  prediction: Prediction | null = null;
   views: BoardView[] = [];
   touch: TouchInput | null = null;
   playerInput: PlayerInput | null = null;
@@ -48,6 +50,7 @@ export class OnlineScene extends Phaser.Scene {
   }
   create(): void {
     this.session = null;
+    this.prediction = null;
     this.views = [];
     this.gameId = "";
     this.accumulator = 0;
@@ -290,6 +293,7 @@ export class OnlineScene extends Phaser.Scene {
       this.playerInput?.reset();
       this.raise = false;
       if (state.phase === "playing") {
+        this.prediction?.reset();
         audio.gameStart();
         audio.startBgm("game");
       } else if (state.phase === "suspended") audio.stopBgm();
@@ -434,13 +438,15 @@ export class OnlineScene extends Phaser.Scene {
     this.touch?.destroy();
     this.touch = null;
     this.gameId = "";
+    this.prediction = null;
   }
   private buildBoard(): void {
     this.clearBoard();
     const s = this.session!;
     const l = s.lockstep!;
     this.gameId = l.match.id;
-    this.views = l.game.boards.map(
+    this.prediction = new Prediction(l, s.player);
+    this.views = this.prediction.game.boards.map(
       (b, i) =>
         new BoardView(
           this,
@@ -452,7 +458,7 @@ export class OnlineScene extends Phaser.Scene {
         ),
     );
     this.playerInput = new PlayerInput(this, P1_KEYS, 0);
-    this.touch = new TouchInput(this, l.game.boards[s.player]);
+    this.touch = new TouchInput(this, this.prediction.game.boards[s.player]);
     this.playerInput.touch = this.touch;
     this.raiseHint = this.add
       .text(0, 0, "▲ ▲ ▲", {
@@ -528,6 +534,7 @@ export class OnlineScene extends Phaser.Scene {
     if (!s || !l) return;
     if (s.syncTarget !== null) {
       s.replay();
+      this.prediction?.reset();
       this.touch?.clear();
     } else if (
       s.state?.phase === "playing" &&
@@ -537,11 +544,17 @@ export class OnlineScene extends Phaser.Scene {
       this.accumulator += Math.min(delta, 100);
       for (let steps = 0; this.accumulator >= 1000 / 60 && steps < 6; steps++) {
         const input = l.capture(() => {
-          if (this.settings) return { ...NO_INPUT };
-          const polled = this.playerInput!.poll();
-          if (polled.swap && polled.cursorTo)
-            this.touch?.deferUntil(l.nextInput + 1);
-          return { ...polled, raise: this.raise || polled.raise };
+          const polled = this.settings
+            ? { ...NO_INPUT }
+            : this.playerInput!.poll();
+          const local = {
+            ...polled,
+            raise: !this.settings && (this.raise || polled.raise),
+          };
+          this.prediction!.advance(l.nextInput, local);
+          const board = this.prediction!.game.boards[s.player];
+          this.views[s.player].handleEvents(board.events, true, true);
+          return local;
         });
         if (input)
           s.send({
@@ -552,8 +565,11 @@ export class OnlineScene extends Phaser.Scene {
           });
         if (l.step()) {
           this.stalledMs = 0;
-          l.game.boards.forEach((b, i) =>
-            this.views[i].handleEvents(b.events, true, i === s.player),
+          const remote = 1 - s.player;
+          this.views[remote].handleEvents(
+            l.game.boards[remote].events,
+            true,
+            false,
           );
           s.checkHash();
         } else {
@@ -562,7 +578,8 @@ export class OnlineScene extends Phaser.Scene {
         }
         this.accumulator -= 1000 / 60;
       }
-      const board = l.game.boards[s.player];
+      this.prediction?.reconcile();
+      const board = this.prediction!.game.boards[s.player];
       audio.setDanger(board.danger || board.panic);
     } else {
       this.accumulator = 0;
