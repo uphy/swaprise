@@ -124,6 +124,7 @@ export class OnlineScene extends Phaser.Scene {
   private button(label: string, action: () => void): HTMLButtonElement {
     const button = document.createElement("button");
     button.textContent = label;
+    if (label === "メニューへ") button.className = "online-back";
     button.onclick = () => {
       audio.start();
       action();

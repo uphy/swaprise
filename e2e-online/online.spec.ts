@@ -387,6 +387,18 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 844, height: 390 }
     });
     const page = await context.newPage();
     await enter(page);
+    const buttons = await page.locator(".online-actions button").evaluateAll((buttons) =>
+      buttons.map((button) => {
+        const r = button.getBoundingClientRect();
+        return { top: r.top, bottom: r.bottom, width: r.width };
+      }),
+    );
+    for (const button of buttons) {
+      expect(button.top).toBeGreaterThanOrEqual(0);
+      expect(button.bottom).toBeLessThanOrEqual(viewport.height);
+      expect(button.width).toBeLessThanOrEqual(400);
+    }
+    await page.screenshot({ path: `/tmp/swaprise-online-lobby-${viewport.width}.png` });
     await page
       .getByRole("button", { name: "対戦相手を探す", exact: true })
       .click();
@@ -394,7 +406,7 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 844, height: 390 }
       const root = document.querySelector(".online-panel")!;
       const button = root.querySelector("button")!;
       return {
-        width: root.getBoundingClientRect().width,
+        width: button.getBoundingClientRect().width,
         panelHeight: root.getBoundingClientRect().height,
         font: parseFloat(
           getComputedStyle(root.querySelector("[role=status]")!).fontSize,
@@ -402,8 +414,8 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 844, height: 390 }
         height: button.getBoundingClientRect().height,
       };
     });
-    expect(size.width).toBeGreaterThanOrEqual(viewport.width - 32);
-    expect(size.panelHeight).toBeGreaterThanOrEqual(viewport.height - 32);
+    expect(size.width).toBeLessThanOrEqual(400);
+    expect(size.width / size.height).toBeLessThanOrEqual(5.2);
     expect(size.font).toBeGreaterThanOrEqual(28);
     expect(size.height).toBeGreaterThanOrEqual(64);
     await page.screenshot({ path: `/tmp/swaprise-online-dialog-${viewport.width}.png` });
