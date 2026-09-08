@@ -295,8 +295,12 @@ export class Room extends DurableObject<Env> {
           if (this.engine.state.phase === "waiting" && m.type !== "ping")
             await this.persist();
           if (m.type === "leave") {
-            this.ctx.waitUntil(this.release());
-            ws.close(1000, "left");
+            this.ctx.waitUntil(
+              this.release().then(() => {
+                ws.send(JSON.stringify({ type: "left" }));
+                ws.close(1000, "left");
+              }),
+            );
           }
         }
         if (this.engine.canStart() && !this.reserving) {

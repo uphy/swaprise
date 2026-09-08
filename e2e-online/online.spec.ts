@@ -329,3 +329,37 @@ test("ランダム待機中の同じセッションは招待部屋を作れな�
   }, GAME_VERSION);
   expect(status).toBe(409);
 });
+
+test("退室通信が遅れても次のランダム待機へ移れる", async ({ browser }) => {
+  const contexts = await Promise.all([
+    browser.newContext(),
+    browser.newContext(),
+  ]);
+  const [p, q] = await Promise.all(contexts.map((c) => c.newPage()));
+  await p.routeWebSocket("**/api/rooms/*/ws", (ws) => {
+    const server = ws.connectToServer();
+    ws.onMessage((message) => {
+      if (JSON.parse(message.toString()).type === "leave")
+        setTimeout(() => server.send(message), 300);
+      else server.send(message);
+    });
+  });
+  for (const page of [p, q]) {
+    await enter(page);
+    await page
+      .getByRole("button", { name: "対戦相手を探す", exact: true })
+      .click();
+  }
+  await p.waitForFunction(
+    () => (window as any).__swapriseOnline?.session?.lockstep?.frame > 60,
+  );
+  await p.getByRole("button", { name: "設定", exact: true }).click();
+  await p.getByRole("button", { name: "降参する", exact: true }).click();
+  await p.getByRole("button", { name: "降参して終了", exact: true }).click();
+  await p.getByRole("button", { name: "次の相手を探す", exact: true }).click();
+  await p.waitForFunction(
+    () =>
+      (window as any).__swapriseOnline?.queue?.readyState === WebSocket.OPEN,
+  );
+  await Promise.all(contexts.map((c) => c.close()));
+});

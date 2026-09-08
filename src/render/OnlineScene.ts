@@ -224,7 +224,8 @@ export class OnlineScene extends Phaser.Scene {
       if (m.type === "matched") {
         this.cancelQueue();
         this.connect(m);
-      } else if (m.type === "error") this.status.textContent = m.message;
+      } else if (m.type === "queued") this.waitingSince = m.since;
+      else if (m.type === "error") this.status.textContent = m.message;
     };
     this.queue.onopen = () => {
       this.queue?.send(
@@ -402,10 +403,23 @@ export class OnlineScene extends Phaser.Scene {
         this.button("もう一度対戦", () => s.send({ type: "rematch" }));
       if (state.kind === "random")
         this.button("次の相手を探す", () => {
-          s.leave();
-          this.session = null;
-          this.clearBoard();
-          this.startQueue(localStorage.getItem("swaprise.name.v1") ?? "ゲスト");
+          this.actions.replaceChildren();
+          this.status.textContent = "部屋を退出しています…";
+          void s.leaveAndWait().then((released) => {
+            if (this.closing) return;
+            if (!released) {
+              this.status.textContent =
+                "退出を確認できませんでした。メニューからやり直してください。";
+              this.actions.replaceChildren();
+              this.button("メニューへ", () => this.menu());
+              return;
+            }
+            this.session = null;
+            this.clearBoard();
+            this.startQueue(
+              localStorage.getItem("swaprise.name.v1") ?? "ゲスト",
+            );
+          });
         });
       this.button("メニューへ", () => this.menu());
     } else if (state.phase === "closed")

@@ -1,7 +1,7 @@
 import type { Input } from "../core/types";
 import { COLS, ROWS } from "../core/constants";
 export const PROTOCOL = 1;
-export const GAME_VERSION = "online-v1";
+export const GAME_VERSION = "online-v2";
 export const BATCH = 3;
 export const DELAY = 6;
 export const MAX_FRAMES = 36_000;
@@ -83,7 +83,8 @@ export type ServerMessage =
   | { type: "error"; message: string }
   | { type: "matched"; roomId: string; token: string }
   | { type: "queued"; since: number }
-  | { type: "requeue" };
+  | { type: "requeue" }
+  | { type: "left" };
 export function validInput(value: unknown): value is Input {
   if (!value || typeof value !== "object") return false;
   const i = value as Input;

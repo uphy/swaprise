@@ -39,6 +39,7 @@ export class OnlineSession extends EventTarget {
   error = "";
   syncTarget: number | null = null;
   private disposed = false;
+  private waitingForLeave = false;
   private attempts = 0;
   private reconnect: ReturnType<typeof setTimeout> | null = null;
   private pinger: ReturnType<typeof setInterval>;
@@ -96,8 +97,10 @@ export class OnlineSession extends EventTarget {
         }
         if (m.state.phase === "closed") {
           sessionStorage.removeItem("swaprise.connection.v1");
-          this.dispose();
+          if (!this.waitingForLeave) this.dispose();
         }
+      } else if (m.type === "left") {
+        this.dispatchEvent(new Event("left"));
       } else if (m.type === "frames" && m.matchId === this.lockstep?.match.id)
         this.lockstep.receive(m.startFrame, m.frames);
       else if (m.type === "sync" && m.matchId === this.lockstep?.match.id)
@@ -176,6 +179,26 @@ export class OnlineSession extends EventTarget {
       this.syncTarget = null;
     }
     return true;
+  }
+  async leaveAndWait(): Promise<boolean> {
+    if (this.socket?.readyState !== WebSocket.OPEN) return false;
+    this.waitingForLeave = true;
+    const released = await new Promise<boolean>((resolve) => {
+      const done = () => {
+        clearTimeout(timer);
+        resolve(true);
+      };
+      const timer = setTimeout(() => {
+        this.removeEventListener("left", done);
+        resolve(false);
+      }, 5000);
+      this.addEventListener("left", done, { once: true });
+      this.send({ type: "leave" });
+    });
+    this.waitingForLeave = false;
+    sessionStorage.removeItem("swaprise.connection.v1");
+    this.dispose();
+    return released;
   }
   leave(): void {
     this.send({ type: "leave" });
