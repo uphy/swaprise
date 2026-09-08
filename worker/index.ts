@@ -10,10 +10,6 @@ export default {
     if (!url.pathname.startsWith("/api/")) return env.ASSETS.fetch(request);
     if (env.ONLINE_ENABLED !== "true")
       return json({ error: "オンライン対戦は現在準備中です" }, 503);
-    if (env.TEST_MODE === "true" && url.pathname === "/api/test-page")
-      return new Response("<!doctype html><title>Traffic measurement</title>", {
-        headers: { "Content-Type": "text/html", "Cache-Control": "no-store" },
-      });
     const origin = request.headers.get("Origin");
     if (origin && origin !== url.origin)
       return json({ error: "接続元が一致しません" }, 403);
