@@ -64,6 +64,8 @@ export class BoardView {
     }
   }
 
+  destroy(): void { this.root.destroy(true); }
+
   constructor(
     private readonly scene: Phaser.Scene,
     readonly board: Board,

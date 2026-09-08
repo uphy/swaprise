@@ -115,6 +115,23 @@ export class Board {
   private stopRaiseFree = false;
   private dropSide = 0;
 
+  /** 予測の巻き戻し用。乱数のprototypeと盤面オブジェクトの参照は維持する。 */
+  copyFrom(source: Board): void {
+    const { rng, ...state } = source;
+    Object.assign(this, structuredClone(state));
+    this.rng.copyFrom(rng);
+  }
+
+  /** 同期検査用。将来のtickへ影響する状態をすべて含める。 */
+  syncState(): unknown {
+    return [this.cells, this.nextRow, this.cursor, this.riseProgress, this.stopTimer, this.shakeTimer,
+      this.deathTimer, this.chain, this.maxChain, this.score, this.panelsCleared, this.level, this.frame,
+      this.gameOver, this.danger, this.panic, this.pendingGarbage, this.attacksOut, this.outbox,
+      this.outboxAt, this.heldForChain, this.quietFrames, [...this.garbage], this.stats, this.risenRows,
+      this.nextGarbageId, this.rng.state(), this.kinds, this.startLevel, this.speedUp, this.noRise,
+      this.movesLeft, this.shockMax, this.shockEvery, this.shockDue, this.stopRaiseFree, this.dropSide];
+  }
+
   constructor(opts: BoardOptions) {
     this.rng = new Rng(opts.seed);
     this.kinds = opts.kinds ?? DEFAULT_KINDS;

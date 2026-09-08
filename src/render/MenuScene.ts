@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { FONT, KIND_COLORS, TEXT_COLOR, layoutFor, sameLayout } from "./theme";
+import { FONT, MENU_TYPE, KIND_COLORS, TEXT_COLOR, layoutFor, sameLayout } from "./theme";
 import { createTextures } from "./textures";
 import { PUZZLES, PUZZLES_PER_STAGE, PUZZLE_STAGES, puzzleName, type CpuLevel, type GameMode } from "../core";
 import { audio } from "./shared";
@@ -18,6 +18,7 @@ interface MenuItem {
   group?: Level;
   start?: { mode: GameMode; cpuLevel?: CpuLevel };
   back?: boolean;
+  online?: boolean;
   name: string;
 }
 
@@ -63,6 +64,7 @@ function itemsFor(level: Level, hs: HighScores): MenuItem[] {
     { label: "1 PLAYER", caption: "endless · time attack · puzzle", group: "1p", name: "group-1p" },
     { label: "VS CPU", caption: "easy · normal · hard", group: "cpu", name: "group-cpu" },
     { label: "2 PLAYERS", caption: "one screen, two players", start: { mode: "versus" }, name: "group-2p" },
+    { label: "ONLINE", caption: "invite a friend · find an opponent", online: true, name: "group-online" },
   ];
 }
 
@@ -120,6 +122,7 @@ export class MenuScene extends Phaser.Scene {
     createTextures(this);
     // URL の ?mode= は最初の1回だけ効かせる。Esc でメニューに戻ったときに再び飛ばされないよう、ここで消す。
     const params = new URLSearchParams(location.search);
+    if (params.has("room") || sessionStorage.getItem("swaprise.connection.v1")) { this.scene.start("online"); return; }
     const mode = params.get("mode");
     if (mode === "endless" || mode === "timeattack" || mode === "versus" || mode === "cpu" || mode === "puzzle") {
       const cpu = params.get("cpu");
@@ -150,7 +153,7 @@ export class MenuScene extends Phaser.Scene {
     this.compact = compact;
     const titleY = compact ? 36 : layout.portrait ? 72 : 60;
     this.add
-      .text(cx, titleY, "SWAPRISE", { fontFamily: FONT, fontSize: layout.portrait ? "48px" : "56px", color: TEXT_COLOR, fontStyle: "bold" })
+      .text(cx, titleY, "SWAPRISE", { fontFamily: FONT, fontSize: `${layout.portrait ? MENU_TYPE.titlePortrait : MENU_TYPE.titleLandscape}px`, color: TEXT_COLOR, fontStyle: "bold" })
       .setOrigin(0.5);
     this.add
       .text(cx, titleY + (compact ? 36 : 44), "Swap & match action puzzle", { fontFamily: FONT, fontSize: compact ? "12px" : "14px", color: "#7a7a90" })
@@ -247,7 +250,7 @@ export class MenuScene extends Phaser.Scene {
       const y = this.itemTop + i * this.itemGap;
       // 指で押す前提で、文字の上下に余白を取って当たり判定を高さ 32 論理px 以上にする
       const t = this.add
-        .text(cx, y, item.label, { fontFamily: FONT, fontSize: this.compact ? "20px" : "22px", color: TEXT_COLOR })
+        .text(cx, y, item.label, { fontFamily: FONT, fontSize: `${this.compact ? MENU_TYPE.itemCompact : MENU_TYPE.item}px`, color: TEXT_COLOR })
         .setOrigin(0.5)
         .setPadding(16, pad, 16, pad)
         .setInteractive({ useHandCursor: true })
@@ -382,6 +385,7 @@ export class MenuScene extends Phaser.Scene {
       this.enterGroup(item.group);
       return;
     }
+    if (item.online) { this.scene.start("online"); return; }
     if (!item.start) return;
     audio.select();
     if (item.start.mode === "puzzle") {

@@ -77,6 +77,14 @@ export class Game {
     }
   }
 
+  /** オンラインの表示予測だけで使用する。確定側から表示側へ複製する。 */
+  copyVersusFrom(source: Game): void {
+    if (this.mode !== "versus" || source.mode !== "versus") throw new Error("対戦専用です");
+    this.boards.forEach((board, i) => board.copyFrom(source.boards[i]));
+    this.winner = source.winner;
+    this.finished = source.finished;
+  }
+
   tick(inputs: Input[]): void {
     if (this.finished) return;
     const resolved = this.boards.map((_, i) => inputs[i] ?? NO_INPUT);

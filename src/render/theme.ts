@@ -70,3 +70,5 @@ export function layoutFor(mode: "menu" | "endless" | "timeattack" | "versus" | "
   }
   return { width: 800, height: 520, portrait, touch, phoneLandscape };
 }
+
+export const MENU_TYPE = { titlePortrait: 48, titleLandscape: 56, item: 22, itemCompact: 20, caption: 14 } as const;
