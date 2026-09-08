@@ -28,6 +28,9 @@ export class Prediction {
     this.game.boards.forEach((board) => {
       board.events = [];
     });
+    // 相手の未着入力で終了予測が覆ることがある。確定前に自分を止めない。
+    if (!this.lockstep.game.finished && !this.game.boards[this.player].gameOver)
+      this.game.finished = false;
     this.game.tick(pair);
     this.frame++;
   }

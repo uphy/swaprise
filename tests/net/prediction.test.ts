@@ -73,7 +73,25 @@ it("予測上の終了後に最後の効果音を繰り返さない", () => {
   const l = new Lockstep({ id: "m", seed: 42, delay: 6, version: "test" });
   const prediction = new Prediction(l, 0);
   prediction.game.finished = true;
+  prediction.game.boards[0].gameOver = true;
   prediction.game.boards[0].events = [{ type: "gameOver" }];
   prediction.advance(6, NO_INPUT);
   expect(prediction.game.boards[0].events).toEqual([]);
+});
+
+it("相手の終了が予測だけなら、自分の操作を止めない", () => {
+  const l = new Lockstep({ id: "m", seed: 42, delay: 6, version: "test" });
+  const prediction = new Prediction(l, 0);
+  prediction.game.boards[0].setColumns([
+    [0, 1],
+    [2, 3],
+    [4, 0],
+    [1, 2],
+    [3, 4],
+    [0, 1],
+  ]);
+  prediction.game.boards[1].gameOver = true;
+  prediction.game.finished = true;
+  prediction.advance(6, { ...NO_INPUT, swap: true, cursorTo: { x: 0, y: 0 } });
+  expect(prediction.game.boards[0].cell(0, 0).state).toBe("swapping");
 });
