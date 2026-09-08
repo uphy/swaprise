@@ -205,3 +205,12 @@
     min-width: 0;
   }
 }
+
+/* メニューと同じフォント寸法を、同じ論理画面の倍率で描画する。 */
+.online-ui:not(.playing) h1 { font-size: var(--online-title); }
+.online-ui:not(.playing) p { font-size: var(--online-item); }
+.online-ui:not(.playing) button { font-size: var(--online-item); font-weight: normal; min-height: 64px; }
+.online-ui:not(.playing) label,
+.online-ui:not(.playing) .online-back { font-size: var(--online-caption); }
+.online-ui:not(.playing) input { font-size: max(16px, var(--online-caption)); }
+.online-ui:not(.playing) .online-back { min-height: 44px; }

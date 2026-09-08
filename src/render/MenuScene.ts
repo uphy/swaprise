@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { FONT, KIND_COLORS, TEXT_COLOR, layoutFor, sameLayout } from "./theme";
+import { FONT, MENU_TYPE, KIND_COLORS, TEXT_COLOR, layoutFor, sameLayout } from "./theme";
 import { createTextures } from "./textures";
 import { PUZZLES, PUZZLES_PER_STAGE, PUZZLE_STAGES, puzzleName, type CpuLevel, type GameMode } from "../core";
 import { audio } from "./shared";
@@ -153,7 +153,7 @@ export class MenuScene extends Phaser.Scene {
     this.compact = compact;
     const titleY = compact ? 36 : layout.portrait ? 72 : 60;
     this.add
-      .text(cx, titleY, "SWAPRISE", { fontFamily: FONT, fontSize: layout.portrait ? "48px" : "56px", color: TEXT_COLOR, fontStyle: "bold" })
+      .text(cx, titleY, "SWAPRISE", { fontFamily: FONT, fontSize: `${layout.portrait ? MENU_TYPE.titlePortrait : MENU_TYPE.titleLandscape}px`, color: TEXT_COLOR, fontStyle: "bold" })
       .setOrigin(0.5);
     this.add
       .text(cx, titleY + (compact ? 36 : 44), "Swap & match action puzzle", { fontFamily: FONT, fontSize: compact ? "12px" : "14px", color: "#7a7a90" })
@@ -250,7 +250,7 @@ export class MenuScene extends Phaser.Scene {
       const y = this.itemTop + i * this.itemGap;
       // 指で押す前提で、文字の上下に余白を取って当たり判定を高さ 32 論理px 以上にする
       const t = this.add
-        .text(cx, y, item.label, { fontFamily: FONT, fontSize: this.compact ? "20px" : "22px", color: TEXT_COLOR })
+        .text(cx, y, item.label, { fontFamily: FONT, fontSize: `${this.compact ? MENU_TYPE.itemCompact : MENU_TYPE.item}px`, color: TEXT_COLOR })
         .setOrigin(0.5)
         .setPadding(16, pad, 16, pad)
         .setInteractive({ useHandCursor: true })

@@ -98,7 +98,7 @@ export class Coordinator extends DurableObject<Env> {
     }
     if (budget.requests >= 60000 || budget.writes >= 60000)
       return json(
-        { error: "本日の受付は終了しました。日本時間9時に再開します" },
+        { error: "Daily limit reached. Resets at 00:00 UTC." },
         429,
       );
     if (
@@ -106,18 +106,18 @@ export class Coordinator extends DurableObject<Env> {
       req.headers.get("Upgrade") === "websocket"
     ) {
       if (u.searchParams.get("version") !== GAME_VERSION)
-        return json({ error: "ゲームを更新してください" }, 409);
+        return json({ error: "Please reload to update the game." }, 409);
       if (!reserve(structuredClone(budget), "check", "random"))
-        return json({ error: "ランダム対戦は本日の受付を終了しました" }, 429);
+        return json({ error: "Daily matchmaking limit reached. Try again after 00:00 UTC." }, 429);
       if (
         (await this.active(session)) ||
         this.ctx
           .getWebSockets()
           .some((ws) => ws.deserializeAttachment()?.session === session)
       )
-        return json({ error: "別の対戦・待機に参加中です" }, 409);
+        return json({ error: "You are already in a match or queue." }, 409);
       if (this.ctx.getWebSockets().length >= 20)
-        return json({ error: "現在混み合っています" }, 429);
+        return json({ error: "Server busy. Try again later." }, 429);
       const pair = new WebSocketPair();
       const ws = pair[1];
       this.ctx.acceptWebSocket(ws);
@@ -147,12 +147,12 @@ export class Coordinator extends DurableObject<Env> {
       await this.ctx.storage.setAlarm(Date.now() + 30000);
       return new Response(null, { status: 101, webSocket: pair[0] });
     }
-    if (req.method !== "POST") return json({ error: "見つかりません" }, 404);
+    if (req.method !== "POST") return json({ error: "Not found." }, 404);
     const body = await req.text();
-    if (body.length > 4096) return json({ error: "データが大きすぎます" }, 413);
+    if (body.length > 4096) return json({ error: "Request too large." }, 413);
     const data = JSON.parse(body || "{}");
     if (data.version !== GAME_VERSION)
-      return json({ error: "ゲームを更新してください" }, 409);
+      return json({ error: "Please reload to update the game." }, 409);
     if (
       (await this.active(session)) ||
       this.ctx
@@ -164,7 +164,7 @@ export class Coordinator extends DurableObject<Env> {
         )
     )
       return json(
-        { error: "別の部屋に参加中です。元の画面から退出してください" },
+        { error: "You are in another room. Leave it from the original tab." },
         409,
       );
     if (u.pathname === "/api/rooms") {
@@ -172,7 +172,7 @@ export class Coordinator extends DurableObject<Env> {
         budget.rooms >= 200 ||
         !reserve(structuredClone(budget), "check", "invite")
       )
-        return json({ error: "本日の部屋作成受付は終了しました" }, 429);
+        return json({ error: "Daily room limit reached. Try again after 00:00 UTC." }, 429);
       budget.rooms++;
       await this.ctx.storage.put(key, budget);
       const id = crypto.randomUUID();
@@ -198,7 +198,7 @@ export class Coordinator extends DurableObject<Env> {
       await this.assign(session, join[1]);
       return json({ roomId: join[1], token });
     }
-    return json({ error: "見つかりません" }, 404);
+    return json({ error: "Not found." }, 404);
   }
   private room(id: string, path: string, data: unknown): Promise<Response> {
     return this.env.ROOMS.get(this.env.ROOMS.idFromName(id)).fetch(
@@ -298,7 +298,7 @@ export class Coordinator extends DurableObject<Env> {
             JSON.stringify({
               type: "error",
               message:
-                "待機を終了しました。接続状況または本日の利用枠を確認してください",
+                "Search ended. Check your connection or try again later.",
             }),
           );
           ws.close(1000);

@@ -9,14 +9,14 @@ export default {
     const url = new URL(request.url);
     if (!url.pathname.startsWith("/api/")) return env.ASSETS.fetch(request);
     if (env.ONLINE_ENABLED !== "true")
-      return json({ error: "オンライン対戦は現在準備中です" }, 503);
+      return json({ error: "Online play is currently unavailable." }, 503);
     const origin = request.headers.get("Origin");
     if (origin && origin !== url.origin)
-      return json({ error: "接続元が一致しません" }, 403);
+      return json({ error: "Connection origin mismatch." }, 403);
     if (request.headers.get("Sec-Fetch-Site") === "cross-site")
-      return json({ error: "接続元が一致しません" }, 403);
+      return json({ error: "Connection origin mismatch." }, 403);
     if (request.method === "POST" && !origin)
-      return json({ error: "接続元を確認できません" }, 403);
+      return json({ error: "Could not verify connection origin." }, 403);
     const session = /(?:^|;\s*)swaprise_session=([a-f0-9-]{73})/.exec(
       request.headers.get("Cookie") ?? "",
     )?.[1];
@@ -30,11 +30,11 @@ export default {
         },
       });
     }
-    if (!session) return json({ error: "接続をやり直してください" }, 401);
+    if (!session) return json({ error: "Please reconnect." }, 401);
     if (Number(request.headers.get("Content-Length") ?? 0) > 4096)
-      return json({ error: "データが大きすぎます" }, 413);
+      return json({ error: "Request too large." }, 413);
     if (url.pathname.endsWith("/metrics") && env.TEST_MODE !== "true")
-      return json({ error: "見つかりません" }, 404);
+      return json({ error: "Not found." }, 404);
     const headers = new Headers(request.headers);
     headers.set("X-Session", session);
     try {
@@ -47,7 +47,7 @@ export default {
       return await target.fetch(new Request(request, { headers }));
     } catch {
       return json(
-        { error: "接続に失敗しました。しばらくしてからお試しください" },
+        { error: "Could not connect. Try again later." },
         503,
       );
     }

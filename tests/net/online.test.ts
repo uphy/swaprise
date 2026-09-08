@@ -144,7 +144,7 @@ describe("無料枠・入力形式", () => {
     expect(validInput(NO_INPUT)).toBe(true);
     expect(validInput({ ...NO_INPUT, cursorTo: { x: NaN, y: 0 } })).toBe(false);
     expect(validInput({ ...NO_INPUT, raise: "false" })).toBe(false);
-    expect(displayName(" \n\u0000 ")).toBe("ゲスト");
+    expect(displayName(" \n\u0000 ")).toBe("Guest");
   });
 });
 describe("切断と結果の境界", () => {
@@ -163,7 +163,7 @@ describe("切断と結果の境界", () => {
   });
   it("同じ端末の二重接続は拒否する", () => {
     const { room } = setup();
-    expect(() => room.connect(0, true, 3200)).toThrow("別のタブ");
+    expect(() => room.connect(0, true, 3200)).toThrow("another tab");
   });
   it("両者で一致した最終結果だけを確定する", () => {
     const { room } = setup();
@@ -190,7 +190,7 @@ it("両者の入力が同時に途絶えた場合も無効試合にする", () =
 it("待機中に保存したRTTと準備状態から開始できる", () => {
   const room = new RoomEngine("invite", () => {});
   for (let i = 0; i < 2; i++) {
-    room.join({ session: `s${i}`, token: `t${i}`, name: "ゲスト" });
+    room.join({ session: `s${i}`, token: `t${i}`, name: "Guest" });
     room.connect(i, true, 0);
     room.message(i, { type: "latency", rtt: 50 }, 0);
     room.message(i, { type: "ready" }, 0);

@@ -19,7 +19,7 @@ export async function api(path: string, data: unknown = {}): Promise<any> {
     body: JSON.stringify(data),
   });
   const body = await response.json();
-  if (!response.ok) throw new Error(body.error ?? "接続できませんでした");
+  if (!response.ok) throw new Error(body.error ?? "Could not connect.");
   return body;
 }
 export const savedConnection = (): Connection | null => {
@@ -123,17 +123,17 @@ export class OnlineSession extends EventTarget {
       if (this.disposed) return;
       if (++this.attempts > 15) {
         this.error =
-          "接続できませんでした。メニューへ戻ってやり直してください。";
+          "Could not connect. Return to the menu and try again.";
         this.dispose();
         this.notify();
         return;
       }
-      this.error = "再接続しています…";
+      this.error = "Reconnecting…";
       this.notify();
       this.reconnect = setTimeout(() => this.open(), 1000);
     };
     ws.onerror = () => {
-      this.error = "通信を確認しています…";
+      this.error = "Checking connection…";
       this.notify();
     };
   }

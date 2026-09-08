@@ -5,7 +5,7 @@ import { TouchInput } from "./touch";
 import { applyLayout } from "./hidpi";
 import { BOARD_H, BOARD_W, layoutFor, sameLayout, type Layout } from "./theme";
 import { haptics } from "./haptics";
-import { FONT } from "./theme";
+import { FONT, MENU_TYPE } from "./theme";
 import { audio } from "./shared";
 import { wakeLock } from "./wakelock";
 import { shareText } from "./share";
@@ -63,13 +63,15 @@ export class OnlineScene extends Phaser.Scene {
     applyLayout(this, this.layout);
     this.root = document.createElement("div");
     this.root.className = "online-ui";
+    this.root.style.fontFamily = FONT;
+    this.syncTypography();
     this.panel = document.createElement("div");
     this.panel.className = "online-panel";
     const title = document.createElement("h1");
-    title.textContent = "オンライン対戦";
+    title.textContent = "ONLINE";
     this.status = document.createElement("p");
     this.status.setAttribute("role", "status");
-    this.status.textContent = "接続しています…";
+    this.status.textContent = "Connecting…";
     this.actions = document.createElement("div");
     this.actions.className = "online-actions";
     this.panel.append(title, this.status, this.actions);
@@ -90,6 +92,7 @@ export class OnlineScene extends Phaser.Scene {
     };
     document.addEventListener("visibilitychange", this.visibleHandler);
     this.resizeHandler = () => {
+      this.syncTypography();
       const next = layoutFor("cpu");
       if (!sameLayout(this.layout, next)) {
         this.layout = next;
@@ -121,10 +124,19 @@ export class OnlineScene extends Phaser.Scene {
     (window as any).__swapriseOnline = this;
     void this.initialize();
   }
+  private syncTypography(): void {
+    const layout = layoutFor("menu");
+    const host = document.getElementById("game")!.getBoundingClientRect();
+    const scale = Math.min(host.width / layout.width, host.height / layout.height);
+    const item = layout.height < 560 ? MENU_TYPE.itemCompact : MENU_TYPE.item;
+    this.root.style.setProperty("--online-title", `${(layout.portrait ? MENU_TYPE.titlePortrait : MENU_TYPE.titleLandscape) * scale}px`);
+    this.root.style.setProperty("--online-item", `${item * scale}px`);
+    this.root.style.setProperty("--online-caption", `${MENU_TYPE.caption * scale}px`);
+  }
   private button(label: string, action: () => void): HTMLButtonElement {
     const button = document.createElement("button");
     button.textContent = label;
-    if (label === "メニューへ") button.className = "online-back";
+    if (label === "BACK TO MENU") button.className = "online-back";
     button.onclick = () => {
       audio.start();
       action();
@@ -150,29 +162,29 @@ export class OnlineScene extends Phaser.Scene {
     } catch (e) {
       this.status.textContent = (e as Error).message;
       this.actions.replaceChildren();
-      this.button("もう一度接続", () => void this.initialize());
-      this.button("メニューへ", () => this.menu());
+      this.button("RETRY", () => void this.initialize());
+      this.button("BACK TO MENU", () => this.menu());
     }
   }
   private choose(roomId: string | null, invite: string | null): void {
     this.actions.replaceChildren();
     this.root.classList.remove("playing");
     this.status.textContent = roomId
-      ? "表示名を確認して、友達の部屋に参加します。"
-      : "友達を招待するか、対戦相手を探します。";
+      ? "Join your friend’s room."
+      : "Choose how to play.";
     const label = document.createElement("label");
-    label.textContent = "表示名（任意）";
+    label.textContent = "Name (optional)";
     const input = document.createElement("input");
     input.type = "text";
     input.maxLength = 40;
-    input.placeholder = "ゲスト";
+    input.placeholder = "Guest";
     input.value = localStorage.getItem("swaprise.name.v1") ?? "";
     label.append(input);
     this.actions.append(label);
     const run = (kind: string): void => {
       const name = displayName(input.value);
       localStorage.setItem("swaprise.name.v1", name);
-      this.status.textContent = "接続しています…";
+      this.status.textContent = "Connecting…";
       this.actions
         .querySelectorAll("button")
         .forEach((b) => (b.disabled = true));
@@ -201,16 +213,16 @@ export class OnlineScene extends Phaser.Scene {
             .forEach((b) => (b.disabled = false));
         });
     };
-    if (roomId && invite) this.button("部屋に参加", () => run("join"));
+    if (roomId && invite) this.button("JOIN ROOM", () => run("join"));
     else {
-      this.button("友達を招待", () => run("invite"));
-      this.button("対戦相手を探す", () => run("random"));
+      this.button("INVITE FRIEND", () => run("invite"));
+      this.button("FIND MATCH", () => run("random"));
     }
-    this.button("メニューへ", () => this.menu());
+    this.button("BACK TO MENU", () => this.menu());
   }
   private startQueue(name: string): void {
     this.actions.replaceChildren();
-    this.button("キャンセル", () => {
+    this.button("CANCEL", () => {
       this.cancelQueue();
       this.choose(null, null);
     });
@@ -240,14 +252,14 @@ export class OnlineScene extends Phaser.Scene {
       if (this.queue) {
         this.cancelQueue();
         this.status.textContent =
-          "待機が終了しました。受付上限または接続状況をご確認ください。";
+          "Search ended. Check your connection or try again later.";
         this.actions.replaceChildren();
-        this.button("戻る", () => this.choose(null, null));
+        this.button("BACK", () => this.choose(null, null));
       }
     };
     let lastPing = 0;
     this.queueTimer = setInterval(() => {
-      this.status.textContent = `対戦相手を探しています… ${Math.floor((Date.now() - this.waitingSince) / 1000)}秒`;
+      this.status.textContent = `Finding an opponent… ${Math.floor((Date.now() - this.waitingSince) / 1000)}s`;
       if (
         Date.now() - lastPing >= 15000 &&
         this.queue?.readyState === WebSocket.OPEN
@@ -274,7 +286,7 @@ export class OnlineScene extends Phaser.Scene {
       this.session?.dispose();
       this.session = null;
       this.clearBoard();
-      this.startQueue(localStorage.getItem("swaprise.name.v1") ?? "ゲスト");
+      this.startQueue(localStorage.getItem("swaprise.name.v1") ?? "Guest");
     });
     this.actionKey = "";
     this.refresh();
@@ -284,9 +296,9 @@ export class OnlineScene extends Phaser.Scene {
     const state = s?.state;
     if (!s) return;
     if (!state) {
-      this.status.textContent = s.error || "部屋に接続しています…";
+      this.status.textContent = s.error || "Joining room…";
       this.actions.replaceChildren();
-      this.button("メニューへ", () => this.menu());
+      this.button("BACK TO MENU", () => this.menu());
       return;
     }
     if (state.phase !== this.phase) {
@@ -315,30 +327,30 @@ export class OnlineScene extends Phaser.Scene {
     if (s.error) this.status.textContent = s.error;
     else if (state.phase === "waiting")
       this.status.textContent = other
-        ? `${other.name} さんが参加しました。${other.ready ? "相手は準備完了です。" : ""}`
-        : "友達の参加を待っています。";
+        ? `${other.name} joined.${other.ready ? " Ready to play." : ""}`
+        : "Waiting for your friend…";
     else if (state.phase === "countdown")
       this.status.textContent = `${Math.max(1, Math.ceil((state.startAt - Date.now()) / 1000))}…`;
     else if (state.phase === "suspended")
-      this.status.textContent = `接続を待っています… 自分 ${Math.ceil((me?.grace ?? 0) / 1000)}秒 / 相手 ${Math.ceil((other?.grace ?? 0) / 1000)}秒`;
+      this.status.textContent = `Reconnecting… You ${Math.ceil((me?.grace ?? 0) / 1000)}s / Opponent ${Math.ceil((other?.grace ?? 0) / 1000)}s`;
     else if (state.phase === "playing")
       this.status.textContent = this.settings
-        ? "設定中も対戦は進みます"
-        : `${other?.name ?? "相手"} と対戦中${state.remaining <= 60000 ? ` · 残り${Math.ceil(state.remaining / 1000)}秒` : ""}`;
+        ? "The match continues while settings are open."
+        : `${other?.name ?? "Opponent"} · playing${state.remaining <= 60000 ? ` · ${Math.ceil(state.remaining / 1000)}s` : ""}`;
     else if (state.phase === "closed")
-      this.status.textContent = "相手が退出したか、部屋が終了しました。";
+      this.status.textContent = "The opponent left or the room closed.";
     else if (state.result) {
       const r = state.result;
       const invalid = r.reason === "desync" || r.reason === "server";
       const reasons = {
         normal: "",
-        surrender: "（降参）",
-        disconnect: "（切断）",
-        timeout: "（時間切れ）",
-        desync: "（同期ずれ）",
-        server: "（通信・サーバー障害）",
+        surrender: " (surrender)",
+        disconnect: " (disconnected)",
+        timeout: " (time limit)",
+        desync: " (out of sync)",
+        server: " (connection error)",
       };
-      this.status.textContent = `${invalid ? "無効試合" : r.winner < 0 ? "引き分け" : r.winner === s.player ? "勝ち！" : "負け"}${reasons[r.reason]}${me?.rematch ? " · 相手の再戦希望を待っています" : other?.rematch ? " · 相手が再戦を希望しています" : ""}`;
+      this.status.textContent = `${invalid ? "NO CONTEST" : r.winner < 0 ? "DRAW" : r.winner === s.player ? "YOU WIN!" : "YOU LOSE"}${reasons[r.reason]}${me?.rematch ? " · Waiting for a rematch…" : other?.rematch ? " · Opponent wants a rematch" : ""}`;
       audio.stopBgm();
     }
     const key = [
@@ -353,51 +365,51 @@ export class OnlineScene extends Phaser.Scene {
     this.actions.replaceChildren();
     if (state.phase === "waiting") {
       if (s.connection.invite)
-        this.button("招待URLを共有", () => {
+        this.button("SHARE INVITE", () => {
           void shareText(
-            `SWAPRISEで対戦しよう\n${location.origin}/?room=${s.connection.roomId}#invite=${s.connection.invite}`,
+            `Play SWAPRISE with me!\n${location.origin}/?room=${s.connection.roomId}#invite=${s.connection.invite}`,
           ).then((result) => {
             this.status.textContent =
               result === "copied"
-                ? "招待URLをコピーしました"
+                ? "Invite link copied."
                 : result === "failed"
-                  ? "共有できませんでした"
-                  : "招待を共有しました";
+                  ? "Could not share the invite."
+                  : "Invite shared.";
           });
         });
       if (other && !me?.ready)
-        this.button("準備完了", () => s.send({ type: "ready" }));
-      this.button("退出する", () => this.menu());
+        this.button("READY", () => s.send({ type: "ready" }));
+      this.button("LEAVE ROOM", () => this.menu());
     } else if (state.phase === "playing" || state.phase === "suspended") {
       if (!this.settings && playing)
-        this.button("設定", () => {
+        this.button("SETTINGS", () => {
           this.settings = true;
           this.playerInput?.reset();
           this.actionKey = "";
           this.refresh();
         });
       else {
-        this.button(`音：${audio.muted ? "OFF" : "ON"}`, () => {
+        this.button(`SOUND: ${audio.muted ? "OFF" : "ON"}`, () => {
           audio.setMuted(!audio.muted);
           this.actionKey = "";
           this.refresh();
         });
         if (haptics.supported)
-          this.button(`振動：${haptics.enabled ? "ON" : "OFF"}`, () => {
+          this.button(`VIBRATION: ${haptics.enabled ? "ON" : "OFF"}`, () => {
             haptics.toggle();
             this.actionKey = "";
             this.refresh();
           });
-        this.button("対戦に戻る", () => {
+        this.button("RESUME", () => {
           this.settings = false;
           this.actionKey = "";
           this.refresh();
         });
-        this.button("降参する", () => {
+        this.button("SURRENDER", () => {
           this.actions.replaceChildren();
-          this.status.textContent = "降参しますか？";
-          this.button("降参して終了", () => s.send({ type: "surrender" }));
-          this.button("戻る", () => {
+          this.status.textContent = "Surrender this match?";
+          this.button("YES, SURRENDER", () => s.send({ type: "surrender" }));
+          this.button("BACK", () => {
             this.actionKey = "";
             this.refresh();
           });
@@ -405,30 +417,30 @@ export class OnlineScene extends Phaser.Scene {
       }
     } else if (state.phase === "result") {
       if (other?.connected && !me?.rematch)
-        this.button("もう一度対戦", () => s.send({ type: "rematch" }));
+        this.button("REMATCH", () => s.send({ type: "rematch" }));
       if (state.kind === "random")
-        this.button("次の相手を探す", () => {
+        this.button("NEXT MATCH", () => {
           this.actions.replaceChildren();
-          this.status.textContent = "部屋を退出しています…";
+          this.status.textContent = "Leaving room…";
           void s.leaveAndWait().then((released) => {
             if (this.closing) return;
             if (!released) {
               this.status.textContent =
-                "退出を確認できませんでした。メニューからやり直してください。";
+                "Could not leave the room. Return to the menu and try again.";
               this.actions.replaceChildren();
-              this.button("メニューへ", () => this.menu());
+              this.button("BACK TO MENU", () => this.menu());
               return;
             }
             this.session = null;
             this.clearBoard();
             this.startQueue(
-              localStorage.getItem("swaprise.name.v1") ?? "ゲスト",
+              localStorage.getItem("swaprise.name.v1") ?? "Guest",
             );
           });
         });
-      this.button("メニューへ", () => this.menu());
+      this.button("BACK TO MENU", () => this.menu());
     } else if (state.phase === "closed")
-      this.button("メニューへ", () => this.menu());
+      this.button("BACK TO MENU", () => this.menu());
   }
   private clearBoard(): void {
     this.playerInput?.destroy();
@@ -453,8 +465,8 @@ export class OnlineScene extends Phaser.Scene {
           this,
           b,
           i === s.player
-            ? "自分"
-            : this.boardName(s.state?.seats[i]?.name ?? "ゲスト"),
+            ? "YOU"
+            : this.boardName(s.state?.seats[i]?.name ?? "Guest"),
           i === s.player,
         ),
     );

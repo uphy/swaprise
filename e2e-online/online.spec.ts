@@ -3,14 +3,19 @@ import { GAME_VERSION } from "../src/net/protocol";
 async function enter(page: Page) {
   await page.goto("/");
   await page.waitForFunction(() => !!(window as any).__swapriseScenes?.menu);
-  await page.evaluate(() => {
+  const typography = await page.evaluate(() => {
     const m = (window as any).__swapriseScenes.menu;
+    const canvas = m.game.canvas;
+    const scale = m.cameras.main.zoom * canvas.getBoundingClientRect().width / canvas.width;
+    const item = { size: parseFloat(m.texts[3].style.fontSize) * scale, family: m.texts[3].style.fontFamily };
     m.index = 3;
     m.select();
+    return item;
   });
   await expect(
-    page.getByRole("button", { name: "友達を招待", exact: true }),
+    page.getByRole("button", { name: "INVITE FRIEND", exact: true }),
   ).toBeVisible();
+  return typography;
 }
 test("招待URLから2人で対戦し、降参して再戦する", async ({ browser }) => {
   const a = await browser.newContext();
@@ -22,13 +27,13 @@ test("招待URLから2人で対戦し、降参して再戦する", async ({ brow
   q.on("pageerror", (e) => errors.push(e.message));
   await enter(p);
   await p.getByRole("textbox").fill("招待した人");
-  await p.getByRole("button", { name: "友達を招待", exact: true }).click();
-  await expect(p.getByRole("button", { name: "招待URLを共有" })).toBeVisible();
+  await p.getByRole("button", { name: "INVITE FRIEND", exact: true }).click();
+  await expect(p.getByRole("button", { name: "SHARE INVITE" })).toBeVisible();
   await q.goto(p.url());
   await q.getByRole("textbox").fill("参加した人");
-  await q.getByRole("button", { name: "部屋に参加", exact: true }).click();
-  await p.getByRole("button", { name: "準備完了", exact: true }).click();
-  await q.getByRole("button", { name: "準備完了", exact: true }).click();
+  await q.getByRole("button", { name: "JOIN ROOM", exact: true }).click();
+  await p.getByRole("button", { name: "READY", exact: true }).click();
+  await q.getByRole("button", { name: "READY", exact: true }).click();
   await p.waitForFunction(
     () => (window as any).__swapriseOnline?.session?.lockstep?.frame > 120,
   );
@@ -38,16 +43,16 @@ test("招待URLから2人で対戦し、降参して再戦する", async ({ brow
   expect(
     await q.evaluate(() => (window as any).__swapriseOnline.session.player),
   ).toBe(1);
-  await p.getByRole("button", { name: "設定", exact: true }).click();
-  await p.getByRole("button", { name: "降参する", exact: true }).click();
-  await p.getByRole("button", { name: "降参して終了", exact: true }).click();
-  await expect(q.getByRole("status")).toContainText("勝ち");
-  await expect(p.getByRole("status")).toContainText("負け");
+  await p.getByRole("button", { name: "SETTINGS", exact: true }).click();
+  await p.getByRole("button", { name: "SURRENDER", exact: true }).click();
+  await p.getByRole("button", { name: "YES, SURRENDER", exact: true }).click();
+  await expect(q.getByRole("status")).toContainText("YOU WIN");
+  await expect(p.getByRole("status")).toContainText("YOU LOSE");
   const old = await p.evaluate(
     () => (window as any).__swapriseOnline.session.state.match.id,
   );
-  await p.getByRole("button", { name: "もう一度対戦" }).click();
-  await q.getByRole("button", { name: "もう一度対戦" }).click();
+  await p.getByRole("button", { name: "REMATCH" }).click();
+  await q.getByRole("button", { name: "REMATCH" }).click();
   await p.waitForFunction(
     (id) =>
       (window as any).__swapriseOnline.session.state.match.id !== id &&
@@ -66,11 +71,11 @@ test("ランダム待機はキャンセルでき、2人揃うと自動で開始�
   const p = await a.newPage();
   const q = await b.newPage();
   await enter(p);
-  await p.getByRole("button", { name: "対戦相手を探す", exact: true }).click();
-  await p.getByRole("button", { name: "キャンセル", exact: true }).click();
-  await p.getByRole("button", { name: "対戦相手を探す", exact: true }).click();
+  await p.getByRole("button", { name: "FIND MATCH", exact: true }).click();
+  await p.getByRole("button", { name: "CANCEL", exact: true }).click();
+  await p.getByRole("button", { name: "FIND MATCH", exact: true }).click();
   await enter(q);
-  await q.getByRole("button", { name: "対戦相手を探す", exact: true }).click();
+  await q.getByRole("button", { name: "FIND MATCH", exact: true }).click();
   await p.waitForFunction(
     () => (window as any).__swapriseOnline?.session?.lockstep?.frame > 60,
   );
@@ -86,9 +91,9 @@ test("再読込で同じ席へ復帰し、対戦を再開できる", async ({ br
   const p = await a.newPage();
   const q = await b.newPage();
   await enter(p);
-  await p.getByRole("button", { name: "対戦相手を探す", exact: true }).click();
+  await p.getByRole("button", { name: "FIND MATCH", exact: true }).click();
   await enter(q);
-  await q.getByRole("button", { name: "対戦相手を探す", exact: true }).click();
+  await q.getByRole("button", { name: "FIND MATCH", exact: true }).click();
   await p.waitForFunction(
     () => (window as any).__swapriseOnline?.session?.lockstep?.frame > 240,
   );
@@ -123,9 +128,9 @@ test("スマホで自分の盤面を大きく表示し、せり上げと回転�
   const p = await a.newPage();
   const q = await b.newPage();
   await enter(p);
-  await p.getByRole("button", { name: "対戦相手を探す", exact: true }).click();
+  await p.getByRole("button", { name: "FIND MATCH", exact: true }).click();
   await enter(q);
-  await q.getByRole("button", { name: "対戦相手を探す", exact: true }).click();
+  await q.getByRole("button", { name: "FIND MATCH", exact: true }).click();
   await p.waitForFunction(
     () => (window as any).__swapriseOnline?.session?.lockstep?.frame > 60,
   );
@@ -140,7 +145,12 @@ test("スマホで自分の盤面を大きく表示し、せり上げと回転�
   ).toEqual([1, 0.5]);
   await p.screenshot({ path: "/tmp/swaprise-online-portrait.png" });
   await p.evaluate(() => {
-    (window as any).__swapriseOnline.raise = true;
+    const scene = (window as any).__swapriseOnline;
+    // CIが次の待機判定へ進むまでせり上げ続けないよう、1段で止める。
+    Object.defineProperty(scene, "raise", {
+      configurable: true,
+      get: () => scene.session.lockstep.game.boards[scene.session.player].stats.manualRows === 0,
+    });
   });
   await p.waitForFunction(() => {
     const s = (window as any).__swapriseOnline;
@@ -149,7 +159,9 @@ test("スマホで自分の盤面を大きく表示し、せり上げと回転�
     );
   });
   await p.evaluate(() => {
-    (window as any).__swapriseOnline.raise = false;
+    Object.defineProperty((window as any).__swapriseOnline, "raise", {
+      configurable: true, writable: true, value: false,
+    });
   });
   await p.setViewportSize({ width: 844, height: 390 });
   await p.waitForFunction(
@@ -160,7 +172,7 @@ test("スマホで自分の盤面を大きく表示し、せり上げと回転�
   await q.evaluate(() =>
     (window as any).__swapriseOnline.session.send({ type: "surrender" }),
   );
-  await expect(p.getByRole("status")).toContainText("勝ち");
+  await expect(p.getByRole("status")).toContainText(/YOU WIN|YOU LOSE/);
   expect(
     await p
       .getByRole("status")
@@ -179,14 +191,14 @@ test("相手が部屋へ接続できなければ、ランダム待機へ戻る",
   const q = await b.newPage();
   await q.routeWebSocket("**/api/rooms/*/ws", () => {});
   await enter(p);
-  await p.getByRole("button", { name: "対戦相手を探す", exact: true }).click();
+  await p.getByRole("button", { name: "FIND MATCH", exact: true }).click();
   await enter(q);
-  await q.getByRole("button", { name: "対戦相手を探す", exact: true }).click();
+  await q.getByRole("button", { name: "FIND MATCH", exact: true }).click();
   await p.waitForFunction(
     () => !!(window as any).__swapriseOnline?.session?.state,
   );
   await expect(
-    p.getByRole("button", { name: "キャンセル", exact: true }),
+    p.getByRole("button", { name: "CANCEL", exact: true }),
   ).toBeVisible({ timeout: 20000 });
   await a.close();
   await b.close();
@@ -199,9 +211,9 @@ test("片方が画面を隠すと停止し、戻ると同じ試合を再開す�
   const p = await a.newPage();
   const q = await b.newPage();
   await enter(p);
-  await p.getByRole("button", { name: "対戦相手を探す", exact: true }).click();
+  await p.getByRole("button", { name: "FIND MATCH", exact: true }).click();
   await enter(q);
-  await q.getByRole("button", { name: "対戦相手を探す", exact: true }).click();
+  await q.getByRole("button", { name: "FIND MATCH", exact: true }).click();
   await p.waitForFunction(
     () => (window as any).__swapriseOnline?.session?.lockstep?.frame > 60,
   );
@@ -242,19 +254,19 @@ test("盤面が食い違った場合は両者とも無効試合になる", async
   const p = await a.newPage();
   const q = await b.newPage();
   await enter(p);
-  await p.getByRole("button", { name: "対戦相手を探す", exact: true }).click();
+  await p.getByRole("button", { name: "FIND MATCH", exact: true }).click();
   await enter(q);
-  await q.getByRole("button", { name: "対戦相手を探す", exact: true }).click();
+  await q.getByRole("button", { name: "FIND MATCH", exact: true }).click();
   await p.waitForFunction(
     () => (window as any).__swapriseOnline?.session?.lockstep?.frame > 60,
   );
   await p.evaluate(() => {
     (window as any).__swapriseOnline.session.lockstep.game.boards[0].score += 1;
   });
-  await expect(p.getByRole("status")).toContainText("無効試合", {
+  await expect(p.getByRole("status")).toContainText("NO CONTEST", {
     timeout: 15000,
   });
-  await expect(q.getByRole("status")).toContainText("無効試合");
+  await expect(q.getByRole("status")).toContainText("NO CONTEST");
   await a.close();
   await b.close();
 });
@@ -292,7 +304,7 @@ for (const rtt of [40, 100, 200]) {
         });
         await enter(page);
         await page
-          .getByRole("button", { name: "対戦相手を探す", exact: true })
+          .getByRole("button", { name: "FIND MATCH", exact: true })
           .click();
       }
       for (const page of pages) {
@@ -325,10 +337,10 @@ for (const rtt of [40, 100, 200]) {
 test("ランダム待機中の同じセッションは招待部屋を作れない", async ({ page }) => {
   await enter(page);
   await page
-    .getByRole("button", { name: "対戦相手を探す", exact: true })
+    .getByRole("button", { name: "FIND MATCH", exact: true })
     .click();
   await expect(
-    page.getByRole("button", { name: "キャンセル", exact: true }),
+    page.getByRole("button", { name: "CANCEL", exact: true }),
   ).toBeVisible();
   const status = await page.evaluate(async (version) => {
     const response = await fetch("/api/rooms", {
@@ -358,16 +370,16 @@ test("退室通信が遅れても次のランダム待機へ移れる", async ({
   for (const page of [p, q]) {
     await enter(page);
     await page
-      .getByRole("button", { name: "対戦相手を探す", exact: true })
+      .getByRole("button", { name: "FIND MATCH", exact: true })
       .click();
   }
   await p.waitForFunction(
     () => (window as any).__swapriseOnline?.session?.lockstep?.frame > 60,
   );
-  await p.getByRole("button", { name: "設定", exact: true }).click();
-  await p.getByRole("button", { name: "降参する", exact: true }).click();
-  await p.getByRole("button", { name: "降参して終了", exact: true }).click();
-  await p.getByRole("button", { name: "次の相手を探す", exact: true }).click();
+  await p.getByRole("button", { name: "SETTINGS", exact: true }).click();
+  await p.getByRole("button", { name: "SURRENDER", exact: true }).click();
+  await p.getByRole("button", { name: "YES, SURRENDER", exact: true }).click();
+  await p.getByRole("button", { name: "NEXT MATCH", exact: true }).click();
   await p.waitForFunction(
     () =>
       (window as any).__swapriseOnline?.queue?.readyState === WebSocket.OPEN,
@@ -386,7 +398,13 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 844, height: 390 }
       deviceScaleFactor: 3,
     });
     const page = await context.newPage();
-    await enter(page);
+    const menuType = await enter(page);
+    const onlineType = await page.getByRole("button", { name: "FIND MATCH", exact: true }).evaluate((el) => {
+      const style = getComputedStyle(el);
+      return { size: parseFloat(style.fontSize), family: style.fontFamily };
+    });
+    expect(onlineType.size).toBeCloseTo(menuType.size, 1);
+    expect(onlineType.family.replaceAll('"', '')).toBe(menuType.family.replaceAll('"', ''));
     const buttons = await page.locator(".online-actions button").evaluateAll((buttons) =>
       buttons.map((button) => {
         const r = button.getBoundingClientRect();
@@ -400,7 +418,7 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 844, height: 390 }
     }
     await page.screenshot({ path: `/tmp/swaprise-online-lobby-${viewport.width}.png` });
     await page
-      .getByRole("button", { name: "対戦相手を探す", exact: true })
+      .getByRole("button", { name: "FIND MATCH", exact: true })
       .click();
     const size = await page.evaluate(() => {
       const root = document.querySelector(".online-panel")!;
@@ -415,8 +433,8 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 844, height: 390 }
       };
     });
     expect(size.width).toBeLessThanOrEqual(400);
-    expect(size.width / size.height).toBeLessThanOrEqual(5.2);
-    expect(size.font).toBeGreaterThanOrEqual(28);
+    expect(size.width / size.height).toBeLessThanOrEqual(6.3);
+    expect(size.font).toBeGreaterThanOrEqual(18);
     expect(size.height).toBeGreaterThanOrEqual(64);
     await page.screenshot({ path: `/tmp/swaprise-online-dialog-${viewport.width}.png` });
     await context.close();
@@ -435,7 +453,7 @@ test("自分の交換は通信の確定を待たず次のtickで描画する", a
   for (const page of [p, q]) {
     await enter(page);
     await page
-      .getByRole("button", { name: "対戦相手を探す", exact: true })
+      .getByRole("button", { name: "FIND MATCH", exact: true })
       .click();
   }
   await p.waitForFunction(

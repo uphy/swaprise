@@ -52,7 +52,7 @@ export class RoomEngine {
     if (old >= 0) return old;
     const i = this.members.findIndex((m) => !m);
     if (i < 0 || this.state.phase !== "waiting")
-      throw new Error("この部屋は満員です");
+      throw new Error("This room is full.");
     this.members[i] = member;
     this.state.seats[i] = {
       name: member.name,
@@ -78,7 +78,7 @@ export class RoomEngine {
   }
   connect(i: number, visible: boolean, now: number): void {
     const seat = this.state.seats[i]!;
-    if (seat.connected) throw new Error("別のタブで接続中です");
+    if (seat.connected) throw new Error("Already connected in another tab.");
     seat.connected = true;
     seat.visible = visible;
     this.lastSeen[i] = now;
@@ -307,13 +307,13 @@ export class RoomEngine {
       !m.inputs.every(validInput) ||
       !isInt(m.ack, 0, this.history.length)
     )
-      throw new Error("入力形式が不正です");
+      throw new Error("Invalid input format.");
     if (m.startFrame < this.next[i]) {
       m.inputs.forEach((input, n) => {
         const f = m.startFrame + n;
         const old = this.history[f]?.[i] ?? this.pending[i].get(f);
         if (!old || JSON.stringify(old) !== JSON.stringify(input))
-          throw new Error("再送された入力が一致しません");
+          throw new Error("Resent input does not match.");
       });
       return;
     }
@@ -321,10 +321,10 @@ export class RoomEngine {
       m.startFrame !== this.next[i] ||
       m.startFrame > this.history.length + 12
     )
-      throw new Error("入力フレームが不正です");
+      throw new Error("Invalid input frame.");
     // 時刻に対する大幅な先行も拒否する。
     if (m.startFrame > Math.floor(((now - this.started) / 1000) * 60) + 120)
-      throw new Error("入力の送信が速すぎます");
+      throw new Error("Input sent too quickly.");
     m.inputs.forEach((input, n) =>
       this.pending[i].set(m.startFrame + n, input),
     );

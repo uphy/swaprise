@@ -177,7 +177,7 @@ export class Room extends DurableObject<Env> {
   private async handle(req: Request): Promise<Response> {
     const path = new URL(req.url).pathname;
     if (path === "/init") {
-      if (this.id) return json({ error: "作成済みです" }, 409);
+      if (this.id) return json({ error: "Room already exists." }, 409);
       const data = (await req.json()) as {
         id: string;
         invite?: string;
@@ -199,7 +199,7 @@ export class Room extends DurableObject<Env> {
         member: Member;
       };
       if (!this.invite || invite !== this.invite)
-        return json({ error: "招待URLが無効です" }, 403);
+        return json({ error: "Invalid invite link." }, 403);
       try {
         this.engine.join(member);
         await this.persist();
@@ -209,7 +209,7 @@ export class Room extends DurableObject<Env> {
       }
     }
     if (!this.id || this.engine.state.phase === "closed")
-      return json({ error: "この部屋は終了しています" }, 410);
+      return json({ error: "This room has closed." }, 410);
     if (
       path.endsWith("/metrics") &&
       this.env.TEST_MODE === "true" &&
@@ -223,14 +223,14 @@ export class Room extends DurableObject<Env> {
         result: this.engine.state.result,
       });
     if (req.headers.get("Upgrade") !== "websocket")
-      return json({ error: "WebSocket接続が必要です" }, 400);
+      return json({ error: "WebSocket connection required." }, 400);
     const session = req.headers.get("X-Session") ?? "";
     if (!this.engine.members.some((m) => m?.session === session))
-      return json({ error: "参加権がありません" }, 403);
+      return json({ error: "You have not joined this room." }, 403);
     if (this.ctx.getWebSockets().length >= 4)
-      return json({ error: "接続が多すぎます" }, 429);
+      return json({ error: "Too many connections." }, 429);
     if (++this.metrics.connections > 20)
-      return json({ error: "再接続回数の上限です" }, 429);
+      return json({ error: "Reconnect limit reached." }, 429);
     const pair = new WebSocketPair();
     this.ctx.acceptWebSocket(pair[1]);
     pair[1].serializeAttachment({
@@ -259,12 +259,12 @@ export class Room extends DurableObject<Env> {
       }
       try {
         if (typeof raw !== "string" || raw.length > 4096)
-          throw new Error("データが大きすぎます");
+          throw new Error("Request too large.");
         if (Date.now() - a.window > 1000) {
           a.window = Date.now();
           a.count = 0;
         }
-        if (++a.count > 50) throw new Error("送信回数が多すぎます");
+        if (++a.count > 50) throw new Error("Too many messages.");
         ws.serializeAttachment(a);
         const m = JSON.parse(raw) as ClientMessage;
         if (a.player < 0) {
@@ -273,14 +273,14 @@ export class Room extends DurableObject<Env> {
             m.protocol !== PROTOCOL ||
             m.version !== GAME_VERSION
           )
-            throw new Error("ゲームを更新してください");
+            throw new Error("Please reload to update the game.");
           const i = this.engine.members.findIndex(
             (member) =>
               member?.session === a.session && member?.token === m.token,
           );
-          if (i < 0) throw new Error("再接続情報が一致しません");
+          if (i < 0) throw new Error("Reconnect details do not match.");
           if (this.engine.state.seats[i]?.connected)
-            throw new Error("別のタブで接続中です");
+            throw new Error("Already connected in another tab.");
           a.visible = m.visible === true;
           a.player = i;
           ws.serializeAttachment(a);
@@ -311,7 +311,7 @@ export class Room extends DurableObject<Env> {
                 for (let i = 0; i < 2; i++)
                   this.send(i, {
                     type: "error",
-                    message: "対戦の準備に失敗しました。再接続してください",
+                    message: "Could not prepare the match. Please reconnect.",
                   });
               })
               .finally(() => {
@@ -355,7 +355,7 @@ export class Room extends DurableObject<Env> {
         for (let i = 0; i < 2; i++)
           this.send(i, {
             type: "error",
-            message: "本日の対戦受付は終了しました。日本時間9時に再開します",
+            message: "Daily match limit reached. Resets at 00:00 UTC.",
           });
         return;
       }

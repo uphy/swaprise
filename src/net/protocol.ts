@@ -106,8 +106,8 @@ export function validInput(value: unknown): value is Input {
 export function displayName(value: unknown): string {
   return typeof value === "string"
     ? [...value.replace(/[\p{C}\r\n]/gu, "").trim()].slice(0, 20).join("") ||
-        "ゲスト"
-    : "ゲスト";
+        "Guest"
+    : "Guest";
 }
 export function isInt(
   value: unknown,
