@@ -109,7 +109,14 @@ export class TouchInput {
   /** 盤面の上に置かれている指。2本以上になったらせり上げに切り替える。 */
   private readonly onBoard = new Set<number>();
 
+  private enabled = true;
+  setEnabled(enabled: boolean): void {
+    this.enabled = enabled;
+    if (!enabled) this.clear();
+  }
+
   private onDown(p: Phaser.Input.Pointer): void {
+    if (!this.enabled) return;
     const cell = this.cellAt(p.worldX, p.worldY);
     if (!cell) return;
     this.onBoard.add(p.id);
@@ -139,6 +146,9 @@ export class TouchInput {
 
   /** 最後に見たせり上がりの行数。ドラッグ中のパネルの段を追従させる。 */
   private lastRisen = 0;
+  private appliedAfter = 0;
+  /** オンラインで予約した交換が盤面へ反映されるまで次の交換を待つ。 */
+  deferUntil(frame: number): void { this.appliedAfter = frame; }
 
   /**
    * ドラッグの溜まった移動を入れ替えにする。毎 tick の poll() から呼ぶ。
@@ -146,6 +156,7 @@ export class TouchInput {
    * 揃って消え始めた・落ち始めた・いなくなったパネルはそこでドラッグを終える。
    */
   private advanceDrags(): void {
+    if (this.board.frame < this.appliedAfter) return;
     const risen = this.board.risenRows;
     if (risen !== this.lastRisen) {
       for (const d of this.drags.values()) d.cellY = Math.min(ROWS - 1, d.cellY + risen - this.lastRisen);

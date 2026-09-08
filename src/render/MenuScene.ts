@@ -18,6 +18,7 @@ interface MenuItem {
   group?: Level;
   start?: { mode: GameMode; cpuLevel?: CpuLevel };
   back?: boolean;
+  online?: boolean;
   name: string;
 }
 
@@ -63,6 +64,7 @@ function itemsFor(level: Level, hs: HighScores): MenuItem[] {
     { label: "1 PLAYER", caption: "endless · time attack · puzzle", group: "1p", name: "group-1p" },
     { label: "VS CPU", caption: "easy · normal · hard", group: "cpu", name: "group-cpu" },
     { label: "2 PLAYERS", caption: "one screen, two players", start: { mode: "versus" }, name: "group-2p" },
+    { label: "ONLINE", caption: "invite a friend · find an opponent", online: true, name: "group-online" },
   ];
 }
 
@@ -120,6 +122,7 @@ export class MenuScene extends Phaser.Scene {
     createTextures(this);
     // URL の ?mode= は最初の1回だけ効かせる。Esc でメニューに戻ったときに再び飛ばされないよう、ここで消す。
     const params = new URLSearchParams(location.search);
+    if (params.has("room") || sessionStorage.getItem("swaprise.connection.v1")) { this.scene.start("online"); return; }
     const mode = params.get("mode");
     if (mode === "endless" || mode === "timeattack" || mode === "versus" || mode === "cpu" || mode === "puzzle") {
       const cpu = params.get("cpu");
@@ -382,6 +385,7 @@ export class MenuScene extends Phaser.Scene {
       this.enterGroup(item.group);
       return;
     }
+    if (item.online) { this.scene.start("online"); return; }
     if (!item.start) return;
     audio.select();
     if (item.start.mode === "puzzle") {

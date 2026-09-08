@@ -37,6 +37,7 @@ const DAS_REPEAT = 3;
  * 移動は押した瞬間に1回、押し続けると一定間隔で繰り返す。入れ替えは押した瞬間だけ。
  */
 export class PlayerInput {
+  private subscriptions: [Phaser.Input.Keyboard.Key, () => void][] = [];
   private keys: Record<string, Phaser.Input.Keyboard.Key[]> = {};
   private held: Record<string, number> = { up: 0, down: 0, left: 0, right: 0 };
   /** 前回の poll 以降に押された（tick より短いタップも拾う）。 */
@@ -66,8 +67,24 @@ export class PlayerInput {
       raise: add(map.raise),
     };
     for (const [name, keys] of Object.entries(this.keys)) {
-      for (const k of keys) k.on("down", () => (this.pressed[name] = true));
+      for (const k of keys) {
+        const handler = () => { this.pressed[name] = true; };
+        k.on("down", handler);
+        this.subscriptions.push([k, handler]);
+      }
     }
+  }
+
+  destroy(): void {
+    for (const [key, handler] of this.subscriptions) key.off("down", handler);
+    this.subscriptions = [];
+  }
+
+  reset(): void {
+    this.pressed = {};
+    this.held = { up: 0, down: 0, left: 0, right: 0 };
+    this.swapWasDown = this.isDown("swap");
+    this.touch?.clear();
   }
 
   private pad(): Phaser.Input.Gamepad.Gamepad | undefined {

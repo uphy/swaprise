@@ -4,6 +4,7 @@ export class Rng {
   constructor(seed: number) {
     this.s = seed >>> 0;
   }
+  state(): number { return this.s; }
   next(): number {
     let t = (this.s += 0x6d2b79f5);
     t = Math.imul(t ^ (t >>> 15), t | 1);
