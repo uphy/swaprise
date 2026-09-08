@@ -135,32 +135,36 @@
 /* DOMの文字はcanvasの拡大率に頼らず、スマホのCSS pxで読みやすくする。 */
 @media (pointer: coarse), (max-width: 600px) {
   .online-ui:not(.playing) {
-    font-size: 20px;
+    font-size: 24px;
     padding: max(16px, env(safe-area-inset-top))
       max(16px, env(safe-area-inset-right))
       max(16px, env(safe-area-inset-bottom))
       max(16px, env(safe-area-inset-left));
   }
   .online-ui:not(.playing) .online-panel {
-    width: min(100%, 520px);
+    width: 100%;
+    min-height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
     padding: 24px 20px;
   }
   .online-ui:not(.playing) h1 {
-    font-size: 28px;
+    font-size: 34px;
   }
   .online-ui:not(.playing) p {
-    font-size: 22px;
+    font-size: 28px;
     line-height: 1.5;
   }
   .online-ui:not(.playing) label {
-    font-size: 18px;
+    font-size: 22px;
   }
   .online-ui:not(.playing) input {
-    font-size: 20px;
+    font-size: 24px;
   }
   .online-ui:not(.playing) button {
-    min-height: 56px;
-    font-size: 20px;
+    min-height: 64px;
+    font-size: 24px;
   }
   .online-ui:not(.playing) .online-actions {
     gap: 14px;
@@ -168,7 +172,7 @@
 }
 @media (pointer: coarse) and (orientation: landscape) and (max-height: 560px) {
   .online-ui:not(.playing) {
-    place-items: start center;
+    place-items: stretch;
   }
   .online-ui:not(.playing) .online-panel {
     padding: 16px 20px;

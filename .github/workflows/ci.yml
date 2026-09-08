@@ -94,6 +94,8 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
+        env:
+          BUILD_COMMIT: ${{ github.event.pull_request.head.sha }}
       - name: プレビュー版をアップロード
         id: upload
         run: |

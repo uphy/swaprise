@@ -7,7 +7,7 @@ import { VitePWA } from "vite-plugin-pwa";
 function buildId(): string {
   const day = new Date().toISOString().slice(0, 10);
   try {
-    const hash = execSync("git rev-parse --short HEAD", { stdio: ["ignore", "pipe", "ignore"] }).toString().trim();
+    const hash = process.env.BUILD_COMMIT?.slice(0, 7) || execSync("git rev-parse --short HEAD", { stdio: ["ignore", "pipe", "ignore"] }).toString().trim();
     return `${day} ${hash}`;
   } catch {
     return `${day} dev`;

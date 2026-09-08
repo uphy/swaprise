@@ -375,37 +375,42 @@ test("退室通信が遅れても次のランダム待機へ移れる", async ({
   await Promise.all(contexts.map((c) => c.close()));
 });
 
-test("スマホの待機ダイアログは大きな文字と押しやすいボタンで表示する", async ({
-  browser,
-}) => {
-  const context = await browser.newContext({
-    viewport: { width: 390, height: 844 },
-    isMobile: true,
-    hasTouch: true,
-    deviceScaleFactor: 3,
+for (const viewport of [{ width: 390, height: 844 }, { width: 844, height: 390 }]) {
+  test(`スマホの待機ダイアログ ${viewport.width} は大きな文字と押しやすいボタンで表示する`, async ({
+    browser,
+  }) => {
+    const context = await browser.newContext({
+      viewport,
+      isMobile: true,
+      hasTouch: true,
+      deviceScaleFactor: 3,
+    });
+    const page = await context.newPage();
+    await enter(page);
+    await page
+      .getByRole("button", { name: "対戦相手を探す", exact: true })
+      .click();
+    const size = await page.evaluate(() => {
+      const root = document.querySelector(".online-panel")!;
+      const button = root.querySelector("button")!;
+      return {
+        width: root.getBoundingClientRect().width,
+        panelHeight: root.getBoundingClientRect().height,
+        font: parseFloat(
+          getComputedStyle(root.querySelector("[role=status]")!).fontSize,
+        ),
+        height: button.getBoundingClientRect().height,
+      };
+    });
+    expect(size.width).toBeGreaterThanOrEqual(viewport.width - 32);
+    expect(size.panelHeight).toBeGreaterThanOrEqual(viewport.height - 32);
+    expect(size.font).toBeGreaterThanOrEqual(28);
+    expect(size.height).toBeGreaterThanOrEqual(64);
+    await page.screenshot({ path: `/tmp/swaprise-online-dialog-${viewport.width}.png` });
+    await context.close();
   });
-  const page = await context.newPage();
-  await enter(page);
-  await page
-    .getByRole("button", { name: "対戦相手を探す", exact: true })
-    .click();
-  const size = await page.evaluate(() => {
-    const root = document.querySelector(".online-panel")!;
-    const button = root.querySelector("button")!;
-    return {
-      width: root.getBoundingClientRect().width,
-      font: parseFloat(
-        getComputedStyle(root.querySelector("[role=status]")!).fontSize,
-      ),
-      height: button.getBoundingClientRect().height,
-    };
-  });
-  expect(size.width).toBeGreaterThanOrEqual(350);
-  expect(size.font).toBeGreaterThanOrEqual(20);
-  expect(size.height).toBeGreaterThanOrEqual(52);
-  await page.screenshot({ path: "/tmp/swaprise-online-dialog-large.png" });
-  await context.close();
-});
+
+}
 
 test("自分の交換は通信の確定を待たず次のtickで描画する", async ({
   browser,
