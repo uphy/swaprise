@@ -152,8 +152,21 @@ export class OnlineScene extends Phaser.Scene {
       const saved = savedConnection();
       const params = new URLSearchParams(location.search);
       const roomId = params.get("room");
-      if (saved && (!roomId || saved.roomId === roomId)) {
-        this.connect(saved);
+      const resume = saved && (!roomId || saved.roomId === roomId) ? saved : null;
+      const target = resume?.roomId ?? roomId;
+      const status = target ? await api(`rooms/${target}/status`) : null;
+      if (this.closing) return;
+      if (resume) {
+        if (status?.active) {
+          this.connect(resume);
+          return;
+        }
+        sessionStorage.removeItem("swaprise.connection.v1");
+      }
+      if (roomId && status?.expired) {
+        history.replaceState(null, "", location.pathname);
+        this.choose(null, null);
+        this.status.textContent = "This invite link has expired. Create a new room or find a match.";
         return;
       }
       this.choose(
@@ -297,6 +310,10 @@ export class OnlineScene extends Phaser.Scene {
     const state = s?.state;
     if (!s) return;
     if (!state) {
+      this.root.classList.remove("playing");
+      this.touch?.setEnabled(false);
+      if (this.gameId) this.clearBoard();
+      audio.stopBgm();
       this.status.textContent = s.error || "Joining room…";
       this.actions.replaceChildren();
       this.button("BACK TO MENU", () => this.menu());
@@ -318,6 +335,10 @@ export class OnlineScene extends Phaser.Scene {
           haptics.win();
         } else if (state.result.winner >= 0) audio.lose();
       }
+    }
+    if (!state.match && this.gameId) {
+      this.clearBoard();
+      audio.stopBgm();
     }
     if (s.lockstep && this.gameId !== s.lockstep.match.id) this.buildBoard();
     const playing = state.phase === "playing" && !this.settings;

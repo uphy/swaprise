@@ -22,14 +22,27 @@ export class Coordinator extends DurableObject<Env> {
     const a = await this.ctx.storage.get<{ roomId: string; expires: number }>(
       "active:" + session,
     );
-    return a && a.expires > Date.now() ? a.roomId : null;
+    if (!a || a.expires <= Date.now()) return null;
+    const response = await this.env.ROOMS.get(
+      this.env.ROOMS.idFromName(a.roomId),
+    ).fetch(new Request("https://internal/membership", {
+      headers: { "X-Session": session },
+    }));
+    if (!response.ok) throw new Error("Could not check room membership.");
+    const { active } = await response.json() as { active: boolean };
+    if (active) return a.roomId;
+    await this.ctx.storage.delete("active:" + session);
+    return null;
   }
-  private async assign(session: string, roomId: string): Promise<void> {
-    if (!(await this.ctx.storage.getAlarm()))
-      await this.ctx.storage.setAlarm(Date.now() + 60000);
+  private async assign(session: string, roomId: string, token?: string, kind: MatchKind = "random"): Promise<void> {
+    const previous = token ? undefined : await this.ctx.storage.get<{ roomId: string; token?: string }>("active:" + session);
+    const expires = Date.now() + (kind === "invite" ? 86_400_000 + 660_000 : 660_000);
+    const alarm = await this.ctx.storage.getAlarm();
+    if (!alarm || alarm > expires) await this.ctx.storage.setAlarm(expires);
     await this.ctx.storage.put("active:" + session, {
       roomId,
-      expires: Date.now() + 660_000,
+      token: token ?? (previous?.roomId === roomId ? previous.token : undefined),
+      expires,
     });
   }
   async fetch(req: Request): Promise<Response> {
@@ -63,7 +76,7 @@ export class Coordinator extends DurableObject<Env> {
       await this.ctx.storage.put(
         Object.fromEntries(keys.map((k, i) => ["budget:" + k, budgets[i]])),
       );
-      for (const session of sessions) await this.assign(session, roomId);
+      for (const session of sessions) await this.assign(session, roomId, undefined, kind);
       return json({ ok: true });
     }
     if (u.pathname === "/return") {
@@ -79,8 +92,9 @@ export class Coordinator extends DurableObject<Env> {
       return json({ ok: true });
     }
     if (u.pathname === "/release") {
-      const { roomId } = (await req.json()) as { roomId: string };
-      if ((await this.active(session)) === roomId)
+      const { roomId, token } = (await req.json()) as { roomId: string; token?: string };
+      const assigned = await this.ctx.storage.get<{ roomId: string; token?: string }>("active:" + session);
+      if (assigned?.roomId === roomId && (!assigned.token || assigned.token === token))
         await this.ctx.storage.delete("active:" + session);
       return json({ ok: true });
     }
@@ -153,8 +167,10 @@ export class Coordinator extends DurableObject<Env> {
     const data = JSON.parse(body || "{}");
     if (data.version !== GAME_VERSION)
       return json({ error: "Please reload to update the game." }, 409);
+    const join = /^\/api\/rooms\/([a-f0-9-]{36})\/join$/.exec(u.pathname);
+    const activeRoom = await this.active(session);
     if (
-      (await this.active(session)) ||
+      (activeRoom && activeRoom !== join?.[1]) ||
       this.ctx
         .getWebSockets()
         .some(
@@ -184,10 +200,9 @@ export class Coordinator extends DurableObject<Env> {
         invite,
         members: [{ session, token, name: displayName(data.name) }],
       });
-      await this.assign(session, id);
+      await this.assign(session, id, token, "invite");
       return json({ roomId: id, token, invite });
     }
-    const join = /^\/api\/rooms\/([a-f0-9-]{36})\/join$/.exec(u.pathname);
     if (join) {
       const token = crypto.randomUUID();
       const response = await this.room(join[1], "/join", {
@@ -195,7 +210,7 @@ export class Coordinator extends DurableObject<Env> {
         member: { session, token, name: displayName(data.name) },
       });
       if (!response.ok) return response;
-      await this.assign(session, join[1]);
+      await this.assign(session, join[1], token, "invite");
       return json({ roomId: join[1], token });
     }
     return json({ error: "Not found." }, 404);
@@ -229,7 +244,7 @@ export class Coordinator extends DurableObject<Env> {
       const id = crypto.randomUUID();
       await this.room(id, "/init", { id, kind: "random", members });
       for (let i = 0; i < 2; i++) {
-        await this.assign(members[i].session, id);
+        await this.assign(members[i].session, id, members[i].token);
         sockets[i].send(
           JSON.stringify({
             type: "matched",
@@ -315,14 +330,12 @@ export class Coordinator extends DurableObject<Env> {
           await this.ctx.storage.delete(key);
       if (this.ctx.getWebSockets().length)
         await this.ctx.storage.setAlarm(Date.now() + 30000);
-      else if (
-        [...all.entries()].some(
-          ([key, value]) =>
-            (key.startsWith("active:") || key.startsWith("return:")) &&
-            (value.expires ?? 0) > Date.now(),
-        )
-      )
-        await this.ctx.storage.setAlarm(Date.now() + 60000);
+      else {
+        const expirations = [...all.entries()]
+          .filter(([key, value]) => (key.startsWith("active:") || key.startsWith("return:")) && (value.expires ?? 0) > Date.now())
+          .map(([, value]) => value.expires!);
+        if (expirations.length) await this.ctx.storage.setAlarm(Math.min(...expirations));
+      }
     });
   }
 }

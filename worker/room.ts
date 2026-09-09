@@ -12,6 +12,7 @@ import { json } from "./index";
 interface SocketInfo {
   session: string;
   player: number;
+  token?: string;
   visible: boolean;
   connectedAt: number;
   window: number;
@@ -34,6 +35,12 @@ export class Room extends DurableObject<Env> {
   private savedAt = 0;
   private metrics = { messages: 0, connections: 0, writes: 0, chunks: 0 };
   private reserving = false;
+  private get expiresAt(): number {
+    return this.touched + (this.engine.state.kind === "invite" ? 86_400_000 : 600_000);
+  }
+  private get expired(): boolean {
+    return !["playing", "suspended", "countdown"].includes(this.engine.state.phase) && Date.now() >= this.expiresAt;
+  }
   private serial: Promise<unknown> = Promise.resolve();
   private run<T>(fn: () => Promise<T>): Promise<T> {
     const p = this.serial.then(fn);
@@ -84,6 +91,17 @@ export class Room extends DurableObject<Env> {
           /* closeイベントで回収 */
         }
       }
+  }
+  private replaceConnection(player: number, except?: WebSocket): void {
+    for (const ws of this.ctx.getWebSockets()) {
+      const info: SocketInfo = ws.deserializeAttachment();
+      if (ws === except || info.player !== player) continue;
+      info.player = -1;
+      ws.serializeAttachment(info);
+      ws.close(4001, "opened in another tab");
+    }
+    if (this.engine.state.seats[player]?.connected)
+      this.engine.disconnect(player, Date.now());
   }
   private async persist(): Promise<void> {
     const frame = this.engine.history.length;
@@ -164,7 +182,7 @@ export class Room extends DurableObject<Env> {
           clearInterval(this.interval!);
           this.interval = null;
           await this.persist();
-          await this.ctx.storage.setAlarm(Date.now() + 600000);
+          await this.ctx.storage.setAlarm(this.expiresAt);
         }
       }).catch(() => {
         this.engine.finish(-1, "server");
@@ -176,6 +194,11 @@ export class Room extends DurableObject<Env> {
   }
   private async handle(req: Request): Promise<Response> {
     const path = new URL(req.url).pathname;
+    if (path === "/membership" || path.endsWith("/status")) {
+      await req.arrayBuffer();
+      return json({ expired: !this.id || this.expired, active: !!this.id && !this.expired && this.engine.state.phase !== "closed" &&
+        this.engine.members.some((m) => m?.session === req.headers.get("X-Session")) });
+    }
     if (path === "/init") {
       if (this.id) return json({ error: "Room already exists." }, 409);
       const data = (await req.json()) as {
@@ -189,7 +212,7 @@ export class Room extends DurableObject<Env> {
       this.engine = new RoomEngine(data.kind, (i, m) => this.send(i, m));
       data.members.forEach((m) => this.engine.join(m));
       await this.persist();
-      await this.ctx.storage.setAlarm(Date.now() + 600000);
+      await this.ctx.storage.setAlarm(this.expiresAt);
       if (data.kind === "random") this.wake();
       return json({ ok: true });
     }
@@ -198,17 +221,35 @@ export class Room extends DurableObject<Env> {
         invite: string;
         member: Member;
       };
+      if (!this.id || this.expired) return json({ error: "This invite link has expired. Ask for a new link." }, 410);
       if (!this.invite || invite !== this.invite)
         return json({ error: "Invalid invite link." }, 403);
+      if (this.engine.state.phase === "closed") {
+        // 更新前に LEAVE で閉じた部屋も、有効な招待があれば再利用できる。
+        for (const ws of this.ctx.getWebSockets()) {
+          const info: SocketInfo = ws.deserializeAttachment();
+          info.player = -1;
+          ws.serializeAttachment(info);
+          ws.close(1000, "room reopened");
+        }
+        this.engine = new RoomEngine("invite", (i, m) => this.send(i, m));
+        this.savedFrame = 0;
+      }
       try {
+        const returning = this.engine.members.findIndex((m) => m?.session === member.session);
+        if (returning >= 0) this.replaceConnection(returning);
         this.engine.join(member);
+        // URLからの明示的な参加では、自動再接続の試行上限をリセットする。
+        this.metrics.connections = 0;
+        this.touched = Date.now();
         await this.persist();
+        await this.ctx.storage.setAlarm(this.expiresAt);
         return json({ ok: true });
       } catch (e) {
         return json({ error: (e as Error).message }, 409);
       }
     }
-    if (!this.id || this.engine.state.phase === "closed")
+    if (!this.id || this.expired || this.engine.state.phase === "closed")
       return json({ error: "This room has closed." }, 410);
     if (
       path.endsWith("/metrics") &&
@@ -250,6 +291,7 @@ export class Room extends DurableObject<Env> {
     raw: string | ArrayBuffer,
   ): Promise<void> {
     await this.run(async () => {
+      if (ws.readyState !== WebSocket.OPEN) return;
       const a: SocketInfo = ws.deserializeAttachment();
       this.metrics.messages++;
       if (this.metrics.messages > 29000) {
@@ -279,12 +321,13 @@ export class Room extends DurableObject<Env> {
               member?.session === a.session && member?.token === m.token,
           );
           if (i < 0) throw new Error("Reconnect details do not match.");
-          if (this.engine.state.seats[i]?.connected)
-            throw new Error("Already connected in another tab.");
+          if (this.engine.state.seats[i]?.connected) this.replaceConnection(i, ws);
           a.visible = m.visible === true;
           a.player = i;
+          a.token = m.token;
           ws.serializeAttachment(a);
           this.engine.connect(i, m.visible === true, Date.now());
+          this.touched = Date.now();
           await this.persist();
         } else {
           this.engine.message(a.player, m, Date.now());
@@ -292,13 +335,20 @@ export class Room extends DurableObject<Env> {
             a.visible = m.visible === true;
             ws.serializeAttachment(a);
           }
-          if (this.engine.state.phase === "waiting" && m.type !== "ping")
+          if (this.engine.state.phase === "waiting" && m.type !== "ping" && m.type !== "leave")
             await this.persist();
           if (m.type === "leave") {
+            a.player = -1;
+            ws.serializeAttachment(a);
+            if (this.engine.state.kind === "invite") this.savedFrame = 0;
+            this.touched = Date.now();
+            await this.persist();
             this.ctx.waitUntil(
-              this.release().then(() => {
-                ws.send(JSON.stringify({ type: "left" }));
-                ws.close(1000, "left");
+              this.release(this.engine.state.kind === "invite" ? [{ session: a.session, token: a.token }] : undefined).then(() => {
+                if (ws.readyState === WebSocket.OPEN) {
+                  ws.send(JSON.stringify({ type: "left" }));
+                  ws.close(1000, "left");
+                }
               }),
             );
           }
@@ -320,8 +370,9 @@ export class Room extends DurableObject<Env> {
           );
         }
       } catch (e) {
+        if (ws.readyState !== WebSocket.OPEN) return;
         ws.send(
-          JSON.stringify({ type: "error", message: (e as Error).message }),
+          JSON.stringify({ type: "error", message: (e as Error).message, fatal: a.player < 0 }),
         );
         if (a.player < 0 || a.count > 50) ws.close(1008);
       }
@@ -384,16 +435,15 @@ export class Room extends DurableObject<Env> {
   override async webSocketError(ws: WebSocket): Promise<void> {
     await this.webSocketClose(ws);
   }
-  private async release(): Promise<void> {
-    for (const m of this.engine.members)
-      if (m)
+  private async release(members: { session: string; token?: string }[] = this.engine.members.flatMap((m) => m ? [m] : [])): Promise<void> {
+    for (const member of members)
         await this.env.COORDINATOR.get(
           this.env.COORDINATOR.idFromName("global"),
         ).fetch(
           new Request("https://internal/release", {
             method: "POST",
-            headers: { "X-Session": m.session },
-            body: JSON.stringify({ roomId: this.id }),
+            headers: { "X-Session": member.session },
+            body: JSON.stringify({ roomId: this.id, token: member.token }),
           }),
         );
   }
@@ -407,11 +457,11 @@ export class Room extends DurableObject<Env> {
       if (
         ["playing", "suspended", "countdown"].includes(this.engine.state.phase)
       ) {
-        await this.ctx.storage.setAlarm(Date.now() + 600000);
+        await this.ctx.storage.setAlarm(this.expiresAt);
         return;
       }
-      if (Date.now() - this.touched < 600000) {
-        await this.ctx.storage.setAlarm(this.touched + 600000);
+      if (!this.expired) {
+        await this.ctx.storage.setAlarm(this.expiresAt);
         return;
       }
       this.engine.state.phase = "closed";

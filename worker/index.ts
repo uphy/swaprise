@@ -38,7 +38,7 @@ export default {
     const headers = new Headers(request.headers);
     headers.set("X-Session", session);
     try {
-      const room = /^\/api\/rooms\/([a-f0-9-]{36})\/(?:ws|metrics)$/.exec(
+      const room = /^\/api\/rooms\/([a-f0-9-]{36})\/(?:ws|metrics|status)$/.exec(
         url.pathname,
       );
       const target = room

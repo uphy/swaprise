@@ -89,6 +89,10 @@ export class OnlineSession extends EventTarget {
         this.attempts = 0;
         this.state = m.state;
         this.player = m.player;
+        if (!m.state.match) {
+          this.lockstep = null;
+          this.syncTarget = null;
+        }
         if (m.state.match && this.lockstep?.match.id !== m.state.match.id) {
           this.lockstep = new Lockstep(m.state.match);
           this.lastHash = -1;
@@ -108,7 +112,14 @@ export class OnlineSession extends EventTarget {
       else if (m.type === "requeue") {
         sessionStorage.removeItem("swaprise.connection.v1");
         this.dispatchEvent(new Event("requeue"));
-      } else if (m.type === "error") this.error = m.message;
+      } else if (m.type === "error") {
+        this.error = m.message;
+        if (m.fatal) {
+          sessionStorage.removeItem("swaprise.connection.v1");
+          this.state = null;
+          this.dispose();
+        }
+      }
       else if (m.type === "pong") {
         this.rtt = Date.now() - m.at;
         this.samples.push(this.rtt);
@@ -119,8 +130,16 @@ export class OnlineSession extends EventTarget {
       }
       this.notify();
     };
-    ws.onclose = () => {
+    ws.onclose = (event) => {
       if (this.disposed) return;
+      if (event.code === 4001) {
+        this.error = "This room was opened in another tab.";
+        this.state = null;
+        sessionStorage.removeItem("swaprise.connection.v1");
+        this.dispose();
+        this.notify();
+        return;
+      }
       if (++this.attempts > 15) {
         this.error =
           "Could not connect. Return to the menu and try again.";

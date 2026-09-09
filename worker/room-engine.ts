@@ -48,8 +48,14 @@ export class RoomEngine {
     };
   }
   join(member: Member): number {
+    if (this.state.phase === "closed")
+      throw new Error("This room has closed.");
     const old = this.members.findIndex((m) => m?.session === member.session);
-    if (old >= 0) return old;
+    if (old >= 0) {
+      this.members[old] = member;
+      this.state.seats[old]!.name = member.name;
+      return old;
+    }
     const i = this.members.findIndex((m) => !m);
     if (i < 0 || this.state.phase !== "waiting")
       throw new Error("This room is full.");
@@ -208,6 +214,22 @@ export class RoomEngine {
       return;
     }
     if (m.type === "leave") {
+      if (this.state.kind === "invite" && this.state.phase !== "closed") {
+        this.members[i] = null;
+        this.state.seats[i] = null;
+        this.state.phase = "waiting";
+        this.state.match = null;
+        this.state.result = null;
+        this.state.startAt = 0;
+        this.history = [];
+        this.pending.forEach((p) => p.clear());
+        this.hashes.clear();
+        this.state.seats.forEach((s) => {
+          if (s) { s.ready = false; s.rematch = false; }
+        });
+        this.publish();
+        return;
+      }
       if (["playing", "suspended"].includes(this.state.phase))
         this.finish(1 - i, "surrender");
       else {

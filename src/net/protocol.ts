@@ -80,7 +80,7 @@ export type ServerMessage =
     }
   | { type: "sync"; matchId: string; frame: number }
   | { type: "pong"; at: number }
-  | { type: "error"; message: string }
+  | { type: "error"; message: string; fatal?: boolean }
   | { type: "matched"; roomId: string; token: string }
   | { type: "queued"; since: number }
   | { type: "requeue" }
