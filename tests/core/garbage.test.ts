@@ -234,6 +234,28 @@ describe("おじゃまの変身", () => {
     expect(garbageRows(b)).toBe(1);
   });
 
+  it("同時に変身する板のパネルは、それだけで縦横に3つ揃う柄にならない（既存のパネルと合わさるのはよい）", () => {
+    for (let seed = 1; seed <= 60; seed++) {
+      const b = new Board({ seed, kinds: 5, initialHeight: 0, noRise: true });
+      b.setColumns([[0], [0], [1], [0], [2], [3]]);
+      // 幅6の板を4枚重ねる。全部が一緒に変身し、各板の最下段（ここでは全段）がパネルになる
+      for (let y = 1; y <= 4; y++) place(b, 0, y, 6, 1);
+      b.cursor.x = 2;
+      b.cursor.y = 0;
+      b.tick({ ...NO_INPUT, swap: true });
+      const events = run(b, 30);
+      expect(events.some((e) => e.type === "garbageTransform"), `seed=${seed}`).toBe(true);
+      const kinds = [1, 2, 3, 4].map((y) => [0, 1, 2, 3, 4, 5].map((x) => b.cells[y][x].revealKind));
+      for (let y = 0; y < 4; y++)
+        for (let x = 0; x < 6; x++) {
+          const k = kinds[y][x];
+          expect(k, `seed=${seed} (${x},${y + 1}) 未決定`).not.toBe(-1);
+          if (x >= 2) expect(k === kinds[y][x - 1] && k === kinds[y][x - 2], `seed=${seed} 横に3つ (${x},${y + 1})\n${b}`).toBe(false);
+          if (y >= 2) expect(k === kinds[y - 1][x] && k === kinds[y - 2][x], `seed=${seed} 縦に3つ (${x},${y + 1})\n${b}`).toBe(false);
+        }
+    }
+  });
+
   it("厚い板の上に乗った厚さ1段の板は、下の板と一緒に全部が通常パネルになる", () => {
     const b = boardWithMatchReady();
     place(b, 0, 1, 6, 2);
