@@ -124,19 +124,18 @@ test("対戦中の反応: 連鎖で成功、おじゃま着地で着地、危険
   });
   chars = await characters(page);
   expect(chars[1].action).toBe("garbage-land");
-  // ニカには着地の素材がないので待機で代替している
-  expect(chars[1].fallback).toBe(true);
+  expect(chars[1].fallback).toBe(false);
 
   // 1P の盤面を危険な高さまで積む。短い反応が終わるとピンチへ
   await page.evaluate(() => (window as any).__swaprise.scene.scene.resume());
   await page.evaluate(() => {
     const p = (window as any).__swaprise;
     const col: number[] = [];
-    for (let r = 0; r < 10; r++) col.push(r % 2);
+    for (let r = 0; r < 9; r++) col.push(r % 2);
     p.game.boards[0].setColumns([col, [0, 1], [2, 3], [4, 0], [1, 2], [3, 4]]);
   });
   await page.waitForFunction(() => (window as any).__swaprise.scene.characters[0].action === "danger");
-  // 2P の着地（待機で代替、0.7 秒）が終わると待機へ戻る
+  // 2P の着地（6 コマ / 12fps = 0.5 秒）が終わると待機へ戻る
   await page.waitForFunction(() => (window as any).__swaprise.scene.characters[1].action === "idle");
   expect((await characters(page))[0].action).toBe("danger");
   await page.screenshot({ path: `${SHOT}/character-danger.png` });

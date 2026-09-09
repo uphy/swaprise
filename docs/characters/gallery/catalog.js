@@ -3239,7 +3239,11 @@ window.CHARACTER_CATALOG = [
       "victory": "nika-victory-pixel-v1",
       "defeat": "nika-defeat-pixel-v4-short",
       "portrait": "nika-portrait-pixel-v2",
-      "icon": "nika-icon-pixel-v1"
+      "icon": "nika-icon-pixel-v1",
+      "danger": "nika-danger-pixel-v1",
+      "success": "nika-success-pixel-v1",
+      "garbage-land": "nika-garbage-land-pixel-v1",
+      "finish": "nika-finish-pixel-v2"
     }
   },
   {

@@ -16,8 +16,8 @@ describe("キャラクターの一覧", () => {
     const pirika = characterById("pirika");
     expect(resolveAction(pirika, "danger")).toBe("danger");
     const nika = characterById("nika");
-    expect(nika.assets.danger).toBeUndefined();
-    expect(resolveAction(nika, "danger")).toBe("idle");
+    expect(nika.assets.danger).toBeDefined();
+    expect(resolveAction({ ...nika, assets: { idle: nika.assets.idle } }, "danger")).toBe("idle");
     const mito = characterById("mito");
     expect(resolveAction(mito, "idle")).toBeNull();
     expect(resolveAction(mito, "portrait")).toBeNull();
