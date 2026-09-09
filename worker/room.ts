@@ -291,6 +291,7 @@ export class Room extends DurableObject<Env> {
     raw: string | ArrayBuffer,
   ): Promise<void> {
     await this.run(async () => {
+      if (ws.readyState !== WebSocket.OPEN) return;
       const a: SocketInfo = ws.deserializeAttachment();
       this.metrics.messages++;
       if (this.metrics.messages > 29000) {
@@ -369,6 +370,7 @@ export class Room extends DurableObject<Env> {
           );
         }
       } catch (e) {
+        if (ws.readyState !== WebSocket.OPEN) return;
         ws.send(
           JSON.stringify({ type: "error", message: (e as Error).message, fatal: a.player < 0 }),
         );
