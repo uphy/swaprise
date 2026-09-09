@@ -69,9 +69,11 @@ export class Game {
       this.boards = [new Board({ ...common, seed: opts.seed })];
     } else {
       const shockMax = opts.shockMax ?? DEFAULT_SHOCK_MAX;
+      // 対戦は原作どおり2人が同じ初期盤面から始める。seed を揃えると初期配置と次の行が一致し、
+      // その後は互いの盤面の違いに応じて乱数の消費がずれていく
       this.boards = [
         new Board({ ...common, seed: opts.seed, shockMax }),
-        new Board({ ...common, seed: opts.seed + 1, shockMax }),
+        new Board({ ...common, seed: opts.seed, shockMax }),
       ];
       if (opts.mode === "cpu") this.cpu = new CpuPlayer(this.boards[1], opts.cpuLevel ?? "normal");
     }

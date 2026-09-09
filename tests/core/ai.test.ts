@@ -17,6 +17,17 @@ function duel(left: CpuLevel, right: CpuLevel, seed: number, maxFrames = 60 * 60
   return game.winner;
 }
 
+describe("対戦の初期盤面", () => {
+  it("2人対戦・CPU 対戦・オンライン（versus）は、2人が同じ初期盤面と同じ次の行から始める", () => {
+    for (const mode of ["versus", "cpu"] as const) {
+      const game = new Game({ mode, seed: 7 });
+      const [a, b] = game.boards;
+      expect(a.toString(), mode).toBe(b.toString());
+      expect(a.nextRow, mode).toEqual(b.nextRow);
+    }
+  });
+});
+
 describe("CPU プレイヤー", () => {
   it("カーソルは1マスずつしか動かず、入れ替えはカーソル位置でだけ行う", () => {
     const b = new Board({ seed: 3, noRise: true });
