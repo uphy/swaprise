@@ -100,8 +100,11 @@ export function clearTiming(level: number): ClearTiming {
   };
 }
 
-/** 危険状態（BGM切り替え）とみなす高さ。この行以上にパネルがあると危険。 */
-export const DANGER_ROW = ROWS - 2;
+/**
+ * 危険状態（ピンチ曲・人物のピンチ・盤面の警告）とみなす高さ。この行以上にパネルか着地したおじゃまがあると危険。
+ * 12 段のうち高さ 9 以上（上に 3 段の余裕）。天井の 1 段手前（ROWS - 2）では、攻撃を受けるまでほぼ入らず遅かった。
+ */
+export const DANGER_ROW = ROWS - 4;
 
 /** 得点の上限（SFC版）。 */
 export const SCORE_CAP = 99_999;
