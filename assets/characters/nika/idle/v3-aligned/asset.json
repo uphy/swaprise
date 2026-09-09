@@ -1,0 +1,181 @@
+{
+  "id": "nika-idle-v3-aligned",
+  "label": "待機 · v3（18コマ補正）",
+  "action": "idle",
+  "kind": "animation",
+  "image": "../v3/nika-idle-v3.png",
+  "prompt": "../v3/nika-idle-v3.prompt.txt",
+  "status": "比較用試作・透過確認済み",
+  "model": "未確認（内蔵画像生成ツール）",
+  "notes": "同じv3画像の表示補正。靴底の左右端の中点でXを揃え、段単位で身長を合わせています（1段目316px、2段目311px、3段目335px）。各コマごとの自動拡大はしません。絵自体の形や色の差は残ります。",
+  "frames": [
+    {
+      "x": 0,
+      "y": 0,
+      "width": 256,
+      "height": 326,
+      "pivotX": 145.0,
+      "baselineY": 323,
+      "scale": 1
+    },
+    {
+      "x": 256,
+      "y": 0,
+      "width": 256,
+      "height": 326,
+      "pivotX": 141.5,
+      "baselineY": 323,
+      "scale": 1
+    },
+    {
+      "x": 512,
+      "y": 0,
+      "width": 256,
+      "height": 326,
+      "pivotX": 139.0,
+      "baselineY": 323,
+      "scale": 1
+    },
+    {
+      "x": 768,
+      "y": 0,
+      "width": 256,
+      "height": 326,
+      "pivotX": 136.0,
+      "baselineY": 323,
+      "scale": 1
+    },
+    {
+      "x": 1024,
+      "y": 0,
+      "width": 256,
+      "height": 326,
+      "pivotX": 133.5,
+      "baselineY": 323,
+      "scale": 1
+    },
+    {
+      "x": 1280,
+      "y": 0,
+      "width": 256,
+      "height": 326,
+      "pivotX": 129.5,
+      "baselineY": 323,
+      "scale": 1
+    },
+    {
+      "x": 0,
+      "y": 326,
+      "width": 256,
+      "height": 318,
+      "pivotX": 145.0,
+      "baselineY": 314,
+      "scale": 1.0160771704180065
+    },
+    {
+      "x": 256,
+      "y": 326,
+      "width": 256,
+      "height": 318,
+      "pivotX": 142.0,
+      "baselineY": 314,
+      "scale": 1.0160771704180065
+    },
+    {
+      "x": 512,
+      "y": 326,
+      "width": 256,
+      "height": 318,
+      "pivotX": 139.5,
+      "baselineY": 314,
+      "scale": 1.0160771704180065
+    },
+    {
+      "x": 768,
+      "y": 326,
+      "width": 256,
+      "height": 318,
+      "pivotX": 136.5,
+      "baselineY": 314,
+      "scale": 1.0160771704180065
+    },
+    {
+      "x": 1024,
+      "y": 326,
+      "width": 256,
+      "height": 318,
+      "pivotX": 133.5,
+      "baselineY": 314,
+      "scale": 1.0160771704180065
+    },
+    {
+      "x": 1280,
+      "y": 326,
+      "width": 256,
+      "height": 318,
+      "pivotX": 130.5,
+      "baselineY": 314,
+      "scale": 1.0160771704180065
+    },
+    {
+      "x": 0,
+      "y": 644,
+      "width": 256,
+      "height": 380,
+      "pivotX": 144.0,
+      "baselineY": 335,
+      "scale": 0.9432835820895522
+    },
+    {
+      "x": 256,
+      "y": 644,
+      "width": 256,
+      "height": 380,
+      "pivotX": 141.5,
+      "baselineY": 335,
+      "scale": 0.9432835820895522
+    },
+    {
+      "x": 512,
+      "y": 644,
+      "width": 256,
+      "height": 380,
+      "pivotX": 138.0,
+      "baselineY": 336,
+      "scale": 0.9432835820895522
+    },
+    {
+      "x": 768,
+      "y": 644,
+      "width": 256,
+      "height": 380,
+      "pivotX": 135.5,
+      "baselineY": 335,
+      "scale": 0.9432835820895522
+    },
+    {
+      "x": 1024,
+      "y": 644,
+      "width": 256,
+      "height": 380,
+      "pivotX": 133.5,
+      "baselineY": 335,
+      "scale": 0.9432835820895522
+    },
+    {
+      "x": 1280,
+      "y": 644,
+      "width": 256,
+      "height": 380,
+      "pivotX": 129.5,
+      "baselineY": 335,
+      "scale": 0.9432835820895522
+    }
+  ],
+  "frameCount": 18,
+  "fps": 4,
+  "lastHoldMs": 0,
+  "scale": 1.05,
+  "reference": "../../../output/imagegen/nika-portrait-v1.png",
+  "loop": true
+}

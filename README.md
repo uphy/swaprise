@@ -3,7 +3,7 @@
 パネルを入れ替えて揃え、せり上がる盤面で連鎖を狙うアクションパズル。ブラウザで動く。
 
 - ゲームロジックは `src/core/` に閉じ込めた純粋な TypeScript。DOM・Phaser に依存しない
-- 描画・入力・音は `src/render/` で Phaser 4 を使う。画像・音声ファイルは使わず、すべてコードで生成する
+- 描画・入力・音は `src/render/` で Phaser 4 を使う。盤面と音はコードで生成する。キャラクター画像は `assets/characters/` で全版を管理し、ビルド前に採用版だけを書き出す（ゲーム画面への表示は今後追加）
 - スマホの高解像度画面でぼやけないよう、canvas は論理サイズ × devicePixelRatio で作り、カメラの zoom で論理座標を保つ（`src/render/hidpi.ts`）
 - 60fps の固定 tick で進む決定論的シミュレーション。同じ seed と入力列なら同じ結果になる
 
@@ -140,3 +140,9 @@ main への push で GitHub Actions が Cloudflare Workers の `swaprise` にデ
 タイミングは `src/core/constants.ts` の `TIMING` にフレーム数でまとめてあり、手触りの調整はここを変える。消去の点滅・柄を見せる時間・1枚ずつ消える間隔・落下前の猶予は `clearTiming(level)` でスピードレベルに応じて短くなる（レベル1が最長、レベル50以上で最短）。
 
 オンライン対戦のローカル確認は`pnpm build && pnpm dev:online`でポート8788を開く。`pnpm e2e:online`で複数ブラウザの通信テストを実行する。構成と無料枠の予算は[オンライン対戦の設計](docs/online-multiplayer.md)を参照。
+
+## キャラクター素材とストーリーの設計
+
+[設定資料](docs/characters/README.md)、[画廊](docs/characters/gallery/index.html)、[素材管理](docs/characters/asset-management.md)を参照。`pnpm assets` で画廊を更新し、`pnpm assets:check` で検証する。`pnpm dev` / `pnpm build` は採用素材を自動生成する。
+
+[導入設計](docs/story-character-design.md)と[実装計画](docs/story-character-implementation-plan.md)に本編・人物表示の方針をまとめている。

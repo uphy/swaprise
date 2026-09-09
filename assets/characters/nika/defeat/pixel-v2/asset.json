@@ -1,0 +1,173 @@
+{
+  "id": "nika-defeat-pixel-v2",
+  "label": "敗北・失敗 · ドット絵（18コマ）",
+  "action": "defeat",
+  "kind": "animation",
+  "image": "nika-defeat-pixel-v2.png",
+  "prompt": "nika-defeat-pixel-v2.prompt.txt",
+  "status": "試作・単色背景を除去",
+  "model": "未確認（内蔵画像生成ツール）",
+  "notes": "同じドット絵立ち絵を参照し、中間姿勢を増やして再生成。マゼンタの色範囲を透明化し、靴底の中心と床位置を合わせています。全コマ共通倍率、12fps、末尾の待ち時間なし。輪郭の色残りや動作の細部は比較用の試作です。",
+  "frames": [
+    {
+      "x": 0,
+      "y": 0,
+      "width": 256,
+      "height": 341,
+      "pivotX": 130.0,
+      "baselineY": 337
+    },
+    {
+      "x": 256,
+      "y": 0,
+      "width": 256,
+      "height": 341,
+      "pivotX": 131.0,
+      "baselineY": 337
+    },
+    {
+      "x": 512,
+      "y": 0,
+      "width": 256,
+      "height": 341,
+      "pivotX": 132.0,
+      "baselineY": 337
+    },
+    {
+      "x": 768,
+      "y": 0,
+      "width": 256,
+      "height": 341,
+      "pivotX": 134.5,
+      "baselineY": 337
+    },
+    {
+      "x": 1024,
+      "y": 0,
+      "width": 256,
+      "height": 341,
+      "pivotX": 134.5,
+      "baselineY": 337
+    },
+    {
+      "x": 1280,
+      "y": 0,
+      "width": 256,
+      "height": 341,
+      "pivotX": 136.5,
+      "baselineY": 337
+    },
+    {
+      "x": 0,
+      "y": 341,
+      "width": 256,
+      "height": 342,
+      "pivotX": 129.5,
+      "baselineY": 330
+    },
+    {
+      "x": 256,
+      "y": 341,
+      "width": 256,
+      "height": 342,
+      "pivotX": 130.5,
+      "baselineY": 330
+    },
+    {
+      "x": 512,
+      "y": 341,
+      "width": 256,
+      "height": 342,
+      "pivotX": 131.5,
+      "baselineY": 330
+    },
+    {
+      "x": 768,
+      "y": 341,
+      "width": 256,
+      "height": 342,
+      "pivotX": 132.0,
+      "baselineY": 330
+    },
+    {
+      "x": 1024,
+      "y": 341,
+      "width": 256,
+      "height": 342,
+      "pivotX": 133.5,
+      "baselineY": 330
+    },
+    {
+      "x": 1280,
+      "y": 341,
+      "width": 256,
+      "height": 342,
+      "pivotX": 136.0,
+      "baselineY": 330
+    },
+    {
+      "x": 0,
+      "y": 683,
+      "width": 256,
+      "height": 341,
+      "pivotX": 128.0,
+      "baselineY": 318
+    },
+    {
+      "x": 256,
+      "y": 683,
+      "width": 256,
+      "height": 341,
+      "pivotX": 129.5,
+      "baselineY": 318
+    },
+    {
+      "x": 512,
+      "y": 683,
+      "width": 256,
+      "height": 341,
+      "pivotX": 133.0,
+      "baselineY": 318
+    },
+    {
+      "x": 768,
+      "y": 683,
+      "width": 256,
+      "height": 341,
+      "pivotX": 136.5,
+      "baselineY": 318
+    },
+    {
+      "x": 1024,
+      "y": 683,
+      "width": 256,
+      "height": 341,
+      "pivotX": 140.0,
+      "baselineY": 318
+    },
+    {
+      "x": 1280,
+      "y": 683,
+      "width": 256,
+      "height": 341,
+      "pivotX": 141.5,
+      "baselineY": 318
+    }
+  ],
+  "frameCount": 18,
+  "fps": 12,
+  "lastHoldMs": 0,
+  "scale": 1.04938,
+  "pixelArt": true,
+  "history": [
+    {
+      "label": "背景除去前",
+      "url": "nika-defeat-pixel-v2-magenta.png"
+    },
+    {
+      "label": "参照ドット絵",
+      "url": "../../portrait/pixel-v1/nika-portrait-pixel-v1.png"
+    }
+  ],
+  "loop": false
+}

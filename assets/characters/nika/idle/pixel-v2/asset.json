@@ -1,0 +1,40 @@
+{
+  "id": "nika-idle-pixel-v2",
+  "label": "待機 · ドット絵（単色背景から透過）",
+  "action": "idle",
+  "kind": "animation",
+  "image": "nika-idle-pixel-v2.png",
+  "prompt": "nika-idle-pixel-v2.prompt.txt",
+  "status": "採用版",
+  "model": "未確認（内蔵画像生成ツール）",
+  "notes": "3列×2行を512px四方で切り出し。靴底の中心（274.5、255.5、236.5px、両段共通）を揃えて横位置を補正しています。倍率は全コマ共通。輪郭のマゼンタと体形の差は残っています。",
+  "columns": 3,
+  "rows": 2,
+  "frameWidth": 512,
+  "frameHeight": 512,
+  "frameCount": 6,
+  "fps": 4,
+  "lastHoldMs": 0,
+  "scale": 0.7,
+  "baselineY": 505,
+  "pixelArt": true,
+  "history": [
+    {
+      "label": "背景除去前",
+      "url": "nika-idle-pixel-v2-magenta.png"
+    },
+    {
+      "label": "参照したドット絵立ち絵",
+      "url": "../../portrait/pixel-v1/nika-portrait-pixel-v1.png"
+    }
+  ],
+  "pivotX": [
+    274.5,
+    255.5,
+    236.5,
+    274.5,
+    255.5,
+    236.5
+  ],
+  "loop": true
+}

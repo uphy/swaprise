@@ -1,0 +1,5 @@
+Create a pixel-art animation SPRITE SHEET of this exact referenced jerboa character. Seamless calm idle loop: gentle breathing and tiny ear movement, feet stay planted. A few frames, around six, is enough. Keep the same design, pixel scale, body proportions and fixed camera in all frames. All frames in a regular grid, read left to right then top to bottom, every whole character including ears and tail fits its cell with margin. Uniform solid bright magenta #FF00FF background. No shadows, gradients, grid lines, text, speech bubbles or extra symbols.
+
+Reference: pirika-portrait-pixel-v1-magenta.png
+
+Background correction: Replace only the background of this entire sprite sheet with uniform solid bright magenta #FF00FF. Remove all background glow, shadows and stray colored fringe outside the character. Preserve every character pose, position, size and all frames exactly. No transparency, no gradient, no text.

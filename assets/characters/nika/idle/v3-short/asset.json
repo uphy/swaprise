@@ -1,0 +1,127 @@
+{
+  "id": "nika-idle-v3-short",
+  "label": "待機 · v3（12コマ補正）",
+  "action": "idle",
+  "kind": "animation",
+  "image": "../v3/nika-idle-v3.png",
+  "prompt": "../v3/nika-idle-v3.prompt.txt",
+  "status": "比較用試作・透過確認済み",
+  "model": "未確認（内蔵画像生成ツール）",
+  "notes": "同じv3画像の1・2段目だけを使用。3段目を除いた12コマで、瞬きは残しています。靴底を基準にXを揃え、2段目だけ約1.6%拡大。12fpsで連続ループ再生します。",
+  "frames": [
+    {
+      "x": 0,
+      "y": 0,
+      "width": 256,
+      "height": 326,
+      "pivotX": 145.0,
+      "baselineY": 323,
+      "scale": 1
+    },
+    {
+      "x": 256,
+      "y": 0,
+      "width": 256,
+      "height": 326,
+      "pivotX": 141.5,
+      "baselineY": 323,
+      "scale": 1
+    },
+    {
+      "x": 512,
+      "y": 0,
+      "width": 256,
+      "height": 326,
+      "pivotX": 139.0,
+      "baselineY": 323,
+      "scale": 1
+    },
+    {
+      "x": 768,
+      "y": 0,
+      "width": 256,
+      "height": 326,
+      "pivotX": 136.0,
+      "baselineY": 323,
+      "scale": 1
+    },
+    {
+      "x": 1024,
+      "y": 0,
+      "width": 256,
+      "height": 326,
+      "pivotX": 133.5,
+      "baselineY": 323,
+      "scale": 1
+    },
+    {
+      "x": 1280,
+      "y": 0,
+      "width": 256,
+      "height": 326,
+      "pivotX": 129.5,
+      "baselineY": 323,
+      "scale": 1
+    },
+    {
+      "x": 0,
+      "y": 326,
+      "width": 256,
+      "height": 318,
+      "pivotX": 145.0,
+      "baselineY": 314,
+      "scale": 1.0160771704180065
+    },
+    {
+      "x": 256,
+      "y": 326,
+      "width": 256,
+      "height": 318,
+      "pivotX": 142.0,
+      "baselineY": 314,
+      "scale": 1.0160771704180065
+    },
+    {
+      "x": 512,
+      "y": 326,
+      "width": 256,
+      "height": 318,
+      "pivotX": 139.5,
+      "baselineY": 314,
+      "scale": 1.0160771704180065
+    },
+    {
+      "x": 768,
+      "y": 326,
+      "width": 256,
+      "height": 318,
+      "pivotX": 136.5,
+      "baselineY": 314,
+      "scale": 1.0160771704180065
+    },
+    {
+      "x": 1024,
+      "y": 326,
+      "width": 256,
+      "height": 318,
+      "pivotX": 133.5,
+      "baselineY": 314,
+      "scale": 1.0160771704180065
+    },
+    {
+      "x": 1280,
+      "y": 326,
+      "width": 256,
+      "height": 318,
+      "pivotX": 130.5,
+      "baselineY": 314,
+      "scale": 1.0160771704180065
+    }
+  ],
+  "frameCount": 12,
+  "fps": 4,
+  "lastHoldMs": 0,
+  "scale": 1.05,
+  "reference": "../../../output/imagegen/nika-portrait-v1.png",
+  "loop": true
+}

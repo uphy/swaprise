@@ -1,0 +1,100 @@
+{
+  "source": "pirika-idle-pixel-v1-magenta.png",
+  "chromaKey": {
+    "redMin": 130,
+    "blueMin": 110,
+    "redMinusGreen": 65,
+    "blueMinusGreen": 55
+  },
+  "scale": 0.5205047318611987,
+  "cell": [
+    384,
+    432
+  ],
+  "frames": [
+    {
+      "source": {
+        "x": 25,
+        "y": 59,
+        "width": 327,
+        "height": 634,
+        "pivotX": 213.5
+      },
+      "destination": [
+        99,
+        78
+      ],
+      "lift": 0
+    },
+    {
+      "source": {
+        "x": 358,
+        "y": 58,
+        "width": 327,
+        "height": 635,
+        "pivotX": 212.5
+      },
+      "destination": [
+        99,
+        77
+      ],
+      "lift": 0
+    },
+    {
+      "source": {
+        "x": 689,
+        "y": 72,
+        "width": 326,
+        "height": 621,
+        "pivotX": 213.0
+      },
+      "destination": [
+        99,
+        85
+      ],
+      "lift": 0
+    },
+    {
+      "source": {
+        "x": 25,
+        "y": 818,
+        "width": 327,
+        "height": 625,
+        "pivotX": 213.5
+      },
+      "destination": [
+        99,
+        83
+      ],
+      "lift": 0
+    },
+    {
+      "source": {
+        "x": 356,
+        "y": 819,
+        "width": 329,
+        "height": 624,
+        "pivotX": 214.5
+      },
+      "destination": [
+        98,
+        83
+      ],
+      "lift": 0
+    },
+    {
+      "source": {
+        "x": 689,
+        "y": 810,
+        "width": 326,
+        "height": 634,
+        "pivotX": 212.5
+      },
+      "destination": [
+        99,
+        78
+      ],
+      "lift": 0
+    }
+  ]
+}

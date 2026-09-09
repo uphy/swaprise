@@ -27,7 +27,7 @@ export default defineConfig({
     // ホーム画面に追加してオフラインでも開けるようにする。Service Worker はビルド成果物を丸ごと precache する
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["icons/*.png", "vibrate-test.html"],
+      includeAssets: ["icons/*.png", "vibrate-test.html", "characters/manifest.json"],
       manifest: {
         name: "Swaprise",
         short_name: "Swaprise",

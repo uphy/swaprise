@@ -1,0 +1,1397 @@
+{
+  "date": "2026-09-09",
+  "files": [
+    {
+      "source": "output/imagegen/izel-danger-pixel-v1-keyed.png",
+      "destination": "assets/characters/izel/danger/pixel-v1/izel-danger-pixel-v1-keyed.png",
+      "sourceSha256": "2fb44adb1c1786350b33ad389edfb4da2f2ec61ec9dddead59315c59b310c9d3",
+      "importedSha256": "2fb44adb1c1786350b33ad389edfb4da2f2ec61ec9dddead59315c59b310c9d3"
+    },
+    {
+      "source": "output/imagegen/izel-danger-pixel-v1-magenta.png",
+      "destination": "assets/characters/izel/danger/pixel-v1/izel-danger-pixel-v1-magenta.png",
+      "sourceSha256": "9eaa8707a6df69fd4d94ecfe6f6ed6741bc6109d23c29a0392f8b08a1d80ce57",
+      "importedSha256": "9eaa8707a6df69fd4d94ecfe6f6ed6741bc6109d23c29a0392f8b08a1d80ce57"
+    },
+    {
+      "source": "output/imagegen/izel-danger-pixel-v1.frames.json",
+      "destination": "assets/characters/izel/danger/pixel-v1/izel-danger-pixel-v1.frames.json",
+      "sourceSha256": "f73adb8427c8a32ac1ce2b2d2ec3e522a0be715159c4887aaef4a8f2c680a3da",
+      "importedSha256": "f73adb8427c8a32ac1ce2b2d2ec3e522a0be715159c4887aaef4a8f2c680a3da"
+    },
+    {
+      "source": "output/imagegen/izel-danger-pixel-v1.png",
+      "destination": "assets/characters/izel/danger/pixel-v1/izel-danger-pixel-v1.png",
+      "sourceSha256": "596ec522aed239d70cda2a8849c6ffd1805da5375b678d19d1e995f4b20067fd",
+      "importedSha256": "596ec522aed239d70cda2a8849c6ffd1805da5375b678d19d1e995f4b20067fd"
+    },
+    {
+      "source": "output/imagegen/izel-danger-pixel-v1.prompt.txt",
+      "destination": "assets/characters/izel/danger/pixel-v1/izel-danger-pixel-v1.prompt.txt",
+      "sourceSha256": "97d0fdeb2a5f8c6cf4685fbae81c662ef287c410a68e5f61a1f22c5b41d3adc2",
+      "importedSha256": "97d0fdeb2a5f8c6cf4685fbae81c662ef287c410a68e5f61a1f22c5b41d3adc2"
+    },
+    {
+      "source": "output/imagegen/izel-defeat-pixel-v1-generated.png",
+      "destination": "assets/characters/izel/defeat/pixel-v1/izel-defeat-pixel-v1-generated.png",
+      "sourceSha256": "b9bf701d0592df55076e1e3deb4364d7be35e6fa615a247183d5ce670bb10c4b",
+      "importedSha256": "b9bf701d0592df55076e1e3deb4364d7be35e6fa615a247183d5ce670bb10c4b"
+    },
+    {
+      "source": "output/imagegen/izel-defeat-pixel-v1-keyed.png",
+      "destination": "assets/characters/izel/defeat/pixel-v1/izel-defeat-pixel-v1-keyed.png",
+      "sourceSha256": "cc3597c5fc522792047f1858d35102e76b7f80744e727a0800f7edbfdbcca12b",
+      "importedSha256": "cc3597c5fc522792047f1858d35102e76b7f80744e727a0800f7edbfdbcca12b"
+    },
+    {
+      "source": "output/imagegen/izel-defeat-pixel-v1-magenta.png",
+      "destination": "assets/characters/izel/defeat/pixel-v1/izel-defeat-pixel-v1-magenta.png",
+      "sourceSha256": "b2df01d54d97059b00cf3323ba1a979747d31b609dba9bd9252df65d18c00a4a",
+      "importedSha256": "b2df01d54d97059b00cf3323ba1a979747d31b609dba9bd9252df65d18c00a4a"
+    },
+    {
+      "source": "output/imagegen/izel-defeat-pixel-v1.frames.json",
+      "destination": "assets/characters/izel/defeat/pixel-v1/izel-defeat-pixel-v1.frames.json",
+      "sourceSha256": "29c5a858dba756572c8ccd2b4b58ea9cac0b5e8f7b1cf0ee2117f2a167f2d61d",
+      "importedSha256": "29c5a858dba756572c8ccd2b4b58ea9cac0b5e8f7b1cf0ee2117f2a167f2d61d"
+    },
+    {
+      "source": "output/imagegen/izel-defeat-pixel-v1.png",
+      "destination": "assets/characters/izel/defeat/pixel-v1/izel-defeat-pixel-v1.png",
+      "sourceSha256": "6dde7e7f81b76163e6c901020ae2d5d85f71a79c7a407dd8e5b8ac561e0f781e",
+      "importedSha256": "6dde7e7f81b76163e6c901020ae2d5d85f71a79c7a407dd8e5b8ac561e0f781e"
+    },
+    {
+      "source": "output/imagegen/izel-defeat-pixel-v1.prompt.txt",
+      "destination": "assets/characters/izel/defeat/pixel-v1/izel-defeat-pixel-v1.prompt.txt",
+      "sourceSha256": "150b937d60bd712beefac8c4e3599541b2844d33f5c2a83e82bba8f847f1ae4b",
+      "importedSha256": "150b937d60bd712beefac8c4e3599541b2844d33f5c2a83e82bba8f847f1ae4b"
+    },
+    {
+      "source": "output/imagegen/izel-finish-pixel-v1-keyed.png",
+      "destination": "assets/characters/izel/finish/pixel-v1/izel-finish-pixel-v1-keyed.png",
+      "sourceSha256": "01da91207329ea5753356c0e445c0651add384585e1024d0bfb53a9146d63f1d",
+      "importedSha256": "01da91207329ea5753356c0e445c0651add384585e1024d0bfb53a9146d63f1d"
+    },
+    {
+      "source": "output/imagegen/izel-finish-pixel-v1-magenta.png",
+      "destination": "assets/characters/izel/finish/pixel-v1/izel-finish-pixel-v1-magenta.png",
+      "sourceSha256": "89d98e48d8c506f50e500c4c68ff82188587d55e0872922b0f3e7483cdfae81f",
+      "importedSha256": "89d98e48d8c506f50e500c4c68ff82188587d55e0872922b0f3e7483cdfae81f"
+    },
+    {
+      "source": "output/imagegen/izel-finish-pixel-v1.frames.json",
+      "destination": "assets/characters/izel/finish/pixel-v1/izel-finish-pixel-v1.frames.json",
+      "sourceSha256": "2f73f948416937c6b311ae1dbbef302910f7b65ecdb414c2fe01df246d453839",
+      "importedSha256": "2f73f948416937c6b311ae1dbbef302910f7b65ecdb414c2fe01df246d453839"
+    },
+    {
+      "source": "output/imagegen/izel-finish-pixel-v1.png",
+      "destination": "assets/characters/izel/finish/pixel-v1/izel-finish-pixel-v1.png",
+      "sourceSha256": "70e87ed5be7e788e10f87efc1eae7d1c9b6a6747de7d705aae938436304cea3a",
+      "importedSha256": "70e87ed5be7e788e10f87efc1eae7d1c9b6a6747de7d705aae938436304cea3a"
+    },
+    {
+      "source": "output/imagegen/izel-finish-pixel-v1.prompt.txt",
+      "destination": "assets/characters/izel/finish/pixel-v1/izel-finish-pixel-v1.prompt.txt",
+      "sourceSha256": "28d4519bb62cc639c720ce4b327739f700028b8ab701a9bbab50c265438e351f",
+      "importedSha256": "28d4519bb62cc639c720ce4b327739f700028b8ab701a9bbab50c265438e351f"
+    },
+    {
+      "source": "output/imagegen/izel-garbage-land-pixel-v1-generated.png",
+      "destination": "assets/characters/izel/garbage-land/pixel-v1/izel-garbage-land-pixel-v1-generated.png",
+      "sourceSha256": "51a7571a5e6735ff8c456be92efe0ecbb81b2c1db04e7394d5e60f062abf34b0",
+      "importedSha256": "51a7571a5e6735ff8c456be92efe0ecbb81b2c1db04e7394d5e60f062abf34b0"
+    },
+    {
+      "source": "output/imagegen/izel-garbage-land-pixel-v1-keyed.png",
+      "destination": "assets/characters/izel/garbage-land/pixel-v1/izel-garbage-land-pixel-v1-keyed.png",
+      "sourceSha256": "17167edd28cb8f34618cfb760e3f95a40789d6ecd5df1f0bbf8ce3b0475875d4",
+      "importedSha256": "17167edd28cb8f34618cfb760e3f95a40789d6ecd5df1f0bbf8ce3b0475875d4"
+    },
+    {
+      "source": "output/imagegen/izel-garbage-land-pixel-v1-magenta.png",
+      "destination": "assets/characters/izel/garbage-land/pixel-v1/izel-garbage-land-pixel-v1-magenta.png",
+      "sourceSha256": "1747d7476c7403541316c932269106e28032b779233de37140c96ee443b1ecbe",
+      "importedSha256": "1747d7476c7403541316c932269106e28032b779233de37140c96ee443b1ecbe"
+    },
+    {
+      "source": "output/imagegen/izel-garbage-land-pixel-v1.frames.json",
+      "destination": "assets/characters/izel/garbage-land/pixel-v1/izel-garbage-land-pixel-v1.frames.json",
+      "sourceSha256": "150ab47cb86aaf1dec230e698ec98fefc4c476244a41198e4fad3da1211079d0",
+      "importedSha256": "150ab47cb86aaf1dec230e698ec98fefc4c476244a41198e4fad3da1211079d0"
+    },
+    {
+      "source": "output/imagegen/izel-garbage-land-pixel-v1.png",
+      "destination": "assets/characters/izel/garbage-land/pixel-v1/izel-garbage-land-pixel-v1.png",
+      "sourceSha256": "fb16a379b014bb8801dc67eff135fd96962cc9c7ef4b6fbb5199e034402bdfb3",
+      "importedSha256": "fb16a379b014bb8801dc67eff135fd96962cc9c7ef4b6fbb5199e034402bdfb3"
+    },
+    {
+      "source": "output/imagegen/izel-garbage-land-pixel-v1.prompt.txt",
+      "destination": "assets/characters/izel/garbage-land/pixel-v1/izel-garbage-land-pixel-v1.prompt.txt",
+      "sourceSha256": "afb3c5b5b0d02c5e1ffb67fc0a714d0c7589395aa5f8cac05c0c6c9db50c3c73",
+      "importedSha256": "afb3c5b5b0d02c5e1ffb67fc0a714d0c7589395aa5f8cac05c0c6c9db50c3c73"
+    },
+    {
+      "source": "output/imagegen/izel-generation-review.md",
+      "destination": "assets/characters/izel/notes/izel-generation-review.md",
+      "sourceSha256": "e5ddc068603ac1048f93d8cd58953ab9fbe72d80ec42f673c29aa8f2e99bedcd",
+      "importedSha256": "e5ddc068603ac1048f93d8cd58953ab9fbe72d80ec42f673c29aa8f2e99bedcd"
+    },
+    {
+      "source": "output/imagegen/izel-icon-pixel-v1.png",
+      "destination": "assets/characters/izel/icon/pixel-v1/izel-icon-pixel-v1.png",
+      "sourceSha256": "88bbd0e00e718abb02041c2329e515a50445bfb88155a97436800c430aa243b7",
+      "importedSha256": "88bbd0e00e718abb02041c2329e515a50445bfb88155a97436800c430aa243b7"
+    },
+    {
+      "source": "output/imagegen/izel-icon-pixel-v1.prompt.txt",
+      "destination": "assets/characters/izel/icon/pixel-v1/izel-icon-pixel-v1.prompt.txt",
+      "sourceSha256": "2b02c36f84330b05e117b4a8704d163b1403667e35f179a48178684c0e7f1ccb",
+      "importedSha256": "2b02c36f84330b05e117b4a8704d163b1403667e35f179a48178684c0e7f1ccb"
+    },
+    {
+      "source": "output/imagegen/izel-idle-pixel-v1-generated.png",
+      "destination": "assets/characters/izel/idle/pixel-v1/izel-idle-pixel-v1-generated.png",
+      "sourceSha256": "866bc56d2b5c19eadc2b54ce3165ed68f23e2404c62ea69bc5a5b5b2ca80a7a2",
+      "importedSha256": "866bc56d2b5c19eadc2b54ce3165ed68f23e2404c62ea69bc5a5b5b2ca80a7a2"
+    },
+    {
+      "source": "output/imagegen/izel-idle-pixel-v1-keyed.png",
+      "destination": "assets/characters/izel/idle/pixel-v1/izel-idle-pixel-v1-keyed.png",
+      "sourceSha256": "7065a8a96daa9772c7be017360e562c8e6d4d4bc1448d3d33d283dc72e9685f2",
+      "importedSha256": "7065a8a96daa9772c7be017360e562c8e6d4d4bc1448d3d33d283dc72e9685f2"
+    },
+    {
+      "source": "output/imagegen/izel-idle-pixel-v1-magenta.png",
+      "destination": "assets/characters/izel/idle/pixel-v1/izel-idle-pixel-v1-magenta.png",
+      "sourceSha256": "5760d5e13fb7904668b22a2bffd322b5807eb64edd18e5a1cf5bfe3f0a1a816f",
+      "importedSha256": "5760d5e13fb7904668b22a2bffd322b5807eb64edd18e5a1cf5bfe3f0a1a816f"
+    },
+    {
+      "source": "output/imagegen/izel-idle-pixel-v1.frames.json",
+      "destination": "assets/characters/izel/idle/pixel-v1/izel-idle-pixel-v1.frames.json",
+      "sourceSha256": "58be1e80269df19a03b5e4d1da04905a43ca472494cbc9956d220720b96ac52b",
+      "importedSha256": "58be1e80269df19a03b5e4d1da04905a43ca472494cbc9956d220720b96ac52b"
+    },
+    {
+      "source": "output/imagegen/izel-idle-pixel-v1.png",
+      "destination": "assets/characters/izel/idle/pixel-v1/izel-idle-pixel-v1.png",
+      "sourceSha256": "8b56df29cd281c18d3586989c9279908bdc0a90b2bddb972e39306f195093311",
+      "importedSha256": "8b56df29cd281c18d3586989c9279908bdc0a90b2bddb972e39306f195093311"
+    },
+    {
+      "source": "output/imagegen/izel-idle-pixel-v1.prompt.txt",
+      "destination": "assets/characters/izel/idle/pixel-v1/izel-idle-pixel-v1.prompt.txt",
+      "sourceSha256": "a310a2c6b25fa05cb2b8ba3cbfca09f6856193f53f2eb1543996c82e3ed542bf",
+      "importedSha256": "a310a2c6b25fa05cb2b8ba3cbfca09f6856193f53f2eb1543996c82e3ed542bf"
+    },
+    {
+      "source": "output/imagegen/izel-portrait-pixel-v1-keyed.png",
+      "destination": "assets/characters/izel/portrait/pixel-v1/izel-portrait-pixel-v1-keyed.png",
+      "sourceSha256": "fe41a6b68db82fc935938756f0b414aee7db7272c4d13775b8b14ad228a58d7c",
+      "importedSha256": "fe41a6b68db82fc935938756f0b414aee7db7272c4d13775b8b14ad228a58d7c"
+    },
+    {
+      "source": "output/imagegen/izel-portrait-pixel-v1-magenta.png",
+      "destination": "assets/characters/izel/portrait/pixel-v1/izel-portrait-pixel-v1-magenta.png",
+      "sourceSha256": "d35077a2580037f5d7be4f0c445db2bc3d5f455fae9743a043597bab47216093",
+      "importedSha256": "d35077a2580037f5d7be4f0c445db2bc3d5f455fae9743a043597bab47216093"
+    },
+    {
+      "source": "output/imagegen/izel-portrait-pixel-v1.png",
+      "destination": "assets/characters/izel/portrait/pixel-v1/izel-portrait-pixel-v1.png",
+      "sourceSha256": "fe41a6b68db82fc935938756f0b414aee7db7272c4d13775b8b14ad228a58d7c",
+      "importedSha256": "fe41a6b68db82fc935938756f0b414aee7db7272c4d13775b8b14ad228a58d7c"
+    },
+    {
+      "source": "output/imagegen/izel-portrait-pixel-v1.prompt.txt",
+      "destination": "assets/characters/izel/portrait/pixel-v1/izel-portrait-pixel-v1.prompt.txt",
+      "sourceSha256": "5293d4d87cbc84e26e5930a2eb93b8472dfe41b894048af26b0a8d97ec9dc037",
+      "importedSha256": "5293d4d87cbc84e26e5930a2eb93b8472dfe41b894048af26b0a8d97ec9dc037"
+    },
+    {
+      "source": "output/imagegen/izel-success-pixel-v1-generated.png",
+      "destination": "assets/characters/izel/success/pixel-v1/izel-success-pixel-v1-generated.png",
+      "sourceSha256": "b49aa9d841d5bbb342be42c977bfbfc4b45465c0a9a191081a1b8f6c84353d7a",
+      "importedSha256": "b49aa9d841d5bbb342be42c977bfbfc4b45465c0a9a191081a1b8f6c84353d7a"
+    },
+    {
+      "source": "output/imagegen/izel-success-pixel-v1-keyed.png",
+      "destination": "assets/characters/izel/success/pixel-v1/izel-success-pixel-v1-keyed.png",
+      "sourceSha256": "c3a108b95057be2e734bdba4f190539c9795ff3deb908b0ebac402557deac0d4",
+      "importedSha256": "c3a108b95057be2e734bdba4f190539c9795ff3deb908b0ebac402557deac0d4"
+    },
+    {
+      "source": "output/imagegen/izel-success-pixel-v1-magenta.png",
+      "destination": "assets/characters/izel/success/pixel-v1/izel-success-pixel-v1-magenta.png",
+      "sourceSha256": "10db16e5d7071ea70ea5384e9eb59057354dc5f5e5af75e9878e052be296c166",
+      "importedSha256": "10db16e5d7071ea70ea5384e9eb59057354dc5f5e5af75e9878e052be296c166"
+    },
+    {
+      "source": "output/imagegen/izel-success-pixel-v1.frames.json",
+      "destination": "assets/characters/izel/success/pixel-v1/izel-success-pixel-v1.frames.json",
+      "sourceSha256": "d3e94f29c7635c903917c1d288ee8bb1225c35f8c9e838a5e562597b6fbdce0c",
+      "importedSha256": "d3e94f29c7635c903917c1d288ee8bb1225c35f8c9e838a5e562597b6fbdce0c"
+    },
+    {
+      "source": "output/imagegen/izel-success-pixel-v1.png",
+      "destination": "assets/characters/izel/success/pixel-v1/izel-success-pixel-v1.png",
+      "sourceSha256": "d04970c20b608d389a51c7ae26e3b61e0fbc95bf67aa24c9e16403337fbb2c4a",
+      "importedSha256": "d04970c20b608d389a51c7ae26e3b61e0fbc95bf67aa24c9e16403337fbb2c4a"
+    },
+    {
+      "source": "output/imagegen/izel-success-pixel-v1.prompt.txt",
+      "destination": "assets/characters/izel/success/pixel-v1/izel-success-pixel-v1.prompt.txt",
+      "sourceSha256": "056a0cc0843792184833f510ad14260d4f2cc39e826eead18ad81b61fd5673ef",
+      "importedSha256": "056a0cc0843792184833f510ad14260d4f2cc39e826eead18ad81b61fd5673ef"
+    },
+    {
+      "source": "output/imagegen/izel-victory-pixel-v1-keyed.png",
+      "destination": "assets/characters/izel/victory/pixel-v1/izel-victory-pixel-v1-keyed.png",
+      "sourceSha256": "37ef0e7890ba90419ecca923029a94f97c8d6d6e3def5a9bfc9dbf6dfe720752",
+      "importedSha256": "37ef0e7890ba90419ecca923029a94f97c8d6d6e3def5a9bfc9dbf6dfe720752"
+    },
+    {
+      "source": "output/imagegen/izel-victory-pixel-v1-magenta.png",
+      "destination": "assets/characters/izel/victory/pixel-v1/izel-victory-pixel-v1-magenta.png",
+      "sourceSha256": "6f9766edc31e4eb344ffaffc33a4fb501014d09d45de819e90273fcd6c25a418",
+      "importedSha256": "6f9766edc31e4eb344ffaffc33a4fb501014d09d45de819e90273fcd6c25a418"
+    },
+    {
+      "source": "output/imagegen/izel-victory-pixel-v1.frames.json",
+      "destination": "assets/characters/izel/victory/pixel-v1/izel-victory-pixel-v1.frames.json",
+      "sourceSha256": "60a695ee1af2e2e443082591a3c08f84570da643e9b4ed67bbc90dc8041dcb5a",
+      "importedSha256": "60a695ee1af2e2e443082591a3c08f84570da643e9b4ed67bbc90dc8041dcb5a"
+    },
+    {
+      "source": "output/imagegen/izel-victory-pixel-v1.png",
+      "destination": "assets/characters/izel/victory/pixel-v1/izel-victory-pixel-v1.png",
+      "sourceSha256": "cae6ec2e93b47e2dba0287fb04d8e2a15dd78c9ecf7496053b31b701f72fc6fb",
+      "importedSha256": "cae6ec2e93b47e2dba0287fb04d8e2a15dd78c9ecf7496053b31b701f72fc6fb"
+    },
+    {
+      "source": "output/imagegen/izel-victory-pixel-v1.prompt.txt",
+      "destination": "assets/characters/izel/victory/pixel-v1/izel-victory-pixel-v1.prompt.txt",
+      "sourceSha256": "cabcd4bcc581f972578e9fa6b5b8cb46aaa44019c76e86c9ca54a9ee5f2f496f",
+      "importedSha256": "cabcd4bcc581f972578e9fa6b5b8cb46aaa44019c76e86c9ca54a9ee5f2f496f"
+    },
+    {
+      "source": "output/imagegen/nika-danger-pixel-v1-magenta.png",
+      "destination": "assets/characters/nika/danger/pixel-v1/nika-danger-pixel-v1-magenta.png",
+      "sourceSha256": "592e07bf1f71de8078dd6e85be5b170df459f086bc4e3b4095f4349a9a0cdcaf",
+      "importedSha256": "592e07bf1f71de8078dd6e85be5b170df459f086bc4e3b4095f4349a9a0cdcaf"
+    },
+    {
+      "source": "output/imagegen/nika-danger-pixel-v1.frames.json",
+      "destination": "assets/characters/nika/danger/pixel-v1/nika-danger-pixel-v1.frames.json",
+      "sourceSha256": "d667081cae2a32fb229312c26dee21a67ba598ab55a88c07adfb69e1a913355e",
+      "importedSha256": "d667081cae2a32fb229312c26dee21a67ba598ab55a88c07adfb69e1a913355e"
+    },
+    {
+      "source": "output/imagegen/nika-danger-pixel-v1.png",
+      "destination": "assets/characters/nika/danger/pixel-v1/nika-danger-pixel-v1.png",
+      "sourceSha256": "4c59ce3cff984ad11c0ea720c79805bcf67e7711fa70dff1aeea23332a417116",
+      "importedSha256": "4c59ce3cff984ad11c0ea720c79805bcf67e7711fa70dff1aeea23332a417116"
+    },
+    {
+      "source": "output/imagegen/nika-danger-pixel-v1.prompt.txt",
+      "destination": "assets/characters/nika/danger/pixel-v1/nika-danger-pixel-v1.prompt.txt",
+      "sourceSha256": "b1ae4735f31ec6d75984ddba89e48d80910fafa1a914ba70a5993b14c3141b5f",
+      "importedSha256": "b1ae4735f31ec6d75984ddba89e48d80910fafa1a914ba70a5993b14c3141b5f"
+    },
+    {
+      "source": "output/imagegen/nika-danger-v1.frames.json",
+      "destination": "assets/characters/nika/danger/v1/nika-danger-v1.frames.json",
+      "sourceSha256": "78fe23ab477d8f1c3b6da9d748a6a4cdf8ffd6cfdcb730b6e3c0622e16e98c77",
+      "importedSha256": "78fe23ab477d8f1c3b6da9d748a6a4cdf8ffd6cfdcb730b6e3c0622e16e98c77"
+    },
+    {
+      "source": "output/imagegen/nika-danger-v1.png",
+      "destination": "assets/characters/nika/danger/v1/nika-danger-v1.png",
+      "sourceSha256": "6575b531c45b3edcd062129619955c3c39b91bb622b5685e98e7ccda0b17993f",
+      "importedSha256": "6575b531c45b3edcd062129619955c3c39b91bb622b5685e98e7ccda0b17993f"
+    },
+    {
+      "source": "output/imagegen/nika-danger-v1.prompt.txt",
+      "destination": "assets/characters/nika/danger/v1/nika-danger-v1.prompt.txt",
+      "sourceSha256": "f2c3da64a8107890cc28ba295dfe7ddd528442aeaff801454ae0910769835ef9",
+      "importedSha256": "f2c3da64a8107890cc28ba295dfe7ddd528442aeaff801454ae0910769835ef9"
+    },
+    {
+      "source": "output/imagegen/nika-defeat-pixel-v1-magenta.png",
+      "destination": "assets/characters/nika/defeat/pixel-v1/nika-defeat-pixel-v1-magenta.png",
+      "sourceSha256": "41cf6b7c8d7f53f11c5744dab9d4e20ccef4071d0598717628de3293c20ca61a",
+      "importedSha256": "41cf6b7c8d7f53f11c5744dab9d4e20ccef4071d0598717628de3293c20ca61a"
+    },
+    {
+      "source": "output/imagegen/nika-defeat-pixel-v1.frames.json",
+      "destination": "assets/characters/nika/defeat/pixel-v1/nika-defeat-pixel-v1.frames.json",
+      "sourceSha256": "8f4284b3da4e9db239da0e3af0e1ce4cca42c76bfb84378898f35aa17b847065",
+      "importedSha256": "8f4284b3da4e9db239da0e3af0e1ce4cca42c76bfb84378898f35aa17b847065"
+    },
+    {
+      "source": "output/imagegen/nika-defeat-pixel-v1.png",
+      "destination": "assets/characters/nika/defeat/pixel-v1/nika-defeat-pixel-v1.png",
+      "sourceSha256": "51b0beda8e32052c41a4548e5db255491bba85a89a383ee35f1fda0f777ef229",
+      "importedSha256": "51b0beda8e32052c41a4548e5db255491bba85a89a383ee35f1fda0f777ef229"
+    },
+    {
+      "source": "output/imagegen/nika-defeat-pixel-v1.prompt.txt",
+      "destination": "assets/characters/nika/defeat/pixel-v1/nika-defeat-pixel-v1.prompt.txt",
+      "sourceSha256": "d37e5664d88e934f007704dbdf0896a06f8e4f18df118accf32b756457bffa35",
+      "importedSha256": "d37e5664d88e934f007704dbdf0896a06f8e4f18df118accf32b756457bffa35"
+    },
+    {
+      "source": "output/imagegen/nika-defeat-pixel-v2-magenta.png",
+      "destination": "assets/characters/nika/defeat/pixel-v2/nika-defeat-pixel-v2-magenta.png",
+      "sourceSha256": "2c9975992c954a7913deab3d0f12bee9a15bae0a21627553c0127ab3328b539a",
+      "importedSha256": "2c9975992c954a7913deab3d0f12bee9a15bae0a21627553c0127ab3328b539a"
+    },
+    {
+      "source": "output/imagegen/nika-defeat-pixel-v2.frames.json",
+      "destination": "assets/characters/nika/defeat/pixel-v2/nika-defeat-pixel-v2.frames.json",
+      "sourceSha256": "46dcb066f5a04b941f31b8a9dcb93f0a7ec3c8a0f0d41faa6e7c4d509a5e4a7b",
+      "importedSha256": "46dcb066f5a04b941f31b8a9dcb93f0a7ec3c8a0f0d41faa6e7c4d509a5e4a7b"
+    },
+    {
+      "source": "output/imagegen/nika-defeat-pixel-v2.png",
+      "destination": "assets/characters/nika/defeat/pixel-v2/nika-defeat-pixel-v2.png",
+      "sourceSha256": "7c5b44ff0394a432fb67fd0cd10d1885423989e3f6842fc44c62960d647b7a2a",
+      "importedSha256": "7c5b44ff0394a432fb67fd0cd10d1885423989e3f6842fc44c62960d647b7a2a"
+    },
+    {
+      "source": "output/imagegen/nika-defeat-pixel-v2.prompt.txt",
+      "destination": "assets/characters/nika/defeat/pixel-v2/nika-defeat-pixel-v2.prompt.txt",
+      "sourceSha256": "6bd7aade8345a18e17708be625cc93f1f4cdfd47a5d5f383c7b9343ba66d844e",
+      "importedSha256": "6bd7aade8345a18e17708be625cc93f1f4cdfd47a5d5f383c7b9343ba66d844e"
+    },
+    {
+      "source": "output/imagegen/nika-defeat-pixel-v3-magenta.png",
+      "destination": "assets/characters/nika/defeat/pixel-v3/nika-defeat-pixel-v3-magenta.png",
+      "sourceSha256": "8782481577898cf6a27be3f36a59eef3e7f500fbd89f54e27e967849d9e8f7d4",
+      "importedSha256": "8782481577898cf6a27be3f36a59eef3e7f500fbd89f54e27e967849d9e8f7d4"
+    },
+    {
+      "source": "output/imagegen/nika-defeat-pixel-v3.frames.json",
+      "destination": "assets/characters/nika/defeat/pixel-v3/nika-defeat-pixel-v3.frames.json",
+      "sourceSha256": "8d1d73f5a6ff816a4da4e8c40d9c2d7140dd9c6db1ea3b84f373a432651ec38f",
+      "importedSha256": "8d1d73f5a6ff816a4da4e8c40d9c2d7140dd9c6db1ea3b84f373a432651ec38f"
+    },
+    {
+      "source": "output/imagegen/nika-defeat-pixel-v3.png",
+      "destination": "assets/characters/nika/defeat/pixel-v3/nika-defeat-pixel-v3.png",
+      "sourceSha256": "4a084b8781766a238d06eb9e22e46acad3b10c09a2acb93c37a677ef3284190b",
+      "importedSha256": "4a084b8781766a238d06eb9e22e46acad3b10c09a2acb93c37a677ef3284190b"
+    },
+    {
+      "source": "output/imagegen/nika-defeat-pixel-v3.prompt.txt",
+      "destination": "assets/characters/nika/defeat/pixel-v3/nika-defeat-pixel-v3.prompt.txt",
+      "sourceSha256": "4848b71001b7acd79336654d405298a575af1a20ee10a7427d93196575a209dc",
+      "importedSha256": "4848b71001b7acd79336654d405298a575af1a20ee10a7427d93196575a209dc"
+    },
+    {
+      "source": "output/imagegen/nika-defeat-pixel-v4-magenta.png",
+      "destination": "assets/characters/nika/defeat/pixel-v4/nika-defeat-pixel-v4-magenta.png",
+      "sourceSha256": "00375687ef378fd0388a7e5d2ed381d109f497e6a86a0e759b357dd330debee0",
+      "importedSha256": "00375687ef378fd0388a7e5d2ed381d109f497e6a86a0e759b357dd330debee0"
+    },
+    {
+      "source": "output/imagegen/nika-defeat-pixel-v4.frames.json",
+      "destination": "assets/characters/nika/defeat/pixel-v4/nika-defeat-pixel-v4.frames.json",
+      "sourceSha256": "a8099fecb61028c28847cc1401011dd7bb7457f08ce3eb6190b287b4150b1e39",
+      "importedSha256": "a8099fecb61028c28847cc1401011dd7bb7457f08ce3eb6190b287b4150b1e39"
+    },
+    {
+      "source": "output/imagegen/nika-defeat-pixel-v4.png",
+      "destination": "assets/characters/nika/defeat/pixel-v4/nika-defeat-pixel-v4.png",
+      "sourceSha256": "6d5ff07038b7fd927608246462769b6d6121aa96a3b9c293bcf712eea7d35511",
+      "importedSha256": "6d5ff07038b7fd927608246462769b6d6121aa96a3b9c293bcf712eea7d35511"
+    },
+    {
+      "source": "output/imagegen/nika-defeat-pixel-v4.prompt.txt",
+      "destination": "assets/characters/nika/defeat/pixel-v4/nika-defeat-pixel-v4.prompt.txt",
+      "sourceSha256": "25e0d8559b9f6108f90d2ed5d73e30470ca7e4b01b687932fb84191ee94261b1",
+      "importedSha256": "25e0d8559b9f6108f90d2ed5d73e30470ca7e4b01b687932fb84191ee94261b1"
+    },
+    {
+      "source": "output/imagegen/nika-defeat-v1.frames.json",
+      "destination": "assets/characters/nika/defeat/v1/nika-defeat-v1.frames.json",
+      "sourceSha256": "b8fedc69cf06cbe827be95ecfbf0501a4c2d85a196c36a09a169b2490270d3e0",
+      "importedSha256": "b8fedc69cf06cbe827be95ecfbf0501a4c2d85a196c36a09a169b2490270d3e0"
+    },
+    {
+      "source": "output/imagegen/nika-defeat-v1.png",
+      "destination": "assets/characters/nika/defeat/v1/nika-defeat-v1.png",
+      "sourceSha256": "14e7222bad11db7b5c7970b874d963a2a113cd4a503c03a1482d34f41669595f",
+      "importedSha256": "14e7222bad11db7b5c7970b874d963a2a113cd4a503c03a1482d34f41669595f"
+    },
+    {
+      "source": "output/imagegen/nika-defeat-v1.prompt.txt",
+      "destination": "assets/characters/nika/defeat/v1/nika-defeat-v1.prompt.txt",
+      "sourceSha256": "84ead17a687309c4b7423caa2ae4f15abea1f14efec327f71876774afb3a720f",
+      "importedSha256": "84ead17a687309c4b7423caa2ae4f15abea1f14efec327f71876774afb3a720f"
+    },
+    {
+      "source": "output/imagegen/nika-finish-pixel-v1-magenta.png",
+      "destination": "assets/characters/nika/finish/pixel-v1/nika-finish-pixel-v1-magenta.png",
+      "sourceSha256": "09cc2c0992da8546d9e51246fe0337aa0c102863e7a315b8a696843c2501f2b6",
+      "importedSha256": "09cc2c0992da8546d9e51246fe0337aa0c102863e7a315b8a696843c2501f2b6"
+    },
+    {
+      "source": "output/imagegen/nika-finish-pixel-v1.frames.json",
+      "destination": "assets/characters/nika/finish/pixel-v1/nika-finish-pixel-v1.frames.json",
+      "sourceSha256": "66f7c20a50e4b94875159ecd8325f8c30dbfdc80a276c191e90fbd872847bca1",
+      "importedSha256": "66f7c20a50e4b94875159ecd8325f8c30dbfdc80a276c191e90fbd872847bca1"
+    },
+    {
+      "source": "output/imagegen/nika-finish-pixel-v1.png",
+      "destination": "assets/characters/nika/finish/pixel-v1/nika-finish-pixel-v1.png",
+      "sourceSha256": "ae4d7fbd761d5757af5ef28d9510dfc13dc508425520bf21b68752e065359dfd",
+      "importedSha256": "ae4d7fbd761d5757af5ef28d9510dfc13dc508425520bf21b68752e065359dfd"
+    },
+    {
+      "source": "output/imagegen/nika-finish-pixel-v1.prompt.txt",
+      "destination": "assets/characters/nika/finish/pixel-v1/nika-finish-pixel-v1.prompt.txt",
+      "sourceSha256": "125c7e1471075032dd577571cf25673fae253a774e0543cf014a5fb7d175dd3c",
+      "importedSha256": "125c7e1471075032dd577571cf25673fae253a774e0543cf014a5fb7d175dd3c"
+    },
+    {
+      "source": "output/imagegen/nika-finish-pixel-v2-magenta.png",
+      "destination": "assets/characters/nika/finish/pixel-v2/nika-finish-pixel-v2-magenta.png",
+      "sourceSha256": "16da471c3358a1ff3c9e9391baa4a183711983ca712a684a1f2b5b3306269aad",
+      "importedSha256": "16da471c3358a1ff3c9e9391baa4a183711983ca712a684a1f2b5b3306269aad"
+    },
+    {
+      "source": "output/imagegen/nika-finish-pixel-v2.frames.json",
+      "destination": "assets/characters/nika/finish/pixel-v2/nika-finish-pixel-v2.frames.json",
+      "sourceSha256": "563c9451000ff2177e0ac93662d559bcf6c441f3d95269054796dca27161025a",
+      "importedSha256": "563c9451000ff2177e0ac93662d559bcf6c441f3d95269054796dca27161025a"
+    },
+    {
+      "source": "output/imagegen/nika-finish-pixel-v2.png",
+      "destination": "assets/characters/nika/finish/pixel-v2/nika-finish-pixel-v2.png",
+      "sourceSha256": "959a74ccc4957c2b59946139e708d301217f21c0367f1760072f3e026011a153",
+      "importedSha256": "959a74ccc4957c2b59946139e708d301217f21c0367f1760072f3e026011a153"
+    },
+    {
+      "source": "output/imagegen/nika-finish-pixel-v2.prompt.txt",
+      "destination": "assets/characters/nika/finish/pixel-v2/nika-finish-pixel-v2.prompt.txt",
+      "sourceSha256": "b6e40e4922b1dd5f62e9b0835a0e097cf84d96912120cf25f5938439cbd8aebf",
+      "importedSha256": "b6e40e4922b1dd5f62e9b0835a0e097cf84d96912120cf25f5938439cbd8aebf"
+    },
+    {
+      "source": "output/imagegen/nika-finish-v1.frames.json",
+      "destination": "assets/characters/nika/finish/v1/nika-finish-v1.frames.json",
+      "sourceSha256": "f1666b2bef75a7567bb3550d1a420eb4a2f978b0b5dbb378caad63f2d52f48c8",
+      "importedSha256": "f1666b2bef75a7567bb3550d1a420eb4a2f978b0b5dbb378caad63f2d52f48c8"
+    },
+    {
+      "source": "output/imagegen/nika-finish-v1.png",
+      "destination": "assets/characters/nika/finish/v1/nika-finish-v1.png",
+      "sourceSha256": "3860047c7f8f6656ec817c90040786b34824018ea5e68541070307ddc9fdc1dc",
+      "importedSha256": "3860047c7f8f6656ec817c90040786b34824018ea5e68541070307ddc9fdc1dc"
+    },
+    {
+      "source": "output/imagegen/nika-finish-v1.prompt.txt",
+      "destination": "assets/characters/nika/finish/v1/nika-finish-v1.prompt.txt",
+      "sourceSha256": "628eb01be37b13a49f49dab4b1ce07d2bbf76e62009135522e1a9e0f5fe73b72",
+      "importedSha256": "628eb01be37b13a49f49dab4b1ce07d2bbf76e62009135522e1a9e0f5fe73b72"
+    },
+    {
+      "source": "output/imagegen/nika-garbage-land-pixel-v1-magenta.png",
+      "destination": "assets/characters/nika/garbage-land/pixel-v1/nika-garbage-land-pixel-v1-magenta.png",
+      "sourceSha256": "58a5e29c7293b85f9fc764e0243692704bf5390358dac4b7579fd750ef7c912e",
+      "importedSha256": "58a5e29c7293b85f9fc764e0243692704bf5390358dac4b7579fd750ef7c912e"
+    },
+    {
+      "source": "output/imagegen/nika-garbage-land-pixel-v1.frames.json",
+      "destination": "assets/characters/nika/garbage-land/pixel-v1/nika-garbage-land-pixel-v1.frames.json",
+      "sourceSha256": "5fd5caadfb3cc35a57f58e76f35d896dff364c67047199120f7d7171a5ac1cfc",
+      "importedSha256": "5fd5caadfb3cc35a57f58e76f35d896dff364c67047199120f7d7171a5ac1cfc"
+    },
+    {
+      "source": "output/imagegen/nika-garbage-land-pixel-v1.png",
+      "destination": "assets/characters/nika/garbage-land/pixel-v1/nika-garbage-land-pixel-v1.png",
+      "sourceSha256": "1e39d19d8c5e9a4a47ebaa465336dcdff979ceff067054542a920863d4781407",
+      "importedSha256": "1e39d19d8c5e9a4a47ebaa465336dcdff979ceff067054542a920863d4781407"
+    },
+    {
+      "source": "output/imagegen/nika-garbage-land-pixel-v1.prompt.txt",
+      "destination": "assets/characters/nika/garbage-land/pixel-v1/nika-garbage-land-pixel-v1.prompt.txt",
+      "sourceSha256": "5fd93a9bfe9f2f2e0936b2c4e49667c1223ca94af0e96cca8fc28bd133cdec96",
+      "importedSha256": "5fd93a9bfe9f2f2e0936b2c4e49667c1223ca94af0e96cca8fc28bd133cdec96"
+    },
+    {
+      "source": "output/imagegen/nika-garbage-land-v1.frames.json",
+      "destination": "assets/characters/nika/garbage-land/v1/nika-garbage-land-v1.frames.json",
+      "sourceSha256": "4182b11262fa9c2055d662eacd3209f9c5006fbaaba1582806b0d78d5e3cf495",
+      "importedSha256": "4182b11262fa9c2055d662eacd3209f9c5006fbaaba1582806b0d78d5e3cf495"
+    },
+    {
+      "source": "output/imagegen/nika-garbage-land-v1.png",
+      "destination": "assets/characters/nika/garbage-land/v1/nika-garbage-land-v1.png",
+      "sourceSha256": "dffe022b0614ff77e12534d7bb846f9bb41387d7fd622d7c611df6f4a28691f5",
+      "importedSha256": "dffe022b0614ff77e12534d7bb846f9bb41387d7fd622d7c611df6f4a28691f5"
+    },
+    {
+      "source": "output/imagegen/nika-garbage-land-v1.prompt.txt",
+      "destination": "assets/characters/nika/garbage-land/v1/nika-garbage-land-v1.prompt.txt",
+      "sourceSha256": "61860563a393593653fcd9ebd81e7c1a11c84327be5606487b2e25092e449e9c",
+      "importedSha256": "61860563a393593653fcd9ebd81e7c1a11c84327be5606487b2e25092e449e9c"
+    },
+    {
+      "source": "output/imagegen/nika-generation-review.md",
+      "destination": "assets/characters/nika/notes/nika-generation-review.md",
+      "sourceSha256": "1f5bac5ebddfd3b084f246cc7d483a057a28d4023eb2849734d36668b0381c74",
+      "importedSha256": "1f5bac5ebddfd3b084f246cc7d483a057a28d4023eb2849734d36668b0381c74"
+    },
+    {
+      "source": "output/imagegen/nika-icon-pixel-v1.png",
+      "destination": "assets/characters/nika/icon/pixel-v1/nika-icon-pixel-v1.png",
+      "sourceSha256": "d25e2c8cff70837173d413c41a0fd9778785e8068dca42d323158f7000d32a7c",
+      "importedSha256": "d25e2c8cff70837173d413c41a0fd9778785e8068dca42d323158f7000d32a7c"
+    },
+    {
+      "source": "output/imagegen/nika-icon-pixel-v1.prompt.txt",
+      "destination": "assets/characters/nika/icon/pixel-v1/nika-icon-pixel-v1.prompt.txt",
+      "sourceSha256": "fd09aad5732cff542d44dc09bd8cf818aec8171f07521347bc65c3fc9e64f2f4",
+      "importedSha256": "fd09aad5732cff542d44dc09bd8cf818aec8171f07521347bc65c3fc9e64f2f4"
+    },
+    {
+      "source": "output/imagegen/nika-icon-v1.png",
+      "destination": "assets/characters/nika/icon/v1/nika-icon-v1.png",
+      "sourceSha256": "529863d6d185aba8ff3a9449205e673196ab3a2a803f15025d6253f362884483",
+      "importedSha256": "529863d6d185aba8ff3a9449205e673196ab3a2a803f15025d6253f362884483"
+    },
+    {
+      "source": "output/imagegen/nika-icon-v1.prompt.txt",
+      "destination": "assets/characters/nika/icon/v1/nika-icon-v1.prompt.txt",
+      "sourceSha256": "5627f7463713624800d89725026626db84ce41aabe407c2b479885a410cb489c",
+      "importedSha256": "5627f7463713624800d89725026626db84ce41aabe407c2b479885a410cb489c"
+    },
+    {
+      "source": "output/imagegen/nika-idle-pixel-v2-magenta.png",
+      "destination": "assets/characters/nika/idle/pixel-v2/nika-idle-pixel-v2-magenta.png",
+      "sourceSha256": "3c62b69ee7907b5134d9310c3b748e7903680177a6b1613b59fe726e4938d4f6",
+      "importedSha256": "3c62b69ee7907b5134d9310c3b748e7903680177a6b1613b59fe726e4938d4f6"
+    },
+    {
+      "source": "output/imagegen/nika-idle-pixel-v2.png",
+      "destination": "assets/characters/nika/idle/pixel-v2/nika-idle-pixel-v2.png",
+      "sourceSha256": "df705f1a515849807d4b6de3daf2ee25ad8d986d8badbcdb67bd401109f6dbb8",
+      "importedSha256": "df705f1a515849807d4b6de3daf2ee25ad8d986d8badbcdb67bd401109f6dbb8"
+    },
+    {
+      "source": "output/imagegen/nika-idle-pixel-v2.prompt.txt",
+      "destination": "assets/characters/nika/idle/pixel-v2/nika-idle-pixel-v2.prompt.txt",
+      "sourceSha256": "e9c346ec0ce67a9e467d4b77c80f4d03306d2e7ea1e2490cee2f386a2a4d7f29",
+      "importedSha256": "e9c346ec0ce67a9e467d4b77c80f4d03306d2e7ea1e2490cee2f386a2a4d7f29"
+    },
+    {
+      "source": "output/imagegen/nika-idle-v1.frames.json",
+      "destination": "assets/characters/nika/idle/v1/nika-idle-v1.frames.json",
+      "sourceSha256": "ef26b05ab3f4266b83845dd4d7bfcb2c8269590a64d5d36f097d00fb45ed6add",
+      "importedSha256": "ef26b05ab3f4266b83845dd4d7bfcb2c8269590a64d5d36f097d00fb45ed6add"
+    },
+    {
+      "source": "output/imagegen/nika-idle-v1.png",
+      "destination": "assets/characters/nika/idle/v1/nika-idle-v1.png",
+      "sourceSha256": "00d20deb1ce1042dc2b5816f9fe2505f75b555fdcffcd55fd945c80534d2c4f7",
+      "importedSha256": "00d20deb1ce1042dc2b5816f9fe2505f75b555fdcffcd55fd945c80534d2c4f7"
+    },
+    {
+      "source": "output/imagegen/nika-idle-v1.prompt.txt",
+      "destination": "assets/characters/nika/idle/v1/nika-idle-v1.prompt.txt",
+      "sourceSha256": "defd9924fe95a4ef355b52f7b065428d6610a1e03cb04881dc144a976866cc99",
+      "importedSha256": "defd9924fe95a4ef355b52f7b065428d6610a1e03cb04881dc144a976866cc99"
+    },
+    {
+      "source": "output/imagegen/nika-idle-v2.png",
+      "destination": "assets/characters/nika/idle/v2/nika-idle-v2.png",
+      "sourceSha256": "94fc1ca57573909a81745f43540e50c61570da789b595fd6d45e4439082397df",
+      "importedSha256": "94fc1ca57573909a81745f43540e50c61570da789b595fd6d45e4439082397df"
+    },
+    {
+      "source": "output/imagegen/nika-idle-v2.prompt.txt",
+      "destination": "assets/characters/nika/idle/v2/nika-idle-v2.prompt.txt",
+      "sourceSha256": "b554e4091b37d7c7a57e6d93dc0c2b677fff82ed9f886c0c827edef36afa5791",
+      "importedSha256": "b554e4091b37d7c7a57e6d93dc0c2b677fff82ed9f886c0c827edef36afa5791"
+    },
+    {
+      "source": "output/imagegen/nika-idle-v3-aligned.frames.json",
+      "destination": "assets/characters/nika/idle/v3/nika-idle-v3-aligned.frames.json",
+      "sourceSha256": "6025e8b6d63a846c0c145f858f4041f5a78c86487dd1c609658f6773719e53ae",
+      "importedSha256": "6025e8b6d63a846c0c145f858f4041f5a78c86487dd1c609658f6773719e53ae"
+    },
+    {
+      "source": "output/imagegen/nika-idle-v3.frames.json",
+      "destination": "assets/characters/nika/idle/v3/nika-idle-v3.frames.json",
+      "sourceSha256": "73da0975b9dccb94531c84984b82ca7c5b8bbd8619ba834b0eeaf22777206071",
+      "importedSha256": "73da0975b9dccb94531c84984b82ca7c5b8bbd8619ba834b0eeaf22777206071"
+    },
+    {
+      "source": "output/imagegen/nika-idle-v3.png",
+      "destination": "assets/characters/nika/idle/v3/nika-idle-v3.png",
+      "sourceSha256": "11b56faf7c72baa83d9ea03e804e5dabbcd88ff2aade48d9bf2e09375bb1c0e0",
+      "importedSha256": "11b56faf7c72baa83d9ea03e804e5dabbcd88ff2aade48d9bf2e09375bb1c0e0"
+    },
+    {
+      "source": "output/imagegen/nika-idle-v3.prompt.txt",
+      "destination": "assets/characters/nika/idle/v3/nika-idle-v3.prompt.txt",
+      "sourceSha256": "8a94017d23e049aecbdfa34d37295d6f81e96b7605e1ad12c89bb89221ff5c5e",
+      "importedSha256": "8a94017d23e049aecbdfa34d37295d6f81e96b7605e1ad12c89bb89221ff5c5e"
+    },
+    {
+      "source": "output/imagegen/nika-idle-v4.frames.json",
+      "destination": "assets/characters/nika/idle/v4/nika-idle-v4.frames.json",
+      "sourceSha256": "422fc3583f3b082572e1eb5cb3431ea020cbbb5ae6bfed09bd10b29d715f8716",
+      "importedSha256": "422fc3583f3b082572e1eb5cb3431ea020cbbb5ae6bfed09bd10b29d715f8716"
+    },
+    {
+      "source": "output/imagegen/nika-idle-v4.png",
+      "destination": "assets/characters/nika/idle/v4/nika-idle-v4.png",
+      "sourceSha256": "ba49b234ab534a508de15974f4c293834b16e7e825df0e0cf412d13319d69160",
+      "importedSha256": "ba49b234ab534a508de15974f4c293834b16e7e825df0e0cf412d13319d69160"
+    },
+    {
+      "source": "output/imagegen/nika-idle-v4.prompt.txt",
+      "destination": "assets/characters/nika/idle/v4/nika-idle-v4.prompt.txt",
+      "sourceSha256": "0094639ffb880c0300ffd098899d3df27e8da0d768f9a325512e6ad57bb55a13",
+      "importedSha256": "0094639ffb880c0300ffd098899d3df27e8da0d768f9a325512e6ad57bb55a13"
+    },
+    {
+      "source": "output/imagegen/nika-portrait-pixel-v1.png",
+      "destination": "assets/characters/nika/portrait/pixel-v1/nika-portrait-pixel-v1.png",
+      "sourceSha256": "72c3bc073d96247e7b7599e52826c5dd9bab49d788b1acd3c235d776e84f0bca",
+      "importedSha256": "72c3bc073d96247e7b7599e52826c5dd9bab49d788b1acd3c235d776e84f0bca"
+    },
+    {
+      "source": "output/imagegen/nika-portrait-pixel-v2-magenta.png",
+      "destination": "assets/characters/nika/portrait/pixel-v2/nika-portrait-pixel-v2-magenta.png",
+      "sourceSha256": "eaa86d460f1785ccb7a0101b6fc023215311f70346e95c7139d936f6ddd00bdf",
+      "importedSha256": "eaa86d460f1785ccb7a0101b6fc023215311f70346e95c7139d936f6ddd00bdf"
+    },
+    {
+      "source": "output/imagegen/nika-portrait-pixel-v2.png",
+      "destination": "assets/characters/nika/portrait/pixel-v2/nika-portrait-pixel-v2.png",
+      "sourceSha256": "82a46d47030f122231ffdf008810ead184e7ce1826f788d4c07c6d7564c4bec8",
+      "importedSha256": "82a46d47030f122231ffdf008810ead184e7ce1826f788d4c07c6d7564c4bec8"
+    },
+    {
+      "source": "output/imagegen/nika-portrait-pixel-v2.prompt.txt",
+      "destination": "assets/characters/nika/portrait/pixel-v2/nika-portrait-pixel-v2.prompt.txt",
+      "sourceSha256": "21f7efc84b4dcfb0967f9bdba25ea15c09c887d5028cd070928e6f01423769a3",
+      "importedSha256": "21f7efc84b4dcfb0967f9bdba25ea15c09c887d5028cd070928e6f01423769a3"
+    },
+    {
+      "source": "output/imagegen/nika-portrait-v1.png",
+      "destination": "assets/characters/nika/portrait/v1/nika-portrait-v1.png",
+      "sourceSha256": "9ca7d8d7d10e494280d1965ea775049a4a554fcb3b83eec8d13121a1db6a8b8b",
+      "importedSha256": "9ca7d8d7d10e494280d1965ea775049a4a554fcb3b83eec8d13121a1db6a8b8b"
+    },
+    {
+      "source": "output/imagegen/nika-portrait-v1.prompt.txt",
+      "destination": "assets/characters/nika/portrait/v1/nika-portrait-v1.prompt.txt",
+      "sourceSha256": "d92135d8034cbf204afdadce869f1b2ddb77d1c47e8c216c1b5a2cda78b840ff",
+      "importedSha256": "d92135d8034cbf204afdadce869f1b2ddb77d1c47e8c216c1b5a2cda78b840ff"
+    },
+    {
+      "source": "output/imagegen/nika-success-pixel-v1-magenta.png",
+      "destination": "assets/characters/nika/success/pixel-v1/nika-success-pixel-v1-magenta.png",
+      "sourceSha256": "dbcb7decc8c26dc6ba737b92dc511fc74254d0155188143dcd0acd37ce4d4b9c",
+      "importedSha256": "dbcb7decc8c26dc6ba737b92dc511fc74254d0155188143dcd0acd37ce4d4b9c"
+    },
+    {
+      "source": "output/imagegen/nika-success-pixel-v1.frames.json",
+      "destination": "assets/characters/nika/success/pixel-v1/nika-success-pixel-v1.frames.json",
+      "sourceSha256": "68d76ee59917141ef5f7732bf4e49ab9eaeb5da8e0014d5099e276adb29a4beb",
+      "importedSha256": "68d76ee59917141ef5f7732bf4e49ab9eaeb5da8e0014d5099e276adb29a4beb"
+    },
+    {
+      "source": "output/imagegen/nika-success-pixel-v1.png",
+      "destination": "assets/characters/nika/success/pixel-v1/nika-success-pixel-v1.png",
+      "sourceSha256": "9078a01ceb98e39900986f584f840cb96c655e3a85cfa998e26608b5ab4a7b96",
+      "importedSha256": "9078a01ceb98e39900986f584f840cb96c655e3a85cfa998e26608b5ab4a7b96"
+    },
+    {
+      "source": "output/imagegen/nika-success-pixel-v1.prompt.txt",
+      "destination": "assets/characters/nika/success/pixel-v1/nika-success-pixel-v1.prompt.txt",
+      "sourceSha256": "485a59c6f296b0f82917295471b78d67422ac2ee6641bdf6fc1e10884f5c8dbf",
+      "importedSha256": "485a59c6f296b0f82917295471b78d67422ac2ee6641bdf6fc1e10884f5c8dbf"
+    },
+    {
+      "source": "output/imagegen/nika-success-v1.frames.json",
+      "destination": "assets/characters/nika/success/v1/nika-success-v1.frames.json",
+      "sourceSha256": "f1e09215752d83ffb6082e2cbae47149aa83991fd8a8d8db96a8db67cfcd69d1",
+      "importedSha256": "f1e09215752d83ffb6082e2cbae47149aa83991fd8a8d8db96a8db67cfcd69d1"
+    },
+    {
+      "source": "output/imagegen/nika-success-v1.png",
+      "destination": "assets/characters/nika/success/v1/nika-success-v1.png",
+      "sourceSha256": "403d9ba3c3647f33e6e95ec0f281c9ce1b0e6a58fbc15ba74773da41253569a1",
+      "importedSha256": "403d9ba3c3647f33e6e95ec0f281c9ce1b0e6a58fbc15ba74773da41253569a1"
+    },
+    {
+      "source": "output/imagegen/nika-success-v1.prompt.txt",
+      "destination": "assets/characters/nika/success/v1/nika-success-v1.prompt.txt",
+      "sourceSha256": "2d873ba43e0764f3953ee176e479e9d5a257f67f3ff168c0a230addb3532b4ea",
+      "importedSha256": "2d873ba43e0764f3953ee176e479e9d5a257f67f3ff168c0a230addb3532b4ea"
+    },
+    {
+      "source": "output/imagegen/nika-victory-pixel-v1-magenta.png",
+      "destination": "assets/characters/nika/victory/pixel-v1/nika-victory-pixel-v1-magenta.png",
+      "sourceSha256": "6677e20bc84e4c005364d966d0d3f2efc9b4ff6c810be98f076ee78c224320fc",
+      "importedSha256": "6677e20bc84e4c005364d966d0d3f2efc9b4ff6c810be98f076ee78c224320fc"
+    },
+    {
+      "source": "output/imagegen/nika-victory-pixel-v1.frames.json",
+      "destination": "assets/characters/nika/victory/pixel-v1/nika-victory-pixel-v1.frames.json",
+      "sourceSha256": "8cb97759c7179662623fe3f2b0a7c49d1331d2cde7f710345f493eb88cd3c459",
+      "importedSha256": "8cb97759c7179662623fe3f2b0a7c49d1331d2cde7f710345f493eb88cd3c459"
+    },
+    {
+      "source": "output/imagegen/nika-victory-pixel-v1.png",
+      "destination": "assets/characters/nika/victory/pixel-v1/nika-victory-pixel-v1.png",
+      "sourceSha256": "ec6c0aa68e57272582ac9febe3a8ffcc1ae6b9d8f2b910e43cb4570801cb84c5",
+      "importedSha256": "ec6c0aa68e57272582ac9febe3a8ffcc1ae6b9d8f2b910e43cb4570801cb84c5"
+    },
+    {
+      "source": "output/imagegen/nika-victory-pixel-v1.prompt.txt",
+      "destination": "assets/characters/nika/victory/pixel-v1/nika-victory-pixel-v1.prompt.txt",
+      "sourceSha256": "ea4f18e8d3101d31c2d53084d05c70aa2ca264a8ed67127c92af3e4a65ed1051",
+      "importedSha256": "ea4f18e8d3101d31c2d53084d05c70aa2ca264a8ed67127c92af3e4a65ed1051"
+    },
+    {
+      "source": "output/imagegen/nika-victory-v1.html",
+      "destination": "assets/characters/nika/victory/v1/nika-victory-v1.html",
+      "sourceSha256": "922dec89316f05ba13ce5ba61e2f783b7e9172192110394b145059377754c623",
+      "importedSha256": "922dec89316f05ba13ce5ba61e2f783b7e9172192110394b145059377754c623"
+    },
+    {
+      "source": "output/imagegen/nika-victory-v1.png",
+      "destination": "assets/characters/nika/victory/v1/nika-victory-v1.png",
+      "sourceSha256": "daff834a251579fb676d55966cdd566d142fd07c1f1fdf069b7a5f43fbae334c",
+      "importedSha256": "daff834a251579fb676d55966cdd566d142fd07c1f1fdf069b7a5f43fbae334c"
+    },
+    {
+      "source": "output/imagegen/nika-victory-v1.prompt.txt",
+      "destination": "assets/characters/nika/victory/v1/nika-victory-v1.prompt.txt",
+      "sourceSha256": "af121e7a5141b4faa817003c97e38d80b51acd7d5ab886d5421cbee6334609c6",
+      "importedSha256": "af121e7a5141b4faa817003c97e38d80b51acd7d5ab886d5421cbee6334609c6"
+    },
+    {
+      "source": "output/imagegen/nika-victory-v2.html",
+      "destination": "assets/characters/nika/victory/v2/nika-victory-v2.html",
+      "sourceSha256": "268a44d76010b52910d11be39cc888242f73392fdf0825144f5730deb08b09dc",
+      "importedSha256": "145c7410ced2f49039252baefb980db61ca758d538ba65df2524354c0293eb37"
+    },
+    {
+      "source": "output/imagegen/nika-victory-v2.png",
+      "destination": "assets/characters/nika/victory/v2/nika-victory-v2.png",
+      "sourceSha256": "3aa41d346461f64cf50befe985bfb6db97d0452a74dd3e4bb2252de07a71041b",
+      "importedSha256": "3aa41d346461f64cf50befe985bfb6db97d0452a74dd3e4bb2252de07a71041b"
+    },
+    {
+      "source": "output/imagegen/nika-victory-v2.prompt.txt",
+      "destination": "assets/characters/nika/victory/v2/nika-victory-v2.prompt.txt",
+      "sourceSha256": "20dfb1952b942d4cd81408df552ab6d7c3c0a09e262cc433204e2072e8a38ce6",
+      "importedSha256": "20dfb1952b942d4cd81408df552ab6d7c3c0a09e262cc433204e2072e8a38ce6"
+    },
+    {
+      "source": "output/imagegen/nika-victory-v4.html",
+      "destination": "assets/characters/nika/victory/v4/nika-victory-v4.html",
+      "sourceSha256": "d3a5e990693887f1b1e615f1e15265fa1ee589061603c74c451f5054c213b5bb",
+      "importedSha256": "09b58f7d3bd99e46569dfefa25d9afa3935233ce4ace95a6ad35dec3cfcb2925"
+    },
+    {
+      "source": "output/imagegen/nika-victory-v4.pivots.json",
+      "destination": "assets/characters/nika/victory/v4/nika-victory-v4.pivots.json",
+      "sourceSha256": "7c2f4f81639ebdd53b817a1a936dd4ae4850489d4b99c25da4e73c8832206260",
+      "importedSha256": "7c2f4f81639ebdd53b817a1a936dd4ae4850489d4b99c25da4e73c8832206260"
+    },
+    {
+      "source": "output/imagegen/nika-victory-v4.png",
+      "destination": "assets/characters/nika/victory/v4/nika-victory-v4.png",
+      "sourceSha256": "544f59d248bc5e689127865959b5ae453caa20e9cbf6912575a456d9cb55bd57",
+      "importedSha256": "544f59d248bc5e689127865959b5ae453caa20e9cbf6912575a456d9cb55bd57"
+    },
+    {
+      "source": "output/imagegen/nika-victory-v4.prompt.txt",
+      "destination": "assets/characters/nika/victory/v4/nika-victory-v4.prompt.txt",
+      "sourceSha256": "b5c45585d5dd83db0db457db6cb52cadb2a03e0818b5467e9fceae2679927dd4",
+      "importedSha256": "b5c45585d5dd83db0db457db6cb52cadb2a03e0818b5467e9fceae2679927dd4"
+    },
+    {
+      "source": "output/imagegen/nui-danger-pixel-v1-keyed.png",
+      "destination": "assets/characters/nui/danger/pixel-v1/nui-danger-pixel-v1-keyed.png",
+      "sourceSha256": "3096c0af2f2737680b0dadf03f4079cff3504a2994345575c69c749086bbdc72",
+      "importedSha256": "3096c0af2f2737680b0dadf03f4079cff3504a2994345575c69c749086bbdc72"
+    },
+    {
+      "source": "output/imagegen/nui-danger-pixel-v1-magenta.png",
+      "destination": "assets/characters/nui/danger/pixel-v1/nui-danger-pixel-v1-magenta.png",
+      "sourceSha256": "3390acd2b8f219c2a3b5b805d7ad62c7598363b2bef5129c407f845932fa24b7",
+      "importedSha256": "3390acd2b8f219c2a3b5b805d7ad62c7598363b2bef5129c407f845932fa24b7"
+    },
+    {
+      "source": "output/imagegen/nui-danger-pixel-v1.frames.json",
+      "destination": "assets/characters/nui/danger/pixel-v1/nui-danger-pixel-v1.frames.json",
+      "sourceSha256": "d95a8eabd2d86e0e3614cbfe666fc75abf4aaa56fd87eb21dbe2da924330f7a9",
+      "importedSha256": "d95a8eabd2d86e0e3614cbfe666fc75abf4aaa56fd87eb21dbe2da924330f7a9"
+    },
+    {
+      "source": "output/imagegen/nui-danger-pixel-v1.png",
+      "destination": "assets/characters/nui/danger/pixel-v1/nui-danger-pixel-v1.png",
+      "sourceSha256": "4c707c349955c15390bb2329d27a1ab0b453e8009a3cd40c314d2acefe353e7c",
+      "importedSha256": "4c707c349955c15390bb2329d27a1ab0b453e8009a3cd40c314d2acefe353e7c"
+    },
+    {
+      "source": "output/imagegen/nui-danger-pixel-v1.prompt.txt",
+      "destination": "assets/characters/nui/danger/pixel-v1/nui-danger-pixel-v1.prompt.txt",
+      "sourceSha256": "f0b74873b03deff408c5178bf6c32f6e537479281c1e6d388fff13785c6311f7",
+      "importedSha256": "f0b74873b03deff408c5178bf6c32f6e537479281c1e6d388fff13785c6311f7"
+    },
+    {
+      "source": "output/imagegen/nui-defeat-pixel-v1-keyed.png",
+      "destination": "assets/characters/nui/defeat/pixel-v1/nui-defeat-pixel-v1-keyed.png",
+      "sourceSha256": "1abdb75ed9767eb5d53da79b51ee82139863bdfe44b23584a8bc3f4739dcfb0f",
+      "importedSha256": "1abdb75ed9767eb5d53da79b51ee82139863bdfe44b23584a8bc3f4739dcfb0f"
+    },
+    {
+      "source": "output/imagegen/nui-defeat-pixel-v1-magenta.png",
+      "destination": "assets/characters/nui/defeat/pixel-v1/nui-defeat-pixel-v1-magenta.png",
+      "sourceSha256": "bd1c70fd8cb677451c6dc6bb6af237c8f964a0c70a1b09f07f86f520434757e4",
+      "importedSha256": "bd1c70fd8cb677451c6dc6bb6af237c8f964a0c70a1b09f07f86f520434757e4"
+    },
+    {
+      "source": "output/imagegen/nui-defeat-pixel-v1.frames.json",
+      "destination": "assets/characters/nui/defeat/pixel-v1/nui-defeat-pixel-v1.frames.json",
+      "sourceSha256": "8545598368b87ef0a49fd184cc1a70b33280c37882c56bd87e471de7c215913f",
+      "importedSha256": "8545598368b87ef0a49fd184cc1a70b33280c37882c56bd87e471de7c215913f"
+    },
+    {
+      "source": "output/imagegen/nui-defeat-pixel-v1.png",
+      "destination": "assets/characters/nui/defeat/pixel-v1/nui-defeat-pixel-v1.png",
+      "sourceSha256": "ec217dda9716c6e2ea6cd28d42fb698b1f6536f4044849e3e4e9a2accc724490",
+      "importedSha256": "ec217dda9716c6e2ea6cd28d42fb698b1f6536f4044849e3e4e9a2accc724490"
+    },
+    {
+      "source": "output/imagegen/nui-defeat-pixel-v1.prompt.txt",
+      "destination": "assets/characters/nui/defeat/pixel-v1/nui-defeat-pixel-v1.prompt.txt",
+      "sourceSha256": "dd2ca672af0d2333d021067afc0427cedb637decd39460341cbaadbbed122339",
+      "importedSha256": "dd2ca672af0d2333d021067afc0427cedb637decd39460341cbaadbbed122339"
+    },
+    {
+      "source": "output/imagegen/nui-finish-pixel-v1-generated.png",
+      "destination": "assets/characters/nui/finish/pixel-v1/nui-finish-pixel-v1-generated.png",
+      "sourceSha256": "531471f11670848ac39561bde436ef3ee084644e51fd93fef7ae4cfec92a2def",
+      "importedSha256": "531471f11670848ac39561bde436ef3ee084644e51fd93fef7ae4cfec92a2def"
+    },
+    {
+      "source": "output/imagegen/nui-finish-pixel-v1-keyed.png",
+      "destination": "assets/characters/nui/finish/pixel-v1/nui-finish-pixel-v1-keyed.png",
+      "sourceSha256": "921bf2f4fbf2e36698bb473b44bee7e3ea75372dc27f7dc25657ac9c8e812201",
+      "importedSha256": "921bf2f4fbf2e36698bb473b44bee7e3ea75372dc27f7dc25657ac9c8e812201"
+    },
+    {
+      "source": "output/imagegen/nui-finish-pixel-v1-magenta.png",
+      "destination": "assets/characters/nui/finish/pixel-v1/nui-finish-pixel-v1-magenta.png",
+      "sourceSha256": "6cd7d0a3c7c2e41debb4950b16418d1a5882511dd0efc58c595b3602a109e27b",
+      "importedSha256": "6cd7d0a3c7c2e41debb4950b16418d1a5882511dd0efc58c595b3602a109e27b"
+    },
+    {
+      "source": "output/imagegen/nui-finish-pixel-v1.frames.json",
+      "destination": "assets/characters/nui/finish/pixel-v1/nui-finish-pixel-v1.frames.json",
+      "sourceSha256": "657b7d0133786e78445fd051104b036cf011e0a1804dd4c69c716f8691b3e67c",
+      "importedSha256": "657b7d0133786e78445fd051104b036cf011e0a1804dd4c69c716f8691b3e67c"
+    },
+    {
+      "source": "output/imagegen/nui-finish-pixel-v1.png",
+      "destination": "assets/characters/nui/finish/pixel-v1/nui-finish-pixel-v1.png",
+      "sourceSha256": "c1f87ca6af92ed85b7dcb111ea078f0ff00e08f6a1aad876416418292aa431e6",
+      "importedSha256": "c1f87ca6af92ed85b7dcb111ea078f0ff00e08f6a1aad876416418292aa431e6"
+    },
+    {
+      "source": "output/imagegen/nui-finish-pixel-v1.prompt.txt",
+      "destination": "assets/characters/nui/finish/pixel-v1/nui-finish-pixel-v1.prompt.txt",
+      "sourceSha256": "c6c61cff2f08c2f194596c579bf11321d05737d9f0745c418483d5e6c16f219f",
+      "importedSha256": "c6c61cff2f08c2f194596c579bf11321d05737d9f0745c418483d5e6c16f219f"
+    },
+    {
+      "source": "output/imagegen/nui-garbage-land-pixel-v1-keyed.png",
+      "destination": "assets/characters/nui/garbage-land/pixel-v1/nui-garbage-land-pixel-v1-keyed.png",
+      "sourceSha256": "522392901433c9dc85ddfb89256f3c28c4e9b5ad8b982bdfb6fe3cb96deca88b",
+      "importedSha256": "522392901433c9dc85ddfb89256f3c28c4e9b5ad8b982bdfb6fe3cb96deca88b"
+    },
+    {
+      "source": "output/imagegen/nui-garbage-land-pixel-v1-magenta.png",
+      "destination": "assets/characters/nui/garbage-land/pixel-v1/nui-garbage-land-pixel-v1-magenta.png",
+      "sourceSha256": "2935a64fd9b12dc14d6229067e1265b46a6721e6d2af6038c20a2a2c0d2c356d",
+      "importedSha256": "2935a64fd9b12dc14d6229067e1265b46a6721e6d2af6038c20a2a2c0d2c356d"
+    },
+    {
+      "source": "output/imagegen/nui-garbage-land-pixel-v1.frames.json",
+      "destination": "assets/characters/nui/garbage-land/pixel-v1/nui-garbage-land-pixel-v1.frames.json",
+      "sourceSha256": "8805d4d6c4848f71eb848168e7206dbc5812aad89f3dd060c87eb4390652e8fc",
+      "importedSha256": "8805d4d6c4848f71eb848168e7206dbc5812aad89f3dd060c87eb4390652e8fc"
+    },
+    {
+      "source": "output/imagegen/nui-garbage-land-pixel-v1.png",
+      "destination": "assets/characters/nui/garbage-land/pixel-v1/nui-garbage-land-pixel-v1.png",
+      "sourceSha256": "8ade7326856a1a8684f0fbe7390a9706e76e2cba284e2099d6e6544712f8cff6",
+      "importedSha256": "8ade7326856a1a8684f0fbe7390a9706e76e2cba284e2099d6e6544712f8cff6"
+    },
+    {
+      "source": "output/imagegen/nui-garbage-land-pixel-v1.prompt.txt",
+      "destination": "assets/characters/nui/garbage-land/pixel-v1/nui-garbage-land-pixel-v1.prompt.txt",
+      "sourceSha256": "0c508e62d62e086d4837072a385cf1275194af12763ef65b3cbe490c85036508",
+      "importedSha256": "0c508e62d62e086d4837072a385cf1275194af12763ef65b3cbe490c85036508"
+    },
+    {
+      "source": "output/imagegen/nui-generation-review.md",
+      "destination": "assets/characters/nui/notes/nui-generation-review.md",
+      "sourceSha256": "414b0613e05d37d4e028d8519b19cc59fde0a275b26513ee68798a416fa290f0",
+      "importedSha256": "414b0613e05d37d4e028d8519b19cc59fde0a275b26513ee68798a416fa290f0"
+    },
+    {
+      "source": "output/imagegen/nui-icon-pixel-v1.png",
+      "destination": "assets/characters/nui/icon/pixel-v1/nui-icon-pixel-v1.png",
+      "sourceSha256": "3237b3faecc27dd8c972fb5f124bf422084dbbda2da2bd045886524d7eea220d",
+      "importedSha256": "3237b3faecc27dd8c972fb5f124bf422084dbbda2da2bd045886524d7eea220d"
+    },
+    {
+      "source": "output/imagegen/nui-icon-pixel-v1.prompt.txt",
+      "destination": "assets/characters/nui/icon/pixel-v1/nui-icon-pixel-v1.prompt.txt",
+      "sourceSha256": "33a78501876191bf4345cc5fe9374e22d717f6e0b379d6d8ba9e2780f6b92d1f",
+      "importedSha256": "33a78501876191bf4345cc5fe9374e22d717f6e0b379d6d8ba9e2780f6b92d1f"
+    },
+    {
+      "source": "output/imagegen/nui-idle-pixel-v1-generated.png",
+      "destination": "assets/characters/nui/idle/pixel-v1/nui-idle-pixel-v1-generated.png",
+      "sourceSha256": "3ac4b0900410216003dab1466ca2f3acbd48e82dcc2164225f20806b9d8dfec3",
+      "importedSha256": "3ac4b0900410216003dab1466ca2f3acbd48e82dcc2164225f20806b9d8dfec3"
+    },
+    {
+      "source": "output/imagegen/nui-idle-pixel-v1-keyed.png",
+      "destination": "assets/characters/nui/idle/pixel-v1/nui-idle-pixel-v1-keyed.png",
+      "sourceSha256": "b29f5fd2cd91d095df9a1131f5e3fd839c474e27f7b198276c0606a3b8891720",
+      "importedSha256": "b29f5fd2cd91d095df9a1131f5e3fd839c474e27f7b198276c0606a3b8891720"
+    },
+    {
+      "source": "output/imagegen/nui-idle-pixel-v1-magenta.png",
+      "destination": "assets/characters/nui/idle/pixel-v1/nui-idle-pixel-v1-magenta.png",
+      "sourceSha256": "790061329d5adc3a0270b4b875c769e06db350cb9f031e42fb98aac12f189b7b",
+      "importedSha256": "790061329d5adc3a0270b4b875c769e06db350cb9f031e42fb98aac12f189b7b"
+    },
+    {
+      "source": "output/imagegen/nui-idle-pixel-v1.frames.json",
+      "destination": "assets/characters/nui/idle/pixel-v1/nui-idle-pixel-v1.frames.json",
+      "sourceSha256": "05ef33c7ff05f8fece3875be1169ec358fa67754276edd490d427a3d0000edce",
+      "importedSha256": "05ef33c7ff05f8fece3875be1169ec358fa67754276edd490d427a3d0000edce"
+    },
+    {
+      "source": "output/imagegen/nui-idle-pixel-v1.png",
+      "destination": "assets/characters/nui/idle/pixel-v1/nui-idle-pixel-v1.png",
+      "sourceSha256": "534a9256d4b2e99525bac27c5493322ad3bb46f49a523c5d62db81a2a72e039f",
+      "importedSha256": "534a9256d4b2e99525bac27c5493322ad3bb46f49a523c5d62db81a2a72e039f"
+    },
+    {
+      "source": "output/imagegen/nui-idle-pixel-v1.prompt.txt",
+      "destination": "assets/characters/nui/idle/pixel-v1/nui-idle-pixel-v1.prompt.txt",
+      "sourceSha256": "2f6cb3d7dd6c8680effe177aca60974fe9e7e0031f55b6b8240e135ce3d171e4",
+      "importedSha256": "2f6cb3d7dd6c8680effe177aca60974fe9e7e0031f55b6b8240e135ce3d171e4"
+    },
+    {
+      "source": "output/imagegen/nui-portrait-pixel-v1-keyed.png",
+      "destination": "assets/characters/nui/portrait/pixel-v1/nui-portrait-pixel-v1-keyed.png",
+      "sourceSha256": "c13be9f4ba78c0a62babf6c6fb24365722ec60d63c7c6d4866d9b61dfaa3b7f7",
+      "importedSha256": "c13be9f4ba78c0a62babf6c6fb24365722ec60d63c7c6d4866d9b61dfaa3b7f7"
+    },
+    {
+      "source": "output/imagegen/nui-portrait-pixel-v1-magenta.png",
+      "destination": "assets/characters/nui/portrait/pixel-v1/nui-portrait-pixel-v1-magenta.png",
+      "sourceSha256": "6572f16a332859ea5cd487837082879f6b4180629c2b29aea79cad0255be9d55",
+      "importedSha256": "6572f16a332859ea5cd487837082879f6b4180629c2b29aea79cad0255be9d55"
+    },
+    {
+      "source": "output/imagegen/nui-portrait-pixel-v1.png",
+      "destination": "assets/characters/nui/portrait/pixel-v1/nui-portrait-pixel-v1.png",
+      "sourceSha256": "c13be9f4ba78c0a62babf6c6fb24365722ec60d63c7c6d4866d9b61dfaa3b7f7",
+      "importedSha256": "c13be9f4ba78c0a62babf6c6fb24365722ec60d63c7c6d4866d9b61dfaa3b7f7"
+    },
+    {
+      "source": "output/imagegen/nui-portrait-pixel-v1.prompt.txt",
+      "destination": "assets/characters/nui/portrait/pixel-v1/nui-portrait-pixel-v1.prompt.txt",
+      "sourceSha256": "d6ec91b61c5a962f8ac800536670fac442c0e9c0084d0108a348d27aa0c18899",
+      "importedSha256": "d6ec91b61c5a962f8ac800536670fac442c0e9c0084d0108a348d27aa0c18899"
+    },
+    {
+      "source": "output/imagegen/nui-success-pixel-v1-keyed.png",
+      "destination": "assets/characters/nui/success/pixel-v1/nui-success-pixel-v1-keyed.png",
+      "sourceSha256": "c8d41c7949232794ad4aa5c2c2fd41e9d044d81a6c519c73d7e319fe15fcd2f8",
+      "importedSha256": "c8d41c7949232794ad4aa5c2c2fd41e9d044d81a6c519c73d7e319fe15fcd2f8"
+    },
+    {
+      "source": "output/imagegen/nui-success-pixel-v1-magenta.png",
+      "destination": "assets/characters/nui/success/pixel-v1/nui-success-pixel-v1-magenta.png",
+      "sourceSha256": "97ca6097dea4f4a7fbfc2f5217161634fd9f223d35c872a5812fa66d2a6829ba",
+      "importedSha256": "97ca6097dea4f4a7fbfc2f5217161634fd9f223d35c872a5812fa66d2a6829ba"
+    },
+    {
+      "source": "output/imagegen/nui-success-pixel-v1.frames.json",
+      "destination": "assets/characters/nui/success/pixel-v1/nui-success-pixel-v1.frames.json",
+      "sourceSha256": "0da93277b9026cf592ffed57398252798bc3ce810a3492f25efb01f22c271017",
+      "importedSha256": "0da93277b9026cf592ffed57398252798bc3ce810a3492f25efb01f22c271017"
+    },
+    {
+      "source": "output/imagegen/nui-success-pixel-v1.png",
+      "destination": "assets/characters/nui/success/pixel-v1/nui-success-pixel-v1.png",
+      "sourceSha256": "0c1cfea6520bf9948310eedb5863c7a79ddaf905ec1322c72f908373ef4a6cee",
+      "importedSha256": "0c1cfea6520bf9948310eedb5863c7a79ddaf905ec1322c72f908373ef4a6cee"
+    },
+    {
+      "source": "output/imagegen/nui-success-pixel-v1.prompt.txt",
+      "destination": "assets/characters/nui/success/pixel-v1/nui-success-pixel-v1.prompt.txt",
+      "sourceSha256": "0460cfb386375a238975faa3cc2d0a667e0d54b7b14b6b29bb3165575b5df7a7",
+      "importedSha256": "0460cfb386375a238975faa3cc2d0a667e0d54b7b14b6b29bb3165575b5df7a7"
+    },
+    {
+      "source": "output/imagegen/nui-victory-pixel-v1-keyed.png",
+      "destination": "assets/characters/nui/victory/pixel-v1/nui-victory-pixel-v1-keyed.png",
+      "sourceSha256": "6276afcdba6b67af46546d3cbddd3caa123cded04effbf43001e57d4bc836625",
+      "importedSha256": "6276afcdba6b67af46546d3cbddd3caa123cded04effbf43001e57d4bc836625"
+    },
+    {
+      "source": "output/imagegen/nui-victory-pixel-v1-magenta.png",
+      "destination": "assets/characters/nui/victory/pixel-v1/nui-victory-pixel-v1-magenta.png",
+      "sourceSha256": "63130d6d669e0e3ac55883a05d2f25c1077f27973094ed5373e1e2d4419ba1d3",
+      "importedSha256": "63130d6d669e0e3ac55883a05d2f25c1077f27973094ed5373e1e2d4419ba1d3"
+    },
+    {
+      "source": "output/imagegen/nui-victory-pixel-v1.frames.json",
+      "destination": "assets/characters/nui/victory/pixel-v1/nui-victory-pixel-v1.frames.json",
+      "sourceSha256": "b05bdbaa2a34b8ca3e72a379f7566a0fa904ea40dd35ad99e234a970623fe899",
+      "importedSha256": "b05bdbaa2a34b8ca3e72a379f7566a0fa904ea40dd35ad99e234a970623fe899"
+    },
+    {
+      "source": "output/imagegen/nui-victory-pixel-v1.png",
+      "destination": "assets/characters/nui/victory/pixel-v1/nui-victory-pixel-v1.png",
+      "sourceSha256": "c5ab059c817bd6e181267dcbad678b9e8c2c5c61f63beb8b95e01504c8b964b5",
+      "importedSha256": "c5ab059c817bd6e181267dcbad678b9e8c2c5c61f63beb8b95e01504c8b964b5"
+    },
+    {
+      "source": "output/imagegen/nui-victory-pixel-v1.prompt.txt",
+      "destination": "assets/characters/nui/victory/pixel-v1/nui-victory-pixel-v1.prompt.txt",
+      "sourceSha256": "727f925bcdb6729eaa1dba826fdcb986be60f4d2416b5bd34104d460220b3f81",
+      "importedSha256": "727f925bcdb6729eaa1dba826fdcb986be60f4d2416b5bd34104d460220b3f81"
+    },
+    {
+      "source": "output/imagegen/pirika-danger-pixel-v1-keyed.png",
+      "destination": "assets/characters/pirika/danger/pixel-v1/pirika-danger-pixel-v1-keyed.png",
+      "sourceSha256": "adcca67a3881fb367b6e8d136c6b714d3422bc8e270e084327822097e204281d",
+      "importedSha256": "adcca67a3881fb367b6e8d136c6b714d3422bc8e270e084327822097e204281d"
+    },
+    {
+      "source": "output/imagegen/pirika-danger-pixel-v1-magenta.png",
+      "destination": "assets/characters/pirika/danger/pixel-v1/pirika-danger-pixel-v1-magenta.png",
+      "sourceSha256": "04c85d3f12d83da77fc377844c203af545c36d846bb39754303744503220c8a6",
+      "importedSha256": "04c85d3f12d83da77fc377844c203af545c36d846bb39754303744503220c8a6"
+    },
+    {
+      "source": "output/imagegen/pirika-danger-pixel-v1.frames.json",
+      "destination": "assets/characters/pirika/danger/pixel-v1/pirika-danger-pixel-v1.frames.json",
+      "sourceSha256": "dca05e94292dc7153a609983b08e77c5ea96fff0d6a5084954bebf82edb51e95",
+      "importedSha256": "dca05e94292dc7153a609983b08e77c5ea96fff0d6a5084954bebf82edb51e95"
+    },
+    {
+      "source": "output/imagegen/pirika-danger-pixel-v1.png",
+      "destination": "assets/characters/pirika/danger/pixel-v1/pirika-danger-pixel-v1.png",
+      "sourceSha256": "a27603bdc79406f43e3c1f6ded7bf76ed664e5bb2a7da645115d872d08118f98",
+      "importedSha256": "a27603bdc79406f43e3c1f6ded7bf76ed664e5bb2a7da645115d872d08118f98"
+    },
+    {
+      "source": "output/imagegen/pirika-danger-pixel-v1.prompt.txt",
+      "destination": "assets/characters/pirika/danger/pixel-v1/pirika-danger-pixel-v1.prompt.txt",
+      "sourceSha256": "c72f131e9dcf60fa4e9af1e4894dce800f39a7d768e0e241f7adf5fb51176dbf",
+      "importedSha256": "c72f131e9dcf60fa4e9af1e4894dce800f39a7d768e0e241f7adf5fb51176dbf"
+    },
+    {
+      "source": "output/imagegen/pirika-defeat-pixel-v1-keyed.png",
+      "destination": "assets/characters/pirika/defeat/pixel-v1/pirika-defeat-pixel-v1-keyed.png",
+      "sourceSha256": "699743201eb3e9044e5a2b5271575cbd4a4058a335aea1291133e16a05d330b3",
+      "importedSha256": "699743201eb3e9044e5a2b5271575cbd4a4058a335aea1291133e16a05d330b3"
+    },
+    {
+      "source": "output/imagegen/pirika-defeat-pixel-v1-magenta.png",
+      "destination": "assets/characters/pirika/defeat/pixel-v1/pirika-defeat-pixel-v1-magenta.png",
+      "sourceSha256": "f333e0650967328fcf8338d78f66098400820c4762fecbdfad402ce8bb45c5b4",
+      "importedSha256": "f333e0650967328fcf8338d78f66098400820c4762fecbdfad402ce8bb45c5b4"
+    },
+    {
+      "source": "output/imagegen/pirika-defeat-pixel-v1.frames.json",
+      "destination": "assets/characters/pirika/defeat/pixel-v1/pirika-defeat-pixel-v1.frames.json",
+      "sourceSha256": "e54de4d25d167b64bf558aae60319ca8909391bc9a900621b5e408b98934afa7",
+      "importedSha256": "e54de4d25d167b64bf558aae60319ca8909391bc9a900621b5e408b98934afa7"
+    },
+    {
+      "source": "output/imagegen/pirika-defeat-pixel-v1.png",
+      "destination": "assets/characters/pirika/defeat/pixel-v1/pirika-defeat-pixel-v1.png",
+      "sourceSha256": "4ef1a5cb13129030e0fd78d0fa94701d6bdc9dcabada1ee150d8c1809213d183",
+      "importedSha256": "4ef1a5cb13129030e0fd78d0fa94701d6bdc9dcabada1ee150d8c1809213d183"
+    },
+    {
+      "source": "output/imagegen/pirika-defeat-pixel-v1.prompt.txt",
+      "destination": "assets/characters/pirika/defeat/pixel-v1/pirika-defeat-pixel-v1.prompt.txt",
+      "sourceSha256": "dcab54eb7656a4096380c680063eb4b09b63a398b8efab1e56443de68eacd3ff",
+      "importedSha256": "dcab54eb7656a4096380c680063eb4b09b63a398b8efab1e56443de68eacd3ff"
+    },
+    {
+      "source": "output/imagegen/pirika-finish-pixel-v1-generated.png",
+      "destination": "assets/characters/pirika/finish/pixel-v1/pirika-finish-pixel-v1-generated.png",
+      "sourceSha256": "a2e16c35639bd7161d800cc7b73011bd701c5039c44995c5cd4e99f7240c013a",
+      "importedSha256": "a2e16c35639bd7161d800cc7b73011bd701c5039c44995c5cd4e99f7240c013a"
+    },
+    {
+      "source": "output/imagegen/pirika-finish-pixel-v1-keyed.png",
+      "destination": "assets/characters/pirika/finish/pixel-v1/pirika-finish-pixel-v1-keyed.png",
+      "sourceSha256": "77ac9b706e47f24f7a9f1cf877220bfe4df40361af1a90c59a59408752cc5e40",
+      "importedSha256": "77ac9b706e47f24f7a9f1cf877220bfe4df40361af1a90c59a59408752cc5e40"
+    },
+    {
+      "source": "output/imagegen/pirika-finish-pixel-v1-magenta.png",
+      "destination": "assets/characters/pirika/finish/pixel-v1/pirika-finish-pixel-v1-magenta.png",
+      "sourceSha256": "6d5f682400079afe25ce753157a817bf8c1c230d593baf4f7df4a766f4209cb0",
+      "importedSha256": "6d5f682400079afe25ce753157a817bf8c1c230d593baf4f7df4a766f4209cb0"
+    },
+    {
+      "source": "output/imagegen/pirika-finish-pixel-v1.frames.json",
+      "destination": "assets/characters/pirika/finish/pixel-v1/pirika-finish-pixel-v1.frames.json",
+      "sourceSha256": "f7f65f741a602d7215d9ece3cfa28f798cbc0c1109624fdd5245d81d9bafcd0f",
+      "importedSha256": "f7f65f741a602d7215d9ece3cfa28f798cbc0c1109624fdd5245d81d9bafcd0f"
+    },
+    {
+      "source": "output/imagegen/pirika-finish-pixel-v1.png",
+      "destination": "assets/characters/pirika/finish/pixel-v1/pirika-finish-pixel-v1.png",
+      "sourceSha256": "9b9a8432c1a4a7cedf94708ef3549c18b431cd13fd981f1126bd6d50ebbdbe70",
+      "importedSha256": "9b9a8432c1a4a7cedf94708ef3549c18b431cd13fd981f1126bd6d50ebbdbe70"
+    },
+    {
+      "source": "output/imagegen/pirika-finish-pixel-v1.prompt.txt",
+      "destination": "assets/characters/pirika/finish/pixel-v1/pirika-finish-pixel-v1.prompt.txt",
+      "sourceSha256": "578faba281245d5c15736fa290ac6f93e573c72c06b21806f76917eca9df74de",
+      "importedSha256": "578faba281245d5c15736fa290ac6f93e573c72c06b21806f76917eca9df74de"
+    },
+    {
+      "source": "output/imagegen/pirika-garbage-land-pixel-v1-generated.png",
+      "destination": "assets/characters/pirika/garbage-land/pixel-v1/pirika-garbage-land-pixel-v1-generated.png",
+      "sourceSha256": "0ccd3771ff805d0aec289246d974043cfdc7b3ca3c65df07297aeb986c10ae90",
+      "importedSha256": "0ccd3771ff805d0aec289246d974043cfdc7b3ca3c65df07297aeb986c10ae90"
+    },
+    {
+      "source": "output/imagegen/pirika-garbage-land-pixel-v1-keyed.png",
+      "destination": "assets/characters/pirika/garbage-land/pixel-v1/pirika-garbage-land-pixel-v1-keyed.png",
+      "sourceSha256": "127ecc9907b568caa4b6b98e11d983ae21654e37a091d45fe01a7efaa1e57be6",
+      "importedSha256": "127ecc9907b568caa4b6b98e11d983ae21654e37a091d45fe01a7efaa1e57be6"
+    },
+    {
+      "source": "output/imagegen/pirika-garbage-land-pixel-v1-magenta.png",
+      "destination": "assets/characters/pirika/garbage-land/pixel-v1/pirika-garbage-land-pixel-v1-magenta.png",
+      "sourceSha256": "4ef00cd47f11e263cd22f68bec5193ce2fdda31422f799ff5c5ed31cae8120f0",
+      "importedSha256": "4ef00cd47f11e263cd22f68bec5193ce2fdda31422f799ff5c5ed31cae8120f0"
+    },
+    {
+      "source": "output/imagegen/pirika-garbage-land-pixel-v1.frames.json",
+      "destination": "assets/characters/pirika/garbage-land/pixel-v1/pirika-garbage-land-pixel-v1.frames.json",
+      "sourceSha256": "a1d8211427b855b3f54981f12b39037ba6aec0a147eb937b1b9b8c3b2e31464c",
+      "importedSha256": "a1d8211427b855b3f54981f12b39037ba6aec0a147eb937b1b9b8c3b2e31464c"
+    },
+    {
+      "source": "output/imagegen/pirika-garbage-land-pixel-v1.png",
+      "destination": "assets/characters/pirika/garbage-land/pixel-v1/pirika-garbage-land-pixel-v1.png",
+      "sourceSha256": "5fb9c923d25349bb6d7100f4482a4b5bdcbafc425d47d5629ac6ec98b8018a63",
+      "importedSha256": "5fb9c923d25349bb6d7100f4482a4b5bdcbafc425d47d5629ac6ec98b8018a63"
+    },
+    {
+      "source": "output/imagegen/pirika-garbage-land-pixel-v1.prompt.txt",
+      "destination": "assets/characters/pirika/garbage-land/pixel-v1/pirika-garbage-land-pixel-v1.prompt.txt",
+      "sourceSha256": "3cac04a84272eb68de9289d34e50374fedef093611b1b4d1b3949de8b3c8a739",
+      "importedSha256": "3cac04a84272eb68de9289d34e50374fedef093611b1b4d1b3949de8b3c8a739"
+    },
+    {
+      "source": "output/imagegen/pirika-generation-review.md",
+      "destination": "assets/characters/pirika/notes/pirika-generation-review.md",
+      "sourceSha256": "a2befeea1a1a52a5156257c540604c28107d5919acafd542d1fab575f51b9b70",
+      "importedSha256": "a2befeea1a1a52a5156257c540604c28107d5919acafd542d1fab575f51b9b70"
+    },
+    {
+      "source": "output/imagegen/pirika-icon-pixel-v1.png",
+      "destination": "assets/characters/pirika/icon/pixel-v1/pirika-icon-pixel-v1.png",
+      "sourceSha256": "4062a01059248ea037eab0221e4a42e33b8261865c3e0576a454faa86297a0b8",
+      "importedSha256": "4062a01059248ea037eab0221e4a42e33b8261865c3e0576a454faa86297a0b8"
+    },
+    {
+      "source": "output/imagegen/pirika-icon-pixel-v1.prompt.txt",
+      "destination": "assets/characters/pirika/icon/pixel-v1/pirika-icon-pixel-v1.prompt.txt",
+      "sourceSha256": "e05bd788e20c48b2f2840e96f4e0f50839b83b9f12d3e8b9082a14ceb874c7f2",
+      "importedSha256": "e05bd788e20c48b2f2840e96f4e0f50839b83b9f12d3e8b9082a14ceb874c7f2"
+    },
+    {
+      "source": "output/imagegen/pirika-icon-pixel-v2-generated.png",
+      "destination": "assets/characters/pirika/icon/pixel-v2/pirika-icon-pixel-v2-generated.png",
+      "sourceSha256": "27579cb72ba0b386ed229087328825b5dbe63eb40b82c3b91140f61ed00db8c5",
+      "importedSha256": "27579cb72ba0b386ed229087328825b5dbe63eb40b82c3b91140f61ed00db8c5"
+    },
+    {
+      "source": "output/imagegen/pirika-icon-pixel-v2.png",
+      "destination": "assets/characters/pirika/icon/pixel-v2/pirika-icon-pixel-v2.png",
+      "sourceSha256": "184dc95cc2853b792fcd5e99fb76aec7abfff8eefe77ace0bc670b1188556bda",
+      "importedSha256": "184dc95cc2853b792fcd5e99fb76aec7abfff8eefe77ace0bc670b1188556bda"
+    },
+    {
+      "source": "output/imagegen/pirika-icon-pixel-v2.prompt.txt",
+      "destination": "assets/characters/pirika/icon/pixel-v2/pirika-icon-pixel-v2.prompt.txt",
+      "sourceSha256": "bc24d04522ac5806972fc5554b5f3acd3582deb2eb134deabb0536634ab9d87f",
+      "importedSha256": "bc24d04522ac5806972fc5554b5f3acd3582deb2eb134deabb0536634ab9d87f"
+    },
+    {
+      "source": "output/imagegen/pirika-idle-pixel-v1-generated.png",
+      "destination": "assets/characters/pirika/idle/pixel-v1/pirika-idle-pixel-v1-generated.png",
+      "sourceSha256": "ff720dc095b634f9f16032e49fae2dbd9e6a5cc99bf9c6af5dc9e4a78ea279cc",
+      "importedSha256": "ff720dc095b634f9f16032e49fae2dbd9e6a5cc99bf9c6af5dc9e4a78ea279cc"
+    },
+    {
+      "source": "output/imagegen/pirika-idle-pixel-v1-keyed.png",
+      "destination": "assets/characters/pirika/idle/pixel-v1/pirika-idle-pixel-v1-keyed.png",
+      "sourceSha256": "ec7117b1e3f1cd660303ae250578e19ffff33dbb9af8c8f9ff11213dbbca2647",
+      "importedSha256": "ec7117b1e3f1cd660303ae250578e19ffff33dbb9af8c8f9ff11213dbbca2647"
+    },
+    {
+      "source": "output/imagegen/pirika-idle-pixel-v1-magenta.png",
+      "destination": "assets/characters/pirika/idle/pixel-v1/pirika-idle-pixel-v1-magenta.png",
+      "sourceSha256": "575794a1c8655f8411d028c8b464958454b11ff2c9f07ae60b72d36ee7d37ac8",
+      "importedSha256": "575794a1c8655f8411d028c8b464958454b11ff2c9f07ae60b72d36ee7d37ac8"
+    },
+    {
+      "source": "output/imagegen/pirika-idle-pixel-v1.frames.json",
+      "destination": "assets/characters/pirika/idle/pixel-v1/pirika-idle-pixel-v1.frames.json",
+      "sourceSha256": "acc6bce0f9d688387882ab8e71269d916a46e49f7656f0666560f3956cbaa75b",
+      "importedSha256": "acc6bce0f9d688387882ab8e71269d916a46e49f7656f0666560f3956cbaa75b"
+    },
+    {
+      "source": "output/imagegen/pirika-idle-pixel-v1.png",
+      "destination": "assets/characters/pirika/idle/pixel-v1/pirika-idle-pixel-v1.png",
+      "sourceSha256": "927122232f56f2d728c1d250376466b9a04f99977ceb02f6281d001839b81694",
+      "importedSha256": "927122232f56f2d728c1d250376466b9a04f99977ceb02f6281d001839b81694"
+    },
+    {
+      "source": "output/imagegen/pirika-idle-pixel-v1.prompt.txt",
+      "destination": "assets/characters/pirika/idle/pixel-v1/pirika-idle-pixel-v1.prompt.txt",
+      "sourceSha256": "0cbe65f40ea3f8b35bc20cf21c4d4459cdf670a6bdc885992c913177a4f40cbd",
+      "importedSha256": "0cbe65f40ea3f8b35bc20cf21c4d4459cdf670a6bdc885992c913177a4f40cbd"
+    },
+    {
+      "source": "output/imagegen/pirika-portrait-pixel-v1-generated.png",
+      "destination": "assets/characters/pirika/portrait/pixel-v1/pirika-portrait-pixel-v1-generated.png",
+      "sourceSha256": "98eea005c87b669ebea84f941cb4893d67943940d8cca314c2e1a36f82c2e1e0",
+      "importedSha256": "98eea005c87b669ebea84f941cb4893d67943940d8cca314c2e1a36f82c2e1e0"
+    },
+    {
+      "source": "output/imagegen/pirika-portrait-pixel-v1-keyed.png",
+      "destination": "assets/characters/pirika/portrait/pixel-v1/pirika-portrait-pixel-v1-keyed.png",
+      "sourceSha256": "a1c8fb24ffd429b44f25bda2c1bbfe67d0d3fe43657a632c6e31d5fbfe1c3834",
+      "importedSha256": "a1c8fb24ffd429b44f25bda2c1bbfe67d0d3fe43657a632c6e31d5fbfe1c3834"
+    },
+    {
+      "source": "output/imagegen/pirika-portrait-pixel-v1-magenta.png",
+      "destination": "assets/characters/pirika/portrait/pixel-v1/pirika-portrait-pixel-v1-magenta.png",
+      "sourceSha256": "d04a9c4b27537506bb45ad627622f5e5360ddc57918221b3db0b467cf8311611",
+      "importedSha256": "d04a9c4b27537506bb45ad627622f5e5360ddc57918221b3db0b467cf8311611"
+    },
+    {
+      "source": "output/imagegen/pirika-portrait-pixel-v1.png",
+      "destination": "assets/characters/pirika/portrait/pixel-v1/pirika-portrait-pixel-v1.png",
+      "sourceSha256": "a1c8fb24ffd429b44f25bda2c1bbfe67d0d3fe43657a632c6e31d5fbfe1c3834",
+      "importedSha256": "a1c8fb24ffd429b44f25bda2c1bbfe67d0d3fe43657a632c6e31d5fbfe1c3834"
+    },
+    {
+      "source": "output/imagegen/pirika-portrait-pixel-v1.prompt.txt",
+      "destination": "assets/characters/pirika/portrait/pixel-v1/pirika-portrait-pixel-v1.prompt.txt",
+      "sourceSha256": "c75375535eb5eb51a080b1d90e24a816ac1dc4cd9eb9340e3e8369e667d79bbc",
+      "importedSha256": "c75375535eb5eb51a080b1d90e24a816ac1dc4cd9eb9340e3e8369e667d79bbc"
+    },
+    {
+      "source": "output/imagegen/pirika-success-pixel-v1-generated.png",
+      "destination": "assets/characters/pirika/success/pixel-v1/pirika-success-pixel-v1-generated.png",
+      "sourceSha256": "1c095438b7128b83e7670696cfa9fc8baf7528df0ae1bfd55324c22ee78f19df",
+      "importedSha256": "1c095438b7128b83e7670696cfa9fc8baf7528df0ae1bfd55324c22ee78f19df"
+    },
+    {
+      "source": "output/imagegen/pirika-success-pixel-v1-keyed.png",
+      "destination": "assets/characters/pirika/success/pixel-v1/pirika-success-pixel-v1-keyed.png",
+      "sourceSha256": "04435b2c34223602baf413b75fb7290bd05625152e1c8a002c5d2a096abf3cb9",
+      "importedSha256": "04435b2c34223602baf413b75fb7290bd05625152e1c8a002c5d2a096abf3cb9"
+    },
+    {
+      "source": "output/imagegen/pirika-success-pixel-v1-magenta.png",
+      "destination": "assets/characters/pirika/success/pixel-v1/pirika-success-pixel-v1-magenta.png",
+      "sourceSha256": "67925ee76091f383a155d0da7987c3b14057daab1fe478c60b5fe2817cef67c1",
+      "importedSha256": "67925ee76091f383a155d0da7987c3b14057daab1fe478c60b5fe2817cef67c1"
+    },
+    {
+      "source": "output/imagegen/pirika-success-pixel-v1.frames.json",
+      "destination": "assets/characters/pirika/success/pixel-v1/pirika-success-pixel-v1.frames.json",
+      "sourceSha256": "869b3c6d8311c8de8ca544cb59278c9cc46f7fe0166233ad7dcefefd593f25b7",
+      "importedSha256": "869b3c6d8311c8de8ca544cb59278c9cc46f7fe0166233ad7dcefefd593f25b7"
+    },
+    {
+      "source": "output/imagegen/pirika-success-pixel-v1.png",
+      "destination": "assets/characters/pirika/success/pixel-v1/pirika-success-pixel-v1.png",
+      "sourceSha256": "8c904b380865a3b81b7a3949c4e2552523f194a928b0f2f1bf988e2761969f00",
+      "importedSha256": "8c904b380865a3b81b7a3949c4e2552523f194a928b0f2f1bf988e2761969f00"
+    },
+    {
+      "source": "output/imagegen/pirika-success-pixel-v1.prompt.txt",
+      "destination": "assets/characters/pirika/success/pixel-v1/pirika-success-pixel-v1.prompt.txt",
+      "sourceSha256": "93c9f0fb3d8bd8054fedca95e7741d7b6f1e01634a5ba3ce27434efa02851e48",
+      "importedSha256": "93c9f0fb3d8bd8054fedca95e7741d7b6f1e01634a5ba3ce27434efa02851e48"
+    },
+    {
+      "source": "output/imagegen/pirika-victory-pixel-v1-generated.png",
+      "destination": "assets/characters/pirika/victory/pixel-v1/pirika-victory-pixel-v1-generated.png",
+      "sourceSha256": "4f58611f3746ffbdf87c7b2e353e8b49ba7bcd793a349dd2372595441d24465a",
+      "importedSha256": "4f58611f3746ffbdf87c7b2e353e8b49ba7bcd793a349dd2372595441d24465a"
+    },
+    {
+      "source": "output/imagegen/pirika-victory-pixel-v1-keyed.png",
+      "destination": "assets/characters/pirika/victory/pixel-v1/pirika-victory-pixel-v1-keyed.png",
+      "sourceSha256": "7e176eb18558c0446abc1c47aa9d87d0a5361eab5b24300d8dacd3a521c31ec9",
+      "importedSha256": "7e176eb18558c0446abc1c47aa9d87d0a5361eab5b24300d8dacd3a521c31ec9"
+    },
+    {
+      "source": "output/imagegen/pirika-victory-pixel-v1-magenta.png",
+      "destination": "assets/characters/pirika/victory/pixel-v1/pirika-victory-pixel-v1-magenta.png",
+      "sourceSha256": "04aedff878b18ca92e45485166f35630c72aa44c0b416db61fddfbb01d7a4d95",
+      "importedSha256": "04aedff878b18ca92e45485166f35630c72aa44c0b416db61fddfbb01d7a4d95"
+    },
+    {
+      "source": "output/imagegen/pirika-victory-pixel-v1.frames.json",
+      "destination": "assets/characters/pirika/victory/pixel-v1/pirika-victory-pixel-v1.frames.json",
+      "sourceSha256": "684d732eb0bffec341ecd9e024b40b4fac55c17a2d66975751ec9ce3d9db6a3f",
+      "importedSha256": "684d732eb0bffec341ecd9e024b40b4fac55c17a2d66975751ec9ce3d9db6a3f"
+    },
+    {
+      "source": "output/imagegen/pirika-victory-pixel-v1.png",
+      "destination": "assets/characters/pirika/victory/pixel-v1/pirika-victory-pixel-v1.png",
+      "sourceSha256": "36244a9ae0c88a0e897eb5b63f43f15d098f339f1ef2de2d67988852d107dd55",
+      "importedSha256": "36244a9ae0c88a0e897eb5b63f43f15d098f339f1ef2de2d67988852d107dd55"
+    },
+    {
+      "source": "output/imagegen/pirika-victory-pixel-v1.prompt.txt",
+      "destination": "assets/characters/pirika/victory/pixel-v1/pirika-victory-pixel-v1.prompt.txt",
+      "sourceSha256": "c923bf7069eab5650a3b72db4f028291776212c28df06e6b3390fc0605c8623d",
+      "importedSha256": "c923bf7069eab5650a3b72db4f028291776212c28df06e6b3390fc0605c8623d"
+    }
+  ]
+}

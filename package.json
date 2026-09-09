@@ -4,10 +4,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc --noEmit && vite build",
+    "dev": "pnpm assets:game && vite",
+    "build": "pnpm assets:game && tsc --noEmit && vite build",
     "preview": "vite preview",
-    "test": "vitest run",
+    "test": "pnpm test:assets && vitest run",
     "test:watch": "vitest",
     "test:balance": "vitest run -c vitest.balance.config.ts",
     "e2e": "playwright test",
@@ -16,7 +16,11 @@
     "puzzles": "esbuild tools/make-puzzles.ts --bundle --platform=node --format=esm --log-level=warning | node --input-type=module -",
     "sim": "sh tools/sim/run.sh",
     "dev:online": "wrangler dev --port 8788 --var ONLINE_ENABLED:true",
-    "e2e:online": "playwright test -c playwright.online.config.ts"
+    "e2e:online": "playwright test -c playwright.online.config.ts",
+    "assets": "node tools/character-assets.mjs",
+    "assets:check": "node tools/character-assets.mjs --check",
+    "assets:game": "node tools/character-assets.mjs --game",
+    "test:assets": "node --test tools/character-assets.test.mjs"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20260908.1",
