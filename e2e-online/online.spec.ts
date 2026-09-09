@@ -48,6 +48,22 @@ test("招待URLから2人で対戦し、降参して再戦する", async ({ brow
   await p.getByRole("button", { name: "YES, SURRENDER", exact: true }).click();
   await expect(q.getByRole("status")).toContainText("YOU WIN");
   await expect(p.getByRole("status")).toContainText("YOU LOSE");
+  // CPU 対戦と同じように、盤面の上にも勝敗を出す
+  const overlays = (page: Page) =>
+    page.evaluate(() =>
+      (window as any).__swapriseOnline.views.map((v: any) => ({
+        title: v.overlayTitle.text,
+        visible: v.overlay.visible,
+      })),
+    );
+  expect(await overlays(p)).toEqual([
+    { title: "LOSE", visible: true },
+    { title: "WIN", visible: true },
+  ]);
+  expect(await overlays(q)).toEqual([
+    { title: "LOSE", visible: true },
+    { title: "WIN", visible: true },
+  ]);
   const old = await p.evaluate(
     () => (window as any).__swapriseOnline.session.state.match.id,
   );

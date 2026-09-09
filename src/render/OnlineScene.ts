@@ -330,6 +330,7 @@ export class OnlineScene extends Phaser.Scene {
       } else if (state.phase === "suspended") audio.stopBgm();
       else if (state.phase === "result" && state.result) {
         audio.stopBgm();
+        this.showResult();
         if (state.result.winner === s.player) {
           audio.win();
           haptics.win();
@@ -340,7 +341,10 @@ export class OnlineScene extends Phaser.Scene {
       this.clearBoard();
       audio.stopBgm();
     }
-    if (s.lockstep && this.gameId !== s.lockstep.match.id) this.buildBoard();
+    if (s.lockstep && this.gameId !== s.lockstep.match.id) {
+      this.buildBoard();
+      this.showResult();
+    }
     const playing = state.phase === "playing" && !this.settings;
     this.root.classList.toggle("playing", playing);
     this.touch?.setEnabled(playing);
@@ -523,6 +527,17 @@ export class OnlineScene extends Phaser.Scene {
       scene: this,
       layout: this.layout,
     };
+  }
+  /** 決着したら CPU 対戦と同じように盤面の上に WIN / LOSE を出す。盤面が止まっただけでは決着が分かりにくい。 */
+  private showResult(): void {
+    const r = this.session?.state?.result;
+    if (!r || this.session?.state?.phase !== "result") return;
+    const invalid = r.reason === "desync" || r.reason === "server";
+    this.views.forEach((view, i) => {
+      const b = view.board;
+      const title = invalid ? "NO CONTEST" : r.winner < 0 ? "DRAW" : r.winner === i ? "WIN" : "LOSE";
+      view.showOverlay(title, `MAX CHAIN x${b.maxChain}\nCOMBOS ${b.stats.combos}  CHAINS ${b.stats.chains}`);
+    });
   }
   private boardName(name: string): string {
     const chars = [...name];
