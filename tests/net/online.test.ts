@@ -16,7 +16,6 @@ function setup() {
     room.join({ session: `s${i}`, token: `t${i}`, name: `n${i}` });
     room.connect(i, true, 0);
     room.message(i, { type: "latency", rtt: 20 }, 0);
-    room.message(i, { type: "ready" }, 0);
   }
   room.start("match", 42, 0);
   room.clock(3000);
@@ -187,13 +186,27 @@ it("両者の入力が同時に途絶えた場合も無効試合にする", () =
   room.clock(20000);
   expect(room.state.result).toEqual({ winner: -1, reason: "server" });
 });
+it("招待部屋でも READY の操作なしに、接続して RTT を測り終えた2人で開始できる", () => {
+  const room = new RoomEngine("invite", () => {});
+  for (let i = 0; i < 2; i++) {
+    room.join({ session: `s${i}`, token: `t${i}`, name: "Guest" });
+    room.connect(i, true, 0);
+    expect(room.canStart()).toBe(false);
+    room.message(i, { type: "latency", rtt: 50 }, 0);
+  }
+  expect(room.canStart()).toBe(true);
+  // 切断して戻った席は RTT を覚えているので、そのまま準備済み
+  room.disconnect(0, 100);
+  expect(room.canStart()).toBe(false);
+  room.connect(0, true, 200);
+  expect(room.canStart()).toBe(true);
+});
 it("待機中に保存したRTTと準備状態から開始できる", () => {
   const room = new RoomEngine("invite", () => {});
   for (let i = 0; i < 2; i++) {
     room.join({ session: `s${i}`, token: `t${i}`, name: "Guest" });
     room.connect(i, true, 0);
     room.message(i, { type: "latency", rtt: 50 }, 0);
-    room.message(i, { type: "ready" }, 0);
   }
   const restored = new RoomEngine("invite", () => {});
   restored.state = structuredClone(room.state);
@@ -218,15 +231,20 @@ it("招待部屋を退出しても相手の席を残し、同じ人が入り直�
   for (let i = 0; i < 2; i++) {
     room.join({ session: `s${i}`, token: `t${i}`, name: `n${i}` });
     room.connect(i, true, 0);
-    room.message(i, { type: "ready" }, 0);
+    room.message(i, { type: "latency", rtt: 50 }, 0);
   }
   room.message(1, { type: "leave" }, 0);
   expect(room.state.phase).toBe("waiting");
   expect(room.members[1]).toBeNull();
   expect(room.state.seats[0]?.connected).toBe(true);
-  expect(room.state.seats[0]?.ready).toBe(false);
+  // 残った人は準備済みのまま。戻ってきた相手が RTT を測り終えれば、操作なしで始まる
+  expect(room.state.seats[0]?.ready).toBe(true);
   expect(room.join({ session: "s1", token: "new", name: "Returned" })).toBe(1);
   expect(room.members[1]?.token).toBe("new");
+  room.connect(1, true, 0);
+  expect(room.canStart()).toBe(false);
+  room.message(1, { type: "latency", rtt: 50 }, 0);
+  expect(room.canStart()).toBe(true);
   room.message(0, { type: "leave" }, 0);
   room.message(1, { type: "leave" }, 0);
   expect(room.state.phase).toBe("waiting");

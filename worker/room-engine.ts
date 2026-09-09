@@ -88,7 +88,8 @@ export class RoomEngine {
     seat.connected = true;
     seat.visible = visible;
     this.lastSeen[i] = now;
-    if (this.state.kind === "random") seat.ready = typeof seat.rtt === "number";
+    // 準備の操作は要らない。接続して RTT を測り終えた席は準備済みとして扱う（招待もランダムも同じ）
+    seat.ready = typeof seat.rtt === "number";
     if (this.state.phase === "playing" || this.state.phase === "suspended") {
       this.suspend(now);
       this.replay(i);
@@ -193,8 +194,7 @@ export class RoomEngine {
     if (m.type === "latency") {
       if (!Number.isFinite(m.rtt) || m.rtt < 0 || m.rtt > 2000) return;
       seat.rtt = m.rtt;
-      if (this.state.kind === "random" && this.state.phase === "waiting")
-        seat.ready = true;
+      if (this.state.phase === "waiting") seat.ready = true;
       this.publish();
       return;
     }
@@ -225,7 +225,7 @@ export class RoomEngine {
         this.pending.forEach((p) => p.clear());
         this.hashes.clear();
         this.state.seats.forEach((s) => {
-          if (s) { s.ready = false; s.rematch = false; }
+          if (s) s.rematch = false;
         });
         this.publish();
         return;
@@ -243,11 +243,6 @@ export class RoomEngine {
       ["playing", "suspended"].includes(this.state.phase)
     ) {
       this.finish(1 - i, "surrender");
-      return;
-    }
-    if (m.type === "ready" && this.state.phase === "waiting") {
-      seat.ready = true;
-      this.publish();
       return;
     }
     if (m.type === "rematch" && this.state.phase === "result") {

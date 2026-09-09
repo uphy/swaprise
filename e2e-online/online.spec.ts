@@ -32,8 +32,8 @@ test("招待URLから2人で対戦し、降参して再戦する", async ({ brow
   await q.goto(p.url());
   await q.getByRole("textbox").fill("参加した人");
   await q.getByRole("button", { name: "JOIN ROOM", exact: true }).click();
-  await p.getByRole("button", { name: "READY", exact: true }).click();
-  await q.getByRole("button", { name: "READY", exact: true }).click();
+  // READY の操作はない。参加した時点で両者の RTT が測れ次第、カウントダウンが始まる
+  await expect(p.getByRole("button", { name: "READY", exact: true })).toHaveCount(0);
   await p.waitForFunction(
     () => (window as any).__swapriseOnline?.session?.lockstep?.frame > 120,
   );
@@ -518,33 +518,29 @@ test("招待部屋は退出後も同じURLで再参加でき、両者がFIND MAT
   const invite = p.url();
   await q.goto(invite);
   await q.getByRole("button", { name: "JOIN ROOM", exact: true }).click();
-  await expect(q.getByRole("button", { name: "LEAVE ROOM" })).toBeVisible();
+  // 参加した時点で READY の操作なしに始まる
+  for (const page of [p, q])
+    await page.waitForFunction(() => (window as any).__swapriseOnline?.session?.lockstep?.frame > 60);
   const saved = await Promise.all([p, q].map((page) => page.evaluate(
     () => sessionStorage.getItem("swaprise.connection.v1")!,
   )));
-  await q.getByRole("button", { name: "LEAVE ROOM" }).click();
-  await expect(p.getByRole("status")).toContainText("Waiting for your friend");
-  await p.getByRole("button", { name: "LEAVE ROOM" }).click();
-  for (const [index, page] of [p, q].entries()) {
-    // 更新前のアプリが保存した、退出済みの接続情報を再現する。
-    await page.evaluate((connection) => sessionStorage.setItem("swaprise.connection.v1", connection), saved[index]);
-    await page.goto(invite);
-    await page.getByRole("button", { name: "JOIN ROOM", exact: true }).click();
-    await expect(page.getByRole("button", { name: "LEAVE ROOM" })).toBeVisible();
-  }
-  await p.getByRole("button", { name: "READY", exact: true }).click();
-  await q.getByRole("button", { name: "READY", exact: true }).click();
+  // 降参して結果画面から出る。招待部屋では相手が残り、次の参加者を待つ
   await p.getByRole("button", { name: "SETTINGS", exact: true }).click();
   await p.getByRole("button", { name: "SURRENDER", exact: true }).click();
   await p.getByRole("button", { name: "YES, SURRENDER", exact: true }).click();
   await q.getByRole("button", { name: "BACK TO MENU" }).click();
   await expect(p.getByRole("status")).toContainText("Waiting for your friend");
   await p.waitForFunction(() => (window as any).__swapriseOnline.views.length === 0);
-  await q.goto(invite);
-  await q.getByRole("button", { name: "JOIN ROOM", exact: true }).click();
-  await expect(p.getByRole("button", { name: "READY", exact: true })).toBeVisible();
-  for (const page of [p, q])
+  await p.getByRole("button", { name: "LEAVE ROOM" }).click();
+  // 1人ずつ入り直す。2人が揃うと始まってしまうので、確かめたら出てから次の人が入る
+  for (const [index, page] of [p, q].entries()) {
+    // 更新前のアプリが保存した、退出済みの接続情報を再現する。
+    await page.evaluate((connection) => sessionStorage.setItem("swaprise.connection.v1", connection), saved[index]);
+    await page.goto(invite);
+    await page.getByRole("button", { name: "JOIN ROOM", exact: true }).click();
+    await expect(page.getByRole("status")).toContainText("Waiting for your friend");
     await page.getByRole("button", { name: "LEAVE ROOM" }).click();
+  }
   for (const page of [p, q]) {
     await enter(page);
     await page.getByRole("button", { name: "FIND MATCH", exact: true }).click();
@@ -576,15 +572,12 @@ test("招待者は画面を閉じても同じURLへ戻れ、残った接続も�
   const invite = p.url();
   await q.goto(invite);
   await q.getByRole("button", { name: "JOIN ROOM", exact: true }).click();
-  await expect(q.getByRole("button", { name: "READY", exact: true })).toBeVisible();
+  await q.waitForFunction(() => (window as any).__swapriseOnline?.session?.player === 1);
   await p.close();
   const reopened = await a.newPage();
   await reopened.goto(invite);
   await reopened.getByRole("button", { name: "JOIN ROOM", exact: true }).click();
-  await expect(reopened.getByRole("button", { name: "READY", exact: true })).toBeVisible();
-  expect(await reopened.evaluate(() => (window as any).__swapriseOnline.session.player)).toBe(0);
-  await reopened.getByRole("button", { name: "READY", exact: true }).click();
-  await q.getByRole("button", { name: "READY", exact: true }).click();
+  await reopened.waitForFunction(() => (window as any).__swapriseOnline?.session?.player === 0);
   await reopened.waitForFunction(() => (window as any).__swapriseOnline?.session?.lockstep?.frame > 60);
   const replacement = await a.newPage();
   await replacement.goto(invite);

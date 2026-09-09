@@ -353,7 +353,7 @@ export class OnlineScene extends Phaser.Scene {
     if (s.error) this.status.textContent = s.error;
     else if (state.phase === "waiting")
       this.status.textContent = other
-        ? `${other.name} joined.${other.ready ? " Ready to play." : ""}`
+        ? `${other.name} joined. Starting…`
         : "Waiting for your friend…";
     else if (state.phase === "countdown")
       this.status.textContent = `${Math.max(1, Math.ceil((state.startAt - Date.now()) / 1000))}…`;
@@ -382,7 +382,6 @@ export class OnlineScene extends Phaser.Scene {
     const key = [
       state.phase,
       this.settings,
-      me?.ready,
       me?.rematch,
       other?.connected,
     ].join(":");
@@ -403,8 +402,6 @@ export class OnlineScene extends Phaser.Scene {
                   : "Invite shared.";
           });
         });
-      if (other && !me?.ready)
-        this.button("READY", () => s.send({ type: "ready" }));
       this.button("LEAVE ROOM", () => this.menu());
     } else if (state.phase === "playing" || state.phase === "suspended") {
       if (!this.settings && playing)
@@ -616,9 +613,11 @@ export class OnlineScene extends Phaser.Scene {
         if (l.step()) {
           this.stalledMs = 0;
           const remote = 1 - s.player;
+          // 相手は別の場所にいる。相手の盤面の危険・天井の警告音はこの端末で鳴らさない
           this.views[remote].handleEvents(
             l.game.boards[remote].events,
             true,
+            false,
             false,
           );
           s.checkHash();
@@ -629,6 +628,7 @@ export class OnlineScene extends Phaser.Scene {
         this.accumulator -= 1000 / 60;
       }
       this.prediction?.reconcile();
+      // ピンチの曲は自分の盤面だけで決める。相手の盤面が危険でも曲は変えない
       const board = this.prediction!.game.boards[s.player];
       audio.setDanger(musicDanger(board));
     } else {

@@ -1,7 +1,7 @@
 import type { Input } from "../core/types";
 import { COLS, ROWS } from "../core/constants";
 export const PROTOCOL = 1;
-export const GAME_VERSION = "online-v3";
+export const GAME_VERSION = "online-v4";
 export const BATCH = 3;
 export const DELAY = 6;
 export const MAX_FRAMES = 36_000;
@@ -50,7 +50,7 @@ export type ClientMessage =
       token: string;
       visible: boolean;
     }
-  | { type: "ready" | "rematch" | "leave" | "surrender" }
+  | { type: "rematch" | "leave" | "surrender" }
   | { type: "visibility"; visible: boolean }
   | { type: "latency"; rtt: number }
   | { type: "ping"; at: number }
