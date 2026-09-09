@@ -497,7 +497,7 @@ export class MenuScene extends Phaser.Scene {
         const current = views[slot];
         if (!current || current.character.id !== c.id) {
           current?.destroy();
-          const v = new CharacterView(this, c, { portrait: true });
+          const v = new CharacterView(this, c, { portrait: true, flip: slot === 1 });
           v.place(slotX(slot), frameTop + 30 + artH, artH);
           v.setDepth(51);
           views[slot] = v;

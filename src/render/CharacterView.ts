@@ -96,6 +96,8 @@ export interface CharacterViewOptions {
   portrait?: boolean;
   /** 代替表示の中に出す名前。既定は人物名。 */
   caption?: string;
+  /** 左右を反転して左を向かせる（相手側）。素材は右向き（自分側）で描かれている。 */
+  flip?: boolean;
 }
 
 /**
@@ -255,12 +257,16 @@ export class CharacterView {
       if (asset.kind === "animation") {
         const r = frameRect(asset, p.frame);
         this.image.setTexture(textureKey(asset), String(p.frame));
-        this.image.setOrigin(r.pivotX / r.width, r.baselineY / r.height);
+        // 反転時は基準点も鏡写しにして、床の中央がずれないようにする
+        const ox = r.pivotX / r.width;
+        this.image.setOrigin(this.opts.flip ? 1 - ox : ox, r.baselineY / r.height);
+        this.image.setFlipX(Boolean(this.opts.flip));
         this.image.setScale(r.scale * factor);
       } else {
         // 立ち絵・アイコン。下端の中央を床に置き、高さいっぱいに収める
         this.image.setTexture(textureKey(asset));
         this.image.setOrigin(0.5, 1);
+        this.image.setFlipX(Boolean(this.opts.flip));
         const h = this.image.frame.height || 1;
         this.image.setScale(this.height / h);
       }

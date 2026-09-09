@@ -77,7 +77,8 @@ export class GameScene extends Phaser.Scene {
       const saved = loadSelection();
       const ids = data.characters ?? [saved.p1, saved.p2];
       this.characterIds = [isCharacterId(ids[0]) ? ids[0] : saved.p1, isCharacterId(ids[1]) ? ids[1] : saved.p2];
-      this.characters = this.characterIds.map((id) => new CharacterView(this, characterById(id)));
+      // 相手側（2P・CPU）は左右を反転して、自分側と向かい合わせる
+      this.characters = this.characterIds.map((id, i) => new CharacterView(this, characterById(id), { flip: i === 1 }));
     } else this.characterIds = null;
     const params = new URLSearchParams(location.search);
     const seed = Number(params.get("seed")) || (Date.now() & 0xffffff);
