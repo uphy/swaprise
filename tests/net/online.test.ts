@@ -199,3 +199,16 @@ it("待機中に保存したRTTと準備状態から開始できる", () => {
   restored.state = structuredClone(room.state);
   expect(restored.canStart()).toBe(true);
 });
+
+it("閉じた招待部屋への再参加は元の参加者でも拒否する", () => {
+  const room = new RoomEngine("invite", () => {});
+  for (let i = 0; i < 2; i++) {
+    room.join({ session: `s${i}`, token: `t${i}`, name: `n${i}` });
+    room.connect(i, true, 0);
+  }
+  room.message(1, { type: "leave" }, 0);
+  expect(room.state.phase).toBe("closed");
+  for (let i = 0; i < 2; i++)
+    expect(() => room.join({ session: `s${i}`, token: "new", name: "Guest" }))
+      .toThrow("This room has closed.");
+});

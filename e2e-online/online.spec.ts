@@ -490,3 +490,32 @@ test("自分の交換は通信の確定を待たず次のtickで描画する", a
   expect(state.confirmed).not.toBe("swapping");
   await Promise.all(contexts.map((c) => c.close()));
 });
+
+test("退出した招待部屋への再参加に失敗しても両者がFIND MATCHできる", async ({ browser }) => {
+  const a = await browser.newContext();
+  const b = await browser.newContext();
+  const p = await a.newPage();
+  const q = await b.newPage();
+  await enter(p);
+  await p.getByRole("button", { name: "INVITE FRIEND", exact: true }).click();
+  await expect(p.getByRole("button", { name: "SHARE INVITE" })).toBeVisible();
+  const invite = p.url();
+  await q.goto(invite);
+  await q.getByRole("button", { name: "JOIN ROOM", exact: true }).click();
+  await expect(q.getByRole("button", { name: "LEAVE ROOM" })).toBeVisible();
+  await q.getByRole("button", { name: "LEAVE ROOM" }).click();
+  await expect(p.getByRole("status")).toContainText("room closed");
+  await p.getByRole("button", { name: "BACK TO MENU" }).click();
+  for (const page of [p, q]) {
+    await page.goto(invite);
+    await page.getByRole("button", { name: "JOIN ROOM", exact: true }).click();
+    await expect(page.getByRole("status")).toHaveText("This room has closed.");
+    await page.getByRole("button", { name: "BACK TO MENU" }).click();
+    await enter(page);
+    await page.getByRole("button", { name: "FIND MATCH", exact: true }).click();
+  }
+  for (const page of [p, q])
+    await page.waitForFunction(() => (window as any).__swapriseOnline?.session?.lockstep?.frame > 60);
+  await a.close();
+  await b.close();
+});

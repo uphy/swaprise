@@ -295,6 +295,7 @@ export class Room extends DurableObject<Env> {
           if (this.engine.state.phase === "waiting" && m.type !== "ping")
             await this.persist();
           if (m.type === "leave") {
+            await this.persist();
             this.ctx.waitUntil(
               this.release().then(() => {
                 ws.send(JSON.stringify({ type: "left" }));

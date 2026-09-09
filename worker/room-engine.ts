@@ -48,6 +48,8 @@ export class RoomEngine {
     };
   }
   join(member: Member): number {
+    if (this.state.phase === "closed")
+      throw new Error("This room has closed.");
     const old = this.members.findIndex((m) => m?.session === member.session);
     if (old >= 0) return old;
     const i = this.members.findIndex((m) => !m);
