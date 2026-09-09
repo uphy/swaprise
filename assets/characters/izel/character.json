@@ -13,5 +13,16 @@
     "victory/pixel-v1/asset.json",
     "defeat/pixel-v1/asset.json",
     "finish/pixel-v1/asset.json"
-  ]
+  ],
+  "adoptedAssets": {
+    "portrait": "izel-portrait-pixel-v1",
+    "icon": "izel-icon-pixel-v1",
+    "idle": "izel-idle-pixel-v1",
+    "danger": "izel-danger-pixel-v1",
+    "success": "izel-success-pixel-v1",
+    "garbage-land": "izel-garbage-land-pixel-v1",
+    "victory": "izel-victory-pixel-v1",
+    "defeat": "izel-defeat-pixel-v1",
+    "finish": "izel-finish-pixel-v1"
+  }
 }

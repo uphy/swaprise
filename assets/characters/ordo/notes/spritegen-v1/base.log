@@ -1,0 +1,22 @@
+{
+  "kind": "sprite-gen-image-report",
+  "provider": "codex",
+  "prompt": "One full-body base idle game sprite. Detailed pixel-style 2D art, crisp dark-brown outlines, broad colors, restrained two-tone shading, cozy workshop puzzle game. Preserve details readable at 512 pixels tall, not coarse 96/128px art. Whole subject contained with generous margin. Humans/animal face slightly screen right. No floor, shadow, text or detached objects. Ordo, nonhumanoid spirit embodied as a maintained safety gate. Tall wide arch of two thick deep indigo glazed ceramic pillars connected by curved beam. Center OPEN, background visible through it. Wooden outer braces, thin brass indicator plates on inner sides. Horizontal amber skylight in center of beam. One wooden barrier arm horizontally spans opening, visibly hinged in brass at screen-right pillar inner side. No face, eyes, mouth, limbs, crown, robot, scenery or text. Entire gate connected. Nearly frontal view. Perfectly flat solid #FF00FF background everywhere including holes.",
+  "out": "/private/tmp/swaprise-mito-assets/assets/characters/ordo/notes/spritegen-v1/base.png",
+  "raw": "/private/tmp/swaprise-mito-assets/assets/characters/ordo/notes/spritegen-v1/base.png.raw.png",
+  "raw_bytes": 1318099,
+  "elapsed_seconds": 73.039,
+  "model": null,
+  "session_id": "01a08685-7df7-79e1-b0e2-788667471d6e",
+  "refs": [],
+  "transparent": false,
+  "alpha": null,
+  "chroma": null,
+  "extra": {
+    "inline_results": 1,
+    "rollout_cleaned": true,
+    "transparent_background_reported": true
+  },
+  "provider_resolved_from": "explicit",
+  "report": "/private/tmp/swaprise-mito-assets/assets/characters/ordo/notes/spritegen-v1/base-gen.json"
+}

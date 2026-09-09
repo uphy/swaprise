@@ -1,0 +1,28 @@
+{
+  "id": "mito-garbage-land-pixel-v1",
+  "label": "おじゃま着地 · ドット絵 v1",
+  "kind": "animation",
+  "action": "garbage-land",
+  "image": "mito-garbage-land-pixel-v1.png",
+  "prompt": "mito-garbage-land-pixel-v1.prompt.txt",
+  "model": "内蔵画像生成ツール（モデル名未確認）",
+  "status": "旧版・比較用",
+  "pixelArt": true,
+  "history": [
+    {
+      "label": "背景処理前のシート",
+      "url": "mito-garbage-land-pixel-v1-magenta.png"
+    }
+  ],
+  "columns": 4,
+  "rows": 2,
+  "frameWidth": 384,
+  "frameHeight": 512,
+  "frameCount": 8,
+  "fps": 8,
+  "loop": false,
+  "baselineY": 492,
+  "scale": 0.8,
+  "lastHoldMs": 0,
+  "notes": "8コマ。着地の衝撃に踏ん張り、鞄と札を押さえて立て直す。"
+}

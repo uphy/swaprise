@@ -1,0 +1,681 @@
+{
+  "ok": true,
+  "engine": "component-row",
+  "curation_applied": false,
+  "frame_variant": "pixel",
+  "errors": [],
+  "atlas": "sprite-sheet-alpha.png",
+  "manifest": "manifest.json",
+  "cell": {
+    "shape": "square",
+    "width": 512,
+    "height": 512,
+    "safe_margin_x": 12,
+    "safe_margin_y": 12,
+    "size": 512,
+    "safe_margin": 12
+  },
+  "states": [
+    "idle",
+    "danger",
+    "success",
+    "garbage-land",
+    "victory",
+    "defeat",
+    "finish"
+  ],
+  "cells": [
+    {
+      "state": "idle",
+      "frame": 0,
+      "nontransparent_pixels": 66822,
+      "x": 0,
+      "y": 0,
+      "w": 512,
+      "h": 512
+    },
+    {
+      "state": "idle",
+      "frame": 1,
+      "nontransparent_pixels": 66754,
+      "x": 512,
+      "y": 0,
+      "w": 512,
+      "h": 512
+    },
+    {
+      "state": "idle",
+      "frame": 2,
+      "nontransparent_pixels": 66861,
+      "x": 1024,
+      "y": 0,
+      "w": 512,
+      "h": 512
+    },
+    {
+      "state": "idle",
+      "frame": 3,
+      "nontransparent_pixels": 66454,
+      "x": 1536,
+      "y": 0,
+      "w": 512,
+      "h": 512
+    },
+    {
+      "state": "idle",
+      "frame": 4,
+      "nontransparent_pixels": 66662,
+      "x": 2048,
+      "y": 0,
+      "w": 512,
+      "h": 512
+    },
+    {
+      "state": "idle",
+      "frame": 5,
+      "nontransparent_pixels": 67070,
+      "x": 2560,
+      "y": 0,
+      "w": 512,
+      "h": 512
+    },
+    {
+      "state": "danger",
+      "frame": 0,
+      "nontransparent_pixels": 68977,
+      "x": 0,
+      "y": 512,
+      "w": 512,
+      "h": 512
+    },
+    {
+      "state": "danger",
+      "frame": 1,
+      "nontransparent_pixels": 68979,
+      "x": 512,
+      "y": 512,
+      "w": 512,
+      "h": 512
+    },
+    {
+      "state": "danger",
+      "frame": 2,
+      "nontransparent_pixels": 69478,
+      "x": 1024,
+      "y": 512,
+      "w": 512,
+      "h": 512
+    },
+    {
+      "state": "danger",
+      "frame": 3,
+      "nontransparent_pixels": 69185,
+      "x": 1536,
+      "y": 512,
+      "w": 512,
+      "h": 512
+    },
+    {
+      "state": "danger",
+      "frame": 4,
+      "nontransparent_pixels": 69019,
+      "x": 2048,
+      "y": 512,
+      "w": 512,
+      "h": 512
+    },
+    {
+      "state": "danger",
+      "frame": 5,
+      "nontransparent_pixels": 69212,
+      "x": 2560,
+      "y": 512,
+      "w": 512,
+      "h": 512
+    },
+    {
+      "state": "success",
+      "frame": 0,
+      "nontransparent_pixels": 69805,
+      "x": 0,
+      "y": 1024,
+      "w": 512,
+      "h": 512
+    },
+    {
+      "state": "success",
+      "frame": 1,
+      "nontransparent_pixels": 70022,
+      "x": 512,
+      "y": 1024,
+      "w": 512,
+      "h": 512
+    },
+    {
+      "state": "success",
+      "frame": 2,
+      "nontransparent_pixels": 70265,
+      "x": 1024,
+      "y": 1024,
+      "w": 512,
+      "h": 512
+    },
+    {
+      "state": "success",
+      "frame": 3,
+      "nontransparent_pixels": 70256,
+      "x": 1536,
+      "y": 1024,
+      "w": 512,
+      "h": 512
+    },
+    {
+      "state": "success",
+      "frame": 4,
+      "nontransparent_pixels": 70313,
+      "x": 2048,
+      "y": 1024,
+      "w": 512,
+      "h": 512
+    },
+    {
+      "state": "success",
+      "frame": 5,
+      "nontransparent_pixels": 69853,
+      "x": 2560,
+      "y": 1024,
+      "w": 512,
+      "h": 512
+    },
+    {
+      "state": "garbage-land",
+      "frame": 0,
+      "nontransparent_pixels": 77271,
+      "x": 0,
+      "y": 1536,
+      "w": 512,
+      "h": 512
+    },
+    {
+      "state": "garbage-land",
+      "frame": 1,
+      "nontransparent_pixels": 76877,
+      "x": 512,
+      "y": 1536,
+      "w": 512,
+      "h": 512
+    },
+    {
+      "state": "garbage-land",
+      "frame": 2,
+      "nontransparent_pixels": 77084,
+      "x": 1024,
+      "y": 1536,
+      "w": 512,
+      "h": 512
+    },
+    {
+      "state": "garbage-land",
+      "frame": 3,
+      "nontransparent_pixels": 76750,
+      "x": 1536,
+      "y": 1536,
+      "w": 512,
+      "h": 512
+    },
+    {
+      "state": "garbage-land",
+      "frame": 4,
+      "nontransparent_pixels": 77048,
+      "x": 2048,
+      "y": 1536,
+      "w": 512,
+      "h": 512
+    },
+    {
+      "state": "garbage-land",
+      "frame": 5,
+      "nontransparent_pixels": 77799,
+      "x": 2560,
+      "y": 1536,
+      "w": 512,
+      "h": 512
+    },
+    {
+      "state": "victory",
+      "frame": 0,
+      "nontransparent_pixels": 79439,
+      "x": 0,
+      "y": 2048,
+      "w": 512,
+      "h": 512
+    },
+    {
+      "state": "victory",
+      "frame": 1,
+      "nontransparent_pixels": 79569,
+      "x": 512,
+      "y": 2048,
+      "w": 512,
+      "h": 512
+    },
+    {
+      "state": "victory",
+      "frame": 2,
+      "nontransparent_pixels": 79942,
+      "x": 1024,
+      "y": 2048,
+      "w": 512,
+      "h": 512
+    },
+    {
+      "state": "victory",
+      "frame": 3,
+      "nontransparent_pixels": 80141,
+      "x": 1536,
+      "y": 2048,
+      "w": 512,
+      "h": 512
+    },
+    {
+      "state": "victory",
+      "frame": 4,
+      "nontransparent_pixels": 80174,
+      "x": 2048,
+      "y": 2048,
+      "w": 512,
+      "h": 512
+    },
+    {
+      "state": "victory",
+      "frame": 5,
+      "nontransparent_pixels": 80236,
+      "x": 2560,
+      "y": 2048,
+      "w": 512,
+      "h": 512
+    },
+    {
+      "state": "defeat",
+      "frame": 0,
+      "nontransparent_pixels": 73403,
+      "x": 0,
+      "y": 2560,
+      "w": 512,
+      "h": 512
+    },
+    {
+      "state": "defeat",
+      "frame": 1,
+      "nontransparent_pixels": 72962,
+      "x": 512,
+      "y": 2560,
+      "w": 512,
+      "h": 512
+    },
+    {
+      "state": "defeat",
+      "frame": 2,
+      "nontransparent_pixels": 73074,
+      "x": 1024,
+      "y": 2560,
+      "w": 512,
+      "h": 512
+    },
+    {
+      "state": "defeat",
+      "frame": 3,
+      "nontransparent_pixels": 72894,
+      "x": 1536,
+      "y": 2560,
+      "w": 512,
+      "h": 512
+    },
+    {
+      "state": "defeat",
+      "frame": 4,
+      "nontransparent_pixels": 72935,
+      "x": 2048,
+      "y": 2560,
+      "w": 512,
+      "h": 512
+    },
+    {
+      "state": "defeat",
+      "frame": 5,
+      "nontransparent_pixels": 71892,
+      "x": 2560,
+      "y": 2560,
+      "w": 512,
+      "h": 512
+    },
+    {
+      "state": "finish",
+      "frame": 0,
+      "nontransparent_pixels": 71654,
+      "x": 0,
+      "y": 3072,
+      "w": 512,
+      "h": 512
+    },
+    {
+      "state": "finish",
+      "frame": 1,
+      "nontransparent_pixels": 71626,
+      "x": 512,
+      "y": 3072,
+      "w": 512,
+      "h": 512
+    },
+    {
+      "state": "finish",
+      "frame": 2,
+      "nontransparent_pixels": 71843,
+      "x": 1024,
+      "y": 3072,
+      "w": 512,
+      "h": 512
+    },
+    {
+      "state": "finish",
+      "frame": 3,
+      "nontransparent_pixels": 71621,
+      "x": 1536,
+      "y": 3072,
+      "w": 512,
+      "h": 512
+    },
+    {
+      "state": "finish",
+      "frame": 4,
+      "nontransparent_pixels": 71508,
+      "x": 2048,
+      "y": 3072,
+      "w": 512,
+      "h": 512
+    },
+    {
+      "state": "finish",
+      "frame": 5,
+      "nontransparent_pixels": 71905,
+      "x": 2560,
+      "y": 3072,
+      "w": 512,
+      "h": 512
+    }
+  ],
+  "frame_layout": {
+    "sheetWidth": 3072,
+    "sheetHeight": 3584,
+    "cellWidth": 512,
+    "cellHeight": 512,
+    "rows": {
+      "idle": [
+        {
+          "x": 0,
+          "y": 0,
+          "w": 512,
+          "h": 512
+        },
+        {
+          "x": 512,
+          "y": 0,
+          "w": 512,
+          "h": 512
+        },
+        {
+          "x": 1024,
+          "y": 0,
+          "w": 512,
+          "h": 512
+        },
+        {
+          "x": 1536,
+          "y": 0,
+          "w": 512,
+          "h": 512
+        },
+        {
+          "x": 2048,
+          "y": 0,
+          "w": 512,
+          "h": 512
+        },
+        {
+          "x": 2560,
+          "y": 0,
+          "w": 512,
+          "h": 512
+        }
+      ],
+      "danger": [
+        {
+          "x": 0,
+          "y": 512,
+          "w": 512,
+          "h": 512
+        },
+        {
+          "x": 512,
+          "y": 512,
+          "w": 512,
+          "h": 512
+        },
+        {
+          "x": 1024,
+          "y": 512,
+          "w": 512,
+          "h": 512
+        },
+        {
+          "x": 1536,
+          "y": 512,
+          "w": 512,
+          "h": 512
+        },
+        {
+          "x": 2048,
+          "y": 512,
+          "w": 512,
+          "h": 512
+        },
+        {
+          "x": 2560,
+          "y": 512,
+          "w": 512,
+          "h": 512
+        }
+      ],
+      "success": [
+        {
+          "x": 0,
+          "y": 1024,
+          "w": 512,
+          "h": 512
+        },
+        {
+          "x": 512,
+          "y": 1024,
+          "w": 512,
+          "h": 512
+        },
+        {
+          "x": 1024,
+          "y": 1024,
+          "w": 512,
+          "h": 512
+        },
+        {
+          "x": 1536,
+          "y": 1024,
+          "w": 512,
+          "h": 512
+        },
+        {
+          "x": 2048,
+          "y": 1024,
+          "w": 512,
+          "h": 512
+        },
+        {
+          "x": 2560,
+          "y": 1024,
+          "w": 512,
+          "h": 512
+        }
+      ],
+      "garbage-land": [
+        {
+          "x": 0,
+          "y": 1536,
+          "w": 512,
+          "h": 512
+        },
+        {
+          "x": 512,
+          "y": 1536,
+          "w": 512,
+          "h": 512
+        },
+        {
+          "x": 1024,
+          "y": 1536,
+          "w": 512,
+          "h": 512
+        },
+        {
+          "x": 1536,
+          "y": 1536,
+          "w": 512,
+          "h": 512
+        },
+        {
+          "x": 2048,
+          "y": 1536,
+          "w": 512,
+          "h": 512
+        },
+        {
+          "x": 2560,
+          "y": 1536,
+          "w": 512,
+          "h": 512
+        }
+      ],
+      "victory": [
+        {
+          "x": 0,
+          "y": 2048,
+          "w": 512,
+          "h": 512
+        },
+        {
+          "x": 512,
+          "y": 2048,
+          "w": 512,
+          "h": 512
+        },
+        {
+          "x": 1024,
+          "y": 2048,
+          "w": 512,
+          "h": 512
+        },
+        {
+          "x": 1536,
+          "y": 2048,
+          "w": 512,
+          "h": 512
+        },
+        {
+          "x": 2048,
+          "y": 2048,
+          "w": 512,
+          "h": 512
+        },
+        {
+          "x": 2560,
+          "y": 2048,
+          "w": 512,
+          "h": 512
+        }
+      ],
+      "defeat": [
+        {
+          "x": 0,
+          "y": 2560,
+          "w": 512,
+          "h": 512
+        },
+        {
+          "x": 512,
+          "y": 2560,
+          "w": 512,
+          "h": 512
+        },
+        {
+          "x": 1024,
+          "y": 2560,
+          "w": 512,
+          "h": 512
+        },
+        {
+          "x": 1536,
+          "y": 2560,
+          "w": 512,
+          "h": 512
+        },
+        {
+          "x": 2048,
+          "y": 2560,
+          "w": 512,
+          "h": 512
+        },
+        {
+          "x": 2560,
+          "y": 2560,
+          "w": 512,
+          "h": 512
+        }
+      ],
+      "finish": [
+        {
+          "x": 0,
+          "y": 3072,
+          "w": 512,
+          "h": 512
+        },
+        {
+          "x": 512,
+          "y": 3072,
+          "w": 512,
+          "h": 512
+        },
+        {
+          "x": 1024,
+          "y": 3072,
+          "w": 512,
+          "h": 512
+        },
+        {
+          "x": 1536,
+          "y": 3072,
+          "w": 512,
+          "h": 512
+        },
+        {
+          "x": 2048,
+          "y": 3072,
+          "w": 512,
+          "h": 512
+        },
+        {
+          "x": 2560,
+          "y": 3072,
+          "w": 512,
+          "h": 512
+        }
+      ]
+    }
+  }
+}

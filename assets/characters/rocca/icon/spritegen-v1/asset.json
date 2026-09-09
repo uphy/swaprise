@@ -1,0 +1,12 @@
+{
+  "id": "rocca-icon-spritegen-v1",
+  "label": "アイコン · sprite-gen v1",
+  "action": "icon",
+  "kind": "image",
+  "model": "gpt-image（sprite-gen / Codex CLI、モデル版指定なし）",
+  "status": "採用",
+  "pixelArt": true,
+  "notes": "基準画像からsprite-genで生成・透過・分割。512px、低解像度格子への縮小なし。生成記録はnotes/spritegen-v1。",
+  "image": "rocca-icon-spritegen-v1.png",
+  "prompt": "../../notes/spritegen-v1/base.prompt.txt"
+}

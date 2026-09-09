@@ -1,0 +1,4 @@
+Transparent-background pixel art animation sheet of this exact girl. Landscape 1536x1024, twelve full-body poses in four columns and three rows, with empty margins around each. A modest victory: glance downward, look forward, then raise a small empty fist and smile faintly. Record board stays untouched on hip. Same clothes, two brass clasps, same face and body size, feet on consistent baseline. Only the character and transparent space.
+
+生成: 内蔵gpt-image。画像加工なし。
+参照: ../../portrait/pixel-v1/sena-portrait-pixel-v1.png

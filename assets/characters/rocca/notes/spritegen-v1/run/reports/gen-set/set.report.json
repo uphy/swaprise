@@ -1,0 +1,109 @@
+{
+  "kind": "sprite-gen-gen-set-report",
+  "run_dir": "/private/tmp/swaprise-mito-assets/assets/characters/rocca/notes/spritegen-v1/run",
+  "states": [
+    "idle",
+    "danger",
+    "success",
+    "garbage-land",
+    "victory",
+    "defeat",
+    "finish"
+  ],
+  "ok": 7,
+  "failed": [],
+  "not_started": [],
+  "items": [
+    {
+      "state": "idle",
+      "out": "/private/tmp/swaprise-mito-assets/assets/characters/rocca/notes/spritegen-v1/run/raw/idle.png",
+      "report": "/private/tmp/swaprise-mito-assets/assets/characters/rocca/notes/spritegen-v1/run/reports/gen-set/idle.json",
+      "refs": [
+        "/private/tmp/swaprise-mito-assets/assets/characters/rocca/notes/spritegen-v1/run/base-source.png",
+        "/private/tmp/swaprise-mito-assets/assets/characters/rocca/notes/spritegen-v1/run/references/layout-guides/idle.png"
+      ],
+      "provider": "codex",
+      "provider_resolved_from": "explicit",
+      "elapsed_seconds": 73.9,
+      "ok": true
+    },
+    {
+      "state": "danger",
+      "out": "/private/tmp/swaprise-mito-assets/assets/characters/rocca/notes/spritegen-v1/run/raw/danger.png",
+      "report": "/private/tmp/swaprise-mito-assets/assets/characters/rocca/notes/spritegen-v1/run/reports/gen-set/danger.json",
+      "refs": [
+        "/private/tmp/swaprise-mito-assets/assets/characters/rocca/notes/spritegen-v1/run/base-source.png",
+        "/private/tmp/swaprise-mito-assets/assets/characters/rocca/notes/spritegen-v1/run/references/layout-guides/danger.png"
+      ],
+      "provider": "codex",
+      "provider_resolved_from": "explicit",
+      "elapsed_seconds": 74.1,
+      "ok": true
+    },
+    {
+      "state": "success",
+      "out": "/private/tmp/swaprise-mito-assets/assets/characters/rocca/notes/spritegen-v1/run/raw/success.png",
+      "report": "/private/tmp/swaprise-mito-assets/assets/characters/rocca/notes/spritegen-v1/run/reports/gen-set/success.json",
+      "refs": [
+        "/private/tmp/swaprise-mito-assets/assets/characters/rocca/notes/spritegen-v1/run/base-source.png",
+        "/private/tmp/swaprise-mito-assets/assets/characters/rocca/notes/spritegen-v1/run/references/layout-guides/success.png"
+      ],
+      "provider": "codex",
+      "provider_resolved_from": "explicit",
+      "elapsed_seconds": 76.8,
+      "ok": true
+    },
+    {
+      "state": "garbage-land",
+      "out": "/private/tmp/swaprise-mito-assets/assets/characters/rocca/notes/spritegen-v1/run/raw/garbage-land.png",
+      "report": "/private/tmp/swaprise-mito-assets/assets/characters/rocca/notes/spritegen-v1/run/reports/gen-set/garbage-land.json",
+      "refs": [
+        "/private/tmp/swaprise-mito-assets/assets/characters/rocca/notes/spritegen-v1/run/base-source.png",
+        "/private/tmp/swaprise-mito-assets/assets/characters/rocca/notes/spritegen-v1/run/references/layout-guides/garbage-land.png"
+      ],
+      "provider": "codex",
+      "provider_resolved_from": "explicit",
+      "elapsed_seconds": 88.6,
+      "ok": true
+    },
+    {
+      "state": "victory",
+      "out": "/private/tmp/swaprise-mito-assets/assets/characters/rocca/notes/spritegen-v1/run/raw/victory.png",
+      "report": "/private/tmp/swaprise-mito-assets/assets/characters/rocca/notes/spritegen-v1/run/reports/gen-set/victory.json",
+      "refs": [
+        "/private/tmp/swaprise-mito-assets/assets/characters/rocca/notes/spritegen-v1/run/base-source.png",
+        "/private/tmp/swaprise-mito-assets/assets/characters/rocca/notes/spritegen-v1/run/references/layout-guides/victory.png"
+      ],
+      "provider": "codex",
+      "provider_resolved_from": "explicit",
+      "elapsed_seconds": 73.2,
+      "ok": true
+    },
+    {
+      "state": "defeat",
+      "out": "/private/tmp/swaprise-mito-assets/assets/characters/rocca/notes/spritegen-v1/run/raw/defeat.png",
+      "report": "/private/tmp/swaprise-mito-assets/assets/characters/rocca/notes/spritegen-v1/run/reports/gen-set/defeat.json",
+      "refs": [
+        "/private/tmp/swaprise-mito-assets/assets/characters/rocca/notes/spritegen-v1/run/base-source.png",
+        "/private/tmp/swaprise-mito-assets/assets/characters/rocca/notes/spritegen-v1/run/references/layout-guides/defeat.png"
+      ],
+      "provider": "codex",
+      "provider_resolved_from": "explicit",
+      "elapsed_seconds": 79.2,
+      "ok": true
+    },
+    {
+      "state": "finish",
+      "out": "/private/tmp/swaprise-mito-assets/assets/characters/rocca/notes/spritegen-v1/run/raw/finish.png",
+      "report": "/private/tmp/swaprise-mito-assets/assets/characters/rocca/notes/spritegen-v1/run/reports/gen-set/finish.json",
+      "refs": [
+        "/private/tmp/swaprise-mito-assets/assets/characters/rocca/notes/spritegen-v1/run/base-source.png",
+        "/private/tmp/swaprise-mito-assets/assets/characters/rocca/notes/spritegen-v1/run/references/layout-guides/finish.png"
+      ],
+      "provider": "codex",
+      "provider_resolved_from": "explicit",
+      "elapsed_seconds": 67.7,
+      "ok": true
+    }
+  ]
+}

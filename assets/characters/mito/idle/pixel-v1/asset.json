@@ -1,0 +1,28 @@
+{
+  "id": "mito-idle-pixel-v1",
+  "label": "待機 · ドット絵 v1",
+  "kind": "animation",
+  "action": "idle",
+  "image": "mito-idle-pixel-v1.png",
+  "prompt": "mito-idle-pixel-v1.prompt.txt",
+  "model": "内蔵画像生成ツール（モデル名未確認）",
+  "status": "旧版・比較用",
+  "pixelArt": true,
+  "history": [
+    {
+      "label": "背景処理前のシート",
+      "url": "mito-idle-pixel-v1-magenta.png"
+    }
+  ],
+  "columns": 3,
+  "rows": 2,
+  "frameWidth": 342,
+  "frameHeight": 768,
+  "frameCount": 6,
+  "fps": 4,
+  "loop": true,
+  "baselineY": 748,
+  "scale": 0.52,
+  "lastHoldMs": 0,
+  "notes": "6コマ。均一なマゼンタ背景を透過し、グリッド用に右端へ2pxの透明余白を追加。"
+}

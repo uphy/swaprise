@@ -3,5 +3,26 @@
   "name": "オルド",
   "role": "門の精霊",
   "color": "#7c858c",
-  "assets": []
+  "assets": [
+    "portrait/spritegen-v1/asset.json",
+    "icon/spritegen-v1/asset.json",
+    "idle/spritegen-v1/asset.json",
+    "danger/spritegen-v1/asset.json",
+    "success/spritegen-v1/asset.json",
+    "garbage-land/spritegen-v1/asset.json",
+    "victory/spritegen-v1/asset.json",
+    "defeat/spritegen-v1/asset.json",
+    "finish/spritegen-v1/asset.json"
+  ],
+  "adoptedAssets": {
+    "portrait": "ordo-portrait-spritegen-v1",
+    "icon": "ordo-icon-spritegen-v1",
+    "idle": "ordo-idle-spritegen-v1",
+    "danger": "ordo-danger-spritegen-v1",
+    "success": "ordo-success-spritegen-v1",
+    "garbage-land": "ordo-garbage-land-spritegen-v1",
+    "victory": "ordo-victory-spritegen-v1",
+    "defeat": "ordo-defeat-spritegen-v1",
+    "finish": "ordo-finish-spritegen-v1"
+  }
 }

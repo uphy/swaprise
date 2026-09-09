@@ -1,0 +1,12 @@
+{
+  "id": "mito-icon-pixel-v1",
+  "label": "顔アイコン · ドット絵 v1",
+  "kind": "image",
+  "action": "icon",
+  "image": "mito-icon-pixel-v1.png",
+  "prompt": "mito-icon-pixel-v1.prompt.txt",
+  "model": "内蔵画像生成ツール（モデル名未確認）",
+  "status": "旧版・比較用",
+  "pixelArt": true,
+  "notes": "専用の顔アイコンを256px四方に縮小。透明背景。"
+}

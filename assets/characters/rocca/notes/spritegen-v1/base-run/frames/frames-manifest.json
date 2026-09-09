@@ -1,0 +1,54 @@
+{
+  "ok": true,
+  "engine": "component-row",
+  "engine_revision": "77d7af445dc3",
+  "extract_args": {},
+  "run_dir": "/private/tmp/swaprise-mito-assets/assets/characters/rocca/notes/spritegen-v1/base-run",
+  "cell": {
+    "shape": "square",
+    "width": 512,
+    "height": 512,
+    "safe_margin_x": 12,
+    "safe_margin_y": 12,
+    "size": 512,
+    "safe_margin": 12
+  },
+  "chroma_key": {
+    "name": "green",
+    "hex": "#00FF00",
+    "rgb": [
+      0,
+      255,
+      0
+    ],
+    "selection": "manual"
+  },
+  "rows": [
+    {
+      "state": "portrait",
+      "frames": 1,
+      "method": "components",
+      "files": [
+        "frames/portrait/frame-0.png"
+      ],
+      "frame_records": [
+        {
+          "index": 0,
+          "nontransparent_pixels": 57888,
+          "bbox": [
+            140,
+            12,
+            368,
+            500
+          ],
+          "edge_pixels": 0,
+          "chroma_adjacent_pixels": 0
+        }
+      ],
+      "ok": true,
+      "engine_revision": "77d7af445dc3"
+    }
+  ],
+  "errors": [],
+  "warnings": []
+}

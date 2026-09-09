@@ -1,0 +1,49 @@
+{
+  "version": 1,
+  "kind": "sprite-gen-request",
+  "engine": "component-row",
+  "character": {
+    "id": "baro",
+    "description": "Baro, mature talking badger antiques dealer. Gray-brown fur, dark markings from eyes to snout, tiny round ears, broad torso, short legs and short tail. Animal paws with short claws. Dusty red short vest, blue-gray belly apron, small round spectacles, blank price tag bundle in apron pocket. Standing on hind paws, one forepaw open as if explaining. No human hands, pants, shoes or long tail; not a baby.",
+    "base_image": "base-source.png"
+  },
+  "cell": {
+    "shape": "square",
+    "width": 512,
+    "height": 512,
+    "safe_margin_x": 12,
+    "safe_margin_y": 12,
+    "size": 512,
+    "safe_margin": 12
+  },
+  "chroma_key": {
+    "name": "green",
+    "hex": "#00FF00",
+    "rgb": [
+      0,
+      255,
+      0
+    ],
+    "selection": "manual"
+  },
+  "states": {
+    "portrait": {
+      "frames": 1,
+      "fps": 1,
+      "loop": false,
+      "action": "Base identity still"
+    }
+  },
+  "style": "match the attached base/anchor reference image EXACTLY: same pixel density (logical pixel block size), same body proportions, same outline weight, same palette, same shading style, same level of detail. Do not restyle, do not change proportions, do not add or remove detail density. Avoid polished illustration, painterly rendering, anime key art, 3D render, vector app-icon polish, glossy lighting, soft gradients, and anti-aliased high-detail edges.",
+  "motion_phase_guides": false,
+  "layout": "taxonomy/v1",
+  "fit": {
+    "resample": "lanczos",
+    "pixel_unfake": false
+  },
+  "chroma": {
+    "mode": "rgb",
+    "unmix_reach": 4,
+    "spill_max_fraction": 0.005
+  }
+}

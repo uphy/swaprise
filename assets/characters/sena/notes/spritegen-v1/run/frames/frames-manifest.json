@@ -1,0 +1,185 @@
+{
+  "ok": true,
+  "engine": "component-row",
+  "engine_revision": "77d7af445dc3",
+  "extract_args": {},
+  "run_dir": "/private/tmp/swaprise-mito-assets/assets/characters/sena/notes/spritegen-v1/run",
+  "cell": {
+    "shape": "rect",
+    "width": 192,
+    "height": 256,
+    "safe_margin_x": 12,
+    "safe_margin_y": 12
+  },
+  "chroma_key": {
+    "name": "magenta",
+    "hex": "#FF00FF",
+    "rgb": [
+      255,
+      0,
+      255
+    ],
+    "selection": "manual"
+  },
+  "rows": [
+    {
+      "state": "idle",
+      "frames": 4,
+      "method": "components",
+      "files": [
+        "frames/idle/frame-0.png",
+        "frames/idle/frame-1.png",
+        "frames/idle/frame-2.png",
+        "frames/idle/frame-3.png"
+      ],
+      "frame_records": [
+        {
+          "index": 0,
+          "nontransparent_pixels": 13108,
+          "bbox": [
+            58,
+            0,
+            138,
+            244
+          ],
+          "edge_pixels": 24,
+          "chroma_adjacent_pixels": 0
+        },
+        {
+          "index": 1,
+          "nontransparent_pixels": 13120,
+          "bbox": [
+            58,
+            0,
+            138,
+            244
+          ],
+          "edge_pixels": 24,
+          "chroma_adjacent_pixels": 0
+        },
+        {
+          "index": 2,
+          "nontransparent_pixels": 13160,
+          "bbox": [
+            58,
+            0,
+            138,
+            244
+          ],
+          "edge_pixels": 24,
+          "chroma_adjacent_pixels": 0
+        },
+        {
+          "index": 3,
+          "nontransparent_pixels": 13100,
+          "bbox": [
+            58,
+            0,
+            138,
+            244
+          ],
+          "edge_pixels": 24,
+          "chroma_adjacent_pixels": 0
+        }
+      ],
+      "ok": true,
+      "engine_revision": "77d7af445dc3",
+      "plain_files": [
+        "frames/idle/frame-0.plain.png",
+        "frames/idle/frame-1.plain.png",
+        "frames/idle/frame-2.plain.png",
+        "frames/idle/frame-3.plain.png"
+      ],
+      "orig_files": [
+        "frames/idle/orig/frame-0.png",
+        "frames/idle/orig/frame-1.png",
+        "frames/idle/orig/frame-2.png",
+        "frames/idle/orig/frame-3.png"
+      ]
+    },
+    {
+      "state": "victory",
+      "frames": 4,
+      "method": "components",
+      "files": [
+        "frames/victory/frame-0.png",
+        "frames/victory/frame-1.png",
+        "frames/victory/frame-2.png",
+        "frames/victory/frame-3.png"
+      ],
+      "frame_records": [
+        {
+          "index": 0,
+          "nontransparent_pixels": 12808,
+          "bbox": [
+            58,
+            0,
+            140,
+            244
+          ],
+          "edge_pixels": 20,
+          "chroma_adjacent_pixels": 0
+        },
+        {
+          "index": 1,
+          "nontransparent_pixels": 12896,
+          "bbox": [
+            58,
+            0,
+            140,
+            244
+          ],
+          "edge_pixels": 24,
+          "chroma_adjacent_pixels": 0
+        },
+        {
+          "index": 2,
+          "nontransparent_pixels": 12468,
+          "bbox": [
+            58,
+            0,
+            140,
+            244
+          ],
+          "edge_pixels": 24,
+          "chroma_adjacent_pixels": 0
+        },
+        {
+          "index": 3,
+          "nontransparent_pixels": 12508,
+          "bbox": [
+            58,
+            0,
+            140,
+            244
+          ],
+          "edge_pixels": 24,
+          "chroma_adjacent_pixels": 0
+        }
+      ],
+      "ok": true,
+      "engine_revision": "77d7af445dc3",
+      "plain_files": [
+        "frames/victory/frame-0.plain.png",
+        "frames/victory/frame-1.plain.png",
+        "frames/victory/frame-2.plain.png",
+        "frames/victory/frame-3.plain.png"
+      ],
+      "orig_files": [
+        "frames/victory/orig/frame-0.png",
+        "frames/victory/orig/frame-1.png",
+        "frames/victory/orig/frame-2.png",
+        "frames/victory/orig/frame-3.png"
+      ]
+    }
+  ],
+  "errors": [],
+  "warnings": [
+    "idle: pitch disagreement — detect 1.00x1.00 (uniformity 161.3) vs runlen 2.45x2.41 (21.6); detect kept. large gap usually means the raw was drawn finer than the cell contract — reroll with a block-count hint",
+    "idle: native logical exceeds the physical cap 96x122 — capped frames (reroll candidates): 0:221x673, 1:222x673, 2:222x672, 3:221x673",
+    "victory: pitch disagreement — detect 1.00x1.00 (uniformity 152.3) vs runlen 2.79x2.48 (23.7); detect kept. large gap usually means the raw was drawn finer than the cell contract — reroll with a block-count hint",
+    "victory: native logical exceeds the physical cap 96x122 — capped frames (reroll candidates): 0:231x683, 1:230x682, 2:230x683, 3:231x683",
+    "palette: rebuilt+pinned (24 colors → palette.lock.json)",
+    "pixel unfake: pitch=1.0,1.0 scale=2x logical<=96x128 palette=24"
+  ]
+}
