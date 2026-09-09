@@ -1,0 +1,2 @@
+Keep this exact pixel-art character, pose, face, hairstyle, clothes, bag and proportions unchanged. Replace only the entire background and glow with uniform flat bright magenta #FF00FF. No gradients, shadows, transparency, checkerboard or text. Keep all hair, hands and boots intact.
+Reference: nika-portrait-pixel-v1.png

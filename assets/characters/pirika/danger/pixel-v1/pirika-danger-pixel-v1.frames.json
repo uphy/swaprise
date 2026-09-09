@@ -1,0 +1,100 @@
+{
+  "source": "pirika-danger-pixel-v1-magenta.png",
+  "chromaKey": {
+    "redMin": 130,
+    "blueMin": 110,
+    "redMinusGreen": 65,
+    "blueMinusGreen": 55
+  },
+  "scale": 0.5314009661835749,
+  "cell": [
+    384,
+    432
+  ],
+  "frames": [
+    {
+      "source": {
+        "x": 23,
+        "y": 91,
+        "width": 332,
+        "height": 621,
+        "pivotX": 218.0
+      },
+      "destination": [
+        94,
+        78
+      ],
+      "lift": 0
+    },
+    {
+      "source": {
+        "x": 350,
+        "y": 104,
+        "width": 333,
+        "height": 608,
+        "pivotX": 218.5
+      },
+      "destination": [
+        94,
+        85
+      ],
+      "lift": 0
+    },
+    {
+      "source": {
+        "x": 678,
+        "y": 104,
+        "width": 331,
+        "height": 609,
+        "pivotX": 217.0
+      },
+      "destination": [
+        95,
+        84
+      ],
+      "lift": 0
+    },
+    {
+      "source": {
+        "x": 23,
+        "y": 832,
+        "width": 332,
+        "height": 616,
+        "pivotX": 218.0
+      },
+      "destination": [
+        94,
+        81
+      ],
+      "lift": 0
+    },
+    {
+      "source": {
+        "x": 350,
+        "y": 826,
+        "width": 333,
+        "height": 622,
+        "pivotX": 218.5
+      },
+      "destination": [
+        94,
+        77
+      ],
+      "lift": 0
+    },
+    {
+      "source": {
+        "x": 678,
+        "y": 825,
+        "width": 331,
+        "height": 623,
+        "pivotX": 217.0
+      },
+      "destination": [
+        95,
+        77
+      ],
+      "lift": 0
+    }
+  ]
+}

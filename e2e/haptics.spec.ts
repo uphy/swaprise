@@ -36,8 +36,12 @@ test("揃うと自分の盤面だけ震え、メニューの切り替えで止�
     p.game.cpu = null;
   });
   const tick = (inputs: any[]) => page.evaluate((ins) => (window as any).__swaprise.tick(ins), inputs);
+  // 何もしない入力で n フレーム進める。1 フレームごとに evaluate すると CI の遅い描画に引きずられて時間切れになるので、まとめて進める
+  const ticks = (n: number) => page.evaluate((count) => {
+    for (let i = 0; i < count; i++) (window as any).__swaprise.tick([{ moveX: 0, moveY: 0, swap: false, raise: false }]);
+  }, n);
   await tick([{ moveX: 0, moveY: 0, swap: true, raise: false }]);
-  for (let i = 0; i < 8; i++) await tick([{ moveX: 0, moveY: 0, swap: false, raise: false }]);
+  await ticks(8);
   const calls = await page.evaluate(() => (window as any).__vibrations);
   expect(calls).toEqual([15]);
 
@@ -58,7 +62,7 @@ test("揃うと自分の盤面だけ震え、メニューの切り替えで止�
   expect(cpuMatched).toBe(true);
   expect(await page.evaluate(() => (window as any).__vibrations)).toEqual([]);
   // 板は揃ってから100フレーム待って送られ、52フレーム後に予告に入ってから降る
-  for (let i = 0; i < 300; i++) await tick([{ moveX: 0, moveY: 0, swap: false, raise: false }]);
+  await ticks(300);
   expect(await page.evaluate(() => (window as any).__vibrations)).toEqual([70]);
 
   // 厚い板ほど長く震える
@@ -67,7 +71,7 @@ test("揃うと自分の盤面だけ震え、メニューの切り替えで止�
     (window as any).__vibrations = [];
     p.game.boards[0].pendingGarbage.push({ width: 6, height: 2, type: "normal" });
   });
-  for (let i = 0; i < 200; i++) await tick([{ moveX: 0, moveY: 0, swap: false, raise: false }]);
+  await ticks(200);
   expect(await page.evaluate(() => (window as any).__vibrations)).toEqual([90]);
 
   // メニューで OFF にすると保存され、以後は震えない
@@ -96,7 +100,7 @@ test("揃うと自分の盤面だけ震え、メニューの切り替えで止�
     p.game.boards[0].cursor.y = 0;
   });
   await tick([{ moveX: 0, moveY: 0, swap: true, raise: false }]);
-  for (let i = 0; i < 8; i++) await tick([{ moveX: 0, moveY: 0, swap: false, raise: false }]);
+  await ticks(8);
   expect(await page.evaluate(() => (window as any).__swaprise.game.boards[0].panelsCleared)).toBe(3);
   expect(await page.evaluate(() => (window as any).__vibrations)).toEqual([]);
 });

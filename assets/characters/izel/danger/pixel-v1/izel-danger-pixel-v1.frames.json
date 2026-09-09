@@ -1,0 +1,100 @@
+{
+  "source": "izel-danger-pixel-v1-magenta.png",
+  "chromaKey": {
+    "redMin": 130,
+    "blueMin": 110,
+    "redMinusGreen": 65,
+    "blueMinusGreen": 55
+  },
+  "scale": 0.559322033898305,
+  "cell": [
+    384,
+    432
+  ],
+  "frames": [
+    {
+      "source": {
+        "x": 129,
+        "y": 40,
+        "width": 190,
+        "height": 590,
+        "pivotX": 98.5
+      },
+      "destination": [
+        137,
+        78
+      ],
+      "lift": 0
+    },
+    {
+      "source": {
+        "x": 508,
+        "y": 40,
+        "width": 192,
+        "height": 590,
+        "pivotX": 98.5
+      },
+      "destination": [
+        137,
+        78
+      ],
+      "lift": 0
+    },
+    {
+      "source": {
+        "x": 889,
+        "y": 40,
+        "width": 190,
+        "height": 590,
+        "pivotX": 98.0
+      },
+      "destination": [
+        137,
+        78
+      ],
+      "lift": 0
+    },
+    {
+      "source": {
+        "x": 129,
+        "y": 659,
+        "width": 190,
+        "height": 591,
+        "pivotX": 98.5
+      },
+      "destination": [
+        137,
+        77
+      ],
+      "lift": 0
+    },
+    {
+      "source": {
+        "x": 508,
+        "y": 659,
+        "width": 192,
+        "height": 591,
+        "pivotX": 99.5
+      },
+      "destination": [
+        136,
+        77
+      ],
+      "lift": 0
+    },
+    {
+      "source": {
+        "x": 889,
+        "y": 659,
+        "width": 190,
+        "height": 591,
+        "pivotX": 98.5
+      },
+      "destination": [
+        137,
+        77
+      ],
+      "lift": 0
+    }
+  ]
+}

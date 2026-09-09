@@ -1,0 +1,29 @@
+{
+  "id": "pirika",
+  "name": "ピリカ",
+  "role": "トビネズミの案内業者",
+  "color": "#c09748",
+  "assets": [
+    "icon/pixel-v2/asset.json",
+    "portrait/pixel-v1/asset.json",
+    "icon/pixel-v1/asset.json",
+    "idle/pixel-v1/asset.json",
+    "danger/pixel-v1/asset.json",
+    "success/pixel-v1/asset.json",
+    "garbage-land/pixel-v1/asset.json",
+    "victory/pixel-v1/asset.json",
+    "defeat/pixel-v1/asset.json",
+    "finish/pixel-v1/asset.json"
+  ],
+  "adoptedAssets": {
+    "portrait": "pirika-portrait-pixel-v1",
+    "idle": "pirika-idle-pixel-v1",
+    "danger": "pirika-danger-pixel-v1",
+    "success": "pirika-success-pixel-v1",
+    "garbage-land": "pirika-garbage-land-pixel-v1",
+    "victory": "pirika-victory-pixel-v1",
+    "defeat": "pirika-defeat-pixel-v1",
+    "finish": "pirika-finish-pixel-v1",
+    "icon": "pirika-icon-pixel-v2"
+  }
+}

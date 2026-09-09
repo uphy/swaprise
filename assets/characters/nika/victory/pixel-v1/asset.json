@@ -1,0 +1,173 @@
+{
+  "id": "nika-victory-pixel-v1",
+  "label": "勝利 · ドット絵（18コマ）",
+  "action": "victory",
+  "kind": "animation",
+  "image": "nika-victory-pixel-v1.png",
+  "prompt": "nika-victory-pixel-v1.prompt.txt",
+  "status": "暫定採用・演出要調整",
+  "model": "未確認（内蔵画像生成ツール）",
+  "notes": "ドット絵立ち絵を参照して18コマ生成。跳ぶ→工具袋を押さえる→照れ笑いの動作。マゼンタ背景と生成されたコマ境界線を除去。全コマ共通倍率、12fps、末尾の待ち時間なし。姿勢が大きく切り替わる箇所と輪郭の色残りは要確認。 ユーザーは整合性を了承。物が落ちそうになる演出は伝わりにくく、改善点として残す。 ユーザーは整合性を了承。物が落ちそうになる演出は伝わりにくく、改善点として残す。",
+  "frames": [
+    {
+      "x": 0,
+      "y": 0,
+      "width": 256,
+      "height": 340,
+      "pivotX": 128.0,
+      "baselineY": 326
+    },
+    {
+      "x": 256,
+      "y": 0,
+      "width": 256,
+      "height": 340,
+      "pivotX": 128.0,
+      "baselineY": 326
+    },
+    {
+      "x": 512,
+      "y": 0,
+      "width": 256,
+      "height": 340,
+      "pivotX": 128.0,
+      "baselineY": 326
+    },
+    {
+      "x": 768,
+      "y": 0,
+      "width": 256,
+      "height": 340,
+      "pivotX": 128.0,
+      "baselineY": 326
+    },
+    {
+      "x": 1024,
+      "y": 0,
+      "width": 256,
+      "height": 340,
+      "pivotX": 128.0,
+      "baselineY": 326
+    },
+    {
+      "x": 1280,
+      "y": 0,
+      "width": 256,
+      "height": 340,
+      "pivotX": 128.0,
+      "baselineY": 326
+    },
+    {
+      "x": 0,
+      "y": 340,
+      "width": 256,
+      "height": 339,
+      "pivotX": 128.0,
+      "baselineY": 324
+    },
+    {
+      "x": 256,
+      "y": 340,
+      "width": 256,
+      "height": 339,
+      "pivotX": 128.0,
+      "baselineY": 324
+    },
+    {
+      "x": 512,
+      "y": 340,
+      "width": 256,
+      "height": 339,
+      "pivotX": 128.0,
+      "baselineY": 324
+    },
+    {
+      "x": 768,
+      "y": 340,
+      "width": 256,
+      "height": 339,
+      "pivotX": 128.0,
+      "baselineY": 324
+    },
+    {
+      "x": 1024,
+      "y": 340,
+      "width": 256,
+      "height": 339,
+      "pivotX": 128.0,
+      "baselineY": 324
+    },
+    {
+      "x": 1280,
+      "y": 340,
+      "width": 256,
+      "height": 339,
+      "pivotX": 128.0,
+      "baselineY": 324
+    },
+    {
+      "x": 0,
+      "y": 679,
+      "width": 256,
+      "height": 345,
+      "pivotX": 128.0,
+      "baselineY": 328
+    },
+    {
+      "x": 256,
+      "y": 679,
+      "width": 256,
+      "height": 345,
+      "pivotX": 128.0,
+      "baselineY": 328
+    },
+    {
+      "x": 512,
+      "y": 679,
+      "width": 256,
+      "height": 345,
+      "pivotX": 128.0,
+      "baselineY": 328
+    },
+    {
+      "x": 768,
+      "y": 679,
+      "width": 256,
+      "height": 345,
+      "pivotX": 128.0,
+      "baselineY": 328
+    },
+    {
+      "x": 1024,
+      "y": 679,
+      "width": 256,
+      "height": 345,
+      "pivotX": 128.0,
+      "baselineY": 328
+    },
+    {
+      "x": 1280,
+      "y": 679,
+      "width": 256,
+      "height": 345,
+      "pivotX": 128.0,
+      "baselineY": 328
+    }
+  ],
+  "frameCount": 18,
+  "fps": 12,
+  "lastHoldMs": 0,
+  "scale": 1,
+  "pixelArt": true,
+  "history": [
+    {
+      "label": "背景除去前",
+      "url": "nika-victory-pixel-v1-magenta.png"
+    },
+    {
+      "label": "参照ドット絵",
+      "url": "../../portrait/pixel-v1/nika-portrait-pixel-v1.png"
+    }
+  ],
+  "loop": false
+}

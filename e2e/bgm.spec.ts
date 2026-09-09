@@ -24,7 +24,7 @@ test("危険状態ではピンチの曲に切り替わり、抜けるとゲー�
   await page.waitForTimeout(300);
   expect((await bgmState(page)).playing).toBe("game");
 
-  // 上2段にパネルを入れて危険状態にする
+  // 高さ 11 までパネルを入れて危険状態にする
   await page.evaluate(() => {
     const b = (window as any).__swaprise.game.boards[0];
     b.setColumns([[0, 1, 2, 3, 4, 0, 1, 2, 3, 4, 0], [1], [2], [3], [4], [0]]);
@@ -89,7 +89,7 @@ test("CPU対戦: 相手だけがピンチでも曲は変わらず、自分がピ
   await page.waitForTimeout(300);
   expect((await bgmState(page)).playing).toBe("game");
 
-  // 相手（boards[1]）だけを上2段まで積んでも、自分の曲は変わらない
+  // 相手（boards[1]）だけを危険な高さまで積んでも、自分の曲は変わらない
   await page.evaluate(() => {
     const b = (window as any).__swaprise.game.boards[1];
     b.setColumns([[0, 1, 2, 3, 4, 0, 1, 2, 3, 4, 0], [1], [2], [3], [4], [0]]);
@@ -97,7 +97,7 @@ test("CPU対戦: 相手だけがピンチでも曲は変わらず、自分がピ
   await page.waitForTimeout(300);
   expect(await bgmState(page)).toEqual({ playing: "game", tune: "game", danger: false });
 
-  // 自分（boards[0]）も上2段まで積むと、ピンチの曲に切り替わる
+  // 自分（boards[0]）も危険な高さまで積むと、ピンチの曲に切り替わる
   await page.evaluate(() => {
     const b = (window as any).__swaprise.game.boards[0];
     b.setColumns([[0, 1, 2, 3, 4, 0, 1, 2, 3, 4, 0], [1], [2], [3], [4], [0]]);

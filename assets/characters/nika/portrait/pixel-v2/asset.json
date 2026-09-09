@@ -1,0 +1,12 @@
+{
+  "id": "nika-portrait-pixel-v2",
+  "label": "基準立ち絵 · ドット絵",
+  "kind": "image",
+  "action": "portrait",
+  "image": "nika-portrait-pixel-v2.png",
+  "prompt": "nika-portrait-pixel-v2.prompt.txt",
+  "pixelArt": true,
+  "status": "ドット絵版へ差し替え",
+  "model": "内蔵画像生成ツール（モデル名未確認）",
+  "notes": "既存のドット絵基準画像から作成。"
+}

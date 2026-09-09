@@ -359,10 +359,16 @@ describe("せり上がりとゲームオーバー", () => {
     expect(b.gameOver).toBe(false);
   });
 
-  it("上2段にパネルがあると危険状態になる", () => {
+  it("高さ 9 以上にパネルがあると危険状態になり、8 では入らない", () => {
+    const low = emptyBoard();
+    const eight: number[] = [];
+    for (let r = 0; r < ROWS - 4; r++) eight.push(r % 2);
+    low.setColumns([eight]);
+    run(low, 1);
+    expect(low.danger).toBe(false);
     const b = emptyBoard();
     const col: number[] = [];
-    for (let r = 0; r < ROWS - 1; r++) col.push(r % 2);
+    for (let r = 0; r < ROWS - 3; r++) col.push(r % 2);
     b.setColumns([col]);
     const events = run(b, 1);
     expect(b.danger).toBe(true);

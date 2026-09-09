@@ -1,0 +1,17 @@
+{
+  "id": "nui",
+  "name": "ヌイ",
+  "role": "包み布の精霊",
+  "color": "#6e9490",
+  "assets": [
+    "portrait/pixel-v1/asset.json",
+    "icon/pixel-v1/asset.json",
+    "idle/pixel-v1/asset.json",
+    "danger/pixel-v1/asset.json",
+    "success/pixel-v1/asset.json",
+    "garbage-land/pixel-v1/asset.json",
+    "victory/pixel-v1/asset.json",
+    "defeat/pixel-v1/asset.json",
+    "finish/pixel-v1/asset.json"
+  ]
+}

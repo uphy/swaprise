@@ -1,0 +1,128 @@
+{
+  "source": "izel-finish-pixel-v1-magenta.png",
+  "chromaKey": {
+    "redMin": 130,
+    "blueMin": 110,
+    "redMinusGreen": 65,
+    "blueMinusGreen": 55
+  },
+  "scale": 0.5007587253414264,
+  "cell": [
+    384,
+    432
+  ],
+  "frames": [
+    {
+      "source": {
+        "x": 44,
+        "y": 56,
+        "width": 218,
+        "height": 659,
+        "pivotX": 96.0
+      },
+      "destination": [
+        144,
+        78
+      ],
+      "lift": 0
+    },
+    {
+      "source": {
+        "x": 300,
+        "y": 56,
+        "width": 183,
+        "height": 659,
+        "pivotX": 96.0
+      },
+      "destination": [
+        144,
+        78
+      ],
+      "lift": 0
+    },
+    {
+      "source": {
+        "x": 553,
+        "y": 56,
+        "width": 179,
+        "height": 659,
+        "pivotX": 96.5
+      },
+      "destination": [
+        144,
+        78
+      ],
+      "lift": 0
+    },
+    {
+      "source": {
+        "x": 806,
+        "y": 56,
+        "width": 180,
+        "height": 659,
+        "pivotX": 97.0
+      },
+      "destination": [
+        143,
+        78
+      ],
+      "lift": 0
+    },
+    {
+      "source": {
+        "x": 42,
+        "y": 797,
+        "width": 178,
+        "height": 662,
+        "pivotX": 98.0
+      },
+      "destination": [
+        143,
+        76
+      ],
+      "lift": 0
+    },
+    {
+      "source": {
+        "x": 299,
+        "y": 799,
+        "width": 178,
+        "height": 660,
+        "pivotX": 97.0
+      },
+      "destination": [
+        143,
+        77
+      ],
+      "lift": 0
+    },
+    {
+      "source": {
+        "x": 552,
+        "y": 797,
+        "width": 178,
+        "height": 662,
+        "pivotX": 97.0
+      },
+      "destination": [
+        143,
+        76
+      ],
+      "lift": 0
+    },
+    {
+      "source": {
+        "x": 808,
+        "y": 796,
+        "width": 175,
+        "height": 664,
+        "pivotX": 95.0
+      },
+      "destination": [
+        144,
+        75
+      ],
+      "lift": 0
+    }
+  ]
+}

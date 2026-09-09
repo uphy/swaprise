@@ -1,0 +1,187 @@
+{
+  "id": "nika-finish-v1",
+  "label": "通常終了 · v1",
+  "action": "finish",
+  "kind": "animation",
+  "image": "nika-finish-v1.png",
+  "prompt": "nika-finish-v1.prompt.txt",
+  "status": "試作・透過確認済み",
+  "model": "未確認（内蔵画像生成ツール）",
+  "notes": "テキストから新規生成。既存の勝利v4とは顔・頭身・髪留めなどに差があります。外見の統一前の試作です。",
+  "frames": [
+    {
+      "x": 93,
+      "y": 0,
+      "width": 113,
+      "height": 256,
+      "pivotX": 41.75
+    },
+    {
+      "x": 341,
+      "y": 0,
+      "width": 113,
+      "height": 256,
+      "pivotX": 42.25
+    },
+    {
+      "x": 589,
+      "y": 0,
+      "width": 113,
+      "height": 256,
+      "pivotX": 41.75
+    },
+    {
+      "x": 836,
+      "y": 0,
+      "width": 114,
+      "height": 256,
+      "pivotX": 41.75
+    },
+    {
+      "x": 1083,
+      "y": 0,
+      "width": 115,
+      "height": 256,
+      "pivotX": 40.75
+    },
+    {
+      "x": 1333,
+      "y": 0,
+      "width": 112,
+      "height": 256,
+      "pivotX": 41.0
+    },
+    {
+      "x": 93,
+      "y": 256,
+      "width": 113,
+      "height": 256,
+      "pivotX": 40.0
+    },
+    {
+      "x": 341,
+      "y": 256,
+      "width": 112,
+      "height": 256,
+      "pivotX": 41.5
+    },
+    {
+      "x": 589,
+      "y": 256,
+      "width": 113,
+      "height": 256,
+      "pivotX": 41.5
+    },
+    {
+      "x": 837,
+      "y": 256,
+      "width": 113,
+      "height": 256,
+      "pivotX": 41.0
+    },
+    {
+      "x": 1085,
+      "y": 256,
+      "width": 112,
+      "height": 256,
+      "pivotX": 40.5
+    },
+    {
+      "x": 1333,
+      "y": 256,
+      "width": 112,
+      "height": 256,
+      "pivotX": 41.75
+    },
+    {
+      "x": 93,
+      "y": 512,
+      "width": 113,
+      "height": 256,
+      "pivotX": 39.5
+    },
+    {
+      "x": 341,
+      "y": 512,
+      "width": 112,
+      "height": 256,
+      "pivotX": 39.0
+    },
+    {
+      "x": 589,
+      "y": 512,
+      "width": 113,
+      "height": 256,
+      "pivotX": 39.0
+    },
+    {
+      "x": 838,
+      "y": 512,
+      "width": 112,
+      "height": 256,
+      "pivotX": 42.75
+    },
+    {
+      "x": 1085,
+      "y": 512,
+      "width": 112,
+      "height": 256,
+      "pivotX": 42.75
+    },
+    {
+      "x": 1333,
+      "y": 512,
+      "width": 112,
+      "height": 256,
+      "pivotX": 43.75
+    },
+    {
+      "x": 93,
+      "y": 768,
+      "width": 113,
+      "height": 256,
+      "pivotX": 41.5
+    },
+    {
+      "x": 341,
+      "y": 768,
+      "width": 112,
+      "height": 256,
+      "pivotX": 41.75
+    },
+    {
+      "x": 589,
+      "y": 768,
+      "width": 113,
+      "height": 256,
+      "pivotX": 42.5
+    },
+    {
+      "x": 837,
+      "y": 768,
+      "width": 113,
+      "height": 256,
+      "pivotX": 41.5
+    },
+    {
+      "x": 1085,
+      "y": 768,
+      "width": 113,
+      "height": 256,
+      "pivotX": 41.75
+    },
+    {
+      "x": 1333,
+      "y": 768,
+      "width": 112,
+      "height": 256,
+      "pivotX": 42.5
+    }
+  ],
+  "frameCount": 24,
+  "fps": 12,
+  "lastHoldMs": 0,
+  "baselineY": 252,
+  "scale": 1.35,
+  "loop": false
+}

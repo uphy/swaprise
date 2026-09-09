@@ -1,0 +1,57 @@
+{
+  "id": "nika-victory-v4",
+  "label": "勝利 · v4",
+  "kind": "animation",
+  "action": "victory",
+  "status": "試作・横ずれ補正済み",
+  "image": "nika-victory-v4.png",
+  "prompt": "nika-victory-v4.prompt.txt",
+  "notes": "喜んで跳ね、工具袋を押さえる24コマ。透過背景。体形や描線には生成由来の揺れが残っています。",
+  "model": "未確認（内蔵画像生成ツール）",
+  "columns": 6,
+  "rows": 4,
+  "frameWidth": 256,
+  "frameHeight": 256,
+  "frameCount": 24,
+  "fps": 12,
+  "lastHoldMs": 0,
+  "pivotX": [
+    152.0,
+    140.2,
+    134.8,
+    116.2,
+    101.2,
+    86.2,
+    143.2,
+    146.5,
+    129.8,
+    116.5,
+    109.5,
+    100.0,
+    151.5,
+    134.8,
+    128.0,
+    119.8,
+    106.5,
+    90.5,
+    150.0,
+    138.8,
+    129.8,
+    116.5,
+    106.0,
+    99.5
+  ],
+  "baselineY": 252,
+  "scale": 1.35,
+  "history": [
+    {
+      "label": "v2 · 24コマ／背景に課題",
+      "url": "../v2/nika-victory-v2.html"
+    },
+    {
+      "label": "v1 · 8コマ",
+      "url": "../v1/nika-victory-v1.html"
+    }
+  ],
+  "loop": false
+}

@@ -1,0 +1,17 @@
+{
+  "id": "izel",
+  "name": "イゼル",
+  "role": "運行責任者",
+  "color": "#9c6570",
+  "assets": [
+    "portrait/pixel-v1/asset.json",
+    "icon/pixel-v1/asset.json",
+    "idle/pixel-v1/asset.json",
+    "danger/pixel-v1/asset.json",
+    "success/pixel-v1/asset.json",
+    "garbage-land/pixel-v1/asset.json",
+    "victory/pixel-v1/asset.json",
+    "defeat/pixel-v1/asset.json",
+    "finish/pixel-v1/asset.json"
+  ]
+}

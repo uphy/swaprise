@@ -1,0 +1,146 @@
+[
+  {
+    "x": 0,
+    "y": 0,
+    "width": 256,
+    "height": 402,
+    "pivotX": 128,
+    "baselineY": 391
+  },
+  {
+    "x": 256,
+    "y": 0,
+    "width": 256,
+    "height": 402,
+    "pivotX": 128,
+    "baselineY": 391
+  },
+  {
+    "x": 512,
+    "y": 0,
+    "width": 256,
+    "height": 402,
+    "pivotX": 128,
+    "baselineY": 391
+  },
+  {
+    "x": 768,
+    "y": 0,
+    "width": 256,
+    "height": 402,
+    "pivotX": 128,
+    "baselineY": 391
+  },
+  {
+    "x": 1024,
+    "y": 0,
+    "width": 256,
+    "height": 402,
+    "pivotX": 128,
+    "baselineY": 391
+  },
+  {
+    "x": 1280,
+    "y": 0,
+    "width": 256,
+    "height": 402,
+    "pivotX": 128,
+    "baselineY": 391
+  },
+  {
+    "x": 0,
+    "y": 402,
+    "width": 256,
+    "height": 351,
+    "pivotX": 128,
+    "baselineY": 325
+  },
+  {
+    "x": 256,
+    "y": 402,
+    "width": 256,
+    "height": 351,
+    "pivotX": 128,
+    "baselineY": 325
+  },
+  {
+    "x": 512,
+    "y": 402,
+    "width": 256,
+    "height": 351,
+    "pivotX": 128,
+    "baselineY": 321
+  },
+  {
+    "x": 768,
+    "y": 402,
+    "width": 256,
+    "height": 351,
+    "pivotX": 128,
+    "baselineY": 321
+  },
+  {
+    "x": 1024,
+    "y": 402,
+    "width": 256,
+    "height": 351,
+    "pivotX": 128,
+    "baselineY": 321
+  },
+  {
+    "x": 1280,
+    "y": 402,
+    "width": 256,
+    "height": 351,
+    "pivotX": 128,
+    "baselineY": 323
+  },
+  {
+    "x": 0,
+    "y": 753,
+    "width": 256,
+    "height": 271,
+    "pivotX": 128,
+    "baselineY": 238
+  },
+  {
+    "x": 256,
+    "y": 753,
+    "width": 256,
+    "height": 271,
+    "pivotX": 128,
+    "baselineY": 238
+  },
+  {
+    "x": 512,
+    "y": 753,
+    "width": 256,
+    "height": 271,
+    "pivotX": 128,
+    "baselineY": 234
+  },
+  {
+    "x": 768,
+    "y": 753,
+    "width": 256,
+    "height": 271,
+    "pivotX": 128,
+    "baselineY": 234
+  },
+  {
+    "x": 1024,
+    "y": 753,
+    "width": 256,
+    "height": 271,
+    "pivotX": 128,
+    "baselineY": 234
+  },
+  {
+    "x": 1280,
+    "y": 753,
+    "width": 256,
+    "height": 271,
+    "pivotX": 128,
+    "baselineY": 234
+  }
+]

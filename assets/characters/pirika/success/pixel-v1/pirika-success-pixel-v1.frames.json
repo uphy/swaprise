@@ -1,0 +1,128 @@
+{
+  "source": "pirika-success-pixel-v1-magenta.png",
+  "chromaKey": {
+    "redMin": 130,
+    "blueMin": 110,
+    "redMinusGreen": 65,
+    "blueMinusGreen": 55
+  },
+  "scale": 0.6077348066298343,
+  "cell": [
+    384,
+    432
+  ],
+  "frames": [
+    {
+      "source": {
+        "x": 9,
+        "y": 125,
+        "width": 246,
+        "height": 543,
+        "pivotX": 151.5
+      },
+      "destination": [
+        118,
+        78
+      ],
+      "lift": 0
+    },
+    {
+      "source": {
+        "x": 259,
+        "y": 129,
+        "width": 252,
+        "height": 539,
+        "pivotX": 156.5
+      },
+      "destination": [
+        115,
+        80
+      ],
+      "lift": 0
+    },
+    {
+      "source": {
+        "x": 507,
+        "y": 123,
+        "width": 263,
+        "height": 545,
+        "pivotX": 159.5
+      },
+      "destination": [
+        113,
+        77
+      ],
+      "lift": 0
+    },
+    {
+      "source": {
+        "x": 768,
+        "y": 122,
+        "width": 250,
+        "height": 546,
+        "pivotX": 154.0
+      },
+      "destination": [
+        116,
+        76
+      ],
+      "lift": 0
+    },
+    {
+      "source": {
+        "x": 9,
+        "y": 831,
+        "width": 246,
+        "height": 552,
+        "pivotX": 151.5
+      },
+      "destination": [
+        118,
+        73
+      ],
+      "lift": 0
+    },
+    {
+      "source": {
+        "x": 261,
+        "y": 838,
+        "width": 250,
+        "height": 545,
+        "pivotX": 154.5
+      },
+      "destination": [
+        116,
+        77
+      ],
+      "lift": 0
+    },
+    {
+      "source": {
+        "x": 510,
+        "y": 831,
+        "width": 252,
+        "height": 552,
+        "pivotX": 157.0
+      },
+      "destination": [
+        115,
+        73
+      ],
+      "lift": 0
+    },
+    {
+      "source": {
+        "x": 766,
+        "y": 831,
+        "width": 250,
+        "height": 552,
+        "pivotX": 156.0
+      },
+      "destination": [
+        115,
+        73
+      ],
+      "lift": 0
+    }
+  ]
+}
