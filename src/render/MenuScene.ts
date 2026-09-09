@@ -9,6 +9,7 @@ import { DPR, applyLayout } from "./hidpi";
 import { Button } from "./ui";
 import { fullscreen } from "./fullscreen";
 import { loadLastMode, saveLastMode } from "./lastmode";
+import { applyPendingUpdate } from "./update";
 import { CharacterView } from "./CharacterView";
 import { CHARACTERS, type CharacterSelection, hasGameAssets, isCharacterId, loadSelection, saveSelection } from "../characters/catalog";
 import type { GameStart } from "./GameScene";
@@ -127,6 +128,8 @@ export class MenuScene extends Phaser.Scene {
     this.charPicker = null;
     this.overlay = null;
     this.toolIndex = -1;
+    // 遊んでいる間に新版が見つかっていたら、メニューへ戻ったこのタイミングで切り替える（まもなく reload される）
+    if (applyPendingUpdate()) return;
     createTextures(this);
     // URL の ?mode= は最初の1回だけ効かせる。Esc でメニューに戻ったときに再び飛ばされないよう、ここで消す。
     const params = new URLSearchParams(location.search);

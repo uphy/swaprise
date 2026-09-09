@@ -20,7 +20,7 @@
 ## 2. 次点（スマホ運用として欲しい）
 
 - [x] PWA としてインストールできる形にする
-  - 対応: vite-plugin-pwa（generateSW, autoUpdate）で manifest と Service Worker を生成。アイコンは `tools/make-icons.mjs` が zlib だけで PNG を書く（192 / 512 / maskable 512 / apple-touch-icon 180）。`e2e/pwa.spec.ts` でオフライン再読込を確認
+  - 対応: vite-plugin-pwa（generateSW, prompt）で manifest と Service Worker を生成。新版への切り替えは `src/render/update.ts` がメニューを出す前に行う（`e2e/update.spec.ts`）。アイコンは `tools/make-icons.mjs` が zlib だけで PNG を書く（192 / 512 / maskable 512 / apple-touch-icon 180）。`e2e/pwa.spec.ts` でオフライン再読込を確認
 - [x] せり上げの操作をもう1つ用意する
   - 対応: 盤面を2本の指で押している間もせり上げ（`TouchInput.onBoard`）。2本目が触れた時点で進行中のドラッグは捨てる。メニューの案内文に追記
 - [x] 結果画面と案内文をタッチ向けの言葉にする

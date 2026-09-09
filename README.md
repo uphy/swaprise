@@ -93,7 +93,7 @@ P で一時停止、R でやり直し、Esc でメニュー、M でミュート�
 ### PWA
 
 - ビルドすると manifest と Service Worker（vite-plugin-pwa）が付き、Android Chrome は「ホーム画面に追加」でインストールできる。iOS は Safari の共有メニューから「ホーム画面に追加」で全画面になる
-- 一度開けば、Service Worker がビルド成果物を丸ごと precache するので、次回からはオフラインでも遊べる。新しい版は次に開いたときに切り替わる
+- 一度開けば、Service Worker がビルド成果物を丸ごと precache するので、次回からはオフラインでも遊べる。新しい版は次に開いたときに、メニューを出す前に「UPDATING…」と表示して切り替える（遊んでいる最中に reload しない）。回線が遅くて確認が終わらないときはそのまま始め、次にメニューへ戻ったときに切り替える
 - アイコンは `node tools/make-icons.mjs` がコードから PNG を生成する（`public/icons/`）。画像ファイルを手で描くことはしない
 - iOS はサイレントスイッチ（本体横のスイッチ）が ON だと WebAudio の音が全部消える。音が出ないときはまずここを確認する
 

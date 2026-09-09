@@ -24,9 +24,11 @@ export default defineConfig({
   server: { port: DEV_PORT, strictPort: true },
   preview: { port: PREVIEW_PORT, strictPort: true },
   plugins: [
-    // ホーム画面に追加してオフラインでも開けるようにする。Service Worker はビルド成果物を丸ごと precache する
+    // ホーム画面に追加してオフラインでも開けるようにする。Service Worker はビルド成果物を丸ごと precache する。
+    // autoUpdate だと新版の precache が終わった瞬間に reload され、試合の途中でメニューへ戻される。
+    // prompt にして、切り替えのタイミングは src/render/update.ts が決める
     VitePWA({
-      registerType: "autoUpdate",
+      registerType: "prompt",
       includeAssets: ["icons/*.png", "vibrate-test.html", "characters/manifest.json"],
       manifest: {
         name: "Swaprise",
@@ -46,6 +48,8 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ["**/*.{js,css,html,png,webmanifest}"],
+        // SKIP_WAITING のあと、開いているページをすぐ新版の管理下に置く。これで workbox-window の controlling が発火して reload できる
+        clientsClaim: true,
         navigateFallbackDenylist: [/^\/api\//],
       },
     }),
