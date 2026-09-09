@@ -9,3 +9,8 @@ e2e/__screenshots__/
 test-results-online/
 
 .wrangler-preview.json
+
+# 制作素材から再生成する配信用データと、登録前の一時出力
+public/characters/
+src/generated/characters.ts
+output/imagegen/

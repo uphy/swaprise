@@ -1,0 +1,174 @@
+{
+  "image": "nika-defeat-v1.png",
+  "frames": [
+    {
+      "x": 89,
+      "y": 0,
+      "width": 113,
+      "height": 256,
+      "pivotX": 47.5
+    },
+    {
+      "x": 339,
+      "y": 0,
+      "width": 113,
+      "height": 256,
+      "pivotX": 46.5
+    },
+    {
+      "x": 589,
+      "y": 0,
+      "width": 113,
+      "height": 256,
+      "pivotX": 46.25
+    },
+    {
+      "x": 839,
+      "y": 0,
+      "width": 112,
+      "height": 256,
+      "pivotX": 46.0
+    },
+    {
+      "x": 1088,
+      "y": 0,
+      "width": 112,
+      "height": 256,
+      "pivotX": 45.0
+    },
+    {
+      "x": 1337,
+      "y": 0,
+      "width": 112,
+      "height": 256,
+      "pivotX": 46.5
+    },
+    {
+      "x": 87,
+      "y": 256,
+      "width": 116,
+      "height": 256,
+      "pivotX": 47.5
+    },
+    {
+      "x": 336,
+      "y": 256,
+      "width": 117,
+      "height": 256,
+      "pivotX": 47.5
+    },
+    {
+      "x": 587,
+      "y": 256,
+      "width": 116,
+      "height": 256,
+      "pivotX": 47.0
+    },
+    {
+      "x": 836,
+      "y": 256,
+      "width": 117,
+      "height": 256,
+      "pivotX": 48.5
+    },
+    {
+      "x": 1085,
+      "y": 256,
+      "width": 117,
+      "height": 256,
+      "pivotX": 49.5
+    },
+    {
+      "x": 1334,
+      "y": 256,
+      "width": 118,
+      "height": 256,
+      "pivotX": 51.0
+    },
+    {
+      "x": 84,
+      "y": 512,
+      "width": 121,
+      "height": 256,
+      "pivotX": 53.25
+    },
+    {
+      "x": 333,
+      "y": 512,
+      "width": 122,
+      "height": 256,
+      "pivotX": 53.75
+    },
+    {
+      "x": 582,
+      "y": 512,
+      "width": 123,
+      "height": 256,
+      "pivotX": 55.0
+    },
+    {
+      "x": 830,
+      "y": 512,
+      "width": 119,
+      "height": 256,
+      "pivotX": 38.5
+    },
+    {
+      "x": 1082,
+      "y": 512,
+      "width": 133,
+      "height": 256,
+      "pivotX": 16.5
+    },
+    {
+      "x": 1330,
+      "y": 512,
+      "width": 130,
+      "height": 256,
+      "pivotX": 16.5
+    },
+    {
+      "x": 82,
+      "y": 768,
+      "width": 127,
+      "height": 256,
+      "pivotX": 15.5
+    },
+    {
+      "x": 331,
+      "y": 768,
+      "width": 133,
+      "height": 256,
+      "pivotX": 15.75
+    },
+    {
+      "x": 581,
+      "y": 768,
+      "width": 130,
+      "height": 256,
+      "pivotX": 15.5
+    },
+    {
+      "x": 831,
+      "y": 768,
+      "width": 131,
+      "height": 256,
+      "pivotX": 14.5
+    },
+    {
+      "x": 1081,
+      "y": 768,
+      "width": 137,
+      "height": 256,
+      "pivotX": 14.5
+    },
+    {
+      "x": 1334,
+      "y": 768,
+      "width": 125,
+      "height": 256,
+      "pivotX": 64.0
+    }
+  ],
+  "method": "Opaque connected subjects grouped by sheet row; navy upper-pants median midpoint for horizontal alignment. Source PNG unchanged."
+}

@@ -1,0 +1,5 @@
+Create a pixel-art animation SPRITE SHEET of this exact referenced jerboa character. Seamless sustained worried concentration loop: tiny trembling ears and a small bead of sweat repeatedly sliding down. Stay in the worried pose throughout, no entering or exiting the pose, feet planted. A few frames, around six. Keep the same design, pixel scale, body proportions and fixed camera in all frames. All frames in a regular grid, read left to right then top to bottom, every whole character including ears and tail fits its cell with margin. Uniform solid bright magenta #FF00FF background. No shadows, gradients, grid lines, text, speech bubbles or extra symbols.
+
+Reference: pirika-portrait-pixel-v1-magenta.png
+
+Background correction: None

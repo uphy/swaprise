@@ -1,0 +1,5 @@
+Use case: stylized-concept. Create ONE full-body pixel-art game character reference, Pirika, an adult talking jerboa and confident professional guide. Sand-colored fur, white belly, large black eyes, slender long ears, very long slender hind legs and long thin tail with small dark brown tuft. Dark navy chest harness with two small yellow ticket pouches, one on each side. Holds a short pencil in a forepaw. Three-quarter view facing screen right, standing, entire ears feet and tail within generous margins. Animal anatomy, not a rabbit, baby mascot or human in costume. Crisp visible square pixel clusters, dark brown outlines, simple warm shading. Uniform solid #FF00FF background, no shadow, gradient, checkerboard, text or borders. Attached image is STYLE reference only: do not copy the human subject or background.
+
+Reference: nika-portrait-pixel-v1.png (style only)
+
+Background correction: Keep this exact pixel-art character unchanged. Replace the entire background, including every dark area and glow outside the character, with flat solid bright magenta #FF00FF. No gradient, shadow or transparency. Leave generous magenta margin around the full ears, feet and tail.

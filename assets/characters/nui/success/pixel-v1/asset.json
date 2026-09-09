@@ -1,0 +1,28 @@
+{
+  "id": "nui-success-pixel-v1",
+  "label": "成功リアクション · ドット絵 v1",
+  "kind": "animation",
+  "action": "success",
+  "image": "nui-success-pixel-v1.png",
+  "prompt": "nui-success-pixel-v1.prompt.txt",
+  "model": "内蔵画像生成ツール（モデル名未確認）",
+  "status": "試作・採用未定",
+  "pixelArt": true,
+  "history": [
+    {
+      "label": "背景処理前のシート",
+      "url": "nui-success-pixel-v1-magenta.png"
+    }
+  ],
+  "columns": 4,
+  "rows": 3,
+  "frameWidth": 384,
+  "frameHeight": 432,
+  "frameCount": 12,
+  "fps": 8,
+  "loop": false,
+  "baselineY": 408,
+  "scale": 1,
+  "lastHoldMs": 0,
+  "notes": "12コマ。透過と位置合わせを画像に適用済み。布のふくらみ・平たくなる変形は保持。"
+}

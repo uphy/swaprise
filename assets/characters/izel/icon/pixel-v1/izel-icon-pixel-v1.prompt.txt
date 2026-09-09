@@ -1,0 +1,1 @@
+Derived by cropping izel-portrait-pixel-v1.png. Crop: (345, 25, 630, 305). Nearest-neighbor resize to fit 256x256. No additional generation.

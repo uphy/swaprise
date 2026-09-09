@@ -1,0 +1,128 @@
+{
+  "source": "pirika-finish-pixel-v1-magenta.png",
+  "chromaKey": {
+    "redMin": 130,
+    "blueMin": 110,
+    "redMinusGreen": 65,
+    "blueMinusGreen": 55
+  },
+  "scale": 0.5935251798561151,
+  "cell": [
+    384,
+    432
+  ],
+  "frames": [
+    {
+      "source": {
+        "x": 32,
+        "y": 45,
+        "width": 285,
+        "height": 556,
+        "pivotX": 182.5
+      },
+      "destination": [
+        102,
+        78
+      ],
+      "lift": 0
+    },
+    {
+      "source": {
+        "x": 320,
+        "y": 54,
+        "width": 288,
+        "height": 547,
+        "pivotX": 185.0
+      },
+      "destination": [
+        100,
+        83
+      ],
+      "lift": 0
+    },
+    {
+      "source": {
+        "x": 618,
+        "y": 53,
+        "width": 287,
+        "height": 548,
+        "pivotX": 184.5
+      },
+      "destination": [
+        100,
+        83
+      ],
+      "lift": 0
+    },
+    {
+      "source": {
+        "x": 906,
+        "y": 47,
+        "width": 287,
+        "height": 554,
+        "pivotX": 183.5
+      },
+      "destination": [
+        101,
+        79
+      ],
+      "lift": 0
+    },
+    {
+      "source": {
+        "x": 35,
+        "y": 676,
+        "width": 281,
+        "height": 550,
+        "pivotX": 178.5
+      },
+      "destination": [
+        104,
+        82
+      ],
+      "lift": 0
+    },
+    {
+      "source": {
+        "x": 324,
+        "y": 694,
+        "width": 283,
+        "height": 532,
+        "pivotX": 180.0
+      },
+      "destination": [
+        103,
+        92
+      ],
+      "lift": 0
+    },
+    {
+      "source": {
+        "x": 619,
+        "y": 677,
+        "width": 286,
+        "height": 549,
+        "pivotX": 183.5
+      },
+      "destination": [
+        101,
+        82
+      ],
+      "lift": 0
+    },
+    {
+      "source": {
+        "x": 901,
+        "y": 673,
+        "width": 292,
+        "height": 553,
+        "pivotX": 188.5
+      },
+      "destination": [
+        98,
+        80
+      ],
+      "lift": 0
+    }
+  ]
+}

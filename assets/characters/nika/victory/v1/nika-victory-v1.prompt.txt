@@ -1,0 +1,17 @@
+Use case: stylized-concept.
+Create a polished hand-drawn 2D anime game character animation sprite sheet, NOT pixel art. One original character, Nika, repeated in exactly 8 sequential animation frames. Transparent background, no text, no labels, no borders, no visible grid. Layout exactly 4 equal columns x 2 equal rows, chronological left to right top row then bottom row. Prefer canvas 2048x1536. Every frame has identical camera, scale and horizontal center within its cell. Use a consistent invisible ground baseline at 85% of each cell height; preserve actual jump displacement instead of re-centering airborne frames. Keep generous margins so all hair, fingers and boots fit inside every cell.
+
+Character: Nika, a 16-year-old girl apprentice repairer, petite 154cm equivalent, 4.5 heads tall, warm brown skin, honey brown eyes, freckles, thick expressive eyebrows. Short reddish-brown curly hair ending just below ears; flat hair clip on HER RIGHT side. Cream three-quarter-sleeve shirt, short burnt-orange work vest, navy loose below-knee trousers, brown ankle work boots. Rectangular brown tool pouch on HER LEFT hip with a blue thread repair at one corner. A folded measuring rule is tucked securely in the pouch, never a wand. No hat, wings, floral ornaments, armor, weapons, logos. Practical age-appropriate clothing, no sexualization. Exactly same face, curls, clip, colors, proportions and garment construction in all frames. Near-front three-quarter view, facing slightly toward image right, still showing her left hip pouch.
+
+Style: appealing clean expressive hand-drawn anime with subtle storybook warmth; confident dark-brown outlines, slightly thicker outer contours, broad clear color areas, restrained two-tone cel shadows, very little texture. Vibrant burnt orange balanced with cream and navy, readable at small game UI scale. Professional animation key poses; not painterly, not 3D, not photorealism, not a chibi toddler.
+
+Action: short joyful victory hop followed by catching her jostling tool pouch, ending back at rest.
+Frame 1: friendly neutral rest, feet planted, arms relaxed, small smile.
+Frame 2: anticipation, knees bent slightly, body down a little, hands gathering near waist, excited face.
+Frame 3: jumping upward, boots just above ground, arms rising, open delighted smile.
+Frame 4: apex of small hop, both arms raised, boots higher, buoyant curls, joy; pouch tilts slightly but remains attached.
+Frame 5: descending, arms starting down, she notices pouch wobbling, surprised eyes, head glances toward her left hip.
+Frame 6: landing with bent knees, BOTH hands securing the pouch at her left hip, embarrassed happy grin, feet on the same ground baseline.
+Frame 7: straightening with one hand still on pouch, relieved pleased smile.
+Frame 8: same grounded neutral stance, scale and pose as frame 1, ready to return to idle.
+Keep anatomy and equipment completely consistent. No loose flying tools, no extra limbs, no motion lines that cross cell boundaries. Each cell contains one full-body character only. Deliver a single clean animation sheet suitable for later cutting into 8 frames.

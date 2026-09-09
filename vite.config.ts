@@ -29,7 +29,7 @@ export default defineConfig({
     // prompt にして、切り替えのタイミングは src/render/update.ts が決める
     VitePWA({
       registerType: "prompt",
-      includeAssets: ["icons/*.png", "vibrate-test.html"],
+      includeAssets: ["icons/*.png", "vibrate-test.html", "characters/manifest.json"],
       manifest: {
         name: "Swaprise",
         short_name: "Swaprise",
