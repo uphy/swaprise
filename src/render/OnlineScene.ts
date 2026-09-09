@@ -310,6 +310,10 @@ export class OnlineScene extends Phaser.Scene {
     const state = s?.state;
     if (!s) return;
     if (!state) {
+      this.root.classList.remove("playing");
+      this.touch?.setEnabled(false);
+      if (this.gameId) this.clearBoard();
+      audio.stopBgm();
       this.status.textContent = s.error || "Joining room…";
       this.actions.replaceChildren();
       this.button("BACK TO MENU", () => this.menu());

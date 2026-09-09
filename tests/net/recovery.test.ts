@@ -120,3 +120,24 @@ it("退出の通知が遅れても、同じ部屋へ入り直した参加記録�
   }));
   expect(values.has("active:user")).toBe(false);
 });
+
+it("同じ部屋の招待URLなら参加中の本人も再参加できる", async () => {
+  const roomId = "11111111-1111-4111-8111-111111111111";
+  const values = new Map<string, any>([["active:user", { roomId, token: "old", expires: Date.now() + 660000 }]]);
+  const coordinator = new Coordinator({
+    storage: {
+      get: async (key: string) => values.get(key),
+      put: async (key: string, value: any) => { values.set(key, value); },
+      getAlarm: async () => 1,
+    }, getWebSockets: () => [],
+  } as any, { ROOMS: {
+    idFromName: (id: string) => id,
+    get: () => ({ fetch: async () => Response.json({ active: true, ok: true }) }),
+  } } as any);
+  const response = await coordinator.fetch(new Request(`https://internal/api/rooms/${roomId}/join`, {
+    method: "POST", headers: { "X-Session": "user" },
+    body: JSON.stringify({ version: GAME_VERSION, invite: "invite" }),
+  }));
+  expect(response.status).toBe(200);
+  expect(values.get("active:user").token).not.toBe("old");
+});

@@ -243,3 +243,11 @@ it("対戦後に招待部屋を退出すると盤面を片付けて次の参加�
   expect(room.history).toEqual([]);
   expect(room.canStart()).toBe(false);
 });
+
+it("同じ参加者が招待URLを開き直すと、元の席を新しい接続情報で使える", () => {
+  const room = new RoomEngine("invite", () => {});
+  room.join({ session: "owner", token: "old", name: "Owner" });
+  expect(room.join({ session: "owner", token: "new", name: "Owner" })).toBe(0);
+  expect(room.members[0]?.token).toBe("new");
+  expect(room.members[1]).toBeNull();
+});

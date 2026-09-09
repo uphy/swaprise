@@ -51,7 +51,11 @@ export class RoomEngine {
     if (this.state.phase === "closed")
       throw new Error("This room has closed.");
     const old = this.members.findIndex((m) => m?.session === member.session);
-    if (old >= 0) return old;
+    if (old >= 0) {
+      this.members[old] = member;
+      this.state.seats[old]!.name = member.name;
+      return old;
+    }
     const i = this.members.findIndex((m) => !m);
     if (i < 0 || this.state.phase !== "waiting")
       throw new Error("This room is full.");

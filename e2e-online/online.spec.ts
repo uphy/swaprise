@@ -548,3 +548,34 @@ test("期限切れの招待URLは開いた時点で説明し、新しい部屋�
   await page.getByRole("button", { name: "INVITE FRIEND", exact: true }).click();
   await expect(page.getByRole("button", { name: "SHARE INVITE" })).toBeVisible();
 });
+
+test("招待者は画面を閉じても同じURLへ戻れ、残った接続も新しいタブへ切り替わる", async ({ browser }) => {
+  const a = await browser.newContext();
+  const b = await browser.newContext();
+  const p = await a.newPage();
+  const q = await b.newPage();
+  await enter(p);
+  await p.getByRole("button", { name: "INVITE FRIEND", exact: true }).click();
+  await expect(p.getByRole("button", { name: "SHARE INVITE" })).toBeVisible();
+  const invite = p.url();
+  await q.goto(invite);
+  await q.getByRole("button", { name: "JOIN ROOM", exact: true }).click();
+  await expect(q.getByRole("button", { name: "READY", exact: true })).toBeVisible();
+  await p.close();
+  const reopened = await a.newPage();
+  await reopened.goto(invite);
+  await reopened.getByRole("button", { name: "JOIN ROOM", exact: true }).click();
+  await expect(reopened.getByRole("button", { name: "READY", exact: true })).toBeVisible();
+  expect(await reopened.evaluate(() => (window as any).__swapriseOnline.session.player)).toBe(0);
+  await reopened.getByRole("button", { name: "READY", exact: true }).click();
+  await q.getByRole("button", { name: "READY", exact: true }).click();
+  await reopened.waitForFunction(() => (window as any).__swapriseOnline?.session?.lockstep?.frame > 60);
+  const replacement = await a.newPage();
+  await replacement.goto(invite);
+  await replacement.getByRole("button", { name: "JOIN ROOM", exact: true }).click();
+  await expect(reopened.getByRole("status")).toHaveText("This room was opened in another tab.");
+  await replacement.waitForFunction(() => (window as any).__swapriseOnline?.session?.state?.phase === "playing" && (window as any).__swapriseOnline.session.lockstep.frame > 120);
+  expect(await replacement.evaluate(() => (window as any).__swapriseOnline.session.player)).toBe(0);
+  await a.close();
+  await b.close();
+});

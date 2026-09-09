@@ -92,6 +92,17 @@ export class Room extends DurableObject<Env> {
         }
       }
   }
+  private replaceConnection(player: number, except?: WebSocket): void {
+    for (const ws of this.ctx.getWebSockets()) {
+      const info: SocketInfo = ws.deserializeAttachment();
+      if (ws === except || info.player !== player) continue;
+      info.player = -1;
+      ws.serializeAttachment(info);
+      ws.close(4001, "opened in another tab");
+    }
+    if (this.engine.state.seats[player]?.connected)
+      this.engine.disconnect(player, Date.now());
+  }
   private async persist(): Promise<void> {
     const frame = this.engine.history.length;
     if (frame > this.savedFrame) {
@@ -225,7 +236,11 @@ export class Room extends DurableObject<Env> {
         this.savedFrame = 0;
       }
       try {
+        const returning = this.engine.members.findIndex((m) => m?.session === member.session);
+        if (returning >= 0) this.replaceConnection(returning);
         this.engine.join(member);
+        // URLからの明示的な参加では、自動再接続の試行上限をリセットする。
+        this.metrics.connections = 0;
         this.touched = Date.now();
         await this.persist();
         await this.ctx.storage.setAlarm(this.expiresAt);
@@ -305,8 +320,7 @@ export class Room extends DurableObject<Env> {
               member?.session === a.session && member?.token === m.token,
           );
           if (i < 0) throw new Error("Reconnect details do not match.");
-          if (this.engine.state.seats[i]?.connected)
-            throw new Error("Already connected in another tab.");
+          if (this.engine.state.seats[i]?.connected) this.replaceConnection(i, ws);
           a.visible = m.visible === true;
           a.player = i;
           a.token = m.token;
@@ -356,7 +370,7 @@ export class Room extends DurableObject<Env> {
         }
       } catch (e) {
         ws.send(
-          JSON.stringify({ type: "error", message: (e as Error).message }),
+          JSON.stringify({ type: "error", message: (e as Error).message, fatal: a.player < 0 }),
         );
         if (a.player < 0 || a.count > 50) ws.close(1008);
       }

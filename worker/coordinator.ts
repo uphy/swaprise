@@ -167,8 +167,10 @@ export class Coordinator extends DurableObject<Env> {
     const data = JSON.parse(body || "{}");
     if (data.version !== GAME_VERSION)
       return json({ error: "Please reload to update the game." }, 409);
+    const join = /^\/api\/rooms\/([a-f0-9-]{36})\/join$/.exec(u.pathname);
+    const activeRoom = await this.active(session);
     if (
-      (await this.active(session)) ||
+      (activeRoom && activeRoom !== join?.[1]) ||
       this.ctx
         .getWebSockets()
         .some(
@@ -201,7 +203,6 @@ export class Coordinator extends DurableObject<Env> {
       await this.assign(session, id, token, "invite");
       return json({ roomId: id, token, invite });
     }
-    const join = /^\/api\/rooms\/([a-f0-9-]{36})\/join$/.exec(u.pathname);
     if (join) {
       const token = crypto.randomUUID();
       const response = await this.room(join[1], "/join", {
