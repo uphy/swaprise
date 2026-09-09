@@ -1,0 +1,21 @@
+{
+  "kind": "sprite-gen-image-report",
+  "provider": "codex",
+  "prompt": "One full-body base idle game sprite. Detailed pixel-style 2D art, crisp dark-brown outlines, broad colors, restrained two-tone shading, cozy workshop puzzle game. Preserve details readable at 512 pixels tall, not coarse 96/128px art. Whole subject contained with generous margin. Humans/animal face slightly screen right. No floor, shadow, text or detached objects. Baro, mature talking badger antiques dealer. Gray-brown fur, dark markings from eyes to snout, tiny round ears, broad torso, short legs and short tail. Animal paws with short claws. Dusty red short vest, blue-gray belly apron, small round spectacles, blank price tag bundle in apron pocket. Standing on hind paws, one forepaw open as if explaining. No human hands, pants, shoes or long tail; not a baby. Perfectly flat solid #00FF00 background everywhere including holes.",
+  "out": "/private/tmp/swaprise-mito-assets/assets/characters/baro/notes/spritegen-v1/base.png",
+  "raw": "/private/tmp/swaprise-mito-assets/assets/characters/baro/notes/spritegen-v1/base.png.raw.png",
+  "raw_bytes": 1686611,
+  "elapsed_seconds": 64.799,
+  "model": null,
+  "session_id": "01a08685-7df7-7de2-a4d6-ec4e0a64de27",
+  "refs": [],
+  "transparent": false,
+  "alpha": null,
+  "chroma": null,
+  "extra": {
+    "inline_results": 1,
+    "rollout_cleaned": true,
+    "transparent_background_reported": false
+  },
+  "provider_resolved_from": "explicit"
+}

@@ -1,0 +1,22 @@
+{
+  "kind": "sprite-gen-image-report",
+  "provider": "codex",
+  "prompt": "One full-body base idle game sprite. Detailed pixel-style 2D art, crisp dark-brown outlines, broad colors, restrained two-tone shading, cozy workshop puzzle game. Preserve details readable at 512 pixels tall, not coarse 96/128px art. Whole subject contained with generous margin. Humans/animal face slightly screen right. No floor, shadow, text or detached objects. Yuno, 20-year-old female cartographer. Four-and-a-half heads tall, round cheeks, soft stocky build. Dark chestnut thick single braid to middle back, dark green eyes. Moss-green waist jacket, pale pink shirt, loose brown trousers, brown shoes. Flat oval map case on back. Hands hold half-open accordion-folded paper map at waist. Warm gentle face. No hat or cloak. Perfectly flat solid #0000FF background everywhere including holes.",
+  "out": "/private/tmp/swaprise-mito-assets/assets/characters/yuno/notes/spritegen-v1/base.png",
+  "raw": "/private/tmp/swaprise-mito-assets/assets/characters/yuno/notes/spritegen-v1/base.png.raw.png",
+  "raw_bytes": 822042,
+  "elapsed_seconds": 68.928,
+  "model": null,
+  "session_id": "01a08685-7df7-7502-868d-e64059eed40e",
+  "refs": [],
+  "transparent": false,
+  "alpha": null,
+  "chroma": null,
+  "extra": {
+    "inline_results": 1,
+    "rollout_cleaned": true,
+    "transparent_background_reported": true
+  },
+  "provider_resolved_from": "explicit",
+  "report": "/private/tmp/swaprise-mito-assets/assets/characters/yuno/notes/spritegen-v1/base-gen.json"
+}

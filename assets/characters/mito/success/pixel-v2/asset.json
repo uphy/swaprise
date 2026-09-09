@@ -1,0 +1,83 @@
+{
+  "id": "mito-success-pixel-v2",
+  "label": "成功 · ドット絵 v2（透過再生成）",
+  "kind": "animation",
+  "action": "success",
+  "image": "mito-success-pixel-v2.png",
+  "prompt": "mito-success-pixel-v2.prompt.txt",
+  "model": "gpt-image（内蔵画像生成ツール、モデル版指定なし）",
+  "status": "採用版",
+  "pixelArt": true,
+  "notes": "gpt-imageで再生成した透過PNG。色抜き・画像加工なし。旧版は比較用に保存。 全コマ共通倍率。アルファ128以上の足元から基準点と床位置を計測。",
+  "frameCount": 8,
+  "fps": 7,
+  "loop": false,
+  "frames": [
+    {
+      "x": 0,
+      "y": 0,
+      "width": 384,
+      "height": 515,
+      "pivotX": 198.5,
+      "baselineY": 509
+    },
+    {
+      "x": 384,
+      "y": 0,
+      "width": 384,
+      "height": 515,
+      "pivotX": 191.5,
+      "baselineY": 509
+    },
+    {
+      "x": 768,
+      "y": 0,
+      "width": 384,
+      "height": 515,
+      "pivotX": 187.5,
+      "baselineY": 509
+    },
+    {
+      "x": 1152,
+      "y": 0,
+      "width": 384,
+      "height": 515,
+      "pivotX": 192,
+      "baselineY": 509
+    },
+    {
+      "x": 0,
+      "y": 515,
+      "width": 384,
+      "height": 509,
+      "pivotX": 192,
+      "baselineY": 505
+    },
+    {
+      "x": 384,
+      "y": 515,
+      "width": 384,
+      "height": 509,
+      "pivotX": 191,
+      "baselineY": 505
+    },
+    {
+      "x": 768,
+      "y": 515,
+      "width": 384,
+      "height": 509,
+      "pivotX": 198,
+      "baselineY": 505
+    },
+    {
+      "x": 1152,
+      "y": 515,
+      "width": 384,
+      "height": 509,
+      "pivotX": 198,
+      "baselineY": 505
+    }
+  ],
+  "scale": 0.7214,
+  "lastHoldMs": 0
+}

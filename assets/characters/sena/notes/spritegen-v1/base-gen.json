@@ -1,0 +1,23 @@
+{
+  "kind": "sprite-gen-image-report",
+  "provider": "codex",
+  "prompt": "Create a genuine pixel-art base sprite of Sena, using the attached image ONLY for identity, outfit and colors. Full body, upright neutral idle pose, three-quarter facing screen right. Blue-black chin-length bob with one ear tucked, narrow gray eyes, thin brows, composed serious expression. Pale limestone high-collar jacket with exactly two short brass chest clasps, navy wide-leg trousers, low brown leather shoes, thin record board at her right hip. Redraw as a five-head-tall game sprite with a uniform visible pixel grid: approximately 96 logical pixels tall, displayed at an integer enlargement; crisp one-logical-pixel dark brown outlines, flat 24-color palette, simple two-tone shading. No anti-aliasing, painted texture, gradients or tiny details smaller than one grid pixel. All body parts contained with ample clear margin. Hands empty at sides. Uniform flat magenta #FF00FF background. No scenery, floor shadow, text, guide lines, other characters or extra objects.",
+  "out": "/private/tmp/swaprise-mito-assets/assets/characters/sena/notes/spritegen-v1/base.png",
+  "raw": "/private/tmp/swaprise-mito-assets/assets/characters/sena/notes/spritegen-v1/base.png.raw.png",
+  "raw_bytes": 1268173,
+  "elapsed_seconds": 69.687,
+  "model": null,
+  "session_id": "01a0866d-db3d-7281-8971-13db54d53cf4",
+  "refs": [
+    "/private/tmp/swaprise-mito-assets/assets/characters/sena/portrait/pixel-v1/sena-portrait-pixel-v1.png"
+  ],
+  "transparent": false,
+  "alpha": null,
+  "chroma": null,
+  "extra": {
+    "inline_results": 1,
+    "rollout_cleaned": true,
+    "transparent_background_reported": false
+  },
+  "provider_resolved_from": "explicit"
+}

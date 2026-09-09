@@ -1,0 +1,28 @@
+{
+  "id": "mito-victory-pixel-v1",
+  "label": "勝利・クリア · ドット絵 v1",
+  "kind": "animation",
+  "action": "victory",
+  "image": "mito-victory-pixel-v1.png",
+  "prompt": "mito-victory-pixel-v1.prompt.txt",
+  "model": "内蔵画像生成ツール（モデル名未確認）",
+  "status": "旧版・比較用",
+  "pixelArt": true,
+  "history": [
+    {
+      "label": "背景処理前のシート",
+      "url": "mito-victory-pixel-v1-magenta.png"
+    }
+  ],
+  "columns": 4,
+  "rows": 3,
+  "frameWidth": 256,
+  "frameHeight": 512,
+  "frameCount": 12,
+  "fps": 8,
+  "loop": false,
+  "baselineY": 492,
+  "scale": 0.8,
+  "lastHoldMs": 400,
+  "notes": "12コマ。札の輪を一度回し、片側の口角を上げて終える。"
+}

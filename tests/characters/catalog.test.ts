@@ -7,9 +7,15 @@ function memoryStorage(initial: Record<string, string> = {}): Pick<Storage, "get
 }
 
 describe("キャラクターの一覧", () => {
-  it("10人が index.json の順で並び、素材のある人物が少なくとも2人いる", () => {
+  it("10人が index.json の順で並び、全員に基本画像と全動作の採用素材がある", () => {
     expect(CHARACTERS.map((c) => c.id)).toEqual(["nika", "mito", "sena", "rocca", "yuno", "baro", "pirika", "nui", "ordo", "izel"]);
-    expect(CHARACTERS.filter(hasGameAssets).length).toBeGreaterThanOrEqual(2);
+    expect(CHARACTERS.every(hasGameAssets)).toBe(true);
+    for (const c of CHARACTERS) {
+      for (const action of ["portrait", "icon", "idle", "danger", "success", "garbage-land", "victory", "defeat", "finish"] as const) {
+        expect(c.assets[action], `${c.id}/${action}`).toBeDefined();
+        expect(resolveAction(c, action)).toBe(action);
+      }
+    }
   });
 
   it("素材のない動作は待機で代替し、待機もなければ代替表示にする", () => {
@@ -18,9 +24,9 @@ describe("キャラクターの一覧", () => {
     const nika = characterById("nika");
     expect(nika.assets.danger).toBeDefined();
     expect(resolveAction({ ...nika, assets: { idle: nika.assets.idle } }, "danger")).toBe("idle");
-    const mito = characterById("mito");
-    expect(resolveAction(mito, "idle")).toBeNull();
-    expect(resolveAction(mito, "portrait")).toBeNull();
+    const withoutAssets = { ...nika, assets: {} };
+    expect(resolveAction(withoutAssets, "idle")).toBeNull();
+    expect(resolveAction(withoutAssets, "portrait")).toBeNull();
   });
 });
 

@@ -45,6 +45,8 @@ export default defineConfig({
         ],
       },
       workbox: {
+        // 採用した高解像度の動作シート（約2.2MB）もオフラインで表示する。
+        maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
         globPatterns: ["**/*.{js,css,html,png,webmanifest}"],
         navigateFallbackDenylist: [/^\/api\//],
       },

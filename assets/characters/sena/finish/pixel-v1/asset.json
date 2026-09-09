@@ -1,0 +1,83 @@
+{
+  "id": "sena-finish-pixel-v1",
+  "label": "通常終了 · ドット絵 v1",
+  "kind": "animation",
+  "action": "finish",
+  "image": "sena-finish-pixel-v1.png",
+  "prompt": "sena-finish-pixel-v1.prompt.txt",
+  "model": "gpt-image（内蔵画像生成ツール、モデル版指定なし）",
+  "status": "試作・確認用",
+  "pixelArt": true,
+  "notes": "セナの人物設定と基準立ち絵から生成。生成PNGのアルファを保持し、色抜き・画像加工なし。 全コマ共通倍率。足元から基準点と床位置を計測。",
+  "frameCount": 8,
+  "fps": 7,
+  "loop": false,
+  "frames": [
+    {
+      "x": 0,
+      "y": 0,
+      "width": 384,
+      "height": 514,
+      "pivotX": 224.0,
+      "baselineY": 508
+    },
+    {
+      "x": 384,
+      "y": 0,
+      "width": 384,
+      "height": 514,
+      "pivotX": 202.0,
+      "baselineY": 508
+    },
+    {
+      "x": 768,
+      "y": 0,
+      "width": 384,
+      "height": 514,
+      "pivotX": 189.5,
+      "baselineY": 508
+    },
+    {
+      "x": 1152,
+      "y": 0,
+      "width": 384,
+      "height": 514,
+      "pivotX": 173.5,
+      "baselineY": 508
+    },
+    {
+      "x": 0,
+      "y": 514,
+      "width": 384,
+      "height": 510,
+      "pivotX": 223.0,
+      "baselineY": 498
+    },
+    {
+      "x": 384,
+      "y": 514,
+      "width": 384,
+      "height": 510,
+      "pivotX": 202.5,
+      "baselineY": 498
+    },
+    {
+      "x": 768,
+      "y": 514,
+      "width": 384,
+      "height": 510,
+      "pivotX": 192.0,
+      "baselineY": 498
+    },
+    {
+      "x": 1152,
+      "y": 514,
+      "width": 384,
+      "height": 510,
+      "pivotX": 176.5,
+      "baselineY": 498
+    }
+  ],
+  "scale": 0.7273,
+  "lastHoldMs": 0
+}

@@ -3251,35 +3251,3304 @@ window.CHARACTER_CATALOG = [
     "name": "ミト",
     "role": "配達員",
     "color": "#608c77",
-    "assets": []
+    "assets": [
+      {
+        "id": "mito-portrait-pixel-v2",
+        "label": "基準立ち絵 · ドット絵 v2（透過再生成）",
+        "kind": "image",
+        "action": "portrait",
+        "image": "../../../assets/characters/mito/portrait/pixel-v2/mito-portrait-pixel-v2.png",
+        "prompt": "../../../assets/characters/mito/portrait/pixel-v2/mito-portrait-pixel-v2.prompt.txt",
+        "model": "gpt-image（内蔵画像生成ツール、モデル版指定なし）",
+        "status": "採用版",
+        "pixelArt": true,
+        "notes": "gpt-imageで再生成した透過PNG。色抜き・画像加工なし。旧版は比較用に保存。"
+      },
+      {
+        "id": "mito-portrait-pixel-v1",
+        "label": "基準立ち絵 · ドット絵 v1",
+        "kind": "image",
+        "action": "portrait",
+        "image": "../../../assets/characters/mito/portrait/pixel-v1/mito-portrait-pixel-v1.png",
+        "prompt": "../../../assets/characters/mito/portrait/pixel-v1/mito-portrait-pixel-v1.prompt.txt",
+        "model": "内蔵画像生成ツール（モデル名未確認）",
+        "status": "旧版・比較用",
+        "pixelArt": true,
+        "notes": "ユーザー確認済みの基準デザイン。透明背景。"
+      },
+      {
+        "id": "mito-icon-pixel-v2",
+        "label": "顔アイコン · ドット絵 v2（透過再生成）",
+        "kind": "image",
+        "action": "icon",
+        "image": "../../../assets/characters/mito/icon/pixel-v2/mito-icon-pixel-v2.png",
+        "prompt": "../../../assets/characters/mito/icon/pixel-v2/mito-icon-pixel-v2.prompt.txt",
+        "model": "gpt-image（内蔵画像生成ツール、モデル版指定なし）",
+        "status": "採用版",
+        "pixelArt": true,
+        "notes": "gpt-imageで再生成した透過PNG。色抜き・画像加工なし。旧版は比較用に保存。"
+      },
+      {
+        "id": "mito-icon-pixel-v1",
+        "label": "顔アイコン · ドット絵 v1",
+        "kind": "image",
+        "action": "icon",
+        "image": "../../../assets/characters/mito/icon/pixel-v1/mito-icon-pixel-v1.png",
+        "prompt": "../../../assets/characters/mito/icon/pixel-v1/mito-icon-pixel-v1.prompt.txt",
+        "model": "内蔵画像生成ツール（モデル名未確認）",
+        "status": "旧版・比較用",
+        "pixelArt": true,
+        "notes": "専用の顔アイコンを256px四方に縮小。透明背景。"
+      },
+      {
+        "id": "mito-idle-pixel-v2",
+        "label": "待機 · ドット絵 v2（透過再生成）",
+        "kind": "animation",
+        "action": "idle",
+        "image": "../../../assets/characters/mito/idle/pixel-v2/mito-idle-pixel-v2.png",
+        "prompt": "../../../assets/characters/mito/idle/pixel-v2/mito-idle-pixel-v2.prompt.txt",
+        "model": "gpt-image（内蔵画像生成ツール、モデル版指定なし）",
+        "status": "採用版",
+        "pixelArt": true,
+        "notes": "gpt-imageで再生成した透過PNG。色抜き・画像加工なし。旧版は比較用に保存。 全コマ共通倍率。アルファ128以上の足元から基準点と床位置を計測。",
+        "frameCount": 6,
+        "fps": 4,
+        "loop": true,
+        "frames": [
+          {
+            "x": 0,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 298.5,
+            "baselineY": 503
+          },
+          {
+            "x": 512,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 291,
+            "baselineY": 503
+          },
+          {
+            "x": 1024,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 282,
+            "baselineY": 503
+          },
+          {
+            "x": 0,
+            "y": 512,
+            "width": 512,
+            "height": 512,
+            "pivotX": 298.5,
+            "baselineY": 493
+          },
+          {
+            "x": 512,
+            "y": 512,
+            "width": 512,
+            "height": 512,
+            "pivotX": 290.5,
+            "baselineY": 493
+          },
+          {
+            "x": 1024,
+            "y": 512,
+            "width": 512,
+            "height": 512,
+            "pivotX": 282,
+            "baselineY": 493
+          }
+        ],
+        "scale": 0.7438,
+        "lastHoldMs": 0
+      },
+      {
+        "id": "mito-idle-pixel-v1",
+        "label": "待機 · ドット絵 v1",
+        "kind": "animation",
+        "action": "idle",
+        "image": "../../../assets/characters/mito/idle/pixel-v1/mito-idle-pixel-v1.png",
+        "prompt": "../../../assets/characters/mito/idle/pixel-v1/mito-idle-pixel-v1.prompt.txt",
+        "model": "内蔵画像生成ツール（モデル名未確認）",
+        "status": "旧版・比較用",
+        "pixelArt": true,
+        "history": [
+          {
+            "label": "背景処理前のシート",
+            "url": "../../../assets/characters/mito/idle/pixel-v1/mito-idle-pixel-v1-magenta.png"
+          }
+        ],
+        "columns": 3,
+        "rows": 2,
+        "frameWidth": 342,
+        "frameHeight": 768,
+        "frameCount": 6,
+        "fps": 4,
+        "loop": true,
+        "baselineY": 748,
+        "scale": 0.52,
+        "lastHoldMs": 0,
+        "notes": "6コマ。均一なマゼンタ背景を透過し、グリッド用に右端へ2pxの透明余白を追加。"
+      },
+      {
+        "id": "mito-danger-pixel-v2",
+        "label": "ピンチ · ドット絵 v2（透過再生成）",
+        "kind": "animation",
+        "action": "danger",
+        "image": "../../../assets/characters/mito/danger/pixel-v2/mito-danger-pixel-v2.png",
+        "prompt": "../../../assets/characters/mito/danger/pixel-v2/mito-danger-pixel-v2.prompt.txt",
+        "model": "gpt-image（内蔵画像生成ツール、モデル版指定なし）",
+        "status": "採用版",
+        "pixelArt": true,
+        "notes": "gpt-imageで再生成した透過PNG。色抜き・画像加工なし。旧版は比較用に保存。 全コマ共通倍率。アルファ128以上の足元から基準点と床位置を計測。",
+        "frameCount": 6,
+        "fps": 4,
+        "loop": true,
+        "frames": [
+          {
+            "x": 0,
+            "y": 0,
+            "width": 512,
+            "height": 515,
+            "pivotX": 293.5,
+            "baselineY": 508
+          },
+          {
+            "x": 512,
+            "y": 0,
+            "width": 512,
+            "height": 515,
+            "pivotX": 277.5,
+            "baselineY": 508
+          },
+          {
+            "x": 1024,
+            "y": 0,
+            "width": 512,
+            "height": 515,
+            "pivotX": 262.5,
+            "baselineY": 508
+          },
+          {
+            "x": 0,
+            "y": 515,
+            "width": 512,
+            "height": 509,
+            "pivotX": 293.5,
+            "baselineY": 504
+          },
+          {
+            "x": 512,
+            "y": 515,
+            "width": 512,
+            "height": 509,
+            "pivotX": 277,
+            "baselineY": 504
+          },
+          {
+            "x": 1024,
+            "y": 515,
+            "width": 512,
+            "height": 509,
+            "pivotX": 262.5,
+            "baselineY": 505
+          }
+        ],
+        "scale": 0.7214,
+        "lastHoldMs": 0
+      },
+      {
+        "id": "mito-danger-pixel-v1",
+        "label": "ピンチ · ドット絵 v1",
+        "kind": "animation",
+        "action": "danger",
+        "image": "../../../assets/characters/mito/danger/pixel-v1/mito-danger-pixel-v1.png",
+        "prompt": "../../../assets/characters/mito/danger/pixel-v1/mito-danger-pixel-v1.prompt.txt",
+        "model": "内蔵画像生成ツール（モデル名未確認）",
+        "status": "旧版・比較用",
+        "pixelArt": true,
+        "history": [
+          {
+            "label": "背景処理前のシート",
+            "url": "../../../assets/characters/mito/danger/pixel-v1/mito-danger-pixel-v1-magenta.png"
+          }
+        ],
+        "columns": 3,
+        "rows": 2,
+        "frameWidth": 409,
+        "frameHeight": 642,
+        "frameCount": 6,
+        "fps": 4,
+        "loop": true,
+        "baselineY": 620,
+        "scale": 0.64,
+        "lastHoldMs": 0,
+        "notes": "6コマ。均一なマゼンタ背景を透過し、グリッド用に右端と下端へ1pxの透明余白を追加。"
+      },
+      {
+        "id": "mito-success-pixel-v2",
+        "label": "成功 · ドット絵 v2（透過再生成）",
+        "kind": "animation",
+        "action": "success",
+        "image": "../../../assets/characters/mito/success/pixel-v2/mito-success-pixel-v2.png",
+        "prompt": "../../../assets/characters/mito/success/pixel-v2/mito-success-pixel-v2.prompt.txt",
+        "model": "gpt-image（内蔵画像生成ツール、モデル版指定なし）",
+        "status": "採用版",
+        "pixelArt": true,
+        "notes": "gpt-imageで再生成した透過PNG。色抜き・画像加工なし。旧版は比較用に保存。 全コマ共通倍率。アルファ128以上の足元から基準点と床位置を計測。",
+        "frameCount": 8,
+        "fps": 7,
+        "loop": false,
+        "frames": [
+          {
+            "x": 0,
+            "y": 0,
+            "width": 384,
+            "height": 515,
+            "pivotX": 198.5,
+            "baselineY": 509
+          },
+          {
+            "x": 384,
+            "y": 0,
+            "width": 384,
+            "height": 515,
+            "pivotX": 191.5,
+            "baselineY": 509
+          },
+          {
+            "x": 768,
+            "y": 0,
+            "width": 384,
+            "height": 515,
+            "pivotX": 187.5,
+            "baselineY": 509
+          },
+          {
+            "x": 1152,
+            "y": 0,
+            "width": 384,
+            "height": 515,
+            "pivotX": 192,
+            "baselineY": 509
+          },
+          {
+            "x": 0,
+            "y": 515,
+            "width": 384,
+            "height": 509,
+            "pivotX": 192,
+            "baselineY": 505
+          },
+          {
+            "x": 384,
+            "y": 515,
+            "width": 384,
+            "height": 509,
+            "pivotX": 191,
+            "baselineY": 505
+          },
+          {
+            "x": 768,
+            "y": 515,
+            "width": 384,
+            "height": 509,
+            "pivotX": 198,
+            "baselineY": 505
+          },
+          {
+            "x": 1152,
+            "y": 515,
+            "width": 384,
+            "height": 509,
+            "pivotX": 198,
+            "baselineY": 505
+          }
+        ],
+        "scale": 0.7214,
+        "lastHoldMs": 0
+      },
+      {
+        "id": "mito-success-pixel-v1",
+        "label": "成功リアクション · ドット絵 v1",
+        "kind": "animation",
+        "action": "success",
+        "image": "../../../assets/characters/mito/success/pixel-v1/mito-success-pixel-v1.png",
+        "prompt": "../../../assets/characters/mito/success/pixel-v1/mito-success-pixel-v1.prompt.txt",
+        "model": "内蔵画像生成ツール（モデル名未確認）",
+        "status": "旧版・比較用",
+        "pixelArt": true,
+        "history": [
+          {
+            "label": "背景処理前のシート",
+            "url": "../../../assets/characters/mito/success/pixel-v1/mito-success-pixel-v1-magenta.png"
+          }
+        ],
+        "columns": 4,
+        "rows": 2,
+        "frameWidth": 384,
+        "frameHeight": 512,
+        "frameCount": 8,
+        "fps": 8,
+        "loop": false,
+        "baselineY": 492,
+        "scale": 0.8,
+        "lastHoldMs": 0,
+        "notes": "8コマ。札の輪を素早く掲げて戻す。均一なマゼンタ背景を機械的に透過。"
+      },
+      {
+        "id": "mito-garbage-land-pixel-v2",
+        "label": "おじゃま着地 · ドット絵 v2（透過再生成）",
+        "kind": "animation",
+        "action": "garbage-land",
+        "image": "../../../assets/characters/mito/garbage-land/pixel-v2/mito-garbage-land-pixel-v2.png",
+        "prompt": "../../../assets/characters/mito/garbage-land/pixel-v2/mito-garbage-land-pixel-v2.prompt.txt",
+        "model": "gpt-image（内蔵画像生成ツール、モデル版指定なし）",
+        "status": "採用版",
+        "pixelArt": true,
+        "notes": "gpt-imageで再生成した透過PNG。色抜き・画像加工なし。旧版は比較用に保存。 全コマ共通倍率。アルファ128以上の足元から基準点と床位置を計測。",
+        "frameCount": 8,
+        "fps": 7,
+        "loop": false,
+        "frames": [
+          {
+            "x": 0,
+            "y": 0,
+            "width": 384,
+            "height": 515,
+            "pivotX": 219,
+            "baselineY": 509
+          },
+          {
+            "x": 384,
+            "y": 0,
+            "width": 384,
+            "height": 515,
+            "pivotX": 184,
+            "baselineY": 504
+          },
+          {
+            "x": 768,
+            "y": 0,
+            "width": 384,
+            "height": 515,
+            "pivotX": 202.5,
+            "baselineY": 504
+          },
+          {
+            "x": 1152,
+            "y": 0,
+            "width": 384,
+            "height": 515,
+            "pivotX": 194.5,
+            "baselineY": 502
+          },
+          {
+            "x": 0,
+            "y": 515,
+            "width": 384,
+            "height": 509,
+            "pivotX": 204.5,
+            "baselineY": 495
+          },
+          {
+            "x": 384,
+            "y": 515,
+            "width": 384,
+            "height": 509,
+            "pivotX": 263.5,
+            "baselineY": 500
+          },
+          {
+            "x": 768,
+            "y": 515,
+            "width": 384,
+            "height": 509,
+            "pivotX": 225.5,
+            "baselineY": 500
+          },
+          {
+            "x": 1152,
+            "y": 515,
+            "width": 384,
+            "height": 509,
+            "pivotX": 217.5,
+            "baselineY": 505
+          }
+        ],
+        "scale": 0.7214,
+        "lastHoldMs": 0
+      },
+      {
+        "id": "mito-garbage-land-pixel-v1",
+        "label": "おじゃま着地 · ドット絵 v1",
+        "kind": "animation",
+        "action": "garbage-land",
+        "image": "../../../assets/characters/mito/garbage-land/pixel-v1/mito-garbage-land-pixel-v1.png",
+        "prompt": "../../../assets/characters/mito/garbage-land/pixel-v1/mito-garbage-land-pixel-v1.prompt.txt",
+        "model": "内蔵画像生成ツール（モデル名未確認）",
+        "status": "旧版・比較用",
+        "pixelArt": true,
+        "history": [
+          {
+            "label": "背景処理前のシート",
+            "url": "../../../assets/characters/mito/garbage-land/pixel-v1/mito-garbage-land-pixel-v1-magenta.png"
+          }
+        ],
+        "columns": 4,
+        "rows": 2,
+        "frameWidth": 384,
+        "frameHeight": 512,
+        "frameCount": 8,
+        "fps": 8,
+        "loop": false,
+        "baselineY": 492,
+        "scale": 0.8,
+        "lastHoldMs": 0,
+        "notes": "8コマ。着地の衝撃に踏ん張り、鞄と札を押さえて立て直す。"
+      },
+      {
+        "id": "mito-victory-pixel-v2",
+        "label": "勝利・クリア · ドット絵 v2（透過再生成）",
+        "kind": "animation",
+        "action": "victory",
+        "image": "../../../assets/characters/mito/victory/pixel-v2/mito-victory-pixel-v2.png",
+        "prompt": "../../../assets/characters/mito/victory/pixel-v2/mito-victory-pixel-v2.prompt.txt",
+        "model": "gpt-image（内蔵画像生成ツール、モデル版指定なし）",
+        "status": "採用版",
+        "pixelArt": true,
+        "notes": "gpt-imageで再生成した透過PNG。色抜き・画像加工なし。旧版は比較用に保存。 全コマ共通倍率。アルファ128以上の足元から基準点と床位置を計測。",
+        "frameCount": 12,
+        "fps": 7,
+        "loop": false,
+        "frames": [
+          {
+            "x": 0,
+            "y": 0,
+            "width": 384,
+            "height": 346,
+            "pivotX": 197.5,
+            "baselineY": 340
+          },
+          {
+            "x": 384,
+            "y": 0,
+            "width": 384,
+            "height": 346,
+            "pivotX": 196.5,
+            "baselineY": 339
+          },
+          {
+            "x": 768,
+            "y": 0,
+            "width": 384,
+            "height": 346,
+            "pivotX": 197,
+            "baselineY": 340
+          },
+          {
+            "x": 1152,
+            "y": 0,
+            "width": 384,
+            "height": 346,
+            "pivotX": 196,
+            "baselineY": 339
+          },
+          {
+            "x": 0,
+            "y": 346,
+            "width": 384,
+            "height": 336,
+            "pivotX": 196.5,
+            "baselineY": 331
+          },
+          {
+            "x": 384,
+            "y": 346,
+            "width": 384,
+            "height": 336,
+            "pivotX": 196.5,
+            "baselineY": 331
+          },
+          {
+            "x": 768,
+            "y": 346,
+            "width": 384,
+            "height": 336,
+            "pivotX": 196.5,
+            "baselineY": 331
+          },
+          {
+            "x": 1152,
+            "y": 346,
+            "width": 384,
+            "height": 336,
+            "pivotX": 196.5,
+            "baselineY": 331
+          },
+          {
+            "x": 0,
+            "y": 682,
+            "width": 384,
+            "height": 342,
+            "pivotX": 197,
+            "baselineY": 335
+          },
+          {
+            "x": 384,
+            "y": 682,
+            "width": 384,
+            "height": 342,
+            "pivotX": 198,
+            "baselineY": 335
+          },
+          {
+            "x": 768,
+            "y": 682,
+            "width": 384,
+            "height": 342,
+            "pivotX": 197,
+            "baselineY": 335
+          },
+          {
+            "x": 1152,
+            "y": 682,
+            "width": 384,
+            "height": 342,
+            "pivotX": 199,
+            "baselineY": 335
+          }
+        ],
+        "scale": 1.0909,
+        "lastHoldMs": 0
+      },
+      {
+        "id": "mito-victory-pixel-v1",
+        "label": "勝利・クリア · ドット絵 v1",
+        "kind": "animation",
+        "action": "victory",
+        "image": "../../../assets/characters/mito/victory/pixel-v1/mito-victory-pixel-v1.png",
+        "prompt": "../../../assets/characters/mito/victory/pixel-v1/mito-victory-pixel-v1.prompt.txt",
+        "model": "内蔵画像生成ツール（モデル名未確認）",
+        "status": "旧版・比較用",
+        "pixelArt": true,
+        "history": [
+          {
+            "label": "背景処理前のシート",
+            "url": "../../../assets/characters/mito/victory/pixel-v1/mito-victory-pixel-v1-magenta.png"
+          }
+        ],
+        "columns": 4,
+        "rows": 3,
+        "frameWidth": 256,
+        "frameHeight": 512,
+        "frameCount": 12,
+        "fps": 8,
+        "loop": false,
+        "baselineY": 492,
+        "scale": 0.8,
+        "lastHoldMs": 400,
+        "notes": "12コマ。札の輪を一度回し、片側の口角を上げて終える。"
+      },
+      {
+        "id": "mito-defeat-pixel-v2",
+        "label": "敗北 · ドット絵 v2（透過再生成）",
+        "kind": "animation",
+        "action": "defeat",
+        "image": "../../../assets/characters/mito/defeat/pixel-v2/mito-defeat-pixel-v2.png",
+        "prompt": "../../../assets/characters/mito/defeat/pixel-v2/mito-defeat-pixel-v2.prompt.txt",
+        "model": "gpt-image（内蔵画像生成ツール、モデル版指定なし）",
+        "status": "採用版",
+        "pixelArt": true,
+        "notes": "gpt-imageで再生成した透過PNG。色抜き・画像加工なし。旧版は比較用に保存。 全コマ共通倍率。アルファ128以上の足元から基準点と床位置を計測。",
+        "frameCount": 12,
+        "fps": 7,
+        "loop": false,
+        "frames": [
+          {
+            "x": 0,
+            "y": 0,
+            "width": 384,
+            "height": 363,
+            "pivotX": 181.5,
+            "baselineY": 356
+          },
+          {
+            "x": 384,
+            "y": 0,
+            "width": 384,
+            "height": 363,
+            "pivotX": 181.5,
+            "baselineY": 356
+          },
+          {
+            "x": 768,
+            "y": 0,
+            "width": 384,
+            "height": 363,
+            "pivotX": 196,
+            "baselineY": 356
+          },
+          {
+            "x": 1152,
+            "y": 0,
+            "width": 384,
+            "height": 363,
+            "pivotX": 214,
+            "baselineY": 357
+          },
+          {
+            "x": 0,
+            "y": 363,
+            "width": 384,
+            "height": 336,
+            "pivotX": 181.5,
+            "baselineY": 331
+          },
+          {
+            "x": 384,
+            "y": 363,
+            "width": 384,
+            "height": 336,
+            "pivotX": 185.5,
+            "baselineY": 331
+          },
+          {
+            "x": 768,
+            "y": 363,
+            "width": 384,
+            "height": 336,
+            "pivotX": 199,
+            "baselineY": 331
+          },
+          {
+            "x": 1152,
+            "y": 363,
+            "width": 384,
+            "height": 336,
+            "pivotX": 215.5,
+            "baselineY": 331
+          },
+          {
+            "x": 0,
+            "y": 699,
+            "width": 384,
+            "height": 325,
+            "pivotX": 182,
+            "baselineY": 321
+          },
+          {
+            "x": 384,
+            "y": 699,
+            "width": 384,
+            "height": 325,
+            "pivotX": 186.5,
+            "baselineY": 321
+          },
+          {
+            "x": 768,
+            "y": 699,
+            "width": 384,
+            "height": 325,
+            "pivotX": 200.5,
+            "baselineY": 321
+          },
+          {
+            "x": 1152,
+            "y": 699,
+            "width": 384,
+            "height": 325,
+            "pivotX": 214,
+            "baselineY": 321
+          }
+        ],
+        "scale": 1.0286,
+        "lastHoldMs": 0
+      },
+      {
+        "id": "mito-defeat-pixel-v1",
+        "label": "敗北・失敗 · ドット絵 v1",
+        "kind": "animation",
+        "action": "defeat",
+        "image": "../../../assets/characters/mito/defeat/pixel-v1/mito-defeat-pixel-v1.png",
+        "prompt": "../../../assets/characters/mito/defeat/pixel-v1/mito-defeat-pixel-v1.prompt.txt",
+        "model": "内蔵画像生成ツール（モデル名未確認）",
+        "status": "旧版・比較用",
+        "pixelArt": true,
+        "history": [
+          {
+            "label": "背景処理前のシート",
+            "url": "../../../assets/characters/mito/defeat/pixel-v1/mito-defeat-pixel-v1-magenta.png"
+          }
+        ],
+        "columns": 4,
+        "rows": 3,
+        "frameWidth": 296,
+        "frameHeight": 444,
+        "frameCount": 12,
+        "fps": 8,
+        "loop": false,
+        "baselineY": 424,
+        "scale": 0.9,
+        "lastHoldMs": 400,
+        "notes": "12コマ。札の輪を額に当て、負けを受け止めて笑う。グリッド用に右端と下端を透明で補正。"
+      },
+      {
+        "id": "mito-finish-pixel-v2",
+        "label": "通常終了 · ドット絵 v2（透過再生成）",
+        "kind": "animation",
+        "action": "finish",
+        "image": "../../../assets/characters/mito/finish/pixel-v2/mito-finish-pixel-v2.png",
+        "prompt": "../../../assets/characters/mito/finish/pixel-v2/mito-finish-pixel-v2.prompt.txt",
+        "model": "gpt-image（内蔵画像生成ツール、モデル版指定なし）",
+        "status": "採用版",
+        "pixelArt": true,
+        "notes": "gpt-imageで再生成した透過PNG。色抜き・画像加工なし。旧版は比較用に保存。 全コマ共通倍率。アルファ128以上の足元から基準点と床位置を計測。",
+        "frameCount": 8,
+        "fps": 7,
+        "loop": false,
+        "frames": [
+          {
+            "x": 0,
+            "y": 0,
+            "width": 384,
+            "height": 511,
+            "pivotX": 218,
+            "baselineY": 504
+          },
+          {
+            "x": 384,
+            "y": 0,
+            "width": 384,
+            "height": 511,
+            "pivotX": 211.5,
+            "baselineY": 504
+          },
+          {
+            "x": 768,
+            "y": 0,
+            "width": 384,
+            "height": 511,
+            "pivotX": 207.5,
+            "baselineY": 504
+          },
+          {
+            "x": 1152,
+            "y": 0,
+            "width": 384,
+            "height": 511,
+            "pivotX": 210,
+            "baselineY": 504
+          },
+          {
+            "x": 0,
+            "y": 511,
+            "width": 384,
+            "height": 513,
+            "pivotX": 192,
+            "baselineY": 501
+          },
+          {
+            "x": 384,
+            "y": 511,
+            "width": 384,
+            "height": 513,
+            "pivotX": 189,
+            "baselineY": 501
+          },
+          {
+            "x": 768,
+            "y": 511,
+            "width": 384,
+            "height": 513,
+            "pivotX": 184,
+            "baselineY": 501
+          },
+          {
+            "x": 1152,
+            "y": 511,
+            "width": 384,
+            "height": 513,
+            "pivotX": 192,
+            "baselineY": 501
+          }
+        ],
+        "scale": 0.7302,
+        "lastHoldMs": 0
+      },
+      {
+        "id": "mito-finish-pixel-v1",
+        "label": "通常終了 · ドット絵 v1",
+        "kind": "animation",
+        "action": "finish",
+        "image": "../../../assets/characters/mito/finish/pixel-v1/mito-finish-pixel-v1.png",
+        "prompt": "../../../assets/characters/mito/finish/pixel-v1/mito-finish-pixel-v1.prompt.txt",
+        "model": "内蔵画像生成ツール（モデル名未確認）",
+        "status": "旧版・比較用",
+        "pixelArt": true,
+        "history": [
+          {
+            "label": "背景処理前のシート",
+            "url": "../../../assets/characters/mito/finish/pixel-v1/mito-finish-pixel-v1-magenta.png"
+          }
+        ],
+        "columns": 4,
+        "rows": 2,
+        "frameWidth": 384,
+        "frameHeight": 512,
+        "frameCount": 8,
+        "fps": 8,
+        "loop": false,
+        "baselineY": 492,
+        "scale": 0.8,
+        "lastHoldMs": 300,
+        "notes": "8コマ。一息つき、札を確認して鞄のベルトを整える。"
+      }
+    ],
+    "adoptedAssets": {
+      "portrait": "mito-portrait-pixel-v2",
+      "icon": "mito-icon-pixel-v2",
+      "idle": "mito-idle-pixel-v2",
+      "danger": "mito-danger-pixel-v2",
+      "success": "mito-success-pixel-v2",
+      "garbage-land": "mito-garbage-land-pixel-v2",
+      "victory": "mito-victory-pixel-v2",
+      "defeat": "mito-defeat-pixel-v2",
+      "finish": "mito-finish-pixel-v2"
+    }
   },
   {
     "id": "sena",
     "name": "セナ",
     "role": "調整士候補",
     "color": "#667b9d",
-    "assets": []
+    "assets": [
+      {
+        "id": "sena-idle-spritegen-v2",
+        "label": "待機 · sprite-gen v2（512px・6コマ）",
+        "kind": "animation",
+        "action": "idle",
+        "image": "../../../assets/characters/sena/notes/spritegen-v2/run/sprite-sheet-alpha.png",
+        "prompt": "../../../assets/characters/sena/notes/spritegen-v2/run/prompts/idle.txt",
+        "model": "gpt-image（sprite-gen / Codex CLI、モデル版指定なし）",
+        "status": "採用",
+        "pixelArt": true,
+        "notes": "512×512px・6コマで再生成。128pxへの格子整形と減色を外し、背景除去・分割・位置合わせを適用。",
+        "frameCount": 6,
+        "fps": 6,
+        "loop": true,
+        "lastHoldMs": 0,
+        "scale": 0.75,
+        "frames": [
+          {
+            "x": 0,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 512,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 1024,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 1536,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 2048,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 2560,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          }
+        ]
+      },
+      {
+        "id": "sena-victory-spritegen-v2",
+        "label": "勝利 · sprite-gen v2（512px・6コマ）",
+        "kind": "animation",
+        "action": "victory",
+        "image": "../../../assets/characters/sena/notes/spritegen-v2/run/sprite-sheet-alpha.png",
+        "prompt": "../../../assets/characters/sena/notes/spritegen-v2/run/prompts/victory.txt",
+        "model": "gpt-image（sprite-gen / Codex CLI、モデル版指定なし）",
+        "status": "採用",
+        "pixelArt": true,
+        "notes": "512×512px・6コマで再生成。128pxへの格子整形と減色を外し、背景除去・分割・位置合わせを適用。",
+        "frameCount": 6,
+        "fps": 6,
+        "loop": false,
+        "lastHoldMs": 0,
+        "scale": 0.75,
+        "frames": [
+          {
+            "x": 0,
+            "y": 512,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 512,
+            "y": 512,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 1024,
+            "y": 512,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 1536,
+            "y": 512,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 2048,
+            "y": 512,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 2560,
+            "y": 512,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          }
+        ]
+      },
+      {
+        "id": "sena-idle-spritegen-v1",
+        "label": "待機 · sprite-gen v1",
+        "kind": "animation",
+        "action": "idle",
+        "image": "../../../assets/characters/sena/notes/spritegen-v1/run/sprite-sheet-alpha.png",
+        "prompt": "../../../assets/characters/sena/notes/spritegen-v1/run/prompts/idle.txt",
+        "model": "gpt-image（sprite-gen / Codex CLI、モデル版指定なし）",
+        "status": "比較試作・未採用",
+        "pixelArt": true,
+        "notes": "sprite-gen v2.0.3。背景除去・コマ抽出・24色パレット・2倍ピクセル整形済み。生成原画の格子検出に警告あり。動作はbest-effort。",
+        "frameCount": 4,
+        "fps": 4,
+        "loop": true,
+        "lastHoldMs": 0,
+        "scale": 1.5,
+        "frames": [
+          {
+            "x": 0,
+            "y": 0,
+            "width": 192,
+            "height": 256,
+            "pivotX": 96,
+            "baselineY": 244
+          },
+          {
+            "x": 192,
+            "y": 0,
+            "width": 192,
+            "height": 256,
+            "pivotX": 96,
+            "baselineY": 244
+          },
+          {
+            "x": 384,
+            "y": 0,
+            "width": 192,
+            "height": 256,
+            "pivotX": 96,
+            "baselineY": 244
+          },
+          {
+            "x": 576,
+            "y": 0,
+            "width": 192,
+            "height": 256,
+            "pivotX": 96,
+            "baselineY": 244
+          }
+        ]
+      },
+      {
+        "id": "sena-victory-spritegen-v1",
+        "label": "勝利 · sprite-gen v1",
+        "kind": "animation",
+        "action": "victory",
+        "image": "../../../assets/characters/sena/notes/spritegen-v1/run/sprite-sheet-alpha.png",
+        "prompt": "../../../assets/characters/sena/notes/spritegen-v1/run/prompts/victory.txt",
+        "model": "gpt-image（sprite-gen / Codex CLI、モデル版指定なし）",
+        "status": "比較試作・未採用",
+        "pixelArt": true,
+        "notes": "sprite-gen v2.0.3。背景除去・コマ抽出・24色パレット・2倍ピクセル整形済み。生成原画の格子検出に警告あり。動作はbest-effort。",
+        "frameCount": 4,
+        "fps": 5,
+        "loop": false,
+        "lastHoldMs": 0,
+        "scale": 1.5,
+        "frames": [
+          {
+            "x": 0,
+            "y": 256,
+            "width": 192,
+            "height": 256,
+            "pivotX": 96,
+            "baselineY": 244
+          },
+          {
+            "x": 192,
+            "y": 256,
+            "width": 192,
+            "height": 256,
+            "pivotX": 96,
+            "baselineY": 244
+          },
+          {
+            "x": 384,
+            "y": 256,
+            "width": 192,
+            "height": 256,
+            "pivotX": 96,
+            "baselineY": 244
+          },
+          {
+            "x": 576,
+            "y": 256,
+            "width": 192,
+            "height": 256,
+            "pivotX": 96,
+            "baselineY": 244
+          }
+        ]
+      },
+      {
+        "id": "sena-portrait-pixel-v1",
+        "label": "基準立ち絵 · ドット絵 v1",
+        "kind": "image",
+        "action": "portrait",
+        "image": "../../../assets/characters/sena/portrait/pixel-v1/sena-portrait-pixel-v1.png",
+        "prompt": "../../../assets/characters/sena/portrait/pixel-v1/sena-portrait-pixel-v1.prompt.txt",
+        "model": "gpt-image（内蔵画像生成ツール、モデル版指定なし）",
+        "status": "試作・確認用",
+        "pixelArt": true,
+        "notes": "セナの人物設定と基準立ち絵から生成。生成PNGのアルファを保持し、色抜き・画像加工なし。"
+      },
+      {
+        "id": "sena-icon-pixel-v1",
+        "label": "顔アイコン · ドット絵 v1",
+        "kind": "image",
+        "action": "icon",
+        "image": "../../../assets/characters/sena/icon/pixel-v1/sena-icon-pixel-v1.png",
+        "prompt": "../../../assets/characters/sena/icon/pixel-v1/sena-icon-pixel-v1.prompt.txt",
+        "model": "gpt-image（内蔵画像生成ツール、モデル版指定なし）",
+        "status": "試作・確認用",
+        "pixelArt": true,
+        "notes": "セナの人物設定と基準立ち絵から生成。生成PNGのアルファを保持し、色抜き・画像加工なし。"
+      },
+      {
+        "id": "sena-idle-pixel-v1",
+        "label": "待機 · ドット絵 v1",
+        "kind": "animation",
+        "action": "idle",
+        "image": "../../../assets/characters/sena/idle/pixel-v1/sena-idle-pixel-v1.png",
+        "prompt": "../../../assets/characters/sena/idle/pixel-v1/sena-idle-pixel-v1.prompt.txt",
+        "model": "gpt-image（内蔵画像生成ツール、モデル版指定なし）",
+        "status": "試作・確認用",
+        "pixelArt": true,
+        "notes": "セナの人物設定と基準立ち絵から生成。生成PNGのアルファを保持し、色抜き・画像加工なし。 全コマ共通倍率。足元から基準点と床位置を計測。",
+        "frameCount": 6,
+        "fps": 4,
+        "loop": true,
+        "frames": [
+          {
+            "x": 0,
+            "y": 0,
+            "width": 512,
+            "height": 516,
+            "pivotX": 284.5,
+            "baselineY": 510
+          },
+          {
+            "x": 512,
+            "y": 0,
+            "width": 512,
+            "height": 516,
+            "pivotX": 264,
+            "baselineY": 510
+          },
+          {
+            "x": 1024,
+            "y": 0,
+            "width": 512,
+            "height": 516,
+            "pivotX": 248.5,
+            "baselineY": 510
+          },
+          {
+            "x": 0,
+            "y": 516,
+            "width": 512,
+            "height": 508,
+            "pivotX": 285,
+            "baselineY": 506
+          },
+          {
+            "x": 512,
+            "y": 516,
+            "width": 512,
+            "height": 508,
+            "pivotX": 262.5,
+            "baselineY": 505
+          },
+          {
+            "x": 1024,
+            "y": 516,
+            "width": 512,
+            "height": 508,
+            "pivotX": 248,
+            "baselineY": 506
+          }
+        ],
+        "scale": 0.72,
+        "lastHoldMs": 0
+      },
+      {
+        "id": "sena-danger-pixel-v1",
+        "label": "ピンチ · ドット絵 v1",
+        "kind": "animation",
+        "action": "danger",
+        "image": "../../../assets/characters/sena/danger/pixel-v1/sena-danger-pixel-v1.png",
+        "prompt": "../../../assets/characters/sena/danger/pixel-v1/sena-danger-pixel-v1.prompt.txt",
+        "model": "gpt-image（内蔵画像生成ツール、モデル版指定なし）",
+        "status": "試作・確認用",
+        "pixelArt": true,
+        "notes": "セナの人物設定と基準立ち絵から生成。生成PNGのアルファを保持し、色抜き・画像加工なし。 全コマ共通倍率。足元から基準点と床位置を計測。",
+        "frameCount": 6,
+        "fps": 4,
+        "loop": true,
+        "frames": [
+          {
+            "x": 0,
+            "y": 0,
+            "width": 512,
+            "height": 513,
+            "pivotX": 372.5,
+            "baselineY": 508
+          },
+          {
+            "x": 512,
+            "y": 0,
+            "width": 512,
+            "height": 513,
+            "pivotX": 264.5,
+            "baselineY": 508
+          },
+          {
+            "x": 1024,
+            "y": 0,
+            "width": 512,
+            "height": 513,
+            "pivotX": 147.5,
+            "baselineY": 508
+          },
+          {
+            "x": 0,
+            "y": 513,
+            "width": 512,
+            "height": 511,
+            "pivotX": 369.5,
+            "baselineY": 505
+          },
+          {
+            "x": 512,
+            "y": 513,
+            "width": 512,
+            "height": 511,
+            "pivotX": 265,
+            "baselineY": 505
+          },
+          {
+            "x": 1024,
+            "y": 513,
+            "width": 512,
+            "height": 511,
+            "pivotX": 150,
+            "baselineY": 505
+          }
+        ],
+        "scale": 0.72,
+        "lastHoldMs": 0
+      },
+      {
+        "id": "sena-success-pixel-v1",
+        "label": "成功 · ドット絵 v1",
+        "kind": "animation",
+        "action": "success",
+        "image": "../../../assets/characters/sena/success/pixel-v1/sena-success-pixel-v1.png",
+        "prompt": "../../../assets/characters/sena/success/pixel-v1/sena-success-pixel-v1.prompt.txt",
+        "model": "gpt-image（内蔵画像生成ツール、モデル版指定なし）",
+        "status": "試作・確認用",
+        "pixelArt": true,
+        "notes": "セナの人物設定と基準立ち絵から生成。生成PNGのアルファを保持し、色抜き・画像加工なし。 全コマ共通倍率。足元から基準点と床位置を計測。",
+        "frameCount": 8,
+        "fps": 7,
+        "loop": false,
+        "frames": [
+          {
+            "x": 0,
+            "y": 0,
+            "width": 384,
+            "height": 516,
+            "pivotX": 227.5,
+            "baselineY": 510
+          },
+          {
+            "x": 384,
+            "y": 0,
+            "width": 384,
+            "height": 516,
+            "pivotX": 206.5,
+            "baselineY": 511
+          },
+          {
+            "x": 768,
+            "y": 0,
+            "width": 384,
+            "height": 516,
+            "pivotX": 187.5,
+            "baselineY": 511
+          },
+          {
+            "x": 1152,
+            "y": 0,
+            "width": 384,
+            "height": 516,
+            "pivotX": 170,
+            "baselineY": 510
+          },
+          {
+            "x": 0,
+            "y": 516,
+            "width": 384,
+            "height": 508,
+            "pivotX": 226.5,
+            "baselineY": 503
+          },
+          {
+            "x": 384,
+            "y": 516,
+            "width": 384,
+            "height": 508,
+            "pivotX": 206,
+            "baselineY": 503
+          },
+          {
+            "x": 768,
+            "y": 516,
+            "width": 384,
+            "height": 508,
+            "pivotX": 187.5,
+            "baselineY": 503
+          },
+          {
+            "x": 1152,
+            "y": 516,
+            "width": 384,
+            "height": 508,
+            "pivotX": 170,
+            "baselineY": 503
+          }
+        ],
+        "scale": 0.7229,
+        "lastHoldMs": 0
+      },
+      {
+        "id": "sena-garbage-land-pixel-v1",
+        "label": "おじゃま着地 · ドット絵 v1",
+        "kind": "animation",
+        "action": "garbage-land",
+        "image": "../../../assets/characters/sena/garbage-land/pixel-v1/sena-garbage-land-pixel-v1.png",
+        "prompt": "../../../assets/characters/sena/garbage-land/pixel-v1/sena-garbage-land-pixel-v1.prompt.txt",
+        "model": "gpt-image（内蔵画像生成ツール、モデル版指定なし）",
+        "status": "試作・確認用",
+        "pixelArt": true,
+        "notes": "セナの人物設定と基準立ち絵から生成。生成PNGのアルファを保持し、色抜き・画像加工なし。 全コマ共通倍率。足元から基準点と床位置を計測。",
+        "frameCount": 8,
+        "fps": 7,
+        "loop": false,
+        "frames": [
+          {
+            "x": 0,
+            "y": 0,
+            "width": 384,
+            "height": 511,
+            "pivotX": 192.5,
+            "baselineY": 505
+          },
+          {
+            "x": 384,
+            "y": 0,
+            "width": 384,
+            "height": 511,
+            "pivotX": 192.5,
+            "baselineY": 504
+          },
+          {
+            "x": 768,
+            "y": 0,
+            "width": 384,
+            "height": 511,
+            "pivotX": 181,
+            "baselineY": 505
+          },
+          {
+            "x": 1152,
+            "y": 0,
+            "width": 384,
+            "height": 511,
+            "pivotX": 191,
+            "baselineY": 505
+          },
+          {
+            "x": 0,
+            "y": 511,
+            "width": 384,
+            "height": 513,
+            "pivotX": 212.5,
+            "baselineY": 499
+          },
+          {
+            "x": 384,
+            "y": 511,
+            "width": 384,
+            "height": 513,
+            "pivotX": 208,
+            "baselineY": 499
+          },
+          {
+            "x": 768,
+            "y": 511,
+            "width": 384,
+            "height": 513,
+            "pivotX": 193.5,
+            "baselineY": 499
+          },
+          {
+            "x": 1152,
+            "y": 511,
+            "width": 384,
+            "height": 513,
+            "pivotX": 193,
+            "baselineY": 499
+          }
+        ],
+        "scale": 0.7287,
+        "lastHoldMs": 0
+      },
+      {
+        "id": "sena-victory-pixel-v1",
+        "label": "勝利・クリア · ドット絵 v1",
+        "kind": "animation",
+        "action": "victory",
+        "image": "../../../assets/characters/sena/victory/pixel-v1/sena-victory-pixel-v1.png",
+        "prompt": "../../../assets/characters/sena/victory/pixel-v1/sena-victory-pixel-v1.prompt.txt",
+        "model": "gpt-image（内蔵画像生成ツール、モデル版指定なし）",
+        "status": "試作・確認用",
+        "pixelArt": true,
+        "notes": "セナの人物設定と基準立ち絵から生成。生成PNGのアルファを保持し、色抜き・画像加工なし。 全コマ共通倍率。足元から基準点と床位置を計測。",
+        "frameCount": 12,
+        "fps": 7,
+        "loop": false,
+        "frames": [
+          {
+            "x": 0,
+            "y": 0,
+            "width": 384,
+            "height": 343,
+            "pivotX": 287,
+            "baselineY": 336
+          },
+          {
+            "x": 384,
+            "y": 0,
+            "width": 384,
+            "height": 343,
+            "pivotX": 225,
+            "baselineY": 336
+          },
+          {
+            "x": 768,
+            "y": 0,
+            "width": 384,
+            "height": 343,
+            "pivotX": 166,
+            "baselineY": 336
+          },
+          {
+            "x": 1152,
+            "y": 0,
+            "width": 384,
+            "height": 343,
+            "pivotX": 106.5,
+            "baselineY": 336
+          },
+          {
+            "x": 0,
+            "y": 343,
+            "width": 384,
+            "height": 338,
+            "pivotX": 286,
+            "baselineY": 332
+          },
+          {
+            "x": 384,
+            "y": 343,
+            "width": 384,
+            "height": 338,
+            "pivotX": 225,
+            "baselineY": 332
+          },
+          {
+            "x": 768,
+            "y": 343,
+            "width": 384,
+            "height": 338,
+            "pivotX": 168.5,
+            "baselineY": 332
+          },
+          {
+            "x": 1152,
+            "y": 343,
+            "width": 384,
+            "height": 338,
+            "pivotX": 108,
+            "baselineY": 332
+          },
+          {
+            "x": 0,
+            "y": 681,
+            "width": 384,
+            "height": 343,
+            "pivotX": 287.5,
+            "baselineY": 332
+          },
+          {
+            "x": 384,
+            "y": 681,
+            "width": 384,
+            "height": 343,
+            "pivotX": 227.5,
+            "baselineY": 332
+          },
+          {
+            "x": 768,
+            "y": 681,
+            "width": 384,
+            "height": 343,
+            "pivotX": 169,
+            "baselineY": 332
+          },
+          {
+            "x": 1152,
+            "y": 681,
+            "width": 384,
+            "height": 343,
+            "pivotX": 109,
+            "baselineY": 332
+          }
+        ],
+        "scale": 1.1077,
+        "lastHoldMs": 0
+      },
+      {
+        "id": "sena-defeat-pixel-v1",
+        "label": "敗北 · ドット絵 v1",
+        "kind": "animation",
+        "action": "defeat",
+        "image": "../../../assets/characters/sena/defeat/pixel-v1/sena-defeat-pixel-v1.png",
+        "prompt": "../../../assets/characters/sena/defeat/pixel-v1/sena-defeat-pixel-v1.prompt.txt",
+        "model": "gpt-image（内蔵画像生成ツール、モデル版指定なし）",
+        "status": "試作・確認用",
+        "pixelArt": true,
+        "notes": "セナの人物設定と基準立ち絵から生成。生成PNGのアルファを保持し、色抜き・画像加工なし。 全コマ共通倍率。足元から基準点と床位置を計測。",
+        "frameCount": 12,
+        "fps": 7,
+        "loop": false,
+        "frames": [
+          {
+            "x": 0,
+            "y": 0,
+            "width": 384,
+            "height": 345,
+            "pivotX": 218.5,
+            "baselineY": 339
+          },
+          {
+            "x": 384,
+            "y": 0,
+            "width": 384,
+            "height": 345,
+            "pivotX": 185.5,
+            "baselineY": 339
+          },
+          {
+            "x": 768,
+            "y": 0,
+            "width": 384,
+            "height": 345,
+            "pivotX": 185.5,
+            "baselineY": 339
+          },
+          {
+            "x": 1152,
+            "y": 0,
+            "width": 384,
+            "height": 345,
+            "pivotX": 184.5,
+            "baselineY": 340
+          },
+          {
+            "x": 0,
+            "y": 345,
+            "width": 384,
+            "height": 339,
+            "pivotX": 218,
+            "baselineY": 331
+          },
+          {
+            "x": 384,
+            "y": 345,
+            "width": 384,
+            "height": 339,
+            "pivotX": 185.5,
+            "baselineY": 331
+          },
+          {
+            "x": 768,
+            "y": 345,
+            "width": 384,
+            "height": 339,
+            "pivotX": 186,
+            "baselineY": 330
+          },
+          {
+            "x": 1152,
+            "y": 345,
+            "width": 384,
+            "height": 339,
+            "pivotX": 184.5,
+            "baselineY": 331
+          },
+          {
+            "x": 0,
+            "y": 684,
+            "width": 384,
+            "height": 340,
+            "pivotX": 218,
+            "baselineY": 329
+          },
+          {
+            "x": 384,
+            "y": 684,
+            "width": 384,
+            "height": 340,
+            "pivotX": 186.5,
+            "baselineY": 329
+          },
+          {
+            "x": 768,
+            "y": 684,
+            "width": 384,
+            "height": 340,
+            "pivotX": 186,
+            "baselineY": 329
+          },
+          {
+            "x": 1152,
+            "y": 684,
+            "width": 384,
+            "height": 340,
+            "pivotX": 185,
+            "baselineY": 329
+          }
+        ],
+        "scale": 1.0876,
+        "lastHoldMs": 0
+      },
+      {
+        "id": "sena-finish-pixel-v1",
+        "label": "通常終了 · ドット絵 v1",
+        "kind": "animation",
+        "action": "finish",
+        "image": "../../../assets/characters/sena/finish/pixel-v1/sena-finish-pixel-v1.png",
+        "prompt": "../../../assets/characters/sena/finish/pixel-v1/sena-finish-pixel-v1.prompt.txt",
+        "model": "gpt-image（内蔵画像生成ツール、モデル版指定なし）",
+        "status": "試作・確認用",
+        "pixelArt": true,
+        "notes": "セナの人物設定と基準立ち絵から生成。生成PNGのアルファを保持し、色抜き・画像加工なし。 全コマ共通倍率。足元から基準点と床位置を計測。",
+        "frameCount": 8,
+        "fps": 7,
+        "loop": false,
+        "frames": [
+          {
+            "x": 0,
+            "y": 0,
+            "width": 384,
+            "height": 514,
+            "pivotX": 224,
+            "baselineY": 508
+          },
+          {
+            "x": 384,
+            "y": 0,
+            "width": 384,
+            "height": 514,
+            "pivotX": 202,
+            "baselineY": 508
+          },
+          {
+            "x": 768,
+            "y": 0,
+            "width": 384,
+            "height": 514,
+            "pivotX": 189.5,
+            "baselineY": 508
+          },
+          {
+            "x": 1152,
+            "y": 0,
+            "width": 384,
+            "height": 514,
+            "pivotX": 173.5,
+            "baselineY": 508
+          },
+          {
+            "x": 0,
+            "y": 514,
+            "width": 384,
+            "height": 510,
+            "pivotX": 223,
+            "baselineY": 498
+          },
+          {
+            "x": 384,
+            "y": 514,
+            "width": 384,
+            "height": 510,
+            "pivotX": 202.5,
+            "baselineY": 498
+          },
+          {
+            "x": 768,
+            "y": 514,
+            "width": 384,
+            "height": 510,
+            "pivotX": 192,
+            "baselineY": 498
+          },
+          {
+            "x": 1152,
+            "y": 514,
+            "width": 384,
+            "height": 510,
+            "pivotX": 176.5,
+            "baselineY": 498
+          }
+        ],
+        "scale": 0.7273,
+        "lastHoldMs": 0
+      }
+    ],
+    "adoptedAssets": {
+      "idle": "sena-idle-spritegen-v2",
+      "victory": "sena-victory-spritegen-v2",
+      "portrait": "sena-portrait-pixel-v1",
+      "icon": "sena-icon-pixel-v1",
+      "danger": "sena-danger-pixel-v1",
+      "success": "sena-success-pixel-v1",
+      "garbage-land": "sena-garbage-land-pixel-v1",
+      "defeat": "sena-defeat-pixel-v1",
+      "finish": "sena-finish-pixel-v1"
+    }
   },
   {
     "id": "rocca",
     "name": "ロッカ",
     "role": "昇降機の整備士",
     "color": "#a97449",
-    "assets": []
+    "assets": [
+      {
+        "id": "rocca-portrait-spritegen-v1",
+        "label": "立ち絵 · sprite-gen v1",
+        "action": "portrait",
+        "kind": "image",
+        "model": "gpt-image（sprite-gen / Codex CLI、モデル版指定なし）",
+        "status": "採用",
+        "pixelArt": true,
+        "notes": "基準画像からsprite-genで生成・透過・分割。512px、低解像度格子への縮小なし。生成記録はnotes/spritegen-v1。",
+        "image": "../../../assets/characters/rocca/portrait/spritegen-v1/rocca-portrait-spritegen-v1.png",
+        "prompt": "../../../assets/characters/rocca/notes/spritegen-v1/base.prompt.txt"
+      },
+      {
+        "id": "rocca-icon-spritegen-v1",
+        "label": "アイコン · sprite-gen v1",
+        "action": "icon",
+        "kind": "image",
+        "model": "gpt-image（sprite-gen / Codex CLI、モデル版指定なし）",
+        "status": "採用",
+        "pixelArt": true,
+        "notes": "基準画像からsprite-genで生成・透過・分割。512px、低解像度格子への縮小なし。生成記録はnotes/spritegen-v1。",
+        "image": "../../../assets/characters/rocca/icon/spritegen-v1/rocca-icon-spritegen-v1.png",
+        "prompt": "../../../assets/characters/rocca/notes/spritegen-v1/base.prompt.txt"
+      },
+      {
+        "id": "rocca-idle-spritegen-v1",
+        "label": "待機 · sprite-gen v1",
+        "action": "idle",
+        "kind": "animation",
+        "model": "gpt-image（sprite-gen / Codex CLI、モデル版指定なし）",
+        "status": "採用",
+        "pixelArt": true,
+        "notes": "基準画像からsprite-genで生成・透過・分割。512px、低解像度格子への縮小なし。生成記録はnotes/spritegen-v1。",
+        "image": "../../../assets/characters/rocca/idle/spritegen-v1/rocca-idle-spritegen-v1.png",
+        "prompt": "../../../assets/characters/rocca/notes/spritegen-v1/run/prompts/idle.txt",
+        "frameCount": 6,
+        "fps": 6,
+        "loop": true,
+        "lastHoldMs": 0,
+        "scale": 0.75,
+        "frames": [
+          {
+            "x": 0,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 512,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 1024,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 1536,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 2048,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 2560,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          }
+        ]
+      },
+      {
+        "id": "rocca-danger-spritegen-v1",
+        "label": "ピンチ · sprite-gen v1",
+        "action": "danger",
+        "kind": "animation",
+        "model": "gpt-image（sprite-gen / Codex CLI、モデル版指定なし）",
+        "status": "採用",
+        "pixelArt": true,
+        "notes": "基準画像からsprite-genで生成・透過・分割。512px、低解像度格子への縮小なし。生成記録はnotes/spritegen-v1。",
+        "image": "../../../assets/characters/rocca/danger/spritegen-v1/rocca-danger-spritegen-v1.png",
+        "prompt": "../../../assets/characters/rocca/notes/spritegen-v1/run/prompts/danger.txt",
+        "frameCount": 6,
+        "fps": 6,
+        "loop": true,
+        "lastHoldMs": 0,
+        "scale": 0.75,
+        "frames": [
+          {
+            "x": 0,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 512,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 1024,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 1536,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 2048,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 2560,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          }
+        ]
+      },
+      {
+        "id": "rocca-success-spritegen-v1",
+        "label": "成功 · sprite-gen v1",
+        "action": "success",
+        "kind": "animation",
+        "model": "gpt-image（sprite-gen / Codex CLI、モデル版指定なし）",
+        "status": "採用",
+        "pixelArt": true,
+        "notes": "基準画像からsprite-genで生成・透過・分割。512px、低解像度格子への縮小なし。生成記録はnotes/spritegen-v1。",
+        "image": "../../../assets/characters/rocca/success/spritegen-v1/rocca-success-spritegen-v1.png",
+        "prompt": "../../../assets/characters/rocca/notes/spritegen-v1/run/prompts/success.txt",
+        "frameCount": 6,
+        "fps": 8,
+        "loop": false,
+        "lastHoldMs": 0,
+        "scale": 0.75,
+        "frames": [
+          {
+            "x": 0,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 512,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 1024,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 1536,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 2048,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 2560,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          }
+        ]
+      },
+      {
+        "id": "rocca-garbage-land-spritegen-v1",
+        "label": "おじゃま着地 · sprite-gen v1",
+        "action": "garbage-land",
+        "kind": "animation",
+        "model": "gpt-image（sprite-gen / Codex CLI、モデル版指定なし）",
+        "status": "採用",
+        "pixelArt": true,
+        "notes": "基準画像からsprite-genで生成・透過・分割。512px、低解像度格子への縮小なし。生成記録はnotes/spritegen-v1。",
+        "image": "../../../assets/characters/rocca/garbage-land/spritegen-v1/rocca-garbage-land-spritegen-v1.png",
+        "prompt": "../../../assets/characters/rocca/notes/spritegen-v1/run/prompts/garbage-land.txt",
+        "frameCount": 6,
+        "fps": 8,
+        "loop": false,
+        "lastHoldMs": 0,
+        "scale": 0.75,
+        "frames": [
+          {
+            "x": 0,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 512,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 1024,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 1536,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 2048,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 2560,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          }
+        ]
+      },
+      {
+        "id": "rocca-victory-spritegen-v1",
+        "label": "勝利 · sprite-gen v1",
+        "action": "victory",
+        "kind": "animation",
+        "model": "gpt-image（sprite-gen / Codex CLI、モデル版指定なし）",
+        "status": "採用",
+        "pixelArt": true,
+        "notes": "基準画像からsprite-genで生成・透過・分割。512px、低解像度格子への縮小なし。生成記録はnotes/spritegen-v1。",
+        "image": "../../../assets/characters/rocca/victory/spritegen-v1/rocca-victory-spritegen-v1.png",
+        "prompt": "../../../assets/characters/rocca/notes/spritegen-v1/run/prompts/victory.txt",
+        "frameCount": 6,
+        "fps": 6,
+        "loop": false,
+        "lastHoldMs": 0,
+        "scale": 0.75,
+        "frames": [
+          {
+            "x": 0,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 512,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 1024,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 1536,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 2048,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 2560,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          }
+        ]
+      },
+      {
+        "id": "rocca-defeat-spritegen-v1",
+        "label": "敗北 · sprite-gen v1",
+        "action": "defeat",
+        "kind": "animation",
+        "model": "gpt-image（sprite-gen / Codex CLI、モデル版指定なし）",
+        "status": "採用",
+        "pixelArt": true,
+        "notes": "基準画像からsprite-genで生成・透過・分割。512px、低解像度格子への縮小なし。生成記録はnotes/spritegen-v1。",
+        "image": "../../../assets/characters/rocca/defeat/spritegen-v1/rocca-defeat-spritegen-v1.png",
+        "prompt": "../../../assets/characters/rocca/notes/spritegen-v1/run/prompts/defeat.txt",
+        "frameCount": 6,
+        "fps": 6,
+        "loop": false,
+        "lastHoldMs": 0,
+        "scale": 0.75,
+        "frames": [
+          {
+            "x": 0,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 512,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 1024,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 1536,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 2048,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 2560,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          }
+        ]
+      },
+      {
+        "id": "rocca-finish-spritegen-v1",
+        "label": "通常終了 · sprite-gen v1",
+        "action": "finish",
+        "kind": "animation",
+        "model": "gpt-image（sprite-gen / Codex CLI、モデル版指定なし）",
+        "status": "採用",
+        "pixelArt": true,
+        "notes": "基準画像からsprite-genで生成・透過・分割。512px、低解像度格子への縮小なし。生成記録はnotes/spritegen-v1。",
+        "image": "../../../assets/characters/rocca/finish/spritegen-v1/rocca-finish-spritegen-v1.png",
+        "prompt": "../../../assets/characters/rocca/notes/spritegen-v1/run/prompts/finish.txt",
+        "frameCount": 6,
+        "fps": 6,
+        "loop": false,
+        "lastHoldMs": 0,
+        "scale": 0.75,
+        "frames": [
+          {
+            "x": 0,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 512,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 1024,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 1536,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 2048,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 2560,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          }
+        ]
+      }
+    ],
+    "adoptedAssets": {
+      "portrait": "rocca-portrait-spritegen-v1",
+      "icon": "rocca-icon-spritegen-v1",
+      "idle": "rocca-idle-spritegen-v1",
+      "danger": "rocca-danger-spritegen-v1",
+      "success": "rocca-success-spritegen-v1",
+      "garbage-land": "rocca-garbage-land-spritegen-v1",
+      "victory": "rocca-victory-spritegen-v1",
+      "defeat": "rocca-defeat-spritegen-v1",
+      "finish": "rocca-finish-spritegen-v1"
+    }
   },
   {
     "id": "yuno",
     "name": "ユノ",
     "role": "地図職人",
     "color": "#7d7996",
-    "assets": []
+    "assets": [
+      {
+        "id": "yuno-portrait-spritegen-v1",
+        "label": "立ち絵 · sprite-gen v1",
+        "action": "portrait",
+        "kind": "image",
+        "model": "gpt-image（sprite-gen / Codex CLI、モデル版指定なし）",
+        "status": "採用",
+        "pixelArt": true,
+        "notes": "基準画像からsprite-genで生成・透過・分割。512px、低解像度格子への縮小なし。生成記録はnotes/spritegen-v1。",
+        "image": "../../../assets/characters/yuno/portrait/spritegen-v1/yuno-portrait-spritegen-v1.png",
+        "prompt": "../../../assets/characters/yuno/notes/spritegen-v1/base.prompt.txt"
+      },
+      {
+        "id": "yuno-icon-spritegen-v1",
+        "label": "アイコン · sprite-gen v1",
+        "action": "icon",
+        "kind": "image",
+        "model": "gpt-image（sprite-gen / Codex CLI、モデル版指定なし）",
+        "status": "採用",
+        "pixelArt": true,
+        "notes": "基準画像からsprite-genで生成・透過・分割。512px、低解像度格子への縮小なし。生成記録はnotes/spritegen-v1。",
+        "image": "../../../assets/characters/yuno/icon/spritegen-v1/yuno-icon-spritegen-v1.png",
+        "prompt": "../../../assets/characters/yuno/notes/spritegen-v1/base.prompt.txt"
+      },
+      {
+        "id": "yuno-idle-spritegen-v1",
+        "label": "待機 · sprite-gen v1",
+        "action": "idle",
+        "kind": "animation",
+        "model": "gpt-image（sprite-gen / Codex CLI、モデル版指定なし）",
+        "status": "採用",
+        "pixelArt": true,
+        "notes": "基準画像からsprite-genで生成・透過・分割。512px、低解像度格子への縮小なし。生成記録はnotes/spritegen-v1。",
+        "image": "../../../assets/characters/yuno/idle/spritegen-v1/yuno-idle-spritegen-v1.png",
+        "prompt": "../../../assets/characters/yuno/notes/spritegen-v1/run/prompts/idle.txt",
+        "frameCount": 6,
+        "fps": 6,
+        "loop": true,
+        "lastHoldMs": 0,
+        "scale": 0.75,
+        "frames": [
+          {
+            "x": 0,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 512,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 1024,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 1536,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 2048,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 2560,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          }
+        ]
+      },
+      {
+        "id": "yuno-danger-spritegen-v1",
+        "label": "ピンチ · sprite-gen v1",
+        "action": "danger",
+        "kind": "animation",
+        "model": "gpt-image（sprite-gen / Codex CLI、モデル版指定なし）",
+        "status": "採用",
+        "pixelArt": true,
+        "notes": "基準画像からsprite-genで生成・透過・分割。512px、低解像度格子への縮小なし。生成記録はnotes/spritegen-v1。",
+        "image": "../../../assets/characters/yuno/danger/spritegen-v1/yuno-danger-spritegen-v1.png",
+        "prompt": "../../../assets/characters/yuno/notes/spritegen-v1/run/prompts/danger.txt",
+        "frameCount": 6,
+        "fps": 6,
+        "loop": true,
+        "lastHoldMs": 0,
+        "scale": 0.75,
+        "frames": [
+          {
+            "x": 0,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 512,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 1024,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 1536,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 2048,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 2560,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          }
+        ]
+      },
+      {
+        "id": "yuno-success-spritegen-v1",
+        "label": "成功 · sprite-gen v1",
+        "action": "success",
+        "kind": "animation",
+        "model": "gpt-image（sprite-gen / Codex CLI、モデル版指定なし）",
+        "status": "採用",
+        "pixelArt": true,
+        "notes": "基準画像からsprite-genで生成・透過・分割。512px、低解像度格子への縮小なし。生成記録はnotes/spritegen-v1。",
+        "image": "../../../assets/characters/yuno/success/spritegen-v1/yuno-success-spritegen-v1.png",
+        "prompt": "../../../assets/characters/yuno/notes/spritegen-v1/run/prompts/success.txt",
+        "frameCount": 6,
+        "fps": 8,
+        "loop": false,
+        "lastHoldMs": 0,
+        "scale": 0.75,
+        "frames": [
+          {
+            "x": 0,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 512,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 1024,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 1536,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 2048,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 2560,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          }
+        ]
+      },
+      {
+        "id": "yuno-garbage-land-spritegen-v1",
+        "label": "おじゃま着地 · sprite-gen v1",
+        "action": "garbage-land",
+        "kind": "animation",
+        "model": "gpt-image（sprite-gen / Codex CLI、モデル版指定なし）",
+        "status": "採用",
+        "pixelArt": true,
+        "notes": "基準画像からsprite-genで生成・透過・分割。512px、低解像度格子への縮小なし。生成記録はnotes/spritegen-v1。",
+        "image": "../../../assets/characters/yuno/garbage-land/spritegen-v1/yuno-garbage-land-spritegen-v1.png",
+        "prompt": "../../../assets/characters/yuno/notes/spritegen-v1/run/prompts/garbage-land.txt",
+        "frameCount": 6,
+        "fps": 8,
+        "loop": false,
+        "lastHoldMs": 0,
+        "scale": 0.75,
+        "frames": [
+          {
+            "x": 0,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 512,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 1024,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 1536,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 2048,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 2560,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          }
+        ]
+      },
+      {
+        "id": "yuno-victory-spritegen-v1",
+        "label": "勝利 · sprite-gen v1",
+        "action": "victory",
+        "kind": "animation",
+        "model": "gpt-image（sprite-gen / Codex CLI、モデル版指定なし）",
+        "status": "採用",
+        "pixelArt": true,
+        "notes": "基準画像からsprite-genで生成・透過・分割。512px、低解像度格子への縮小なし。生成記録はnotes/spritegen-v1。",
+        "image": "../../../assets/characters/yuno/victory/spritegen-v1/yuno-victory-spritegen-v1.png",
+        "prompt": "../../../assets/characters/yuno/notes/spritegen-v1/run/prompts/victory.txt",
+        "frameCount": 6,
+        "fps": 6,
+        "loop": false,
+        "lastHoldMs": 0,
+        "scale": 0.75,
+        "frames": [
+          {
+            "x": 0,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 512,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 1024,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 1536,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 2048,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 2560,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          }
+        ]
+      },
+      {
+        "id": "yuno-defeat-spritegen-v1",
+        "label": "敗北 · sprite-gen v1",
+        "action": "defeat",
+        "kind": "animation",
+        "model": "gpt-image（sprite-gen / Codex CLI、モデル版指定なし）",
+        "status": "採用",
+        "pixelArt": true,
+        "notes": "基準画像からsprite-genで生成・透過・分割。512px、低解像度格子への縮小なし。生成記録はnotes/spritegen-v1。",
+        "image": "../../../assets/characters/yuno/defeat/spritegen-v1/yuno-defeat-spritegen-v1.png",
+        "prompt": "../../../assets/characters/yuno/notes/spritegen-v1/run/prompts/defeat.txt",
+        "frameCount": 6,
+        "fps": 6,
+        "loop": false,
+        "lastHoldMs": 0,
+        "scale": 0.75,
+        "frames": [
+          {
+            "x": 0,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 512,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 1024,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 1536,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 2048,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 2560,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          }
+        ]
+      },
+      {
+        "id": "yuno-finish-spritegen-v1",
+        "label": "通常終了 · sprite-gen v1",
+        "action": "finish",
+        "kind": "animation",
+        "model": "gpt-image（sprite-gen / Codex CLI、モデル版指定なし）",
+        "status": "採用",
+        "pixelArt": true,
+        "notes": "基準画像からsprite-genで生成・透過・分割。512px、低解像度格子への縮小なし。生成記録はnotes/spritegen-v1。",
+        "image": "../../../assets/characters/yuno/finish/spritegen-v1/yuno-finish-spritegen-v1.png",
+        "prompt": "../../../assets/characters/yuno/notes/spritegen-v1/run/prompts/finish.txt",
+        "frameCount": 6,
+        "fps": 6,
+        "loop": false,
+        "lastHoldMs": 0,
+        "scale": 0.75,
+        "frames": [
+          {
+            "x": 0,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 512,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 1024,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 1536,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 2048,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 2560,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          }
+        ]
+      }
+    ],
+    "adoptedAssets": {
+      "portrait": "yuno-portrait-spritegen-v1",
+      "icon": "yuno-icon-spritegen-v1",
+      "idle": "yuno-idle-spritegen-v1",
+      "danger": "yuno-danger-spritegen-v1",
+      "success": "yuno-success-spritegen-v1",
+      "garbage-land": "yuno-garbage-land-spritegen-v1",
+      "victory": "yuno-victory-spritegen-v1",
+      "defeat": "yuno-defeat-spritegen-v1",
+      "finish": "yuno-finish-spritegen-v1"
+    }
   },
   {
     "id": "baro",
     "name": "バロ",
     "role": "アナグマの古道具屋",
     "color": "#897359",
-    "assets": []
+    "assets": [
+      {
+        "id": "baro-portrait-spritegen-v1",
+        "label": "立ち絵 · sprite-gen v1",
+        "action": "portrait",
+        "kind": "image",
+        "model": "gpt-image（sprite-gen / Codex CLI、モデル版指定なし）",
+        "status": "採用",
+        "pixelArt": true,
+        "notes": "基準画像からsprite-genで生成・透過・分割。512px、低解像度格子への縮小なし。生成記録はnotes/spritegen-v1。",
+        "image": "../../../assets/characters/baro/portrait/spritegen-v1/baro-portrait-spritegen-v1.png",
+        "prompt": "../../../assets/characters/baro/notes/spritegen-v1/base.prompt.txt"
+      },
+      {
+        "id": "baro-icon-spritegen-v1",
+        "label": "アイコン · sprite-gen v1",
+        "action": "icon",
+        "kind": "image",
+        "model": "gpt-image（sprite-gen / Codex CLI、モデル版指定なし）",
+        "status": "採用",
+        "pixelArt": true,
+        "notes": "基準画像からsprite-genで生成・透過・分割。512px、低解像度格子への縮小なし。生成記録はnotes/spritegen-v1。",
+        "image": "../../../assets/characters/baro/icon/spritegen-v1/baro-icon-spritegen-v1.png",
+        "prompt": "../../../assets/characters/baro/notes/spritegen-v1/base.prompt.txt"
+      },
+      {
+        "id": "baro-idle-spritegen-v1",
+        "label": "待機 · sprite-gen v1",
+        "action": "idle",
+        "kind": "animation",
+        "model": "gpt-image（sprite-gen / Codex CLI、モデル版指定なし）",
+        "status": "採用",
+        "pixelArt": true,
+        "notes": "基準画像からsprite-genで生成・透過・分割。512px、低解像度格子への縮小なし。生成記録はnotes/spritegen-v1。",
+        "image": "../../../assets/characters/baro/idle/spritegen-v1/baro-idle-spritegen-v1.png",
+        "prompt": "../../../assets/characters/baro/notes/spritegen-v1/run/prompts/idle.txt",
+        "frameCount": 6,
+        "fps": 6,
+        "loop": true,
+        "lastHoldMs": 0,
+        "scale": 0.75,
+        "frames": [
+          {
+            "x": 0,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 512,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 1024,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 1536,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 2048,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 2560,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          }
+        ]
+      },
+      {
+        "id": "baro-danger-spritegen-v1",
+        "label": "ピンチ · sprite-gen v1",
+        "action": "danger",
+        "kind": "animation",
+        "model": "gpt-image（sprite-gen / Codex CLI、モデル版指定なし）",
+        "status": "採用",
+        "pixelArt": true,
+        "notes": "基準画像からsprite-genで生成・透過・分割。512px、低解像度格子への縮小なし。生成記録はnotes/spritegen-v1。",
+        "image": "../../../assets/characters/baro/danger/spritegen-v1/baro-danger-spritegen-v1.png",
+        "prompt": "../../../assets/characters/baro/notes/spritegen-v1/run/prompts/danger.txt",
+        "frameCount": 6,
+        "fps": 6,
+        "loop": true,
+        "lastHoldMs": 0,
+        "scale": 0.75,
+        "frames": [
+          {
+            "x": 0,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 512,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 1024,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 1536,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 2048,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 2560,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          }
+        ]
+      },
+      {
+        "id": "baro-success-spritegen-v1",
+        "label": "成功 · sprite-gen v1",
+        "action": "success",
+        "kind": "animation",
+        "model": "gpt-image（sprite-gen / Codex CLI、モデル版指定なし）",
+        "status": "採用",
+        "pixelArt": true,
+        "notes": "基準画像からsprite-genで生成・透過・分割。512px、低解像度格子への縮小なし。生成記録はnotes/spritegen-v1。",
+        "image": "../../../assets/characters/baro/success/spritegen-v1/baro-success-spritegen-v1.png",
+        "prompt": "../../../assets/characters/baro/notes/spritegen-v1/run/prompts/success.txt",
+        "frameCount": 6,
+        "fps": 8,
+        "loop": false,
+        "lastHoldMs": 0,
+        "scale": 0.75,
+        "frames": [
+          {
+            "x": 0,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 512,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 1024,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 1536,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 2048,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 2560,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          }
+        ]
+      },
+      {
+        "id": "baro-garbage-land-spritegen-v1",
+        "label": "おじゃま着地 · sprite-gen v1",
+        "action": "garbage-land",
+        "kind": "animation",
+        "model": "gpt-image（sprite-gen / Codex CLI、モデル版指定なし）",
+        "status": "採用",
+        "pixelArt": true,
+        "notes": "基準画像からsprite-genで生成・透過・分割。512px、低解像度格子への縮小なし。生成記録はnotes/spritegen-v1。",
+        "image": "../../../assets/characters/baro/garbage-land/spritegen-v1/baro-garbage-land-spritegen-v1.png",
+        "prompt": "../../../assets/characters/baro/notes/spritegen-v1/run/prompts/garbage-land.txt",
+        "frameCount": 6,
+        "fps": 8,
+        "loop": false,
+        "lastHoldMs": 0,
+        "scale": 0.75,
+        "frames": [
+          {
+            "x": 0,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 512,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 1024,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 1536,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 2048,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 2560,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          }
+        ]
+      },
+      {
+        "id": "baro-victory-spritegen-v1",
+        "label": "勝利 · sprite-gen v1",
+        "action": "victory",
+        "kind": "animation",
+        "model": "gpt-image（sprite-gen / Codex CLI、モデル版指定なし）",
+        "status": "採用",
+        "pixelArt": true,
+        "notes": "基準画像からsprite-genで生成・透過・分割。512px、低解像度格子への縮小なし。生成記録はnotes/spritegen-v1。",
+        "image": "../../../assets/characters/baro/victory/spritegen-v1/baro-victory-spritegen-v1.png",
+        "prompt": "../../../assets/characters/baro/notes/spritegen-v1/run/prompts/victory.txt",
+        "frameCount": 6,
+        "fps": 6,
+        "loop": false,
+        "lastHoldMs": 0,
+        "scale": 0.75,
+        "frames": [
+          {
+            "x": 0,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 512,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 1024,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 1536,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 2048,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 2560,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          }
+        ]
+      },
+      {
+        "id": "baro-defeat-spritegen-v1",
+        "label": "敗北 · sprite-gen v1",
+        "action": "defeat",
+        "kind": "animation",
+        "model": "gpt-image（sprite-gen / Codex CLI、モデル版指定なし）",
+        "status": "採用",
+        "pixelArt": true,
+        "notes": "基準画像からsprite-genで生成・透過・分割。512px、低解像度格子への縮小なし。生成記録はnotes/spritegen-v1。",
+        "image": "../../../assets/characters/baro/defeat/spritegen-v1/baro-defeat-spritegen-v1.png",
+        "prompt": "../../../assets/characters/baro/notes/spritegen-v1/run/prompts/defeat.txt",
+        "frameCount": 6,
+        "fps": 6,
+        "loop": false,
+        "lastHoldMs": 0,
+        "scale": 0.75,
+        "frames": [
+          {
+            "x": 0,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 512,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 1024,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 1536,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 2048,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 2560,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          }
+        ]
+      },
+      {
+        "id": "baro-finish-spritegen-v1",
+        "label": "通常終了 · sprite-gen v1",
+        "action": "finish",
+        "kind": "animation",
+        "model": "gpt-image（sprite-gen / Codex CLI、モデル版指定なし）",
+        "status": "採用",
+        "pixelArt": true,
+        "notes": "基準画像からsprite-genで生成・透過・分割。512px、低解像度格子への縮小なし。生成記録はnotes/spritegen-v1。",
+        "image": "../../../assets/characters/baro/finish/spritegen-v1/baro-finish-spritegen-v1.png",
+        "prompt": "../../../assets/characters/baro/notes/spritegen-v1/run/prompts/finish.txt",
+        "frameCount": 6,
+        "fps": 6,
+        "loop": false,
+        "lastHoldMs": 0,
+        "scale": 0.75,
+        "frames": [
+          {
+            "x": 0,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 512,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 1024,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 1536,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 2048,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 2560,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          }
+        ]
+      }
+    ],
+    "adoptedAssets": {
+      "portrait": "baro-portrait-spritegen-v1",
+      "icon": "baro-icon-spritegen-v1",
+      "idle": "baro-idle-spritegen-v1",
+      "danger": "baro-danger-spritegen-v1",
+      "success": "baro-success-spritegen-v1",
+      "garbage-land": "baro-garbage-land-spritegen-v1",
+      "victory": "baro-victory-spritegen-v1",
+      "defeat": "baro-defeat-spritegen-v1",
+      "finish": "baro-finish-spritegen-v1"
+    }
   },
   {
     "id": "pirika",
@@ -3786,14 +7055,530 @@ window.CHARACTER_CATALOG = [
         "lastHoldMs": 0,
         "notes": "12コマ。透過と位置合わせを画像に適用済み。布のふくらみ・平たくなる変形は保持。"
       }
-    ]
+    ],
+    "adoptedAssets": {
+      "portrait": "nui-portrait-pixel-v1",
+      "icon": "nui-icon-pixel-v1",
+      "idle": "nui-idle-pixel-v1",
+      "danger": "nui-danger-pixel-v1",
+      "success": "nui-success-pixel-v1",
+      "garbage-land": "nui-garbage-land-pixel-v1",
+      "victory": "nui-victory-pixel-v1",
+      "defeat": "nui-defeat-pixel-v1",
+      "finish": "nui-finish-pixel-v1"
+    }
   },
   {
     "id": "ordo",
     "name": "オルド",
     "role": "門の精霊",
     "color": "#7c858c",
-    "assets": []
+    "assets": [
+      {
+        "id": "ordo-portrait-spritegen-v1",
+        "label": "立ち絵 · sprite-gen v1",
+        "action": "portrait",
+        "kind": "image",
+        "model": "gpt-image（sprite-gen / Codex CLI、モデル版指定なし）",
+        "status": "採用",
+        "pixelArt": true,
+        "notes": "基準画像からsprite-genで生成・透過・分割。512px、低解像度格子への縮小なし。生成記録はnotes/spritegen-v1。",
+        "image": "../../../assets/characters/ordo/portrait/spritegen-v1/ordo-portrait-spritegen-v1.png",
+        "prompt": "../../../assets/characters/ordo/notes/spritegen-v1/base.prompt.txt"
+      },
+      {
+        "id": "ordo-icon-spritegen-v1",
+        "label": "アイコン · sprite-gen v1",
+        "action": "icon",
+        "kind": "image",
+        "model": "gpt-image（sprite-gen / Codex CLI、モデル版指定なし）",
+        "status": "採用",
+        "pixelArt": true,
+        "notes": "基準画像からsprite-genで生成・透過・分割。512px、低解像度格子への縮小なし。生成記録はnotes/spritegen-v1。",
+        "image": "../../../assets/characters/ordo/icon/spritegen-v1/ordo-icon-spritegen-v1.png",
+        "prompt": "../../../assets/characters/ordo/notes/spritegen-v1/base.prompt.txt"
+      },
+      {
+        "id": "ordo-idle-spritegen-v1",
+        "label": "待機 · sprite-gen v1",
+        "action": "idle",
+        "kind": "animation",
+        "model": "gpt-image（sprite-gen / Codex CLI、モデル版指定なし）",
+        "status": "採用",
+        "pixelArt": true,
+        "notes": "基準画像からsprite-genで生成・透過・分割。512px、低解像度格子への縮小なし。生成記録はnotes/spritegen-v1。",
+        "image": "../../../assets/characters/ordo/idle/spritegen-v1/ordo-idle-spritegen-v1.png",
+        "prompt": "../../../assets/characters/ordo/notes/spritegen-v1/run/prompts/idle.txt",
+        "frameCount": 6,
+        "fps": 6,
+        "loop": true,
+        "lastHoldMs": 0,
+        "scale": 0.75,
+        "frames": [
+          {
+            "x": 0,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 512,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 1024,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 1536,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 2048,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 2560,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          }
+        ]
+      },
+      {
+        "id": "ordo-danger-spritegen-v1",
+        "label": "ピンチ · sprite-gen v1",
+        "action": "danger",
+        "kind": "animation",
+        "model": "gpt-image（sprite-gen / Codex CLI、モデル版指定なし）",
+        "status": "採用",
+        "pixelArt": true,
+        "notes": "基準画像からsprite-genで生成・透過・分割。512px、低解像度格子への縮小なし。生成記録はnotes/spritegen-v1。",
+        "image": "../../../assets/characters/ordo/danger/spritegen-v1/ordo-danger-spritegen-v1.png",
+        "prompt": "../../../assets/characters/ordo/notes/spritegen-v1/run/prompts/danger.txt",
+        "frameCount": 6,
+        "fps": 6,
+        "loop": true,
+        "lastHoldMs": 0,
+        "scale": 0.75,
+        "frames": [
+          {
+            "x": 0,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 512,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 1024,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 1536,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 2048,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 2560,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          }
+        ]
+      },
+      {
+        "id": "ordo-success-spritegen-v1",
+        "label": "成功 · sprite-gen v1",
+        "action": "success",
+        "kind": "animation",
+        "model": "gpt-image（sprite-gen / Codex CLI、モデル版指定なし）",
+        "status": "採用",
+        "pixelArt": true,
+        "notes": "基準画像からsprite-genで生成・透過・分割。512px、低解像度格子への縮小なし。生成記録はnotes/spritegen-v1。",
+        "image": "../../../assets/characters/ordo/success/spritegen-v1/ordo-success-spritegen-v1.png",
+        "prompt": "../../../assets/characters/ordo/notes/spritegen-v1/run/prompts/success.txt",
+        "frameCount": 6,
+        "fps": 8,
+        "loop": false,
+        "lastHoldMs": 0,
+        "scale": 0.75,
+        "frames": [
+          {
+            "x": 0,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 512,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 1024,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 1536,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 2048,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 2560,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          }
+        ]
+      },
+      {
+        "id": "ordo-garbage-land-spritegen-v1",
+        "label": "おじゃま着地 · sprite-gen v1",
+        "action": "garbage-land",
+        "kind": "animation",
+        "model": "gpt-image（sprite-gen / Codex CLI、モデル版指定なし）",
+        "status": "採用",
+        "pixelArt": true,
+        "notes": "基準画像からsprite-genで生成・透過・分割。512px、低解像度格子への縮小なし。生成記録はnotes/spritegen-v1。",
+        "image": "../../../assets/characters/ordo/garbage-land/spritegen-v1/ordo-garbage-land-spritegen-v1.png",
+        "prompt": "../../../assets/characters/ordo/notes/spritegen-v1/run/prompts/garbage-land.txt",
+        "frameCount": 6,
+        "fps": 8,
+        "loop": false,
+        "lastHoldMs": 0,
+        "scale": 0.75,
+        "frames": [
+          {
+            "x": 0,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 512,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 1024,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 1536,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 2048,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 2560,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          }
+        ]
+      },
+      {
+        "id": "ordo-victory-spritegen-v1",
+        "label": "勝利 · sprite-gen v1",
+        "action": "victory",
+        "kind": "animation",
+        "model": "gpt-image（sprite-gen / Codex CLI、モデル版指定なし）",
+        "status": "採用",
+        "pixelArt": true,
+        "notes": "基準画像からsprite-genで生成・透過・分割。512px、低解像度格子への縮小なし。生成記録はnotes/spritegen-v1。",
+        "image": "../../../assets/characters/ordo/victory/spritegen-v1/ordo-victory-spritegen-v1.png",
+        "prompt": "../../../assets/characters/ordo/notes/spritegen-v1/run/prompts/victory.txt",
+        "frameCount": 6,
+        "fps": 6,
+        "loop": false,
+        "lastHoldMs": 0,
+        "scale": 0.75,
+        "frames": [
+          {
+            "x": 0,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 512,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 1024,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 1536,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 2048,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 2560,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          }
+        ]
+      },
+      {
+        "id": "ordo-defeat-spritegen-v1",
+        "label": "敗北 · sprite-gen v1",
+        "action": "defeat",
+        "kind": "animation",
+        "model": "gpt-image（sprite-gen / Codex CLI、モデル版指定なし）",
+        "status": "採用",
+        "pixelArt": true,
+        "notes": "基準画像からsprite-genで生成・透過・分割。512px、低解像度格子への縮小なし。生成記録はnotes/spritegen-v1。",
+        "image": "../../../assets/characters/ordo/defeat/spritegen-v1/ordo-defeat-spritegen-v1.png",
+        "prompt": "../../../assets/characters/ordo/notes/spritegen-v1/run/prompts/defeat.txt",
+        "frameCount": 6,
+        "fps": 6,
+        "loop": false,
+        "lastHoldMs": 0,
+        "scale": 0.75,
+        "frames": [
+          {
+            "x": 0,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 512,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 1024,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 1536,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 2048,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 2560,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          }
+        ]
+      },
+      {
+        "id": "ordo-finish-spritegen-v1",
+        "label": "通常終了 · sprite-gen v1",
+        "action": "finish",
+        "kind": "animation",
+        "model": "gpt-image（sprite-gen / Codex CLI、モデル版指定なし）",
+        "status": "採用",
+        "pixelArt": true,
+        "notes": "基準画像からsprite-genで生成・透過・分割。512px、低解像度格子への縮小なし。生成記録はnotes/spritegen-v1。",
+        "image": "../../../assets/characters/ordo/finish/spritegen-v1/ordo-finish-spritegen-v1.png",
+        "prompt": "../../../assets/characters/ordo/notes/spritegen-v1/run/prompts/finish.txt",
+        "frameCount": 6,
+        "fps": 6,
+        "loop": false,
+        "lastHoldMs": 0,
+        "scale": 0.75,
+        "frames": [
+          {
+            "x": 0,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 512,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 1024,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 1536,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 2048,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          },
+          {
+            "x": 2560,
+            "y": 0,
+            "width": 512,
+            "height": 512,
+            "pivotX": 256,
+            "baselineY": 500
+          }
+        ]
+      }
+    ],
+    "adoptedAssets": {
+      "portrait": "ordo-portrait-spritegen-v1",
+      "icon": "ordo-icon-spritegen-v1",
+      "idle": "ordo-idle-spritegen-v1",
+      "danger": "ordo-danger-spritegen-v1",
+      "success": "ordo-success-spritegen-v1",
+      "garbage-land": "ordo-garbage-land-spritegen-v1",
+      "victory": "ordo-victory-spritegen-v1",
+      "defeat": "ordo-defeat-spritegen-v1",
+      "finish": "ordo-finish-spritegen-v1"
+    }
   },
   {
     "id": "izel",
@@ -4032,6 +7817,17 @@ window.CHARACTER_CATALOG = [
         "lastHoldMs": 0,
         "notes": "8コマ。透過と位置合わせを画像に適用済み。素材内の倍率は一定。"
       }
-    ]
+    ],
+    "adoptedAssets": {
+      "portrait": "izel-portrait-pixel-v1",
+      "icon": "izel-icon-pixel-v1",
+      "idle": "izel-idle-pixel-v1",
+      "danger": "izel-danger-pixel-v1",
+      "success": "izel-success-pixel-v1",
+      "garbage-land": "izel-garbage-land-pixel-v1",
+      "victory": "izel-victory-pixel-v1",
+      "defeat": "izel-defeat-pixel-v1",
+      "finish": "izel-finish-pixel-v1"
+    }
   }
 ];

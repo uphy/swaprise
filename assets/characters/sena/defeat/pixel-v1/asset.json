@@ -1,0 +1,115 @@
+{
+  "id": "sena-defeat-pixel-v1",
+  "label": "敗北 · ドット絵 v1",
+  "kind": "animation",
+  "action": "defeat",
+  "image": "sena-defeat-pixel-v1.png",
+  "prompt": "sena-defeat-pixel-v1.prompt.txt",
+  "model": "gpt-image（内蔵画像生成ツール、モデル版指定なし）",
+  "status": "試作・確認用",
+  "pixelArt": true,
+  "notes": "セナの人物設定と基準立ち絵から生成。生成PNGのアルファを保持し、色抜き・画像加工なし。 全コマ共通倍率。足元から基準点と床位置を計測。",
+  "frameCount": 12,
+  "fps": 7,
+  "loop": false,
+  "frames": [
+    {
+      "x": 0,
+      "y": 0,
+      "width": 384,
+      "height": 345,
+      "pivotX": 218.5,
+      "baselineY": 339
+    },
+    {
+      "x": 384,
+      "y": 0,
+      "width": 384,
+      "height": 345,
+      "pivotX": 185.5,
+      "baselineY": 339
+    },
+    {
+      "x": 768,
+      "y": 0,
+      "width": 384,
+      "height": 345,
+      "pivotX": 185.5,
+      "baselineY": 339
+    },
+    {
+      "x": 1152,
+      "y": 0,
+      "width": 384,
+      "height": 345,
+      "pivotX": 184.5,
+      "baselineY": 340
+    },
+    {
+      "x": 0,
+      "y": 345,
+      "width": 384,
+      "height": 339,
+      "pivotX": 218.0,
+      "baselineY": 331
+    },
+    {
+      "x": 384,
+      "y": 345,
+      "width": 384,
+      "height": 339,
+      "pivotX": 185.5,
+      "baselineY": 331
+    },
+    {
+      "x": 768,
+      "y": 345,
+      "width": 384,
+      "height": 339,
+      "pivotX": 186.0,
+      "baselineY": 330
+    },
+    {
+      "x": 1152,
+      "y": 345,
+      "width": 384,
+      "height": 339,
+      "pivotX": 184.5,
+      "baselineY": 331
+    },
+    {
+      "x": 0,
+      "y": 684,
+      "width": 384,
+      "height": 340,
+      "pivotX": 218.0,
+      "baselineY": 329
+    },
+    {
+      "x": 384,
+      "y": 684,
+      "width": 384,
+      "height": 340,
+      "pivotX": 186.5,
+      "baselineY": 329
+    },
+    {
+      "x": 768,
+      "y": 684,
+      "width": 384,
+      "height": 340,
+      "pivotX": 186.0,
+      "baselineY": 329
+    },
+    {
+      "x": 1152,
+      "y": 684,
+      "width": 384,
+      "height": 340,
+      "pivotX": 185.0,
+      "baselineY": 329
+    }
+  ],
+  "scale": 1.0876,
+  "lastHoldMs": 0
+}

@@ -1,0 +1,46 @@
+{
+  "states": {
+    "idle": {
+      "frames": 6,
+      "fps": 6,
+      "loop": true,
+      "action": "Breathe softly and blink, holding half-open map steady. Seamless cycle."
+    },
+    "danger": {
+      "frames": 6,
+      "fps": 6,
+      "loop": true,
+      "action": "Glance down at map then forward, brows concerned, hold map close. Seamless subtle cycle."
+    },
+    "success": {
+      "frames": 6,
+      "fps": 8,
+      "loop": false,
+      "action": "Brighten and point to a place on the map with one finger then settle."
+    },
+    "garbage-land": {
+      "frames": 6,
+      "fps": 8,
+      "loop": false,
+      "action": "Startle briefly, grip map securely and regain balance."
+    },
+    "victory": {
+      "frames": 6,
+      "fps": 6,
+      "loop": false,
+      "action": "Smile and hug the partly unfolded map to chest, finishing with map held happily."
+    },
+    "defeat": {
+      "frames": 6,
+      "fps": 6,
+      "loop": false,
+      "action": "Look down sadly and carefully straighten the map edges, end looking down without recovery."
+    },
+    "finish": {
+      "frames": 6,
+      "fps": 6,
+      "loop": false,
+      "action": "Fold map neatly and breathe out with a gentle satisfied expression."
+    }
+  }
+}

@@ -1,0 +1,4 @@
+Create a WIDE LANDSCAPE 1536x1024 transparent-background pixel art sprite sheet of this exact female technical trainee Sena. SIX full-body frames in a 3-column 2-row grid of equal cells. Each figure centered with generous empty margins within her own cell. IDLE LOOP: straight composed posture, gentle breathing, one blink, tiny hand adjustment, return to starting pose. Feet stay planted. Preserve exact blue-black chin-length bob, gray eyes, pale limestone standing-collar jacket with exactly two brass chest clasps, navy wide trousers, low shoes and thin record board at her right hip. Fixed camera, identical proportions, size and floor baseline, crisp dark pixel outlines. Only characters and transparent empty space.
+
+生成: 内蔵gpt-image。画像加工なし。
+参照: ../../portrait/pixel-v1/sena-portrait-pixel-v1.png

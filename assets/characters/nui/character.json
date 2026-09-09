@@ -13,5 +13,16 @@
     "victory/pixel-v1/asset.json",
     "defeat/pixel-v1/asset.json",
     "finish/pixel-v1/asset.json"
-  ]
+  ],
+  "adoptedAssets": {
+    "portrait": "nui-portrait-pixel-v1",
+    "icon": "nui-icon-pixel-v1",
+    "idle": "nui-idle-pixel-v1",
+    "danger": "nui-danger-pixel-v1",
+    "success": "nui-success-pixel-v1",
+    "garbage-land": "nui-garbage-land-pixel-v1",
+    "victory": "nui-victory-pixel-v1",
+    "defeat": "nui-defeat-pixel-v1",
+    "finish": "nui-finish-pixel-v1"
+  }
 }

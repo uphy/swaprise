@@ -1,0 +1,18 @@
+{
+  "transparentPixels": 2497481,
+  "visibleMagentaPixels": 15,
+  "frameSize": [
+    512,
+    512
+  ],
+  "states": {
+    "idle": {
+      "frames": 6,
+      "fps": 6
+    },
+    "victory": {
+      "frames": 6,
+      "fps": 6
+    }
+  }
+}

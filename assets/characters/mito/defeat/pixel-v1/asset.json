@@ -1,0 +1,28 @@
+{
+  "id": "mito-defeat-pixel-v1",
+  "label": "敗北・失敗 · ドット絵 v1",
+  "kind": "animation",
+  "action": "defeat",
+  "image": "mito-defeat-pixel-v1.png",
+  "prompt": "mito-defeat-pixel-v1.prompt.txt",
+  "model": "内蔵画像生成ツール（モデル名未確認）",
+  "status": "旧版・比較用",
+  "pixelArt": true,
+  "history": [
+    {
+      "label": "背景処理前のシート",
+      "url": "mito-defeat-pixel-v1-magenta.png"
+    }
+  ],
+  "columns": 4,
+  "rows": 3,
+  "frameWidth": 296,
+  "frameHeight": 444,
+  "frameCount": 12,
+  "fps": 8,
+  "loop": false,
+  "baselineY": 424,
+  "scale": 0.9,
+  "lastHoldMs": 400,
+  "notes": "12コマ。札の輪を額に当て、負けを受け止めて笑う。グリッド用に右端と下端を透明で補正。"
+}

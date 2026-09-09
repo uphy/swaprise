@@ -1,0 +1,12 @@
+{
+  "id": "mito-portrait-pixel-v1",
+  "label": "基準立ち絵 · ドット絵 v1",
+  "kind": "image",
+  "action": "portrait",
+  "image": "mito-portrait-pixel-v1.png",
+  "prompt": "mito-portrait-pixel-v1.prompt.txt",
+  "model": "内蔵画像生成ツール（モデル名未確認）",
+  "status": "旧版・比較用",
+  "pixelArt": true,
+  "notes": "ユーザー確認済みの基準デザイン。透明背景。"
+}

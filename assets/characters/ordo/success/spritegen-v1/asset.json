@@ -1,0 +1,67 @@
+{
+  "id": "ordo-success-spritegen-v1",
+  "label": "成功 · sprite-gen v1",
+  "action": "success",
+  "kind": "animation",
+  "model": "gpt-image（sprite-gen / Codex CLI、モデル版指定なし）",
+  "status": "採用",
+  "pixelArt": true,
+  "notes": "基準画像からsprite-genで生成・透過・分割。512px、低解像度格子への縮小なし。生成記録はnotes/spritegen-v1。",
+  "image": "ordo-success-spritegen-v1.png",
+  "prompt": "../../notes/spritegen-v1/run/prompts/success.txt",
+  "frameCount": 6,
+  "fps": 8,
+  "loop": false,
+  "lastHoldMs": 0,
+  "scale": 0.75,
+  "frames": [
+    {
+      "x": 0,
+      "y": 0,
+      "width": 512,
+      "height": 512,
+      "pivotX": 256,
+      "baselineY": 500
+    },
+    {
+      "x": 512,
+      "y": 0,
+      "width": 512,
+      "height": 512,
+      "pivotX": 256,
+      "baselineY": 500
+    },
+    {
+      "x": 1024,
+      "y": 0,
+      "width": 512,
+      "height": 512,
+      "pivotX": 256,
+      "baselineY": 500
+    },
+    {
+      "x": 1536,
+      "y": 0,
+      "width": 512,
+      "height": 512,
+      "pivotX": 256,
+      "baselineY": 500
+    },
+    {
+      "x": 2048,
+      "y": 0,
+      "width": 512,
+      "height": 512,
+      "pivotX": 256,
+      "baselineY": 500
+    },
+    {
+      "x": 2560,
+      "y": 0,
+      "width": 512,
+      "height": 512,
+      "pivotX": 256,
+      "baselineY": 500
+    }
+  ]
+}

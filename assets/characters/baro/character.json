@@ -3,5 +3,26 @@
   "name": "バロ",
   "role": "アナグマの古道具屋",
   "color": "#897359",
-  "assets": []
+  "assets": [
+    "portrait/spritegen-v1/asset.json",
+    "icon/spritegen-v1/asset.json",
+    "idle/spritegen-v1/asset.json",
+    "danger/spritegen-v1/asset.json",
+    "success/spritegen-v1/asset.json",
+    "garbage-land/spritegen-v1/asset.json",
+    "victory/spritegen-v1/asset.json",
+    "defeat/spritegen-v1/asset.json",
+    "finish/spritegen-v1/asset.json"
+  ],
+  "adoptedAssets": {
+    "portrait": "baro-portrait-spritegen-v1",
+    "icon": "baro-icon-spritegen-v1",
+    "idle": "baro-idle-spritegen-v1",
+    "danger": "baro-danger-spritegen-v1",
+    "success": "baro-success-spritegen-v1",
+    "garbage-land": "baro-garbage-land-spritegen-v1",
+    "victory": "baro-victory-spritegen-v1",
+    "defeat": "baro-defeat-spritegen-v1",
+    "finish": "baro-finish-spritegen-v1"
+  }
 }

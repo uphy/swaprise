@@ -1,0 +1,39 @@
+{
+  "kind": "sprite-gen-gen-set-report",
+  "run_dir": "/private/tmp/swaprise-mito-assets/assets/characters/sena/notes/spritegen-v2/run",
+  "states": [
+    "idle",
+    "victory"
+  ],
+  "ok": 2,
+  "failed": [],
+  "not_started": [],
+  "items": [
+    {
+      "state": "idle",
+      "out": "/private/tmp/swaprise-mito-assets/assets/characters/sena/notes/spritegen-v2/run/raw/idle.png",
+      "report": "/private/tmp/swaprise-mito-assets/assets/characters/sena/notes/spritegen-v2/run/reports/gen-set/idle.json",
+      "refs": [
+        "/private/tmp/swaprise-mito-assets/assets/characters/sena/notes/spritegen-v2/run/base-source.png",
+        "/private/tmp/swaprise-mito-assets/assets/characters/sena/notes/spritegen-v2/run/references/layout-guides/idle.png"
+      ],
+      "provider": "codex",
+      "provider_resolved_from": "explicit",
+      "elapsed_seconds": 75.0,
+      "ok": true
+    },
+    {
+      "state": "victory",
+      "out": "/private/tmp/swaprise-mito-assets/assets/characters/sena/notes/spritegen-v2/run/raw/victory.png",
+      "report": "/private/tmp/swaprise-mito-assets/assets/characters/sena/notes/spritegen-v2/run/reports/gen-set/victory.json",
+      "refs": [
+        "/private/tmp/swaprise-mito-assets/assets/characters/sena/notes/spritegen-v2/run/base-source.png",
+        "/private/tmp/swaprise-mito-assets/assets/characters/sena/notes/spritegen-v2/run/references/layout-guides/victory.png"
+      ],
+      "provider": "codex",
+      "provider_resolved_from": "explicit",
+      "elapsed_seconds": 74.7,
+      "ok": true
+    }
+  ]
+}

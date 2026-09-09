@@ -33,9 +33,9 @@ test("VS CPU: 難易度のあとに人物を選び、選択が保存されて対
   let st = await pickerState(page);
   expect(st.open).toBe(true);
   expect(st.slot).toBe(0);
-  // 既定は素材のある2人（ニカとピリカ）
-  expect(st.names).toEqual(["ニカ", "ピリカ"]);
-  // → で 1P を次の人物（素材のないミト）へ。↓ で CPU 側へ移り ← で前の人物へ
+  // 既定は素材のある先頭2人（ニカとミト）
+  expect(st.names).toEqual(["ニカ", "ミト"]);
+  // → で1Pをミトへ、↓でCPU側へ移り←でニカへ
   await press(page, "ArrowRight");
   st = await pickerState(page);
   expect(st.p1).toBe("mito");
@@ -43,22 +43,22 @@ test("VS CPU: 難易度のあとに人物を選び、選択が保存されて対
   await press(page, "ArrowDown", "ArrowLeft");
   st = await pickerState(page);
   expect(st.slot).toBe(1);
-  expect(st.p2).toBe("baro");
+  expect(st.p2).toBe("nika");
   await page.screenshot({ path: `${SHOT}/character-picker.png` });
   // PLAY
   await press(page, "Enter");
   await page.waitForFunction(() => Boolean((window as any).__swaprise?.game));
-  expect(await page.evaluate(() => JSON.parse(localStorage.getItem("swaprise.characters.v1") ?? "{}"))).toEqual({ p1: "mito", p2: "baro" });
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem("swaprise.characters.v1") ?? "{}"))).toEqual({ p1: "mito", p2: "nika" });
   const chars = await characters(page);
-  expect(chars.map((c) => c.id)).toEqual(["mito", "baro"]);
-  // 素材のない人物は代替表示
-  expect(chars.every((c) => c.fallback)).toBe(true);
+  expect(chars.map((c) => c.id)).toEqual(["mito", "nika"]);
+  // 採用された待機画像で表示する
+  expect(chars.every((c) => !c.fallback)).toBe(true);
   expect(await page.evaluate(() => (window as any).__swaprise.game.cpu?.level)).toBe("normal");
 
   // R でやり直しても同じ組み合わせ
   await page.keyboard.press("r");
   await page.waitForFunction(() => (window as any).__swaprise.game.boards[0].frame === 0);
-  expect((await characters(page)).map((c) => c.id)).toEqual(["mito", "baro"]);
+  expect((await characters(page)).map((c) => c.id)).toEqual(["mito", "nika"]);
 
   // メニューに戻って開き直すと前回の選択から始まる
   await page.keyboard.press("Escape");
@@ -66,7 +66,7 @@ test("VS CPU: 難易度のあとに人物を選び、選択が保存されて対
   await press(page, "Enter", "Enter");
   await page.waitForFunction(() => Boolean((window as any).__swapriseScenes.menu.charPicker));
   st = await pickerState(page);
-  expect([st.p1, st.p2]).toEqual(["mito", "baro"]);
+  expect([st.p1, st.p2]).toEqual(["mito", "nika"]);
   // Esc で閉じてもメニューに残る
   await press(page, "Escape");
   expect((await pickerState(page)).open).toBe(false);
@@ -77,11 +77,11 @@ test("2 PLAYERS: 同じ人物を選べる", async ({ page }) => {
   await page.waitForFunction(() => Boolean((window as any).__swapriseScenes?.menu));
   await press(page, "ArrowDown", "ArrowDown", "Enter");
   await page.waitForFunction(() => Boolean((window as any).__swapriseScenes.menu.charPicker));
-  // 2P を 1P と同じニカにする（ピリカ → ヌイ → … と回すより、逆向きに回して 1 つ前へ）
+  // 2Pをミトから1つ前のニカへ
   const before = await pickerState(page);
-  expect(before.names).toEqual(["ニカ", "ピリカ"]);
+  expect(before.names).toEqual(["ニカ", "ミト"]);
   await press(page, "ArrowDown");
-  for (let i = 0; i < 6; i++) await press(page, "ArrowLeft");
+  await press(page, "ArrowLeft");
   const st = await pickerState(page);
   expect([st.p1, st.p2]).toEqual(["nika", "nika"]);
   await press(page, "Enter");
@@ -195,3 +195,32 @@ test("人物を替えても同じ seed と入力列なら盤面と得点は同�
   expect(b).toEqual(a);
   expect((a as [number, number, string][])[1][1]).toBeGreaterThan(0);
 });
+
+for (const [p1, p2] of [["nika", "mito"], ["sena", "rocca"], ["yuno", "baro"], ["pirika", "nui"], ["ordo", "izel"]]) {
+  test(`採用素材を実際に読み込んで表示する: ${p1} / ${p2}`, async ({ page }) => {
+    const failures: string[] = [];
+    page.on("pageerror", (e) => failures.push(e.message));
+    page.on("response", (r) => { if (r.url().includes("/characters/") && !r.ok()) failures.push(`${r.status()} ${r.url()}`); });
+    await page.goto(`/?mode=versus&p1=${p1}&p2=${p2}&seed=5&speed=1&bgm=0&countdown=0`);
+    await page.waitForFunction(() => {
+      const cs = (window as any).__swaprise?.scene.characters;
+      return cs?.length === 2 && cs.every((c: any) => !c.fallback && c.image.visible && c.image.texture.key.startsWith("char:"));
+    });
+    await page.evaluate(() => (window as any).__swaprise.scene.scene.pause());
+    for (const action of ["idle", "danger", "success", "garbage-land", "victory", "defeat", "finish"]) {
+      await page.waitForFunction((a) => (window as any).__swaprise.scene.characters.every((c: any) => {
+        const asset = c.character.assets[a];
+        return !asset || c.scene.textures.exists(`char:${asset.id}`);
+      }), action);
+      const states = await page.evaluate((a) => (window as any).__swaprise.scene.characters.map((c: any) => {
+        c.restart(a);
+        const image = c.image;
+        return { visible: image.visible, key: image.texture.key, width: image.frame.width, height: image.frame.height };
+      }), action);
+      expect(states.every((s: any) => s.visible && s.key.startsWith("char:") && s.width > 0 && s.height > 0)).toBe(true);
+    }
+    await page.evaluate(() => (window as any).__swaprise.scene.characters.forEach((c: any) => c.restart("idle")));
+    await page.screenshot({ path: `${SHOT}/characters-${p1}-${p2}.png` });
+    expect(failures).toEqual([]);
+  });
+}

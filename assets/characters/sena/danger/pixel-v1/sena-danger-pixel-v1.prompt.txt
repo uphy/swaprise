@@ -1,0 +1,4 @@
+Create a WIDE LANDSCAPE 1536x1024 transparent-background pixel art sprite sheet of this exact female technical trainee Sena. SIX full-body frames in a 3-column 2-row equal-cell grid, centered figures with clear margins. DANGER LOOP: focused tense eyes, touches one brass chest clasp while considering a new plan, controlled shallow breathing, tiny sweat bead, restrained anxiety, feet planted, return near starting pose. Keep exactly two chest clasps, identical blue-black bob, pale gray jacket, navy wide trousers, low shoes and right-hip record board. Fixed scale, camera and foot baseline, clean dark pixel outlines. Only characters and transparent empty space.
+
+生成: 内蔵gpt-image。画像加工なし。
+参照: ../../portrait/pixel-v1/sena-portrait-pixel-v1.png

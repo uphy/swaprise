@@ -1,0 +1,4 @@
+Create a transparent-background pixel art sprite sheet of this exact courier girl, WIDE LANDSCAPE 1536x1024. TWELVE full-body frames in a 4-column 3-row grid of equal cells, read left to right then top to bottom. Whole figures within each cell with empty margins, fixed camera, fixed body size and foot baseline. VICTORY: playfully spin the brass ring of delivery tags once around one finger, catch it, finish with a proud asymmetric smile. A continuous smooth gesture, no jump. Preserve identical face, low ponytail, teal coat, brown satchel and rolled raincloth in all frames. Crisp dark pixel outlines. Only characters and transparent empty space.
+
+生成: 内蔵 gpt-image。参照: ../../portrait/pixel-v2/mito-portrait-pixel-v2.png
+画像の後処理なし。生成されたアルファチャンネルを保持。
