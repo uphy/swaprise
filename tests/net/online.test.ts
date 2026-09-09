@@ -206,9 +206,40 @@ it("閉じた招待部屋への再参加は元の参加者でも拒否する", (
     room.join({ session: `s${i}`, token: `t${i}`, name: `n${i}` });
     room.connect(i, true, 0);
   }
-  room.message(1, { type: "leave" }, 0);
+  room.state.phase = "closed";
   expect(room.state.phase).toBe("closed");
   for (let i = 0; i < 2; i++)
     expect(() => room.join({ session: `s${i}`, token: "new", name: "Guest" }))
       .toThrow("This room has closed.");
+});
+
+it("招待部屋を退出しても相手の席を残し、同じ人が入り直せる", () => {
+  const room = new RoomEngine("invite", () => {});
+  for (let i = 0; i < 2; i++) {
+    room.join({ session: `s${i}`, token: `t${i}`, name: `n${i}` });
+    room.connect(i, true, 0);
+    room.message(i, { type: "ready" }, 0);
+  }
+  room.message(1, { type: "leave" }, 0);
+  expect(room.state.phase).toBe("waiting");
+  expect(room.members[1]).toBeNull();
+  expect(room.state.seats[0]?.connected).toBe(true);
+  expect(room.state.seats[0]?.ready).toBe(false);
+  expect(room.join({ session: "s1", token: "new", name: "Returned" })).toBe(1);
+  expect(room.members[1]?.token).toBe("new");
+  room.message(0, { type: "leave" }, 0);
+  room.message(1, { type: "leave" }, 0);
+  expect(room.state.phase).toBe("waiting");
+  expect(room.members).toEqual([null, null]);
+  expect(room.join({ session: "s0", token: "again", name: "Returned" })).toBe(0);
+});
+it("対戦後に招待部屋を退出すると盤面を片付けて次の参加者を待つ", () => {
+  const { room } = setup();
+  room.finish(0, "normal");
+  room.message(1, { type: "leave" }, 4000);
+  expect(room.state.phase).toBe("waiting");
+  expect(room.state.match).toBeNull();
+  expect(room.state.result).toBeNull();
+  expect(room.history).toEqual([]);
+  expect(room.canStart()).toBe(false);
 });

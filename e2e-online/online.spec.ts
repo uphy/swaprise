@@ -491,7 +491,7 @@ test("自分の交換は通信の確定を待たず次のtickで描画する", a
   await Promise.all(contexts.map((c) => c.close()));
 });
 
-test("退出した招待部屋への再参加に失敗しても両者がFIND MATCHできる", async ({ browser }) => {
+test("招待部屋は退出後も同じURLで再参加でき、両者がFIND MATCHへ移れる", async ({ browser }) => {
   const a = await browser.newContext();
   const b = await browser.newContext();
   const p = await a.newPage();
@@ -503,14 +503,33 @@ test("退出した招待部屋への再参加に失敗しても両者がFIND MAT
   await q.goto(invite);
   await q.getByRole("button", { name: "JOIN ROOM", exact: true }).click();
   await expect(q.getByRole("button", { name: "LEAVE ROOM" })).toBeVisible();
+  const saved = await Promise.all([p, q].map((page) => page.evaluate(
+    () => sessionStorage.getItem("swaprise.connection.v1")!,
+  )));
   await q.getByRole("button", { name: "LEAVE ROOM" }).click();
-  await expect(p.getByRole("status")).toContainText("room closed");
-  await p.getByRole("button", { name: "BACK TO MENU" }).click();
-  for (const page of [p, q]) {
+  await expect(p.getByRole("status")).toContainText("Waiting for your friend");
+  await p.getByRole("button", { name: "LEAVE ROOM" }).click();
+  for (const [index, page] of [p, q].entries()) {
+    // 更新前のアプリが保存した、退出済みの接続情報を再現する。
+    await page.evaluate((connection) => sessionStorage.setItem("swaprise.connection.v1", connection), saved[index]);
     await page.goto(invite);
     await page.getByRole("button", { name: "JOIN ROOM", exact: true }).click();
-    await expect(page.getByRole("status")).toHaveText("This room has closed.");
-    await page.getByRole("button", { name: "BACK TO MENU" }).click();
+    await expect(page.getByRole("button", { name: "LEAVE ROOM" })).toBeVisible();
+  }
+  await p.getByRole("button", { name: "READY", exact: true }).click();
+  await q.getByRole("button", { name: "READY", exact: true }).click();
+  await p.getByRole("button", { name: "SETTINGS", exact: true }).click();
+  await p.getByRole("button", { name: "SURRENDER", exact: true }).click();
+  await p.getByRole("button", { name: "YES, SURRENDER", exact: true }).click();
+  await q.getByRole("button", { name: "BACK TO MENU" }).click();
+  await expect(p.getByRole("status")).toContainText("Waiting for your friend");
+  await p.waitForFunction(() => (window as any).__swapriseOnline.views.length === 0);
+  await q.goto(invite);
+  await q.getByRole("button", { name: "JOIN ROOM", exact: true }).click();
+  await expect(p.getByRole("button", { name: "READY", exact: true })).toBeVisible();
+  for (const page of [p, q])
+    await page.getByRole("button", { name: "LEAVE ROOM" }).click();
+  for (const page of [p, q]) {
     await enter(page);
     await page.getByRole("button", { name: "FIND MATCH", exact: true }).click();
   }
@@ -518,4 +537,14 @@ test("退出した招待部屋への再参加に失敗しても両者がFIND MAT
     await page.waitForFunction(() => (window as any).__swapriseOnline?.session?.lockstep?.frame > 60);
   await a.close();
   await b.close();
+});
+
+test("期限切れの招待URLは開いた時点で説明し、新しい部屋を作れる", async ({ page }) => {
+  // 期限切れで削除された部屋と同じ、保存データがないURL。
+  await page.goto("/?room=11111111-1111-4111-8111-111111111111#invite=expired");
+  await expect(page.getByRole("status")).toHaveText("This invite link has expired. Create a new room or find a match.");
+  await expect(page.getByRole("button", { name: "JOIN ROOM", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "FIND MATCH", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "INVITE FRIEND", exact: true }).click();
+  await expect(page.getByRole("button", { name: "SHARE INVITE" })).toBeVisible();
 });

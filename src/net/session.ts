@@ -89,6 +89,10 @@ export class OnlineSession extends EventTarget {
         this.attempts = 0;
         this.state = m.state;
         this.player = m.player;
+        if (!m.state.match) {
+          this.lockstep = null;
+          this.syncTarget = null;
+        }
         if (m.state.match && this.lockstep?.match.id !== m.state.match.id) {
           this.lockstep = new Lockstep(m.state.match);
           this.lastHash = -1;

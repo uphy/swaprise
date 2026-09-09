@@ -210,6 +210,22 @@ export class RoomEngine {
       return;
     }
     if (m.type === "leave") {
+      if (this.state.kind === "invite" && this.state.phase !== "closed") {
+        this.members[i] = null;
+        this.state.seats[i] = null;
+        this.state.phase = "waiting";
+        this.state.match = null;
+        this.state.result = null;
+        this.state.startAt = 0;
+        this.history = [];
+        this.pending.forEach((p) => p.clear());
+        this.hashes.clear();
+        this.state.seats.forEach((s) => {
+          if (s) { s.ready = false; s.rematch = false; }
+        });
+        this.publish();
+        return;
+      }
       if (["playing", "suspended"].includes(this.state.phase))
         this.finish(1 - i, "surrender");
       else {
