@@ -206,6 +206,7 @@ test.describe("立ち絵の読み込み", () => {
       await gate;
       await route.continue();
     });
+    await page.addInitScript(() => localStorage.setItem("swaprise.characters.v1", JSON.stringify({ p1: "nika", p2: "pirika" })));
     await page.goto("/?bgm=0");
     await page.waitForFunction(() => Boolean((window as any).__swapriseScenes?.menu));
     await press(page, "ArrowDown", "ArrowDown", "Enter");
