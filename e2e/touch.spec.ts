@@ -200,7 +200,7 @@ test.describe("スマホ縦画面", () => {
     });
   });
 
-  test("縦レイアウトになり、タッチのタップ・ドラッグが効く", async ({ page }) => {
+  test("縦レイアウトになり、タップでは交換せず横ドラッグで交換する", async ({ page }) => {
     await page.goto("/?bgm=0&countdown=0");
     await page.waitForTimeout(500);
     await page.screenshot({ path: `${SHOT}/mobile-menu.png` });
@@ -217,16 +217,18 @@ test.describe("スマホ縦画面", () => {
     expect(size).toEqual({ w: 300, h: 611, backing: size.dpr, dpr: size.dpr });
     await page.screenshot({ path: `${SHOT}/mobile-endless.png` });
 
-    // (2,0) と (3,0) の境目をタップ → 1回で入れ替わる
+    // 境目や中央をタップしても交換せず、選択表示を解除する。
     const tapBefore = await kinds(page, 2, 3, 0);
+    const cursorBefore = await page.evaluate(() => ({ ...(window as any).__swaprise.game.boards[0].cursor }));
     const from = await cellCenter(page, 2, 0);
     const next = await cellCenter(page, 3, 0);
     await page.touchscreen.tap((from.x + next.x) / 2, from.y);
+    await page.touchscreen.tap(from.x, from.y);
     await page.waitForTimeout(150);
     const cursor = await page.evaluate(() => ({ ...(window as any).__swaprise.game.boards[0].cursor }));
-    expect(cursor).toEqual({ x: 2, y: 0 });
-    expect(await kinds(page, 2, 3, 0)).toEqual([tapBefore[1], tapBefore[0]]);
-    await page.waitForTimeout(1200); // タップで揃った場合の消去処理を待つ
+    expect(cursor).toEqual(cursorBefore);
+    expect(await kinds(page, 2, 3, 0)).toEqual(tapBefore);
+    expect(await page.evaluate(() => (window as any).__swaprise.scene.touches[0].feedback)).toBeNull();
 
     const before = await kinds(page, 2, 3, 0);
     const cdp = await page.context().newCDPSession(page);

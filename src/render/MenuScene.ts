@@ -677,7 +677,7 @@ export class MenuScene extends Phaser.Scene {
     const layout = layoutFor("menu");
     const lines = [t("Line up 3 or more of the same panel to clear them."), t("Chains and combos send garbage to the opponent."), ""];
     if (layout.touch) {
-      lines.push(t("Swap: tap between two panels, or drag a panel sideways"));
+      lines.push(t("Swap: drag a panel sideways. Tapping alone does not swap."));
       lines.push(t("Raise: hold ▲ ▲ ▲ under the board, or press the board with 2 fingers"));
       lines.push(t("Pause: the ❚❚ button"));
       // iPhone の Safari は Fullscreen API を使えない。ホーム画面に追加すれば URL バーが消えることを案内する
