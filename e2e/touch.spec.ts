@@ -172,6 +172,31 @@ test.describe("スマホ縦画面", () => {
     userAgent: pixel.userAgent,
   });
 
+  test("掴んだパネルと移動先を表示し、素早く離しても指定列まで届く", async ({ page }) => {
+    await page.goto("/?mode=endless&seed=7&bgm=0&countdown=0");
+    await page.waitForFunction(() => Boolean((window as any).__swaprise?.game));
+    await page.evaluate(() => {
+      const b = (window as any).__swaprise.game.boards[0];
+      b.noRise = true;
+      b.riseProgress = 0;
+      b.setColumns([[0], [1], [2], [3], [4], [0]]);
+    });
+    const from = await cellCenter(page, 0, 0);
+    const to = await cellCenter(page, 4, 0);
+    const cdp = await page.context().newCDPSession(page);
+    await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [from] });
+    expect(await page.evaluate(() => (window as any).__swaprise.scene.touches[0].feedback))
+      .toEqual({ x: 0, y: 0, targetX: 0 });
+    await page.screenshot({ path: `${SHOT}/mobile-touch-selection.png` });
+    await cdp.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [to] });
+    expect(await page.evaluate(() => (window as any).__swaprise.scene.touches[0].feedback?.targetX)).toBe(4);
+    await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+    await page.waitForFunction(() => {
+      const p = (window as any).__swaprise;
+      return p.game.boards[0].cell(4, 0).kind === 0 && p.scene.touches[0].feedback === null;
+    });
+  });
+
   test("縦レイアウトになり、タッチのタップ・ドラッグが効く", async ({ page }) => {
     await page.goto("/?bgm=0&countdown=0");
     await page.waitForTimeout(500);

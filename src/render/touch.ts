@@ -3,7 +3,7 @@ import { Board, COLS, ROWS, isEmptyCell, type Input } from "../core";
 import { BOARD_H, BOARD_W, CELL } from "./theme";
 
 /** 横ドラッグを「入れ替え」と判定する移動量（マスの幅に対する割合）。 */
-const SWIPE_RATIO = 0.35;
+const SWIPE_RATIO = 0.65;
 /** これ以下の移動ならタップ扱い。 */
 const TAP_SLOP = 8;
 
@@ -12,6 +12,8 @@ type DragMode = "pending" | "swipe";
 interface Drag {
   startX: number;
   startY: number;
+  originX: number;
+  released: boolean;
   /** ドラッグ中のパネルが今いるマス。入れ替えるたびに追従する。 */
   cellX: number;
   cellY: number;
@@ -30,6 +32,7 @@ interface Drag {
  *   入れ替えは1つずつ出し、前の入れ替えが終わってパネルが静止してから次を出す。静止した瞬間に揃い判定が
  *   入るので、途中で揃えばそこで消える（原作どおり。指を離すまで運び続けることはできない）。
  *   入れ替え先の下が空なら、原作どおりそこで落ちる（ドラッグはそこで終わり、谷を越えては運べない）
+ *   指を離しても認識済みの移動先まで進む。次に触れたら残りの予約は取り消す。
  * - 盤面を2本の指で押している間: 手動せり上げ
  * - 盤面の下の「▲ ▲ ▲」を押している間: 手動せり上げ（GameScene が holdRaise() で知らせる）。
  *   盤面の外の余白ならどこでもせり上がる操作は誤タップが多かったので外し、ボタンの範囲だけにした
@@ -39,6 +42,12 @@ interface Drag {
 export class TouchInput {
   private queue: Input[] = [];
   private readonly drags = new Map<number, Drag>();
+
+  /** 選択中のマスと、現在の指の移動量で予約している移動先。 */
+  get feedback(): { x: number; y: number; targetX: number } | null {
+    const d = this.drags.values().next().value as Drag | undefined;
+    return d ? { x: d.cellX, y: d.cellY, targetX: d.cellX + d.pending } : null;
+  }
   /** せり上げている指（盤面を2本以上で押しているとき、または「▲ ▲ ▲」を押しているとき）。 */
   private readonly raisePointers = new Set<number>();
 
@@ -119,6 +128,8 @@ export class TouchInput {
     if (!this.enabled) return;
     const cell = this.cellAt(p.worldX, p.worldY);
     if (!cell) return;
+    // 新しい操作は、前の指を離した後の予約より優先する。
+    for (const [id, d] of this.drags) if (d.released) this.drags.delete(id);
     this.onBoard.add(p.id);
     if (this.onBoard.size >= 2) {
       // 2本目の指。入れ替えの途中でもやめて、離すまでせり上げにする
@@ -127,21 +138,20 @@ export class TouchInput {
       return;
     }
     const panel = !isEmptyCell(this.board.cell(cell.x, cell.y));
-    this.drags.set(p.id, { startX: p.worldX, startY: p.worldY, cellX: cell.x, cellY: cell.y, panel, mode: "pending", pending: 0 });
+    this.drags.set(p.id, { startX: p.worldX, startY: p.worldY, originX: cell.x, released: false, cellX: cell.x, cellY: cell.y, panel, mode: "pending", pending: 0 });
   }
 
   private onMove(p: Phaser.Input.Pointer): void {
     const d = this.drags.get(p.id);
-    if (!d) return;
-    const dx = p.worldX - d.startX;
-    if (Math.abs(dx) < this.cell * SWIPE_RATIO) return;
-    const dir = dx > 0 ? 1 : -1;
-    // 越えたマスは数えるだけにして、入れ替えは advanceDrags() が盤面の状態を見ながら1つずつ出す
-    const projected = d.cellX + d.pending + dir;
-    if (projected < 0 || projected >= COLS) return;
-    d.pending += dir;
-    d.startX += dir * this.cell;
-    d.mode = "swipe";
+    if (!d || d.released) return;
+    const position = d.originX + (p.worldX - d.startX) / this.cell;
+    let target = d.cellX + d.pending;
+    // 基準は押した位置から固定。往復の閾値を重ねず、微振動で逆交換しない。
+    // イベント間隔が粗くても、通過した全列を一度に認識する。
+    while (target < COLS - 1 && position - target >= SWIPE_RATIO) target++;
+    while (target > 0 && position - target <= -SWIPE_RATIO) target--;
+    if (target !== d.cellX + d.pending) d.mode = "swipe";
+    d.pending = target - d.cellX;
   }
 
   /** 最後に見たせり上がりの行数。ドラッグ中のパネルの段を追従させる。 */
@@ -163,7 +173,6 @@ export class TouchInput {
       this.lastRisen = risen;
     }
     for (const [id, d] of this.drags) {
-      if (d.pending === 0) continue;
       const here = this.board.cell(d.cellX, d.cellY);
       if (d.panel) {
         if (isEmptyCell(here) || here.state === "matched" || here.state === "popped" || here.state === "falling") {
@@ -171,6 +180,10 @@ export class TouchInput {
           continue;
         }
         if (here.state === "swapping") continue;
+      }
+      if (d.pending === 0) {
+        if (d.released) this.drags.delete(id);
+        continue;
       }
       const dir = d.pending > 0 ? 1 : -1;
       const target = d.cellX + dir;
@@ -191,8 +204,12 @@ export class TouchInput {
     this.raisePointers.delete(p.id);
     const d = this.drags.get(p.id);
     if (!d) return;
+    this.onMove(p);
+    if (d.mode === "swipe") {
+      d.released = true;
+      return;
+    }
     this.drags.delete(p.id);
-    if (d.mode !== "pending") return;
     if (Math.abs(p.worldX - d.startX) > TAP_SLOP || Math.abs(p.worldY - d.startY) > TAP_SLOP) return;
     // タップ1回で入れ替える。タップ位置に最も近いマスの境目を挟む2枚が対象。
     // マスの中央を叩いたときは、左右のうち近い側の隣と入れ替える。

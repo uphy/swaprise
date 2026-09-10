@@ -125,6 +125,7 @@ export class GameScene extends Phaser.Scene {
       const t = new TouchInput(this, b);
       this.touches.push(t);
       this.inputs[i].touch = t;
+      this.views[i].touch = t;
     });
     // 盤面の下の「▲ ▲ ▲」。押している間は手動せり上げで、せり上げ中（ボタン・2本指・キー・ゲームパッド）は明るくなる。
     // 当たり判定は余白（padding）で指の大きさ（44dp 以上）まで広げる。盤面の外の余白ならどこでもせり上がる操作は

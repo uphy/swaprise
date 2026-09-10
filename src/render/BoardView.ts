@@ -4,6 +4,7 @@ import { BOARD_BG, BOARD_H, BOARD_W, CELL, FONT, TEXT_COLOR } from "./theme";
 import { audio } from "./shared";
 import { haptics } from "./haptics";
 import { DPR } from "./hidpi";
+import type { TouchInput } from "./touch";
 
 export type HudSide = "top" | "left" | "right";
 /** 盤面と横置きの HUD の間隔。 */
@@ -24,6 +25,8 @@ export class BoardView {
   private readonly cells: Phaser.GameObjects.Image[][] = [];
   private readonly nextCells: Phaser.GameObjects.Image[] = [];
   private readonly cursor: Phaser.GameObjects.Image;
+  private readonly touchGfx: Phaser.GameObjects.Graphics;
+  touch: TouchInput | null = null;
   private readonly bg: Phaser.GameObjects.Rectangle;
   private readonly frame: Phaser.GameObjects.Rectangle;
   private readonly scoreText: Phaser.GameObjects.Text;
@@ -97,6 +100,8 @@ export class BoardView {
     }
     this.cursor = scene.add.image(0, 0, "cursor").setOrigin(0).setScale(1 / DPR);
     this.root.add(this.cursor);
+    this.touchGfx = scene.add.graphics();
+    this.root.add(this.touchGfx);
 
     this.scoreText = scene.add.text(0, -30, "", { fontFamily: FONT, fontSize: "18px", color: TEXT_COLOR }).setOrigin(0, 0);
     this.infoText = scene.add
@@ -268,6 +273,22 @@ export class BoardView {
     }
     this.cursor.setPosition(b.cursor.x * CELL - 3, (ROWS - 1 - b.cursor.y) * CELL - rise - 3 + shake);
     this.cursor.setVisible(!b.gameOver);
+    this.touchGfx.clear();
+    const selection = this.touch?.feedback;
+    if (selection && !b.gameOver) {
+      const py = (ROWS - 1 - selection.y) * CELL - rise + shake;
+      const top = Math.max(1, py + 2);
+      const bottom = Math.min(BOARD_H - 1, py + CELL - 2);
+      if (bottom > top) {
+        // 白枠が掴んだパネル、青枠が予約している停止位置。
+        this.touchGfx.lineStyle(2, 0x66ccff, 1);
+        this.touchGfx.strokeRect(selection.targetX * CELL + 2, top, CELL - 4, bottom - top);
+        const selected = b.cell(selection.x, selection.y);
+        const dx = selected.state === "swapping" ? selected.swapFrom * (selected.timer / TIMING.swap) * CELL : 0;
+        this.touchGfx.lineStyle(2, 0xffffff, 1);
+        this.touchGfx.strokeRect(selection.x * CELL + dx + 4, top + 2, CELL - 8, Math.max(0, bottom - top - 4));
+      }
+    }
 
     this.bg.setFillStyle(b.panic ? 0x3a1e26 : b.danger ? 0x2c1e2a : BOARD_BG);
     this.frame.setFillStyle(b.panic && blink ? 0xaa3344 : 0x3a3a4c);
