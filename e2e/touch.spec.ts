@@ -60,6 +60,8 @@ test("マウス: クリックで入れ替え、ドラッグで入れ替え。▲
   await page.waitForFunction(() => Boolean((window as any).__swaprise?.game));
   await page.waitForTimeout(200);
 
+  expect(await page.evaluate(() => (window as any).__swaprise.scene.views[0].cursor.visible)).toBe(true);
+
   // (1,1) と (2,1) の境目をクリック → 1回で入れ替わる
   const tapBefore = await kinds(page, 1, 2, 1);
   const c1 = await cellCenter(page, 1, 1);
@@ -188,6 +190,7 @@ test.describe("スマホ縦画面", () => {
     expect(await page.evaluate(() => (window as any).__swaprise.scene.touches[0].feedback))
       .toEqual({ x: 0, y: 0, targetX: 0 });
     await page.screenshot({ path: `${SHOT}/mobile-touch-selection.png` });
+    expect(await page.evaluate(() => (window as any).__swaprise.scene.views[0].cursor.visible)).toBe(false);
     await cdp.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [to] });
     expect(await page.evaluate(() => (window as any).__swaprise.scene.touches[0].feedback?.targetX)).toBe(4);
     await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });

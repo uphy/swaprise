@@ -1,6 +1,6 @@
 import Phaser from "phaser";
 import { Board, COLS, EMPTY, ROWS, TIMING, TOTAL_ROWS, isPanel, type BoardEvent } from "../core";
-import { BOARD_BG, BOARD_H, BOARD_W, CELL, FONT, TEXT_COLOR } from "./theme";
+import { BOARD_BG, BOARD_H, BOARD_W, CELL, FONT, TEXT_COLOR, isTouchDevice } from "./theme";
 import { audio } from "./shared";
 import { haptics } from "./haptics";
 import { DPR } from "./hidpi";
@@ -25,6 +25,7 @@ export class BoardView {
   private readonly cells: Phaser.GameObjects.Image[][] = [];
   private readonly nextCells: Phaser.GameObjects.Image[] = [];
   private readonly cursor: Phaser.GameObjects.Image;
+  private readonly showSwapCursor = !isTouchDevice();
   private readonly touchGfx: Phaser.GameObjects.Graphics;
   touch: TouchInput | null = null;
   private readonly bg: Phaser.GameObjects.Rectangle;
@@ -272,7 +273,8 @@ export class BoardView {
       img.setVisible(this.clip(img, py));
     }
     this.cursor.setPosition(b.cursor.x * CELL - 3, (ROWS - 1 - b.cursor.y) * CELL - rise - 3 + shake);
-    this.cursor.setVisible(!b.gameOver);
+    // タッチ端末は直接触れたパネルと移動先の枠を使う。
+    this.cursor.setVisible(!b.gameOver && this.showSwapCursor);
     this.touchGfx.clear();
     const selection = this.touch?.feedback;
     if (selection && !b.gameOver) {
