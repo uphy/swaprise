@@ -88,8 +88,17 @@ test("ランダム待機はキャンセルでき、2人揃うと自動で開始�
   const q = await b.newPage();
   await enter(p);
   await p.getByRole("button", { name: "FIND MATCH", exact: true }).click();
+  const oldQueue = await p.evaluateHandle(() => (window as any).__swapriseOnline.queue);
   await p.getByRole("button", { name: "CANCEL", exact: true }).click();
   await p.getByRole("button", { name: "FIND MATCH", exact: true }).click();
+  // キャンセルした接続の終了通知が、次の待機を始めた後に届く順序を再現する。
+  expect(await p.evaluate((old) => {
+    const scene = (window as any).__swapriseOnline;
+    const current = scene.queue;
+    old.onclose(new CloseEvent("close"));
+    return current !== null && scene.queue === current;
+  }, oldQueue)).toBe(true);
+  await oldQueue.dispose();
   await enter(q);
   await q.getByRole("button", { name: "FIND MATCH", exact: true }).click();
   await p.waitForFunction(

@@ -9,55 +9,84 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # ブランチ保護の必須 check は、分割した検証がすべて成功した場合だけ成功する。
   check:
+    if: always()
+    needs: [unit, e2e, e2e-online]
+    runs-on: ubuntu-latest
+    steps:
+      - name: すべての検証結果を確認
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+        run: |
+          echo "$RESULTS" | jq -e 'all(.[]; .result == "success")'
+
+  unit:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: pnpm/action-setup@v4
         with:
           version: 10
-
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: pnpm
-
       - run: pnpm install --frozen-lockfile
-
       - run: pnpm typecheck
-
       - run: pnpm test
 
-      - name: Playwright のブラウザをキャッシュ
-        id: pw-cache
-        uses: actions/cache@v4
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
         with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
-
-      - if: steps.pw-cache.outputs.cache-hit != 'true'
-        run: pnpm exec playwright install --with-deps chromium
-
-      - if: steps.pw-cache.outputs.cache-hit == 'true'
-        run: pnpm exec playwright install-deps chromium
-
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - uses: ./.github/actions/playwright
       - run: pnpm e2e
         env:
           CI: "1"
-
-      - run: pnpm e2e:online
-        env:
-          CI: "1"
-
       - name: 失敗したテストのスクリーンショットと trace を残す
         if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: e2e-results
-          path: |
-            test-results/
-            test-results-online/
+          path: test-results/
+          retention-days: 7
+
+  e2e-online:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - uses: ./.github/actions/playwright
+      # 各 runner で別々の Wrangler を起動するので、待機列も部屋も混ざらない。
+      - run: pnpm e2e:online --shard=${{ matrix.shard }}/3
+        env:
+          CI: "1"
+      - name: 失敗したテストのスクリーンショットと trace を残す
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-online-results-${{ matrix.shard }}
+          path: test-results-online/
           retention-days: 7
 
   # 普段の pnpm test に入れていない、CPU に何分も遊ばせるバランスの回帰テスト

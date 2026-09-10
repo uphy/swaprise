@@ -247,7 +247,7 @@ export class OnlineScene extends Phaser.Scene {
       version: GAME_VERSION,
       visible: String(!document.hidden),
     }).toString();
-    this.queue = new WebSocket(url);
+    const queue = this.queue = new WebSocket(url);
     this.waitingSince = Date.now();
     this.queue.onmessage = (e) => {
       const m = JSON.parse(e.data) as ServerMessage;
@@ -263,7 +263,8 @@ export class OnlineScene extends Phaser.Scene {
       );
     };
     this.queue.onclose = () => {
-      if (this.queue) {
+      // キャンセルした古い接続の通知で、次の待機を閉じない。
+      if (this.queue === queue) {
         this.cancelQueue();
         this.status.textContent =
           "Search ended. Check your connection or try again later.";
