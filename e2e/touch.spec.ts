@@ -60,6 +60,8 @@ test("マウス: クリックで入れ替え、ドラッグで入れ替え。▲
   await page.waitForFunction(() => Boolean((window as any).__swaprise?.game));
   await page.waitForTimeout(200);
 
+  expect(await page.evaluate(() => (window as any).__swaprise.scene.views[0].cursor.visible)).toBe(true);
+
   // (1,1) と (2,1) の境目をクリック → 1回で入れ替わる
   const tapBefore = await kinds(page, 1, 2, 1);
   const c1 = await cellCenter(page, 1, 1);
@@ -172,7 +174,33 @@ test.describe("スマホ縦画面", () => {
     userAgent: pixel.userAgent,
   });
 
-  test("縦レイアウトになり、タッチのタップ・ドラッグが効く", async ({ page }) => {
+  test("掴んだパネルと移動先を表示し、素早く離しても指定列まで届く", async ({ page }) => {
+    await page.goto("/?mode=endless&seed=7&bgm=0&countdown=0");
+    await page.waitForFunction(() => Boolean((window as any).__swaprise?.game));
+    await page.evaluate(() => {
+      const b = (window as any).__swaprise.game.boards[0];
+      b.noRise = true;
+      b.riseProgress = 0;
+      b.setColumns([[0], [1], [2], [3], [4], [0]]);
+    });
+    const from = await cellCenter(page, 0, 0);
+    const to = await cellCenter(page, 4, 0);
+    const cdp = await page.context().newCDPSession(page);
+    await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [from] });
+    expect(await page.evaluate(() => (window as any).__swaprise.scene.touches[0].feedback))
+      .toEqual({ x: 0, y: 0, targetX: 0 });
+    await page.screenshot({ path: `${SHOT}/mobile-touch-selection.png` });
+    expect(await page.evaluate(() => (window as any).__swaprise.scene.views[0].cursor.visible)).toBe(false);
+    await cdp.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [to] });
+    expect(await page.evaluate(() => (window as any).__swaprise.scene.touches[0].feedback?.targetX)).toBe(4);
+    await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+    await page.waitForFunction(() => {
+      const p = (window as any).__swaprise;
+      return p.game.boards[0].cell(4, 0).kind === 0 && p.scene.touches[0].feedback === null;
+    });
+  });
+
+  test("縦レイアウトになり、タップでは交換せず横ドラッグで交換する", async ({ page }) => {
     await page.goto("/?bgm=0&countdown=0");
     await page.waitForTimeout(500);
     await page.screenshot({ path: `${SHOT}/mobile-menu.png` });
@@ -189,16 +217,18 @@ test.describe("スマホ縦画面", () => {
     expect(size).toEqual({ w: 300, h: 611, backing: size.dpr, dpr: size.dpr });
     await page.screenshot({ path: `${SHOT}/mobile-endless.png` });
 
-    // (2,0) と (3,0) の境目をタップ → 1回で入れ替わる
+    // 境目や中央をタップしても交換せず、選択表示を解除する。
     const tapBefore = await kinds(page, 2, 3, 0);
+    const cursorBefore = await page.evaluate(() => ({ ...(window as any).__swaprise.game.boards[0].cursor }));
     const from = await cellCenter(page, 2, 0);
     const next = await cellCenter(page, 3, 0);
     await page.touchscreen.tap((from.x + next.x) / 2, from.y);
+    await page.touchscreen.tap(from.x, from.y);
     await page.waitForTimeout(150);
     const cursor = await page.evaluate(() => ({ ...(window as any).__swaprise.game.boards[0].cursor }));
-    expect(cursor).toEqual({ x: 2, y: 0 });
-    expect(await kinds(page, 2, 3, 0)).toEqual([tapBefore[1], tapBefore[0]]);
-    await page.waitForTimeout(1200); // タップで揃った場合の消去処理を待つ
+    expect(cursor).toEqual(cursorBefore);
+    expect(await kinds(page, 2, 3, 0)).toEqual(tapBefore);
+    expect(await page.evaluate(() => (window as any).__swaprise.scene.touches[0].feedback)).toBeNull();
 
     const before = await kinds(page, 2, 3, 0);
     const cdp = await page.context().newCDPSession(page);

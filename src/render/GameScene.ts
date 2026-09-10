@@ -119,12 +119,13 @@ export class GameScene extends Phaser.Scene {
       this.vsText = this.add.text(0, 0, "VS", { fontFamily: FONT, fontSize: "28px", color: "#9a9ab0" }).setOrigin(0.5);
     }
 
-    // タッチ・マウス操作。タップ・横ドラッグで入れ替え。どの端末でも受け付ける。CPU の盤面は触れない。
+    // タッチは横ドラッグ、マウスはクリック・横ドラッグで入れ替え。CPU の盤面は触れない。
     boards.forEach((b, i) => {
       if (!this.inputs[i]) return;
       const t = new TouchInput(this, b);
       this.touches.push(t);
       this.inputs[i].touch = t;
+      this.views[i].touch = t;
     });
     // 盤面の下の「▲ ▲ ▲」。押している間は手動せり上げで、せり上げ中（ボタン・2本指・キー・ゲームパッド）は明るくなる。
     // 当たり判定は余白（padding）で指の大きさ（44dp 以上）まで広げる。盤面の外の余白ならどこでもせり上がる操作は

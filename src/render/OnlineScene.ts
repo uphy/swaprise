@@ -617,6 +617,7 @@ export class OnlineScene extends Phaser.Scene {
     );
     this.playerInput = new PlayerInput(this, P1_KEYS, 0);
     this.touch = new TouchInput(this, this.prediction.game.boards[s.player]);
+    this.views[s.player].touch = this.touch;
     this.playerInput.touch = this.touch;
     this.raiseHint = this.add
       .text(0, 0, "▲ ▲ ▲", {

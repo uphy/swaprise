@@ -18,7 +18,7 @@ const JA: Record<string, string> = {
   "SOUND: {state}": "サウンド: {state}", "VIBRATION: {state}": "振動: {state}", "FULL SCREEN: {state}": "全画面: {state}",
   ON: "オン", OFF: "オフ", "Line up 3 or more of the same panel to clear them.": "同じパネルを3つ以上揃えると消えます。",
   "Chains and combos send garbage to the opponent.": "連鎖や同時消しで、おじゃまパネルを相手に送れます。",
-  "Swap: tap between two panels, or drag a panel sideways": "入れ替え: パネルの間をタップ、または横へドラッグ",
+  "Swap: drag a panel sideways. Tapping alone does not swap.": "入れ替え: パネルを横へドラッグ。タップだけでは入れ替わりません。",
   "Raise: hold ▲ ▲ ▲ under the board, or press the board with 2 fingers": "せり上げ: 盤面下の▲ ▲ ▲を長押し、または2本指で盤面を押す",
   "Pause: the ❚❚ button": "ポーズ: ❚❚ボタン", "Full screen: Share ▸ Add to Home Screen": "全画面: 共有 ▸ ホーム画面に追加",
   "P1: ←↑↓→ move   Z swap   X raise": "1P: ←↑↓→ 移動   Z 入れ替え   X せり上げ",
