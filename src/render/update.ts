@@ -1,4 +1,5 @@
 import { registerSW } from "virtual:pwa-register";
+import { t } from "./i18n";
 
 /**
  * Service Worker の更新を、遊んでいる最中に割り込ませないための仕組み。
@@ -60,7 +61,7 @@ function delay(ms: number): Promise<void> {
 async function apply(): Promise<void> {
   if (applying) return;
   applying = true;
-  showOverlay("UPDATING…");
+  showOverlay(t("UPDATING…"));
   await updateSW?.(true);
   await delay(RELOAD_FALLBACK_MS);
   window.location.reload();
@@ -90,7 +91,7 @@ export async function waitForUpdate(): Promise<void> {
     void registered.then((r) => { registration = r ?? null; });
     return;
   }
-  showOverlay("CHECKING FOR UPDATES…");
+  showOverlay(t("CHECKING FOR UPDATES…"));
   // 更新の確認。update() は sw.js の取得が終わると resolve し、新版があれば installing に入っている
   const checked = registered.then(async (r) => {
     registration = r ?? null;
