@@ -175,7 +175,7 @@ describe("おじゃまの送出と投下のタイミング", () => {
  * おじゃまの変身（原作の規則）。
  * 厚さ1段の板（同時消し・2連鎖）は、いくつ積み重なっていても1度の消去で全部が通常パネルになる。
  * 3連鎖以上の厚い板は1度の消去で最下段の1段だけが通常パネルになり、残りはおじゃまのまま。
- * 隣で消すたびに1段ずつ減る。変身の途中で全段が柄を見せてから上の段がおじゃまに戻るのも原作どおり。
+ * 隣で消すたびに1段ずつ減る。最下段を先に見せ、変身完了までは板の位置を保つ。
  */
 describe("おじゃまの変身", () => {
   function boardWithMatchReady(): Board {
@@ -198,6 +198,55 @@ describe("おじゃまの変身", () => {
     for (const g of b.garbage.values()) n += g.height;
     return n;
   }
+
+  it("厚い板は最下段の右から色を見せ、上段をめくる間もその場に留まる", () => {
+    const b = boardWithMatchReady();
+    place(b, 0, 1, 6, 3);
+    b.cursor.x = 2;
+    b.cursor.y = 0;
+    b.tick({ ...NO_INPUT, swap: true });
+    run(b, TIMING.swap);
+    const g = [...b.garbage.values()][0];
+    run(b, b.cell(5, 1).revealAt);
+    expect(b.cell(5, 1).revealAt).toBe(0);
+    expect(b.cell(4, 1).revealAt).toBeGreaterThan(0);
+    expect(b.cell(5, 2).revealAt).toBeGreaterThan(0);
+    run(b, b.cell(0, 1).revealAt);
+    for (let x = 0; x < 6; x++) {
+      expect(b.cell(x, 1).revealAt).toBeLessThanOrEqual(0);
+      expect(b.cell(x, 1).garbage).toBe(g.id);
+      expect(b.cell(x, 2).revealAt).toBeGreaterThan(0);
+    }
+    expect(g.y).toBe(1);
+    expect(g.state).toBe("transforming");
+  });
+
+  it.each([[1, 45], [50, 25]])("レベル%sの薄い板も全色公開から%sFは留まり、周囲を交換して準備できる", (level, delay) => {
+    const b = boardWithMatchReady();
+    b.raiseLevel(level);
+    place(b, 0, 1, 3, 1);
+    b.cursor.x = 2;
+    b.cursor.y = 0;
+    b.tick({ ...NO_INPUT, swap: true });
+    run(b, TIMING.swap);
+    const g = [...b.garbage.values()][0];
+    const colors = [0, 1, 2].map((x) => b.cell(x, 1).revealKind);
+    run(b, b.cell(0, 1).revealAt + delay);
+    expect(g.state).toBe("transforming");
+    expect(g.y).toBe(1);
+    b.cursor.x = 0;
+    b.cursor.y = 1;
+    expect(b.trySwap()).toBe(false); // 色が見えても板自体はまだ交換できない
+    b.cursor.x = 3;
+    b.cursor.y = 0;
+    const before = [b.cell(3, 0).kind, b.cell(4, 0).kind];
+    expect(b.trySwap()).toBe(true);
+    expect([b.cell(3, 0).kind, b.cell(4, 0).kind]).toEqual(before.reverse());
+    run(b, g.transformEnd);
+    expect(b.garbage.has(g.id)).toBe(false);
+    expect([0, 1, 2].map((x) => b.cell(x, 1).kind)).toEqual(colors);
+    expect([0, 1, 2].every((x) => b.cell(x, 1).chain)).toBe(true);
+  });
 
   it("厚さ1段の板は、積み重なっていても1度の消去で全部が通常パネルになる", () => {
     const b = boardWithMatchReady();
