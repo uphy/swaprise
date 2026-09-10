@@ -53,6 +53,17 @@ const JA: Record<string, string> = {
   "Surrender this match?": "この対戦を投了しますか？", "Leaving room…": "ルームから退出中…",
   "Could not leave yet. Check your connection and retry.": "まだ退出できません。接続を確認して再試行してください。",
   "P: pause   R: restart   Esc: menu   M: mute": "P: ポーズ   R: 再開   Esc: メニュー   M: 消音",
+  "Could not connect. Please retry.": "接続できませんでした。もう一度お試しください。", "Search ended. Check your connection and retry.": "検索が終了しました。接続を確認して再試行してください。",
+  "Joining room…": "ルームに参加中…", "CHECK PARTICIPATION": "参加状態を確認", "LEAVE ROOM": "ルームから退出",
+  "Waiting for your friend…": "友達の参加を待っています…", "{name} joined. Starting…": "{name} が参加しました。開始します…",
+  "The match continues while settings are open.": "設定を開いている間も対戦は続きます。", You: "あなた", Opponent: "相手", playing: "対戦中",
+  "NO CONTEST": "無効試合", YOU: "あなた", "YOU WIN!": "勝利!", "YOU LOSE": "敗北",
+  " (surrender)": "（投了）", " (disconnected)": "（切断）", " (time limit)": "（時間切れ）", " (out of sync)": "（同期ずれ）", " (connection error)": "（接続エラー）",
+  " · Waiting for a rematch…": " · 再戦待ち…", " · Opponent wants a rematch": " · 相手が再戦を希望しています",
+  "SHARE INVITE": "招待を共有", "LEAVE AND CONTINUE": "退出して続行", "Play SWAPRISE with me!": "SWAPRISEで一緒に遊ぼう!",
+  "Invite link copied.": "招待リンクをコピーしました。", "Could not share the invite.": "招待を共有できませんでした。", "Invite shared.": "招待を共有しました。",
+  SURRENDER: "投了", "YES, SURRENDER": "投了する", REMATCH: "再戦", "NEXT MATCH": "次の対戦",
+  "Could not leave the room. Return to the menu and try again.": "ルームから退出できませんでした。メニューに戻って再試行してください。",
 };
 
 export const language: Locale = locale;

@@ -418,7 +418,7 @@ export class OnlineScene extends Phaser.Scene {
     this.root.classList.remove("playing");
     this.actions.replaceChildren();
     this.status.textContent = t("Checking participation…");
-    void this.checkParticipation("Choose how to play.");
+    void this.checkParticipation(t("Choose how to play."));
   }
   private refresh(): void {
     const s = this.session;
@@ -429,10 +429,10 @@ export class OnlineScene extends Phaser.Scene {
       this.touch?.setEnabled(false);
       if (this.gameId) this.clearBoard();
       audio.stopBgm();
-      this.status.textContent = s.error || "Joining room…";
+      this.status.textContent = s.error || t("Joining room…");
       this.actions.replaceChildren();
-      this.button("CHECK PARTICIPATION", () => this.recoverSession());
-      this.button("BACK TO MENU", () => this.menu());
+      this.button(t("CHECK PARTICIPATION"), () => this.recoverSession());
+      this.button(t("BACK TO MENU"), () => this.menu());
       return;
     }
     if (state.phase !== this.phase) {
@@ -469,16 +469,16 @@ export class OnlineScene extends Phaser.Scene {
     if (s.error) this.status.textContent = s.error;
     else if (state.phase === "waiting")
       this.status.textContent = other
-        ? `${other.name} joined. Starting…`
-        : "Waiting for your friend…";
+        ? t("{name} joined. Starting…", { name: other.name })
+        : t("Waiting for your friend…");
     else if (state.phase === "countdown")
       this.status.textContent = `${Math.max(1, Math.ceil((state.startAt - Date.now()) / 1000))}…`;
     else if (state.phase === "suspended")
-      this.status.textContent = `Reconnecting… You ${Math.ceil((me?.grace ?? 0) / 1000)}s / Opponent ${Math.ceil((other?.grace ?? 0) / 1000)}s`;
+      this.status.textContent = `${t("Reconnecting…")} ${t("You")} ${Math.ceil((me?.grace ?? 0) / 1000)}s / ${t("Opponent")} ${Math.ceil((other?.grace ?? 0) / 1000)}s`;
     else if (state.phase === "playing")
       this.status.textContent = this.settings
-        ? "The match continues while settings are open."
-        : `${other?.name ?? "Opponent"} · playing${state.remaining <= 60000 ? ` · ${Math.ceil(state.remaining / 1000)}s` : ""}`;
+        ? t("The match continues while settings are open.")
+        : `${other?.name ?? t("Opponent")} · ${t("playing")}${state.remaining <= 60000 ? ` · ${Math.ceil(state.remaining / 1000)}s` : ""}`;
     else if (state.phase === "closed")
       this.status.textContent = t("The opponent left or the room closed.");
     else if (state.result) {
@@ -492,7 +492,7 @@ export class OnlineScene extends Phaser.Scene {
         desync: " (out of sync)",
         server: " (connection error)",
       };
-      this.status.textContent = `${invalid ? "NO CONTEST" : r.winner < 0 ? "DRAW" : r.winner === s.player ? "YOU WIN!" : "YOU LOSE"}${reasons[r.reason]}${me?.rematch ? " · Waiting for a rematch…" : other?.rematch ? " · Opponent wants a rematch" : ""}`;
+      this.status.textContent = `${invalid ? t("NO CONTEST") : r.winner < 0 ? t("DRAW") : r.winner === s.player ? t("YOU WIN!") : t("YOU LOSE")}${t(reasons[r.reason])}${me?.rematch ? t(" · Waiting for a rematch…") : other?.rematch ? t(" · Opponent wants a rematch") : ""}`;
       audio.stopBgm();
     }
     const key = [
@@ -506,55 +506,55 @@ export class OnlineScene extends Phaser.Scene {
     this.actionKey = key;
     this.actions.replaceChildren();
     if (s.error) {
-      this.button("CHECK PARTICIPATION", () => this.recoverSession());
-      this.button("LEAVE ROOM", () => this.menu());
+      this.button(t("CHECK PARTICIPATION"), () => this.recoverSession());
+      this.button(t("LEAVE ROOM"), () => this.menu());
       return;
     }
     if (state.phase === "waiting") {
       if (s.connection.invite)
-        this.button("SHARE INVITE", () => {
+        this.button(t("SHARE INVITE"), () => {
           void shareText(
-            `Play SWAPRISE with me!\n${location.origin}/?room=${s.connection.roomId}#invite=${s.connection.invite}`,
+            `${t("Play SWAPRISE with me!")}\n${location.origin}/?room=${s.connection.roomId}#invite=${s.connection.invite}`,
           ).then((result) => {
             this.status.textContent =
               result === "copied"
-                ? "Invite link copied."
+                ? t("Invite link copied.")
                 : result === "failed"
-                  ? "Could not share the invite."
-                  : "Invite shared.";
+                  ? t("Could not share the invite.")
+                  : t("Invite shared.");
           });
         });
-      this.button("LEAVE ROOM", () => this.menu());
+      this.button(t("LEAVE ROOM"), () => this.menu());
     } else if (state.phase === "playing" || state.phase === "suspended") {
       if (!this.settings && playing)
-        this.button("SETTINGS", () => {
+        this.button(t("SETTINGS"), () => {
           this.settings = true;
           this.playerInput?.reset();
           this.actionKey = "";
           this.refresh();
         });
       else {
-        this.button(`SOUND: ${audio.muted ? "OFF" : "ON"}`, () => {
+        this.button(t("SOUND: {state}", { state: t(audio.muted ? "OFF" : "ON") }), () => {
           audio.setMuted(!audio.muted);
           this.actionKey = "";
           this.refresh();
         });
         if (haptics.supported)
-          this.button(`VIBRATION: ${haptics.enabled ? "ON" : "OFF"}`, () => {
+          this.button(t("VIBRATION: {state}", { state: t(haptics.enabled ? "ON" : "OFF") }), () => {
             haptics.toggle();
             this.actionKey = "";
             this.refresh();
           });
-        this.button("RESUME", () => {
+        this.button(t("RESUME"), () => {
           this.settings = false;
           this.actionKey = "";
           this.refresh();
         });
-        this.button("SURRENDER", () => {
+        this.button(t("SURRENDER"), () => {
           this.actions.replaceChildren();
           this.status.textContent = t("Surrender this match?");
-          this.button("YES, SURRENDER", () => s.send({ type: "surrender" }));
-          this.button("BACK", () => {
+          this.button(t("YES, SURRENDER"), () => s.send({ type: "surrender" }));
+          this.button(t("BACK"), () => {
             this.actionKey = "";
             this.refresh();
           });
@@ -562,18 +562,18 @@ export class OnlineScene extends Phaser.Scene {
       }
     } else if (state.phase === "result") {
       if (other?.connected && !me?.rematch)
-        this.button("REMATCH", () => s.send({ type: "rematch" }));
+        this.button(t("REMATCH"), () => s.send({ type: "rematch" }));
       if (state.kind === "random")
-        this.button("NEXT MATCH", () => {
+        this.button(t("NEXT MATCH"), () => {
           this.actions.replaceChildren();
           this.status.textContent = t("Leaving room…");
           void s.leaveAndWait().then((released) => {
             if (this.closing) return;
             if (!released) {
               this.status.textContent =
-                "Could not leave the room. Return to the menu and try again.";
+                t("Could not leave the room. Return to the menu and try again.");
               this.actions.replaceChildren();
-              this.button("BACK TO MENU", () => this.menu());
+              this.button(t("BACK TO MENU"), () => this.menu());
               return;
             }
             this.session = null;
@@ -583,9 +583,9 @@ export class OnlineScene extends Phaser.Scene {
             );
           });
         });
-      this.button("BACK TO MENU", () => this.menu());
+      this.button(t("BACK TO MENU"), () => this.menu());
     } else if (state.phase === "closed")
-      this.button("BACK TO MENU", () => this.menu());
+      this.button(t("BACK TO MENU"), () => this.menu());
   }
   private clearBoard(): void {
     this.playerInput?.destroy();
@@ -610,7 +610,7 @@ export class OnlineScene extends Phaser.Scene {
           this,
           b,
           i === s.player
-            ? "YOU"
+            ? t("YOU")
             : this.boardName(s.state?.seats[i]?.name ?? "Guest"),
           i === s.player,
         ),
@@ -654,8 +654,8 @@ export class OnlineScene extends Phaser.Scene {
     const invalid = r.reason === "desync" || r.reason === "server";
     this.views.forEach((view, i) => {
       const b = view.board;
-      const title = invalid ? "NO CONTEST" : r.winner < 0 ? "DRAW" : r.winner === i ? "WIN" : "LOSE";
-      view.showOverlay(title, `MAX CHAIN x${b.maxChain}\nCOMBOS ${b.stats.combos}  CHAINS ${b.stats.chains}`);
+      const title = invalid ? t("NO CONTEST") : r.winner < 0 ? t("DRAW") : r.winner === i ? t("WIN") : t("LOSE");
+      view.showOverlay(title, `${t("MAX CHAIN")} x${b.maxChain}\n${t("COMBOS")} ${b.stats.combos}  ${t("CHAINS")} ${b.stats.chains}`);
     });
   }
   private boardName(name: string): string {
@@ -706,8 +706,8 @@ export class OnlineScene extends Phaser.Scene {
       if (left) finish();
       else {
         this.status.textContent = t("Could not leave yet. Check your connection and retry.");
-        this.button("RETRY", () => this.menu());
-        this.button("BACK TO MENU", finish);
+        this.button(t("RETRY"), () => this.menu());
+        this.button(t("BACK TO MENU"), finish);
       }
     });
   }
