@@ -678,7 +678,7 @@ export class Board {
       x >= 0 && y >= 0 && converting.has(y * COLS + x) ? this.cells[y][x].revealKind : EMPTY;
     for (const g of blocks) {
       g.state = "transforming";
-      let i = 0;
+      // 色の抽選順は保ち、見せる時刻だけ下→上・右→左にする。
       for (let r = g.y + g.height - 1; r >= g.y; r--) {
         for (let c = g.x; c < g.x + g.width; c++) {
           const cell = this.cells[r][c];
@@ -695,11 +695,11 @@ export class Board {
           } else {
             cell.revealKind = this.randomKind();
           }
-          cell.revealAt = TIMING.transformFlash + i * TIMING.transformInterval;
-          i++;
+          const revealIndex = (r - g.y) * g.width + (g.x + g.width - 1 - c);
+          cell.revealAt = TIMING.transformFlash + revealIndex * TIMING.transformInterval;
         }
       }
-      g.transformEnd = TIMING.transformFlash + i * TIMING.transformInterval + clearTiming(this.level).transformHover;
+      g.transformEnd = TIMING.transformFlash + g.width * g.height * TIMING.transformInterval + clearTiming(this.level).transformHover;
       this.emit({ type: "garbageTransform", id: g.id });
     }
   }

@@ -249,8 +249,11 @@ export class BoardView {
           key = g?.type === "shock" ? "garbage-shock" : "garbage";
           if (g?.state === "falling") dy = (g.fallTimer / TIMING.fallPerRow) * CELL;
           if (g?.state === "transforming") {
-            if (cell.revealAt <= 0 && cell.revealKind !== EMPTY) key = `panel-${cell.revealKind}`;
-            else if (blink) key = "white";
+            // 色が見えるのは通常パネルになる最下段だけ。
+            // 上段はめくり順が来るまで点滅し、その後もおじゃまの姿を保つ。
+            if (cell.revealAt <= 0) {
+              if (r === g.y && cell.revealKind !== EMPTY) key = `panel-${cell.revealKind}`;
+            } else if (blink) key = "white";
           }
         }
         img.setTexture(key);

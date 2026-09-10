@@ -44,8 +44,8 @@ export const TIMING = {
   transformFlash: 60,
   /** 変身で1マスずつパネル柄が現れる間隔。 */
   transformInterval: 10,
-  /** 変身完了後、落ちてくるまでの間隔（難易度で変わる）。 */
-  transformHover: 30,
+  /** 全マスのめくり演出後、通常パネルへ変換するまでの猶予（難易度で変わる）。 */
+  transformHover: 45,
   /** 手動せり上げで1段上がるのにかかるフレーム数。 */
   manualRisePerRow: 4,
   /** 天井に触れてからゲームオーバーになるまでの猶予。 */
@@ -96,7 +96,7 @@ export function clearTiming(level: number): ClearTiming {
     popInterval: lerp(TIMING.popInterval, 5),
     hoverClear: lerp(TIMING.hoverClear, 8),
     hoverSwap: lerp(TIMING.hoverSwap, 4),
-    transformHover: lerp(TIMING.transformHover, 12),
+    transformHover: lerp(TIMING.transformHover, 24),
   };
 }
 
