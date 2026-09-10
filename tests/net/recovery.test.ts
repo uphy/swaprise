@@ -250,3 +250,24 @@ it("待機キャンセルとマッチ成立が重なっても同じ待機から�
   expect((await post("/api/online/leave", { queueId: "queue" })).status).toBe(200);
   expect(values.has("active:user")).toBe(false);
 });
+it("待機列へ接続する前に旧版の拒否理由をHTTPで取得できる", async () => {
+  const { post } = recoveringCoordinator();
+  const response = await post("/api/queue/status", { version: "outdated" });
+  expect(response.status).toBe(409);
+  expect((await response.json()).code).toBe("UPDATE_REQUIRED");
+});
+it("待機列の事前確認で既存の参加状態を区別できる", async () => {
+  const { post } = recoveringCoordinator();
+  const response = await post("/api/queue/status", { version: GAME_VERSION });
+  expect(response.status).toBe(409);
+  expect((await response.json()).code).toBe("PARTICIPATION_EXISTS");
+});
+it("日次上限によるランダム対戦の拒否と通常の受付を区別する", async () => {
+  const { post, values } = recoveringCoordinator();
+  values.delete("active:user");
+  expect((await post("/api/queue/status", { version: GAME_VERSION })).status).toBe(200);
+  values.set("budget:" + new Date().toISOString().slice(0, 10), { requests: 50000, writes: 50000, duration: 1, rooms: 1, starts: [] });
+  const response = await post("/api/queue/status", { version: GAME_VERSION });
+  expect(response.status).toBe(429);
+  expect((await response.json()).code).toBe("DAILY_LIMIT");
+});

@@ -12,6 +12,7 @@ import { wakeLock } from "./wakelock";
 import { shareText } from "./share";
 import {
   OnlineSession,
+  ApiError,
   api,
   savedConnection,
   leaveParticipation,
@@ -38,6 +39,7 @@ export class OnlineScene extends Phaser.Scene {
   private gameId = "";
   private accumulator = 0;
   private queue: WebSocket | null = null;
+  private queueAttempt = 0;
   private queueId: string | null = null;
   private queueTimer: ReturnType<typeof setInterval> | null = null;
   private waitingSince = 0;
@@ -294,6 +296,39 @@ export class OnlineScene extends Phaser.Scene {
     this.button("BACK TO MENU", () => this.menu());
   }
   private startQueue(name: string): void {
+    const attempt = ++this.queueAttempt;
+    this.status.textContent = "Checking matchmaking…";
+    this.actions.replaceChildren();
+    this.button("CANCEL", () => { this.cancelQueue(); this.choose(null, null); });
+    void api("queue/status", { version: GAME_VERSION }).then(() => {
+      if (!this.closing && this.queueAttempt === attempt) this.openQueue(name);
+    }).catch((error) => {
+      if (!this.closing && this.queueAttempt === attempt) this.queueFailure(error);
+    });
+  }
+  private queueFailure(error: unknown): void {
+    if (error instanceof ApiError && error.code === "UPDATE_REQUIRED") {
+      this.status.textContent = error.message;
+      this.actions.replaceChildren();
+      this.button("RELOAD", () => location.reload());
+      this.button("BACK TO MENU", () => this.menu());
+      return;
+    }
+    void this.checkParticipation(error instanceof Error ? error.message : "Could not connect. Please retry.");
+  }
+  private async explainQueueClose(message: string): Promise<void> {
+    const epoch = this.epoch;
+    const attempt = this.queueAttempt;
+    try {
+      // Upgradeのエラー本文はブラウザから読めないのでHTTPで同じ条件を確認する。
+      await api("queue/status", { version: GAME_VERSION });
+      if (!this.closing && this.epoch === epoch && this.queueAttempt === attempt)
+        void this.checkParticipation(message);
+    } catch (error) {
+      if (!this.closing && this.epoch === epoch && this.queueAttempt === attempt) this.queueFailure(error);
+    }
+  }
+  private openQueue(name: string): void {
     this.actions.replaceChildren();
     this.button("CANCEL", () => {
       const queueId = this.queueId;
@@ -313,6 +348,7 @@ export class OnlineScene extends Phaser.Scene {
     }).toString();
     const queue = this.queue = new WebSocket(url);
     this.waitingSince = Date.now();
+    let queueError = "Search ended. Check your connection and retry.";
     this.queue.onmessage = (e) => {
       if (this.closing || this.queue !== queue) return;
       const m = JSON.parse(e.data) as ServerMessage;
@@ -323,7 +359,7 @@ export class OnlineScene extends Phaser.Scene {
         this.waitingSince = m.since;
         this.queueId = m.queueId ?? null;
       }
-      else if (m.type === "error") this.status.textContent = m.message;
+      else if (m.type === "error") this.status.textContent = queueError = m.message;
     };
     this.queue.onopen = () => {
       this.queue?.send(
@@ -334,7 +370,7 @@ export class OnlineScene extends Phaser.Scene {
       // キャンセルした古い接続で次の待機を閉じない。
       if (!this.closing && this.queue === queue) {
         this.cancelQueue();
-        void this.checkParticipation("Search ended. You can try again.");
+        void this.explainQueueClose(queueError);
       }
     };
     let lastPing = 0;
@@ -350,6 +386,7 @@ export class OnlineScene extends Phaser.Scene {
     }, 1000);
   }
   private cancelQueue(): void {
+    this.queueAttempt++;
     const q = this.queue;
     this.queue = null;
     this.queueId = null;

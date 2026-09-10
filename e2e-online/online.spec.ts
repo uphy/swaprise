@@ -88,9 +88,11 @@ test("ランダム待機はキャンセルでき、2人揃うと自動で開始�
   const q = await b.newPage();
   await enter(p);
   await p.getByRole("button", { name: "FIND MATCH", exact: true }).click();
+  await p.waitForFunction(() => (window as any).__swapriseOnline?.queue?.readyState === WebSocket.OPEN);
   const oldQueue = await p.evaluateHandle(() => (window as any).__swapriseOnline.queue);
   await p.getByRole("button", { name: "CANCEL", exact: true }).click();
   await p.getByRole("button", { name: "FIND MATCH", exact: true }).click();
+  await p.waitForFunction(() => (window as any).__swapriseOnline?.queue?.readyState === WebSocket.OPEN);
   // キャンセルした接続の終了通知が、次の待機を始めた後に届く順序を再現する。
   expect(await p.evaluate((old) => {
     const scene = (window as any).__swapriseOnline;
@@ -367,6 +369,7 @@ test("ランダム待機中の同じセッションは招待部屋を作れな�
   await expect(
     page.getByRole("button", { name: "CANCEL", exact: true }),
   ).toBeVisible();
+  await page.waitForFunction(() => (window as any).__swapriseOnline?.queue?.readyState === WebSocket.OPEN);
   const status = await page.evaluate(async (version) => {
     const response = await fetch("/api/rooms", {
       method: "POST",

@@ -53,6 +53,18 @@ export class Coordinator extends DurableObject<Env> {
       queueId: queueId ?? (previous?.roomId === roomId && (!token || previous.token === token) ? previous.queueId : undefined),
     });
   }
+  private async queueRejection(session: string, version: unknown, budget: Budget): Promise<Response | null> {
+    if (version !== GAME_VERSION)
+      return json({ code: "UPDATE_REQUIRED", error: "Please reload to update the game." }, 409);
+    if ((await this.active(session)) || this.ctx.getWebSockets().some((ws) =>
+      ws.readyState === WebSocket.OPEN && ws.deserializeAttachment()?.session === session))
+      return json({ code: "PARTICIPATION_EXISTS", error: "You have an existing room or search. Check your participation to continue." }, 409);
+    if (!reserve(structuredClone(budget), "check", "random"))
+      return json({ code: "DAILY_LIMIT", error: "Daily matchmaking limit reached. Try again after 00:00 UTC, or invite a friend if available." }, 429);
+    if (this.ctx.getWebSockets().filter((ws) => ws.readyState === WebSocket.OPEN).length >= 20)
+      return json({ code: "SERVER_BUSY", error: "Server busy. Try again later." }, 429);
+    return null;
+  }
   async fetch(req: Request): Promise<Response> {
     return this.run(() => this.handle(req));
   }
@@ -175,28 +187,23 @@ export class Coordinator extends DurableObject<Env> {
         resetAt: Date.parse(dayKey(Date.now() + 86400000) + "T00:00:00Z"),
       });
     }
+    if (u.pathname === "/api/queue/status" && req.method === "POST") {
+      const body = await req.text();
+      if (body.length > 4096) return json({ error: "Request too large." }, 413);
+      const data = JSON.parse(body || "{}");
+      return await this.queueRejection(session, data.version, budget) ?? json({ ok: true });
+    }
     if (budget.requests >= 60000 || budget.writes >= 60000)
       return json(
-        { error: "Daily limit reached. Resets at 00:00 UTC." },
+        { code: "DAILY_LIMIT", error: "Daily limit reached. Resets at 00:00 UTC." },
         429,
       );
     if (
       u.pathname === "/api/queue/ws" &&
       req.headers.get("Upgrade") === "websocket"
     ) {
-      if (u.searchParams.get("version") !== GAME_VERSION)
-        return json({ error: "Please reload to update the game." }, 409);
-      if (!reserve(structuredClone(budget), "check", "random"))
-        return json({ error: "Daily matchmaking limit reached. Try again after 00:00 UTC." }, 429);
-      if (
-        (await this.active(session)) ||
-        this.ctx
-          .getWebSockets()
-          .some((ws) => ws.readyState === WebSocket.OPEN && ws.deserializeAttachment()?.session === session)
-      )
-        return json({ error: "You are already in a match or queue." }, 409);
-      if (this.ctx.getWebSockets().length >= 20)
-        return json({ error: "Server busy. Try again later." }, 429);
+      const rejection = await this.queueRejection(session, u.searchParams.get("version"), budget);
+      if (rejection) return rejection;
       const pair = new WebSocketPair();
       const ws = pair[1];
       this.ctx.acceptWebSocket(ws);

@@ -12,6 +12,9 @@ export interface Connection {
   token: string;
   invite?: string;
 }
+export class ApiError extends Error {
+  constructor(message: string, readonly code?: string) { super(message); }
+}
 export async function api(path: string, data: unknown = {}): Promise<any> {
   const response = await fetch("/api/" + path, {
     method: "POST",
@@ -20,7 +23,7 @@ export async function api(path: string, data: unknown = {}): Promise<any> {
     signal: AbortSignal.timeout(8000),
   });
   const body = await response.json();
-  if (!response.ok) throw new Error(body.error ?? "Could not connect.");
+  if (!response.ok) throw new ApiError(body.error ?? "Could not connect.", body.code);
   return body;
 }
 export const savedConnection = (): Connection | null => {

@@ -135,3 +135,25 @@ test("退出できない通信状態でもメニューへ戻れ、再入場時�
   await expect(page.getByRole("button", { name: "INVITE FRIEND", exact: true })).toBeVisible();
   expect(await page.evaluate(() => sessionStorage.getItem("swaprise.pending-leave.v1"))).toBeNull();
 });
+test("FIND MATCHが旧版で拒否されたら更新ボタンを表示する", async ({ page }) => {
+  await online(page);
+  await page.route("**/api/queue/status", (route) => route.fulfill({
+    status: 409, contentType: "application/json",
+    body: JSON.stringify({ code: "UPDATE_REQUIRED", error: "Please reload to update the game." }),
+  }));
+  await page.getByRole("button", { name: "FIND MATCH", exact: true }).click();
+  await expect(page.getByRole("status")).toHaveText("Please reload to update the game.");
+  await expect(page.getByRole("button", { name: "RELOAD", exact: true })).toBeVisible();
+  expect(await page.evaluate(() => (window as any).__swapriseOnline.queue)).toBeNull();
+});
+test("FIND MATCHの日次上限を明示し、利用可能な招待対戦へ進める", async ({ page }) => {
+  await online(page);
+  await page.route("**/api/queue/status", (route) => route.fulfill({
+    status: 429, contentType: "application/json",
+    body: JSON.stringify({ code: "DAILY_LIMIT", error: "Daily matchmaking limit reached. Try again after 00:00 UTC, or invite a friend if available." }),
+  }));
+  await page.getByRole("button", { name: "FIND MATCH", exact: true }).click();
+  await expect(page.getByRole("status")).toContainText("Daily matchmaking limit reached");
+  await page.getByRole("button", { name: "INVITE FRIEND", exact: true }).click();
+  await expect(page.getByRole("button", { name: "SHARE INVITE" })).toBeVisible();
+});
