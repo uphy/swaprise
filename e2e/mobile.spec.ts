@@ -296,7 +296,13 @@ test("SETTINGS の FULL SCREEN ボタンで全画面の希望が保存され、�
   expect(btn!.text).toBe("FULL SCREEN: OFF");
   const at = { x: btn!.x, y: btn!.y };
   await page.touchscreen.tap(at.x, at.y);
-  await page.waitForTimeout(300);
+  // Fullscreen API の完了と表示の更新は別なので、両方が揃うまで待つ。
+  await page.waitForFunction(() => {
+    const scene = (window as any).__swapriseScenes.menu;
+    const button = scene.children.getByName("settings-panel").list.find((o: any) => o.name === "fullscreen");
+    return localStorage.getItem("swaprise.fullscreen.v1") === "1" &&
+      Boolean(document.fullscreenElement) && button.text === "FULL SCREEN: ON";
+  });
   const on = await page.evaluate(() => ({
     stored: localStorage.getItem("swaprise.fullscreen.v1"),
     active: Boolean(document.fullscreenElement),
@@ -306,7 +312,7 @@ test("SETTINGS の FULL SCREEN ボタンで全画面の希望が保存され、�
   // headless でも Fullscreen API は通る。通ったならボタンの表示が ON に変わる
   if (on.active) expect(on.text).toBe("FULL SCREEN: ON");
   await page.touchscreen.tap(at.x, at.y);
-  await page.waitForTimeout(300);
+  await page.waitForFunction(() => localStorage.getItem("swaprise.fullscreen.v1") === "0" && !document.fullscreenElement);
   const off = await page.evaluate(() => ({ stored: localStorage.getItem("swaprise.fullscreen.v1"), active: Boolean(document.fullscreenElement) }));
   expect(off).toEqual({ stored: "0", active: false });
 });

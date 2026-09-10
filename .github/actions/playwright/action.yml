@@ -1,0 +1,16 @@
+name: Playwright の準備
+description: ブラウザのキャッシュと Chromium の実行に必要な依存関係を準備する
+runs:
+  using: composite
+  steps:
+    - uses: actions/cache@v4
+      id: browser-cache
+      with:
+        path: ~/.cache/ms-playwright
+        key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+    - if: steps.browser-cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: pnpm exec playwright install --with-deps chromium
+    - if: steps.browser-cache.outputs.cache-hit == 'true'
+      shell: bash
+      run: pnpm exec playwright install-deps chromium
