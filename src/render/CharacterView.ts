@@ -272,9 +272,9 @@ export class CharacterView {
       }
       this.caption.setText(p.fallback ? labelAction : "");
     } else {
-      // 代替表示。色の札に名前。読み込み中も同じ札を出す
+      // 選択画面では読み込み中も代替の札を出さず、立ち絵を待つ。
       this.image.setVisible(false);
-      this.card.setVisible(true);
+      this.card.setVisible(!this.opts.portrait);
       const w = Math.max(40, this.height * 0.5);
       this.cardBg.setSize(w, this.height).setPosition(0, -this.height / 2);
       this.cardName.setPosition(0, -this.height / 2).setFontSize(Math.max(9, Math.min(16, Math.round(w / 3.2))));

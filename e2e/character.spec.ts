@@ -195,3 +195,28 @@ test("人物を替えても同じ seed と入力列なら盤面と得点は同�
   expect(b).toEqual(a);
   expect((a as [number, number, string][])[1][1]).toBeGreaterThan(0);
 });
+
+
+test.describe("立ち絵の読み込み", () => {
+  test.use({ serviceWorkers: "block" });
+  test("人物選択は画像の読み込み中に代替の名前札を表示しない", async ({ page }) => {
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => { release = resolve; });
+    await page.route(/\.(png|webp)(\?.*)?$/, async (route) => {
+      await gate;
+      await route.continue();
+    });
+    await page.goto("/?bgm=0");
+    await page.waitForFunction(() => Boolean((window as any).__swapriseScenes?.menu));
+    await press(page, "ArrowDown", "ArrowDown", "Enter");
+    await page.waitForFunction(() => Boolean((window as any).__swapriseScenes.menu.charPicker));
+    try {
+      const state = await page.evaluate(() => (window as any).__swapriseScenes.menu.charPicker.views.map((v: any) => ({ image: v.image.visible, card: v.card.visible })));
+      expect(state).toEqual([{ image: false, card: false }, { image: false, card: false }]);
+      expect((await pickerState(page)).names).toEqual(["ニカ", "ピリカ"]);
+    } finally {
+      release();
+    }
+    await page.waitForFunction(() => (window as any).__swapriseScenes.menu.charPicker.views.every((v: any) => v.image.visible && !v.card.visible));
+  });
+});
