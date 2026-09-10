@@ -314,8 +314,8 @@ export class GameScene extends Phaser.Scene {
       const avail = H - 8 - colTop;
       const cpuH = clamp(avail * 0.36, 56, 110);
       const meH = clamp(avail * 0.5, 64, 150);
-      this.characters[1]?.place(colX, colTop + cpuH, cpuH);
-      this.characters[0]?.place(colX, Math.min(H - 14, colTop + cpuH + 16 + meH), meH);
+      this.characters[1]?.place(colX, colTop + cpuH, cpuH, cpuW);
+      this.characters[0]?.place(colX, Math.min(H - 14, colTop + cpuH + 16 + meH), meH, cpuW);
     } else {
       const gap = L.portrait ? 20 : 120;
       const ox1 = Math.floor(W / 2 - gap / 2 - BOARD_W);

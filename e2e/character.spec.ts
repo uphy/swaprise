@@ -199,6 +199,62 @@ test("人物を替えても同じ seed と入力列なら盤面と得点は同�
 
 test.describe("立ち絵の読み込み", () => {
   test.use({ serviceWorkers: "block" });
+  test("低速回線でも待機を優先し、反応の読み込み中は名前札に戻らない", async ({ page }) => {
+    let releaseIdle!: () => void;
+    let releaseRest!: () => void;
+    const idleGate = new Promise<void>((r) => { releaseIdle = r; });
+    const restGate = new Promise<void>((r) => { releaseRest = r; });
+    const idleUrls = new Set<string>();
+    const requests: string[] = [];
+    await page.route(/\/characters\/.*\.(png|webp)$/, async (route) => {
+      requests.push(route.request().url());
+      await idleGate;
+      if (!idleUrls.has(route.request().url())) await restGate;
+      await route.continue();
+    });
+    try {
+      await page.goto("/?mode=versus&p1=nika&p2=pirika&bgm=0&countdown=0");
+      await page.waitForFunction(() => (window as any).__swaprise?.scene.characters.length === 2);
+      const initial = await page.evaluate(() => {
+        const s = (window as any).__swaprise.scene;
+        s.paused = true;
+        return s.characters.map((c: any) => ({
+          idle: new URL(c.character.assets.idle.image, location.href).href,
+          card: c.card.visible, caption: c.caption.text,
+        }));
+      });
+      for (const c of initial) {
+        idleUrls.add(c.idle);
+        expect(c.card).toBe(false);
+        expect(c.caption).toBe("");
+      }
+      expect(requests.every((url) => idleUrls.has(url))).toBe(true);
+      releaseIdle();
+      await page.waitForFunction(() => (window as any).__swaprise.scene.characters.every((c: any) => c.image.visible && !c.fallback));
+      const fallback = await page.evaluate(() => (window as any).__swaprise.scene.characters.map((c: any) => {
+        c.update(200);
+        const frame = c.playing.frame;
+        c.react("success");
+        return { action: c.action, card: c.card.visible, key: c.image.texture.key, expected: `char:${c.character.assets.idle.id}`, frame: c.playing.frame, previous: frame };
+      }));
+      for (const c of fallback) {
+        expect(c.action).toBe("success");
+        expect(c.card).toBe(false);
+        expect(c.key).toBe(c.expected);
+        expect(c.frame).toBe(c.previous);
+      }
+      // 短い反応が終わった後に届いても、過去の成功動作を再生しない。
+      await page.evaluate(() => (window as any).__swaprise.scene.characters.forEach((c: any) => {
+        for (let i = 0; i < 4; i++) c.update(200);
+      }));
+      releaseRest();
+      await page.waitForFunction(() => (window as any).__swaprise.scene.characters.every((c: any) => c.scene.textures.exists(`char:${c.character.assets.success.id}`)));
+      expect((await characters(page)).map((c) => c.action)).toEqual(["idle", "idle"]);
+    } finally {
+      releaseIdle();
+      releaseRest();
+    }
+  });
   test("人物選択は画像の読み込み中に代替の名前札を表示しない", async ({ page }) => {
     let release!: () => void;
     const gate = new Promise<void>((resolve) => { release = resolve; });
@@ -232,7 +288,8 @@ for (const [p1, p2] of [["nika", "mito"], ["sena", "rocca"], ["yuno", "baro"], [
       const cs = (window as any).__swaprise?.scene.characters;
       return cs?.length === 2 && cs.every((c: any) => !c.fallback && c.image.visible && c.image.texture.key.startsWith("char:"));
     });
-    await page.evaluate(() => (window as any).__swaprise.scene.scene.pause());
+    // 試合と人物だけ止め、段階的な素材ロードは動かしておく。
+    await page.evaluate(() => { (window as any).__swaprise.scene.paused = true; });
     for (const action of ["idle", "danger", "success", "garbage-land", "victory", "defeat", "finish"]) {
       await page.waitForFunction((a) => (window as any).__swaprise.scene.characters.every((c: any) => {
         const asset = c.character.assets[a];
@@ -244,8 +301,46 @@ for (const [p1, p2] of [["nika", "mito"], ["sena", "rocca"], ["yuno", "baro"], [
         return { visible: image.visible, key: image.texture.key, width: image.frame.width, height: image.frame.height };
       }), action);
       expect(states.every((s: any) => s.visible && s.key.startsWith("char:") && s.width > 0 && s.height > 0)).toBe(true);
+      const outside = await page.evaluate(() => {
+        const p = (window as any).__swaprise;
+        const failures: string[] = [];
+        for (const c of p.scene.characters) {
+          const playing = c.playing;
+          for (let i = 0; i < (playing.asset?.frameCount ?? 1); i++) {
+            playing.frame = i;
+            c.layout();
+            const r = c.image.getBounds();
+            if (r.left < 0 || r.right > p.layout.width || r.top < 0 || r.bottom > p.layout.height) {
+              failures.push(`${c.character.id} ${playing.action} frame ${i}: ${JSON.stringify(r)}`);
+            }
+          }
+        }
+        return failures;
+      });
+      expect(outside).toEqual([]);
     }
-    await page.evaluate(() => (window as any).__swaprise.scene.characters.forEach((c: any) => c.restart("idle")));
+    await page.setViewportSize({ width: 412, height: 839 });
+    await page.waitForFunction(() => (window as any).__swaprise.layout.portrait);
+    const mobileOutside = await page.evaluate(() => {
+      const p = (window as any).__swaprise;
+      const failures: string[] = [];
+      for (const c of p.scene.characters) {
+        for (const action of ["idle", "danger", "success", "garbage-land", "victory", "defeat", "finish"]) {
+          c.restart(action);
+          for (let i = 0; i < (c.playing.asset?.frameCount ?? 1); i++) {
+            c.playing.frame = i;
+            c.layout();
+            const r = c.image.getBounds();
+            if (r.left < 0 || r.right > p.layout.width || r.top < 0 || r.bottom > p.layout.height) {
+              failures.push(`${c.character.id} ${action} frame ${i}: ${JSON.stringify(r)}`);
+            }
+          }
+        }
+        c.restart("idle");
+      }
+      return failures;
+    });
+    expect(mobileOutside).toEqual([]);
     await page.screenshot({ path: `${SHOT}/characters-${p1}-${p2}.png` });
     expect(failures).toEqual([]);
   });
