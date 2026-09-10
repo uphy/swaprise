@@ -24,7 +24,7 @@ export const TIMING = {
   /** 入れ替えで空中に出たパネルが落ち始めるまでの猶予。 */
   hoverSwap: 12,
   /** 消えたパネルの上に乗っていたパネルが落ち始めるまでの猶予。ここでアクティブ連鎖を仕込む。 */
-  hoverClear: 12,
+  hoverClear: 18,
   /** おじゃまパネルが落ち始めるまでの猶予。 */
   hoverGarbage: 6,
   /** 1段落ちるのにかかるフレーム数。 */
@@ -54,7 +54,7 @@ export const TIMING = {
    * 連鎖フラグ付きのパネルが着地して揃わなかったあと、フラグを保つフレーム数。
    * この間に隣を入れ替えて揃えれば連鎖として数える。原作にはない緩和で、連鎖を少し作りやすくする。
    */
-  chainGrace: 8,
+  chainGrace: 12,
   /** おじゃま着地時の揺れ。厚さ1段あたりのフレーム数。 */
   shakePerRow: 8,
   /**
@@ -94,7 +94,7 @@ export function clearTiming(level: number): ClearTiming {
     flash: lerp(TIMING.flash, 28),
     face: lerp(TIMING.face, 10),
     popInterval: lerp(TIMING.popInterval, 5),
-    hoverClear: lerp(TIMING.hoverClear, 4),
+    hoverClear: lerp(TIMING.hoverClear, 8),
     hoverSwap: lerp(TIMING.hoverSwap, 4),
     transformHover: lerp(TIMING.transformHover, 12),
   };

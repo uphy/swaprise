@@ -189,7 +189,7 @@ describe("連鎖", () => {
     expect(b.cell(1, 1).kind).toBe(EMPTY);
   });
 
-  it("連鎖フラグ付きのパネルが着地した直後に隣を入れ替えて揃えると連鎖になる", () => {
+  it.each([2, 8])("連鎖パネルの着地から%sフレーム後でも、隣を入れ替えて揃えると連鎖になる", (delay) => {
     const b = emptyBoard();
     // col0 の 4 を右へ抜くと 0 0 0 が縦に揃い、上の 1 が row 0 まで落ちる。
     // 着地時点で row 0 は 1 1 2 1 なので揃わないが、猶予内に (2,0) と (3,0) を入れ替えると 1 1 1 になる。
@@ -203,12 +203,30 @@ describe("連鎖", () => {
     }
     expect(landed).toBe(true);
     expect(b.cell(0, 0).kind).toBe(1);
-    // 着地から2フレーム後に入れ替える
-    run(b, 2);
+    run(b, delay);
     moveCursor(b, 2, 0);
     events.push(...press(b, { swap: true }, 30));
     const m = matches(events);
     expect(m.map((e) => e.chain)).toEqual([1, 2]);
+  });
+
+  it.each([[1, 13], [50, 5]])("レベル%sで消去後に%sフレーム待っても、落下前に連鎖を仕込める", (level, delay) => {
+    const b = emptyBoard();
+    b.raiseLevel(level);
+    b.setColumns([[0, 0, 4, 0, 1], [1], [2, 3], [1]]);
+    moveCursor(b, 0, 2);
+    const events = press(b, { swap: true }, 1);
+    let floating;
+    for (let f = 0; f < 300 && !floating; f++) {
+      events.push(...run(b, 1));
+      floating = b.cells.flat().find((c) => c.kind === 1 && c.chain && c.state === "hover");
+    }
+    expect(floating).toBeDefined();
+    events.push(...run(b, delay));
+    expect(floating!.state).toBe("hover");
+    moveCursor(b, 2, 0);
+    events.push(...press(b, { swap: true }, 100));
+    expect(matches(events).map((e) => e.chain)).toEqual([1, 2]);
   });
 
   it("着地した連鎖フラグは猶予を過ぎると消える", () => {
