@@ -378,19 +378,33 @@ test("ランダム待機中の同じセッションは招待部屋を作れな�
   expect(status).toBe(409);
 });
 
+test("旧タブの待機列も新しいタブから解除できる", async ({ context, page }) => {
+  await enter(page);
+  await page.getByRole("button", { name: "FIND MATCH", exact: true }).click();
+  await page.waitForFunction(() => (window as any).__swapriseOnline?.queue?.readyState === WebSocket.OPEN);
+  const next = await context.newPage();
+  await next.goto("/");
+  await next.waitForFunction(() => !!(window as any).__swapriseScenes?.menu);
+  await next.evaluate(() => {
+    const menu = (window as any).__swapriseScenes.menu;
+    menu.index = 3;
+    menu.select();
+  });
+  await next.getByRole("button", { name: "CANCEL SEARCH", exact: true }).click();
+  await next.getByRole("button", { name: "INVITE FRIEND", exact: true }).click();
+  await expect(next.getByRole("button", { name: "SHARE INVITE" })).toBeVisible();
+});
+
 test("退室通信が遅れても次のランダム待機へ移れる", async ({ browser }) => {
   const contexts = await Promise.all([
     browser.newContext(),
     browser.newContext(),
   ]);
   const [p, q] = await Promise.all(contexts.map((c) => c.newPage()));
-  await p.routeWebSocket("**/api/rooms/*/ws", (ws) => {
-    const server = ws.connectToServer();
-    ws.onMessage((message) => {
-      if (JSON.parse(message.toString()).type === "leave")
-        setTimeout(() => server.send(message), 300);
-      else server.send(message);
-    });
+  await p.route("**/api/online/leave", async (route) => {
+    // 通信障害の注入。画面の表示待ちには固定時間を使わない。
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    await route.continue();
   });
   for (const page of [p, q]) {
     await enter(page);
@@ -538,9 +552,11 @@ test("招待部屋は退出後も同じURLで再参加でき、両者がFIND MAT
   await p.getByRole("button", { name: "SURRENDER", exact: true }).click();
   await p.getByRole("button", { name: "YES, SURRENDER", exact: true }).click();
   await q.getByRole("button", { name: "BACK TO MENU" }).click();
+  await expect(q.locator(".online-ui")).toHaveCount(0);
   await expect(p.getByRole("status")).toContainText("Waiting for your friend");
   await p.waitForFunction(() => (window as any).__swapriseOnline.views.length === 0);
   await p.getByRole("button", { name: "LEAVE ROOM" }).click();
+  await expect(p.locator(".online-ui")).toHaveCount(0);
   // 1人ずつ入り直す。2人が揃うと始まってしまうので、確かめたら出てから次の人が入る
   for (const [index, page] of [p, q].entries()) {
     // 更新前のアプリが保存した、退出済みの接続情報を再現する。
@@ -585,12 +601,12 @@ test("招待者は画面を閉じても同じURLへ戻れ、残った接続も�
   await p.close();
   const reopened = await a.newPage();
   await reopened.goto(invite);
-  await reopened.getByRole("button", { name: "JOIN ROOM", exact: true }).click();
+  await reopened.getByRole("button", { name: "RESUME HERE", exact: true }).click();
   await reopened.waitForFunction(() => (window as any).__swapriseOnline?.session?.player === 0);
   await reopened.waitForFunction(() => (window as any).__swapriseOnline?.session?.lockstep?.frame > 60);
   const replacement = await a.newPage();
   await replacement.goto(invite);
-  await replacement.getByRole("button", { name: "JOIN ROOM", exact: true }).click();
+  await replacement.getByRole("button", { name: "RESUME HERE", exact: true }).click();
   await expect(reopened.getByRole("status")).toHaveText("This room was opened in another tab.");
   await replacement.waitForFunction(() => (window as any).__swapriseOnline?.session?.state?.phase === "playing" && (window as any).__swapriseOnline.session.lockstep.frame > 120);
   expect(await replacement.evaluate(() => (window as any).__swapriseOnline.session.player)).toBe(0);

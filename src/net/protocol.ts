@@ -82,7 +82,7 @@ export type ServerMessage =
   | { type: "pong"; at: number }
   | { type: "error"; message: string; fatal?: boolean }
   | { type: "matched"; roomId: string; token: string }
-  | { type: "queued"; since: number }
+  | { type: "queued"; since: number; queueId?: string }
   | { type: "requeue" }
   | { type: "left" };
 export function validInput(value: unknown): value is Input {

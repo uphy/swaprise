@@ -14,6 +14,9 @@ import {
   OnlineSession,
   api,
   savedConnection,
+  leaveParticipation,
+  retryPendingLeave,
+  type Participation,
   type Connection,
 } from "../net/session";
 import { GAME_VERSION, displayName, type ServerMessage } from "../net/protocol";
@@ -35,6 +38,7 @@ export class OnlineScene extends Phaser.Scene {
   private gameId = "";
   private accumulator = 0;
   private queue: WebSocket | null = null;
+  private queueId: string | null = null;
   private queueTimer: ReturnType<typeof setInterval> | null = null;
   private waitingSince = 0;
   private settings = false;
@@ -42,6 +46,7 @@ export class OnlineScene extends Phaser.Scene {
   private visibleHandler = (): void => {};
   private resizeHandler = (): void => {};
   private closing = false;
+  private epoch = 0;
   private phase = "";
   private stalledMs = 0;
   private raise = false;
@@ -50,6 +55,7 @@ export class OnlineScene extends Phaser.Scene {
     super("online");
   }
   create(): void {
+    this.epoch++;
     this.session = null;
     this.prediction = null;
     this.views = [];
@@ -111,6 +117,7 @@ export class OnlineScene extends Phaser.Scene {
     this.input.keyboard!.on("keydown-ESC", back);
     this.events.once("shutdown", () => {
       this.closing = true;
+      this.epoch++;
       this.session?.dispose();
       this.cancelQueue();
       this.root.remove();
@@ -146,23 +153,26 @@ export class OnlineScene extends Phaser.Scene {
     return button;
   }
   private async initialize(): Promise<void> {
+    const epoch = this.epoch;
     try {
       await api("session");
-      if (this.closing) return;
+      if (this.closing || this.epoch !== epoch) return;
+      await retryPendingLeave();
+      const participation: Participation = await api("online/recovery");
+      if (this.closing || this.epoch !== epoch) return;
       const saved = savedConnection();
       const params = new URLSearchParams(location.search);
       const roomId = params.get("room");
-      const resume = saved && (!roomId || saved.roomId === roomId) ? saved : null;
-      const target = resume?.roomId ?? roomId;
-      const status = target ? await api(`rooms/${target}/status`) : null;
-      if (this.closing) return;
-      if (resume) {
-        if (status?.active) {
-          this.connect(resume);
-          return;
-        }
-        sessionStorage.removeItem("swaprise.connection.v1");
+      if (participation.connection || participation.queueId) {
+        if (participation.connection && saved?.token === participation.connection.token &&
+          saved.roomId === participation.connection.roomId && (!roomId || roomId === saved.roomId)) {
+          this.connect({ ...saved, ...participation.connection });
+        } else this.showRecovery(participation);
+        return;
       }
+      sessionStorage.removeItem("swaprise.connection.v1");
+      const status = roomId ? await api(`rooms/${roomId}/status`) : null;
+      if (this.closing || this.epoch !== epoch) return;
       if (roomId && status?.expired) {
         history.replaceState(null, "", location.pathname);
         this.choose(null, null);
@@ -174,13 +184,65 @@ export class OnlineScene extends Phaser.Scene {
         new URLSearchParams(location.hash.slice(1)).get("invite"),
       );
     } catch (e) {
+      if (this.closing || this.epoch !== epoch) return;
       this.status.textContent = (e as Error).message;
       this.actions.replaceChildren();
       this.button("RETRY", () => void this.initialize());
       this.button("BACK TO MENU", () => this.menu());
     }
   }
+  private showRecovery(participation: Participation): void {
+    const epoch = this.epoch;
+    this.root.classList.remove("playing");
+    this.actions.replaceChildren();
+    this.status.textContent = participation.connection
+      ? "You have an existing room. Resume here, or leave it to continue."
+      : "You have an existing search. Cancel it to continue here.";
+    const run = async (resume: boolean): Promise<void> => {
+      this.actions.querySelectorAll("button").forEach((b) => b.disabled = true);
+      this.status.textContent = resume ? "Reconnecting…" : "Leaving…";
+      try {
+        if (resume && participation.connection) {
+          const connection: Connection = await api("online/resume", participation.connection);
+          if (this.closing || this.epoch !== epoch) return;
+          history.replaceState(null, "", location.pathname);
+          this.connect(connection);
+        } else {
+          await leaveParticipation(participation.connection ?? { queueId: participation.queueId });
+          if (!this.closing && this.epoch === epoch) await this.initialize();
+        }
+      } catch {
+        if (this.closing || this.epoch !== epoch) return;
+        this.actions.replaceChildren();
+        this.status.textContent = "Could not complete the request. Check your connection and retry.";
+        this.button("RETRY", () => void this.initialize());
+        this.button("BACK TO MENU", () => this.menu());
+      }
+    };
+    if (participation.connection) this.button("RESUME HERE", () => void run(true));
+    this.button(participation.connection ? "LEAVE AND CONTINUE" : "CANCEL SEARCH", () => void run(false));
+    this.button("BACK TO MENU", () => this.menu());
+  }
+  private async checkParticipation(message: string): Promise<void> {
+    const epoch = this.epoch;
+    try {
+      const participation: Participation = await api("online/recovery");
+      if (this.closing || this.epoch !== epoch) return;
+      if (participation.connection || participation.queueId) this.showRecovery(participation);
+      else {
+        this.choose(new URLSearchParams(location.search).get("room"), new URLSearchParams(location.hash.slice(1)).get("invite"));
+        this.status.textContent = message;
+      }
+    } catch {
+      if (this.closing || this.epoch !== epoch) return;
+      this.actions.replaceChildren();
+      this.status.textContent = "Could not check participation. Check your connection and retry.";
+      this.button("RETRY", () => void this.initialize());
+      this.button("BACK TO MENU", () => this.menu());
+    }
+  }
   private choose(roomId: string | null, invite: string | null): void {
+    const epoch = this.epoch;
     this.actions.replaceChildren();
     this.root.classList.remove("playing");
     this.status.textContent = roomId
@@ -209,7 +271,7 @@ export class OnlineScene extends Phaser.Scene {
       }
       void api(kind === "join" ? `rooms/${roomId}/join` : "rooms", data)
         .then((c) => {
-          if (this.closing) return;
+          if (this.closing || this.epoch !== epoch) return;
           const url = new URL(location.href);
           url.search = `?room=${c.roomId}`;
           url.hash = c.invite
@@ -221,10 +283,7 @@ export class OnlineScene extends Phaser.Scene {
           this.connect(c);
         })
         .catch((e) => {
-          this.status.textContent = e.message;
-          this.actions
-            .querySelectorAll("button")
-            .forEach((b) => (b.disabled = false));
+          if (!this.closing && this.epoch === epoch) void this.checkParticipation(e.message);
         });
     };
     if (roomId && invite) this.button("JOIN ROOM", () => run("join"));
@@ -237,8 +296,13 @@ export class OnlineScene extends Phaser.Scene {
   private startQueue(name: string): void {
     this.actions.replaceChildren();
     this.button("CANCEL", () => {
+      const queueId = this.queueId;
       this.cancelQueue();
-      this.choose(null, null);
+      this.actions.replaceChildren();
+      this.status.textContent = "Cancelling search…";
+      void (queueId ? leaveParticipation({ queueId }) : Promise.resolve())
+        .then(() => this.checkParticipation("Search cancelled. You can start again."))
+        .catch(() => this.checkParticipation("Could not cancel yet. Please retry."));
     });
     const url = new URL("/api/queue/ws", location.href);
     url.protocol = location.protocol === "https:" ? "wss:" : "ws:";
@@ -250,11 +314,15 @@ export class OnlineScene extends Phaser.Scene {
     const queue = this.queue = new WebSocket(url);
     this.waitingSince = Date.now();
     this.queue.onmessage = (e) => {
+      if (this.closing || this.queue !== queue) return;
       const m = JSON.parse(e.data) as ServerMessage;
       if (m.type === "matched") {
         this.cancelQueue();
         this.connect(m);
-      } else if (m.type === "queued") this.waitingSince = m.since;
+      } else if (m.type === "queued") {
+        this.waitingSince = m.since;
+        this.queueId = m.queueId ?? null;
+      }
       else if (m.type === "error") this.status.textContent = m.message;
     };
     this.queue.onopen = () => {
@@ -263,13 +331,10 @@ export class OnlineScene extends Phaser.Scene {
       );
     };
     this.queue.onclose = () => {
-      // キャンセルした古い接続の通知で、次の待機を閉じない。
-      if (this.queue === queue) {
+      // キャンセルした古い接続で次の待機を閉じない。
+      if (!this.closing && this.queue === queue) {
         this.cancelQueue();
-        this.status.textContent =
-          "Search ended. Check your connection or try again later.";
-        this.actions.replaceChildren();
-        this.button("BACK", () => this.choose(null, null));
+        void this.checkParticipation("Search ended. You can try again.");
       }
     };
     let lastPing = 0;
@@ -287,6 +352,7 @@ export class OnlineScene extends Phaser.Scene {
   private cancelQueue(): void {
     const q = this.queue;
     this.queue = null;
+    this.queueId = null;
     if (q?.readyState === WebSocket.OPEN)
       q.send(JSON.stringify({ type: "cancel" }));
     q?.close();
@@ -306,6 +372,16 @@ export class OnlineScene extends Phaser.Scene {
     this.actionKey = "";
     this.refresh();
   }
+  private recoverSession(): void {
+    this.session?.dispose();
+    this.session = null;
+    this.clearBoard();
+    audio.stopBgm();
+    this.root.classList.remove("playing");
+    this.actions.replaceChildren();
+    this.status.textContent = "Checking participation…";
+    void this.checkParticipation("Choose how to play.");
+  }
   private refresh(): void {
     const s = this.session;
     const state = s?.state;
@@ -317,6 +393,7 @@ export class OnlineScene extends Phaser.Scene {
       audio.stopBgm();
       this.status.textContent = s.error || "Joining room…";
       this.actions.replaceChildren();
+      this.button("CHECK PARTICIPATION", () => this.recoverSession());
       this.button("BACK TO MENU", () => this.menu());
       return;
     }
@@ -385,10 +462,16 @@ export class OnlineScene extends Phaser.Scene {
       this.settings,
       me?.rematch,
       other?.connected,
+      !!s.error,
     ].join(":");
     if (key === this.actionKey) return;
     this.actionKey = key;
     this.actions.replaceChildren();
+    if (s.error) {
+      this.button("CHECK PARTICIPATION", () => this.recoverSession());
+      this.button("LEAVE ROOM", () => this.menu());
+      return;
+    }
     if (state.phase === "waiting") {
       if (s.connection.invite)
         this.button("SHARE INVITE", () => {
@@ -571,10 +654,24 @@ export class OnlineScene extends Phaser.Scene {
     );
   }
   private menu(): void {
-    this.session?.leave();
-    this.cancelQueue();
-    history.replaceState(null, "", location.pathname);
-    this.scene.start("menu");
+    const epoch = this.epoch;
+    const finish = () => {
+      this.cancelQueue();
+      history.replaceState(null, "", location.pathname);
+      this.scene.start("menu");
+    };
+    if (!this.session) { finish(); return; }
+    this.actions.replaceChildren();
+    this.status.textContent = "Leaving room…";
+    void this.session.leaveAndWait().then((left) => {
+      if (this.closing || this.epoch !== epoch) return;
+      if (left) finish();
+      else {
+        this.status.textContent = "Could not leave yet. Check your connection and retry.";
+        this.button("RETRY", () => this.menu());
+        this.button("BACK TO MENU", finish);
+      }
+    });
   }
   override update(_time: number, delta: number): void {
     const s = this.session;

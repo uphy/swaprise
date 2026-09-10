@@ -18,6 +18,7 @@ export interface Member {
   session: string;
   token: string;
   name: string;
+  disconnectedAt?: number;
 }
 export class RoomEngine {
   state: RoomState;
@@ -48,6 +49,7 @@ export class RoomEngine {
     };
   }
   join(member: Member): number {
+    member.disconnectedAt = Date.now();
     if (this.state.phase === "closed")
       throw new Error("This room has closed.");
     const old = this.members.findIndex((m) => m?.session === member.session);
@@ -85,6 +87,7 @@ export class RoomEngine {
   connect(i: number, visible: boolean, now: number): void {
     const seat = this.state.seats[i]!;
     if (seat.connected) throw new Error("Already connected in another tab.");
+    delete this.members[i]!.disconnectedAt;
     seat.connected = true;
     seat.visible = visible;
     this.lastSeen[i] = now;
@@ -99,6 +102,7 @@ export class RoomEngine {
   disconnect(i: number, now: number): void {
     const seat = this.state.seats[i];
     if (!seat) return;
+    if (this.members[i]) this.members[i]!.disconnectedAt ??= now;
     seat.connected = false;
     seat.visible = false;
     seat.ready = false;

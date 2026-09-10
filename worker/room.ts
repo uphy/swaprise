@@ -38,6 +38,28 @@ export class Room extends DurableObject<Env> {
   private get expiresAt(): number {
     return this.touched + (this.engine.state.kind === "invite" ? 86_400_000 : 600_000);
   }
+  private get nextAlarm(): number {
+    if (this.engine.state.kind !== "invite" || !["waiting", "result"].includes(this.engine.state.phase)) return this.expiresAt;
+    return Math.min(this.expiresAt, ...this.engine.members.flatMap((m, i) =>
+      m && !this.engine.state.seats[i]?.connected ? [(m.disconnectedAt ?? this.touched) + 60000] : []));
+  }
+  private async pruneDisconnected(): Promise<void> {
+    if (this.engine.state.kind !== "invite" || !["waiting", "result"].includes(this.engine.state.phase)) return;
+    const removed: Member[] = [];
+    for (let i = 0; i < this.engine.members.length; i++) {
+      const m = this.engine.members[i];
+      if (m && !this.engine.state.seats[i]?.connected && Date.now() - (m.disconnectedAt ?? this.touched) >= 60000) {
+        removed.push({ ...m });
+        this.engine.message(i, { type: "leave" }, Date.now());
+        this.savedFrame = 0;
+      }
+    }
+    if (removed.length) {
+      await this.persist();
+      this.ctx.waitUntil(this.release(removed));
+      console.log(JSON.stringify({ event: "online_abandoned_seats", count: removed.length }));
+    }
+  }
   private get expired(): boolean {
     return !["playing", "suspended", "countdown"].includes(this.engine.state.phase) && Date.now() >= this.expiresAt;
   }
@@ -160,6 +182,8 @@ export class Room extends DurableObject<Env> {
                     method: "POST",
                     body: JSON.stringify({
                       session: m.session,
+                      roomId: this.id,
+                      token: m.token,
                       since:
                         (m as Member & { since?: number }).since ??
                         this.touched,
@@ -182,7 +206,7 @@ export class Room extends DurableObject<Env> {
           clearInterval(this.interval!);
           this.interval = null;
           await this.persist();
-          await this.ctx.storage.setAlarm(this.expiresAt);
+          await this.ctx.storage.setAlarm(this.nextAlarm);
         }
       }).catch(() => {
         this.engine.finish(-1, "server");
@@ -194,6 +218,41 @@ export class Room extends DurableObject<Env> {
   }
   private async handle(req: Request): Promise<Response> {
     const path = new URL(req.url).pathname;
+    await this.pruneDisconnected();
+    if (["/recovery", "/takeover", "/leave"].includes(path)) {
+      const { session, token } = await req.json() as { session: string; token?: string };
+      const i = this.engine.members.findIndex((m) => m?.session === session);
+      const member = this.engine.members[i];
+      if (path === "/leave") {
+        if (member && member.token !== token) return json({ ok: true, stale: true });
+        if (member && member.token === token) {
+          this.replaceConnection(i);
+          if (["playing", "suspended", "countdown"].includes(this.engine.state.phase))
+            this.engine.finish(1 - i, "surrender");
+          this.engine.message(i, { type: "leave" }, Date.now());
+          // ランダム対戦の result でも、退出した席を残さない。
+          this.engine.members[i] = null;
+          this.engine.state.seats[i] = null;
+          this.engine.publish();
+          if (this.engine.state.kind === "invite") this.savedFrame = 0;
+          await this.persist();
+        }
+        return json({ ok: true });
+      }
+      if (!member || this.expired || this.engine.state.phase === "closed")
+        return path === "/recovery" ? json({ connection: null }) : json({ error: "This room has closed." }, 410);
+      if (path === "/takeover") {
+        if (member.token !== token) return json({ error: "Room participation changed. Please check again." }, 409);
+        this.replaceConnection(i);
+        member.token = crypto.randomUUID();
+        member.disconnectedAt = Date.now();
+        this.metrics.connections = 0;
+        await this.persist();
+        await this.ctx.storage.setAlarm(this.nextAlarm);
+        console.log(JSON.stringify({ event: "online_resume", kind: this.engine.state.kind }));
+      }
+      return json({ connection: { roomId: this.id, token: member.token, ...(this.invite ? { invite: this.invite } : {}) }, kind: this.engine.state.kind });
+    }
     if (path === "/membership" || path.endsWith("/status")) {
       await req.arrayBuffer();
       return json({ expired: !this.id || this.expired, active: !!this.id && !this.expired && this.engine.state.phase !== "closed" &&
@@ -212,7 +271,7 @@ export class Room extends DurableObject<Env> {
       this.engine = new RoomEngine(data.kind, (i, m) => this.send(i, m));
       data.members.forEach((m) => this.engine.join(m));
       await this.persist();
-      await this.ctx.storage.setAlarm(this.expiresAt);
+      await this.ctx.storage.setAlarm(this.nextAlarm);
       if (data.kind === "random") this.wake();
       return json({ ok: true });
     }
@@ -243,7 +302,7 @@ export class Room extends DurableObject<Env> {
         this.metrics.connections = 0;
         this.touched = Date.now();
         await this.persist();
-        await this.ctx.storage.setAlarm(this.expiresAt);
+        await this.ctx.storage.setAlarm(this.nextAlarm);
         return json({ ok: true });
       } catch (e) {
         return json({ error: (e as Error).message }, 409);
@@ -425,9 +484,10 @@ export class Room extends DurableObject<Env> {
     await this.run(async () => {
       const a: SocketInfo = ws.deserializeAttachment();
       ws.close();
-      if (a.player >= 0) {
+      if (a.player >= 0 && this.engine.members[a.player]?.token === a.token) {
         this.engine.disconnect(a.player, Date.now());
         await this.persist();
+        await this.ctx.storage.setAlarm(this.nextAlarm);
         this.wake();
       }
     });
@@ -449,6 +509,7 @@ export class Room extends DurableObject<Env> {
   }
   override async alarm(): Promise<void> {
     await this.run(async () => {
+      await this.pruneDisconnected();
       for (const ws of this.ctx.getWebSockets()) {
         const a: SocketInfo = ws.deserializeAttachment();
         if (a.player < 0 && Date.now() - a.connectedAt >= 5000)
@@ -457,11 +518,11 @@ export class Room extends DurableObject<Env> {
       if (
         ["playing", "suspended", "countdown"].includes(this.engine.state.phase)
       ) {
-        await this.ctx.storage.setAlarm(this.expiresAt);
+        await this.ctx.storage.setAlarm(this.nextAlarm);
         return;
       }
       if (!this.expired) {
-        await this.ctx.storage.setAlarm(this.expiresAt);
+        await this.ctx.storage.setAlarm(this.nextAlarm);
         return;
       }
       this.engine.state.phase = "closed";
