@@ -24,6 +24,7 @@ import { GAME_VERSION, displayName, type ServerMessage } from "../net/protocol";
 import { Prediction } from "../net/prediction";
 import { NO_INPUT } from "../core/types";
 import "./online.css";
+import { t } from "./i18n";
 /** ロビーとオンライン盤面。ローカル対戦のポーズ・再開始処理は呼ばない。 */
 export class OnlineScene extends Phaser.Scene {
   session: OnlineSession | null = null;
@@ -77,10 +78,10 @@ export class OnlineScene extends Phaser.Scene {
     this.panel = document.createElement("div");
     this.panel.className = "online-panel";
     const title = document.createElement("h1");
-    title.textContent = "ONLINE";
+    title.textContent = t("ONLINE");
     this.status = document.createElement("p");
     this.status.setAttribute("role", "status");
-    this.status.textContent = "Connecting…";
+    this.status.textContent = t("Connecting…");
     this.actions = document.createElement("div");
     this.actions.className = "online-actions";
     this.panel.append(title, this.status, this.actions);
@@ -146,7 +147,7 @@ export class OnlineScene extends Phaser.Scene {
   private button(label: string, action: () => void): HTMLButtonElement {
     const button = document.createElement("button");
     button.textContent = label;
-    if (label === "BACK TO MENU") button.className = "online-back";
+    if (label === t("BACK TO MENU")) button.className = "online-back";
     button.onclick = () => {
       audio.start();
       action();
@@ -178,7 +179,7 @@ export class OnlineScene extends Phaser.Scene {
       if (roomId && status?.expired) {
         history.replaceState(null, "", location.pathname);
         this.choose(null, null);
-        this.status.textContent = "This invite link has expired. Create a new room or find a match.";
+        this.status.textContent = t("This invite link has expired. Create a new room or find a match.");
         return;
       }
       this.choose(
@@ -189,8 +190,8 @@ export class OnlineScene extends Phaser.Scene {
       if (this.closing || this.epoch !== epoch) return;
       this.status.textContent = (e as Error).message;
       this.actions.replaceChildren();
-      this.button("RETRY", () => void this.initialize());
-      this.button("BACK TO MENU", () => this.menu());
+      this.button(t("RETRY"), () => void this.initialize());
+      this.button(t("BACK TO MENU"), () => this.menu());
     }
   }
   private showRecovery(participation: Participation): void {
@@ -198,11 +199,11 @@ export class OnlineScene extends Phaser.Scene {
     this.root.classList.remove("playing");
     this.actions.replaceChildren();
     this.status.textContent = participation.connection
-      ? "You have an existing room. Resume here, or leave it to continue."
-      : "You have an existing search. Cancel it to continue here.";
+      ? t("You have an existing room. Resume here, or leave it to continue.")
+      : t("You have an existing search. Cancel it to continue here.");
     const run = async (resume: boolean): Promise<void> => {
       this.actions.querySelectorAll("button").forEach((b) => b.disabled = true);
-      this.status.textContent = resume ? "Reconnecting…" : "Leaving…";
+      this.status.textContent = resume ? t("Reconnecting…") : t("Leaving…");
       try {
         if (resume && participation.connection) {
           const connection: Connection = await api("online/resume", participation.connection);
@@ -216,14 +217,14 @@ export class OnlineScene extends Phaser.Scene {
       } catch {
         if (this.closing || this.epoch !== epoch) return;
         this.actions.replaceChildren();
-        this.status.textContent = "Could not complete the request. Check your connection and retry.";
-        this.button("RETRY", () => void this.initialize());
-        this.button("BACK TO MENU", () => this.menu());
+        this.status.textContent = t("Could not complete the request. Check your connection and retry.");
+        this.button(t("RETRY"), () => void this.initialize());
+        this.button(t("BACK TO MENU"), () => this.menu());
       }
     };
-    if (participation.connection) this.button("RESUME HERE", () => void run(true));
-    this.button(participation.connection ? "LEAVE AND CONTINUE" : "CANCEL SEARCH", () => void run(false));
-    this.button("BACK TO MENU", () => this.menu());
+    if (participation.connection) this.button(t("RESUME HERE"), () => void run(true));
+    this.button(participation.connection ? t("LEAVE AND CONTINUE") : t("CANCEL SEARCH"), () => void run(false));
+    this.button(t("BACK TO MENU"), () => this.menu());
   }
   private async checkParticipation(message: string): Promise<void> {
     const epoch = this.epoch;
@@ -238,9 +239,9 @@ export class OnlineScene extends Phaser.Scene {
     } catch {
       if (this.closing || this.epoch !== epoch) return;
       this.actions.replaceChildren();
-      this.status.textContent = "Could not check participation. Check your connection and retry.";
-      this.button("RETRY", () => void this.initialize());
-      this.button("BACK TO MENU", () => this.menu());
+        this.status.textContent = t("Could not check participation. Check your connection and retry.");
+      this.button(t("RETRY"), () => void this.initialize());
+      this.button(t("BACK TO MENU"), () => this.menu());
     }
   }
   private choose(roomId: string | null, invite: string | null): void {
@@ -248,21 +249,21 @@ export class OnlineScene extends Phaser.Scene {
     this.actions.replaceChildren();
     this.root.classList.remove("playing");
     this.status.textContent = roomId
-      ? "Join your friend’s room."
-      : "Choose how to play.";
+      ? t("Join your friend’s room.")
+      : t("Choose how to play.");
     const label = document.createElement("label");
-    label.textContent = "Name (optional)";
+    label.textContent = t("Name (optional)");
     const input = document.createElement("input");
     input.type = "text";
     input.maxLength = 40;
-    input.placeholder = "Guest";
+    input.placeholder = t("Guest");
     input.value = localStorage.getItem("swaprise.name.v1") ?? "";
     label.append(input);
     this.actions.append(label);
     const run = (kind: string): void => {
       const name = displayName(input.value);
       localStorage.setItem("swaprise.name.v1", name);
-      this.status.textContent = "Connecting…";
+      this.status.textContent = t("Connecting…");
       this.actions
         .querySelectorAll("button")
         .forEach((b) => (b.disabled = true));
@@ -288,18 +289,18 @@ export class OnlineScene extends Phaser.Scene {
           if (!this.closing && this.epoch === epoch) void this.checkParticipation(e.message);
         });
     };
-    if (roomId && invite) this.button("JOIN ROOM", () => run("join"));
+    if (roomId && invite) this.button(t("JOIN ROOM"), () => run("join"));
     else {
-      this.button("INVITE FRIEND", () => run("invite"));
-      this.button("FIND MATCH", () => run("random"));
+      this.button(t("INVITE FRIEND"), () => run("invite"));
+      this.button(t("FIND MATCH"), () => run("random"));
     }
-    this.button("BACK TO MENU", () => this.menu());
+    this.button(t("BACK TO MENU"), () => this.menu());
   }
   private startQueue(name: string): void {
     const attempt = ++this.queueAttempt;
-    this.status.textContent = "Checking matchmaking…";
+    this.status.textContent = t("Checking matchmaking…");
     this.actions.replaceChildren();
-    this.button("CANCEL", () => { this.cancelQueue(); this.choose(null, null); });
+    this.button(t("CANCEL"), () => { this.cancelQueue(); this.choose(null, null); });
     void api("queue/status", { version: GAME_VERSION }).then(() => {
       if (!this.closing && this.queueAttempt === attempt) this.openQueue(name);
     }).catch((error) => {
@@ -310,8 +311,8 @@ export class OnlineScene extends Phaser.Scene {
     if (error instanceof ApiError && error.code === "UPDATE_REQUIRED") {
       this.status.textContent = error.message;
       this.actions.replaceChildren();
-      this.button("RELOAD", () => location.reload());
-      this.button("BACK TO MENU", () => this.menu());
+      this.button(t("RELOAD"), () => location.reload());
+      this.button(t("BACK TO MENU"), () => this.menu());
       return;
     }
     void this.checkParticipation(error instanceof Error ? error.message : "Could not connect. Please retry.");
@@ -330,14 +331,14 @@ export class OnlineScene extends Phaser.Scene {
   }
   private openQueue(name: string): void {
     this.actions.replaceChildren();
-    this.button("CANCEL", () => {
+    this.button(t("CANCEL"), () => {
       const queueId = this.queueId;
       this.cancelQueue();
       this.actions.replaceChildren();
-      this.status.textContent = "Cancelling search…";
+      this.status.textContent = t("Cancelling search…");
       void (queueId ? leaveParticipation({ queueId }) : Promise.resolve())
-        .then(() => this.checkParticipation("Search cancelled. You can start again."))
-        .catch(() => this.checkParticipation("Could not cancel yet. Please retry."));
+        .then(() => this.checkParticipation(t("Search cancelled. You can start again.")))
+        .catch(() => this.checkParticipation(t("Could not cancel yet. Please retry.")));
     });
     const url = new URL("/api/queue/ws", location.href);
     url.protocol = location.protocol === "https:" ? "wss:" : "ws:";
@@ -375,7 +376,7 @@ export class OnlineScene extends Phaser.Scene {
     };
     let lastPing = 0;
     this.queueTimer = setInterval(() => {
-      this.status.textContent = `Finding an opponent… ${Math.floor((Date.now() - this.waitingSince) / 1000)}s`;
+      this.status.textContent = `${t("Finding an opponent…")} ${Math.floor((Date.now() - this.waitingSince) / 1000)}s`;
       if (
         Date.now() - lastPing >= 15000 &&
         this.queue?.readyState === WebSocket.OPEN
@@ -416,7 +417,7 @@ export class OnlineScene extends Phaser.Scene {
     audio.stopBgm();
     this.root.classList.remove("playing");
     this.actions.replaceChildren();
-    this.status.textContent = "Checking participation…";
+    this.status.textContent = t("Checking participation…");
     void this.checkParticipation("Choose how to play.");
   }
   private refresh(): void {
@@ -479,7 +480,7 @@ export class OnlineScene extends Phaser.Scene {
         ? "The match continues while settings are open."
         : `${other?.name ?? "Opponent"} · playing${state.remaining <= 60000 ? ` · ${Math.ceil(state.remaining / 1000)}s` : ""}`;
     else if (state.phase === "closed")
-      this.status.textContent = "The opponent left or the room closed.";
+      this.status.textContent = t("The opponent left or the room closed.");
     else if (state.result) {
       const r = state.result;
       const invalid = r.reason === "desync" || r.reason === "server";
@@ -551,7 +552,7 @@ export class OnlineScene extends Phaser.Scene {
         });
         this.button("SURRENDER", () => {
           this.actions.replaceChildren();
-          this.status.textContent = "Surrender this match?";
+          this.status.textContent = t("Surrender this match?");
           this.button("YES, SURRENDER", () => s.send({ type: "surrender" }));
           this.button("BACK", () => {
             this.actionKey = "";
@@ -565,7 +566,7 @@ export class OnlineScene extends Phaser.Scene {
       if (state.kind === "random")
         this.button("NEXT MATCH", () => {
           this.actions.replaceChildren();
-          this.status.textContent = "Leaving room…";
+          this.status.textContent = t("Leaving room…");
           void s.leaveAndWait().then((released) => {
             if (this.closing) return;
             if (!released) {
@@ -699,12 +700,12 @@ export class OnlineScene extends Phaser.Scene {
     };
     if (!this.session) { finish(); return; }
     this.actions.replaceChildren();
-    this.status.textContent = "Leaving room…";
+    this.status.textContent = t("Leaving room…");
     void this.session.leaveAndWait().then((left) => {
       if (this.closing || this.epoch !== epoch) return;
       if (left) finish();
       else {
-        this.status.textContent = "Could not leave yet. Check your connection and retry.";
+        this.status.textContent = t("Could not leave yet. Check your connection and retry.");
         this.button("RETRY", () => this.menu());
         this.button("BACK TO MENU", finish);
       }

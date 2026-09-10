@@ -7,10 +7,12 @@ import { MenuScene } from "./render/MenuScene";
 import { BG_COLOR, layoutFor } from "./render/theme";
 import { DPR, installHiDpiText } from "./render/hidpi";
 import { waitForUpdate } from "./render/update";
+import { setDocumentLanguage } from "./render/i18n";
 
 // Service Worker。ビルド成果物を precache し、次回以降はオフラインでも開ける。
 // 新しい版があれば、メニューを触れるようになる前に切り替えを済ませる（遊んでいる最中に reload しない）
 waitForUpdate().then(() => {
+  setDocumentLanguage();
   installHiDpiText();
   const layout = layoutFor("menu");
 

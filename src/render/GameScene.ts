@@ -15,6 +15,7 @@ import { canShare, shareText } from "./share";
 import { BOARD_H, BOARD_W, FONT, TEXT_COLOR, type Layout, layoutFor, sameLayout } from "./theme";
 import { CharacterView } from "./CharacterView";
 import { characterById, isCharacterId, loadSelection } from "../characters/catalog";
+import { t } from "./i18n";
 
 const STEP_MS = 1000 / 60;
 /** 縦持ちの CPU 対戦で、CPU の盤面を描く大きさ。 */
@@ -102,7 +103,7 @@ export class GameScene extends Phaser.Scene {
 
     const boards = this.game_.boards;
     if (this.mode === "puzzle") {
-      this.views.push(new BoardView(this, boards[0], `PUZZLE ${puzzleName(this.stage)}`, false, null, true));
+      this.views.push(new BoardView(this, boards[0], `${t("PUZZLE")} ${puzzleName(this.stage)}`, false, null, true));
       this.inputs.push(new PlayerInput(this, P1_KEYS, 0));
       this.vsText = null;
     } else if (boards.length === 1) {
@@ -112,7 +113,7 @@ export class GameScene extends Phaser.Scene {
     } else {
       const isCpu = this.mode === "cpu";
       this.views.push(new BoardView(this, boards[0], "1P", true));
-      this.views.push(new BoardView(this, boards[1], isCpu ? `CPU ${this.cpuLevel.toUpperCase()}` : "2P", false));
+      this.views.push(new BoardView(this, boards[1], isCpu ? `${t("VS CPU")} ${this.cpuLevel.toUpperCase()}` : "2P", false));
       this.inputs.push(new PlayerInput(this, P1_KEYS, 0));
       if (!isCpu) this.inputs.push(new PlayerInput(this, P2_KEYS, 1));
       this.vsText = this.add.text(0, 0, "VS", { fontFamily: FONT, fontSize: "28px", color: "#9a9ab0" }).setOrigin(0.5);
@@ -147,11 +148,11 @@ export class GameScene extends Phaser.Scene {
 
     // ポーズ画面。暗幕をタップしても再開する。ボタンで やり直し・音・振動・メニュー
     this.pauseDim = this.add.rectangle(0, 0, 10, 10, 0x000000, 0.7).setOrigin(0);
-    this.pauseTitle = this.add.text(0, 0, "PAUSE", { fontFamily: FONT, fontSize: "32px", color: TEXT_COLOR, fontStyle: "bold" }).setOrigin(0.5);
-    const soundLabel = (): string => `SOUND: ${audio.muted ? "OFF" : "ON"}`;
-    const vibLabel = (): string => `VIBRATION: ${haptics.enabled ? "ON" : "OFF"}`;
-    this.pauseButtons.push(new Button(this, 0, 0, "RESUME", () => this.setPaused(false), { minWidth: 180, minHeight: 40 }));
-    this.pauseButtons.push(new Button(this, 0, 0, "RESTART", () => this.restart(), { minWidth: 180, minHeight: 40 }));
+    this.pauseTitle = this.add.text(0, 0, t("PAUSE"), { fontFamily: FONT, fontSize: "32px", color: TEXT_COLOR, fontStyle: "bold" }).setOrigin(0.5);
+    const soundLabel = (): string => t("SOUND: {state}", { state: t(audio.muted ? "OFF" : "ON") });
+    const vibLabel = (): string => t("VIBRATION: {state}", { state: t(haptics.enabled ? "ON" : "OFF") });
+    this.pauseButtons.push(new Button(this, 0, 0, t("RESUME"), () => this.setPaused(false), { minWidth: 180, minHeight: 40 }));
+    this.pauseButtons.push(new Button(this, 0, 0, t("RESTART"), () => this.restart(), { minWidth: 180, minHeight: 40 }));
     const toggleSound = (): void => {
       audio.setMuted(!audio.muted);
       soundBtn.setText(soundLabel());
@@ -172,7 +173,7 @@ export class GameScene extends Phaser.Scene {
       );
       this.pauseButtons.push(vibBtn);
     }
-    this.pauseButtons.push(new Button(this, 0, 0, "MENU", () => this.toMenu(), { minWidth: 180, minHeight: 40 }));
+    this.pauseButtons.push(new Button(this, 0, 0, t("MENU"), () => this.toMenu(), { minWidth: 180, minHeight: 40 }));
     this.pauseMenu = this.add.container(0, 0, [this.pauseDim, this.pauseTitle, ...this.pauseButtons]).setDepth(30).setVisible(false);
     // ポーズ中の暗幕タップは再開だけに使う（入れ替えにはしない）
     this.input.on("pointerdown", () => {
@@ -219,7 +220,7 @@ export class GameScene extends Phaser.Scene {
     });
     // キーボード向けの案内。タッチ端末では出さない（ボタンがある）
     this.hintText = this.add
-      .text(0, 0, "P: pause   R: restart   Esc: menu   M: mute", { fontFamily: FONT, fontSize: "12px", color: "#6a6a80" })
+      .text(0, 0, t("P: pause   R: restart   Esc: menu   M: mute"), { fontFamily: FONT, fontSize: "12px", color: "#6a6a80" })
       .setOrigin(0.5);
 
     const kb = this.input.keyboard!;
@@ -489,14 +490,14 @@ export class GameScene extends Phaser.Scene {
     } else if (this.mode === "timeattack") {
       text = `SWAPRISE  TIME ATTACK 2:00  SCORE ${b.score}  MAX CHAIN x${b.maxChain}`;
     } else if (this.mode === "puzzle") {
-      text = `SWAPRISE  PUZZLE ${puzzleName(this.stage)}  ${g.puzzleResult === "clear" ? "CLEAR" : "FAILED"}`;
+      text = `SWAPRISE  ${t("PUZZLE")} ${puzzleName(this.stage)}  ${g.puzzleResult === "clear" ? t("CLEAR") : t("FAILED")}`;
     } else {
-      const result = g.winner < 0 ? "DRAW" : g.winner === 0 ? "WIN" : "LOSE";
+      const result = g.winner < 0 ? t("DRAW") : g.winner === 0 ? t("WIN") : t("LOSE");
       const foe = this.mode === "cpu" ? `CPU ${this.cpuLevel.toUpperCase()}` : "2P";
       text = `SWAPRISE  ${result} vs ${foe}  MAX CHAIN x${b.maxChain}`;
     }
     const outcome = await shareText(text);
-    button.setText(outcome === "copied" ? "COPIED" : outcome === "failed" ? "SHARE FAILED" : "SHARE");
+    button.setText(outcome === "copied" ? t("COPIED") : outcome === "failed" ? t("SHARE FAILED") : t("SHARE"));
   }
 
   private finish(): void {
@@ -522,17 +523,17 @@ export class GameScene extends Phaser.Scene {
       this.input.on("pointerdown", (p: Phaser.Input.Pointer) => {
         if (this.touches.some((t) => t.cellAt(p.worldX, p.worldY))) this.restart();
       });
-      const retry = new Button(this, -46, BOARD_H / 2 - 40, "RETRY", () => this.restart(), { minWidth: 84, minHeight: 36 });
-      const menu = new Button(this, 46, BOARD_H / 2 - 40, "MENU", () => this.toMenu(), { minWidth: 84, minHeight: 36 });
+      const retry = new Button(this, -46, BOARD_H / 2 - 40, t("RETRY"), () => this.restart(), { minWidth: 84, minHeight: 36 });
+      const menu = new Button(this, 46, BOARD_H / 2 - 40, t("MENU"), () => this.toMenu(), { minWidth: 84, minHeight: 36 });
       this.views[0].addToOverlay(retry);
       this.views[0].addToOverlay(menu);
       if (canShare()) {
-        const share = new Button(this, 0, BOARD_H / 2 - 84, "SHARE", () => void this.share(share), { minWidth: 176, minHeight: 36 });
+        const share = new Button(this, 0, BOARD_H / 2 - 84, t("SHARE"), () => void this.share(share), { minWidth: 176, minHeight: 36 });
         this.views[0].addToOverlay(share);
       }
       // パズルをクリアしたら次の面へのボタン
       if (this.mode === "puzzle" && g.puzzleResult === "clear" && this.stage + 1 < PUZZLES.length) {
-        const next = new Button(this, 0, BOARD_H / 2 - 128, `NEXT  ${puzzleName(this.stage + 1)}`, () => this.nextStage(), { minWidth: 176, minHeight: 36 }).setName("next");
+        const next = new Button(this, 0, BOARD_H / 2 - 128, t("NEXT  {name}", { name: puzzleName(this.stage + 1) }), () => this.nextStage(), { minWidth: 176, minHeight: 36 }).setName("next");
         this.views[0].addToOverlay(next);
       }
     });
@@ -540,26 +541,26 @@ export class GameScene extends Phaser.Scene {
       const b = g.boards[0];
       if (g.puzzleResult === "clear") {
         recordPuzzleClear(this.stage);
-        this.views[0].showOverlay("CLEAR", `MOVES LEFT ${b.movesLeft ?? 0}`);
+        this.views[0].showOverlay(t("CLEAR"), t("MOVES LEFT {count}", { count: b.movesLeft ?? 0 }));
       } else {
-        this.views[0].showOverlay("FAILED", `${b.panelCount()} PANELS LEFT`);
+        this.views[0].showOverlay(t("FAILED"), t("{count} PANELS LEFT", { count: b.panelCount() }));
       }
     } else if (this.mode === "endless" || this.mode === "timeattack") {
       const b = g.boards[0];
       const rank = recordScore(this.mode, b.score, b.maxChain);
-      const rankLine = rank === 1 ? "NEW RECORD!" : rank > 0 ? `RANK ${rank}` : "";
-      this.views[0].showOverlay(g.timeUp ? "TIME UP" : "GAME OVER", `SCORE ${b.score}\nMAX CHAIN x${b.maxChain}\nCOMBOS ${b.stats.combos}  CHAINS ${b.stats.chains}\n${rankLine}`);
+      const rankLine = rank === 1 ? t("NEW RECORD!") : rank > 0 ? t("RANK {rank}", { rank }) : "";
+      this.views[0].showOverlay(g.timeUp ? t("TIME UP") : t("GAME OVER"), `${t("SCORE")} ${b.score}\n${t("MAX CHAIN")} x${b.maxChain}\n${t("COMBOS")} ${b.stats.combos}  ${t("CHAINS")} ${b.stats.chains}\n${rankLine}`);
     } else {
       let recordLine = "";
       if (this.mode === "cpu" && g.winner >= 0) {
         const r = recordCpuResult(this.cpuLevel, g.winner === 0);
-        recordLine = `\nVS ${this.cpuLevel.toUpperCase()}  ${r.wins}W ${r.losses}L`;
+        recordLine = `\n${t("VS CPU")} ${this.cpuLevel.toUpperCase()}  ${r.wins}W ${r.losses}L`;
       }
       // 同じフレームで両方が天井に届いたら引き分け
       const draw = g.winner < 0;
       g.boards.forEach((b, i) => {
         const won = g.winner === i;
-        this.views[i].showOverlay(draw ? "DRAW" : won ? "WIN" : "LOSE", `MAX CHAIN x${b.maxChain}\nCOMBOS ${b.stats.combos}  CHAINS ${b.stats.chains}${i === 0 ? recordLine : ""}`);
+        this.views[i].showOverlay(draw ? t("DRAW") : won ? t("WIN") : t("LOSE"), `${t("MAX CHAIN")} x${b.maxChain}\n${t("COMBOS")} ${b.stats.combos}  ${t("CHAINS")} ${b.stats.chains}${i === 0 ? recordLine : ""}`);
         // 結果の動作は途中の反応より優先し、最後の姿勢を保つ。再戦の操作は待たない
         this.characters[i]?.setResult(draw ? "finish" : won ? "victory" : "defeat");
       });

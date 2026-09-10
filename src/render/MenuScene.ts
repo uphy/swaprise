@@ -13,6 +13,7 @@ import { applyPendingUpdate } from "./update";
 import { CharacterView } from "./CharacterView";
 import { CHARACTERS, type CharacterSelection, hasGameAssets, isCharacterId, loadSelection, saveSelection } from "../characters/catalog";
 import type { GameStart } from "./GameScene";
+import { t } from "./i18n";
 
 /** メニューの1項目。start があれば選ぶとゲームが始まる。group があれば下位メニューを開く。 */
 interface MenuItem {
@@ -29,7 +30,7 @@ interface MenuItem {
 /** メニューの階層。top は 1 PLAYER / VS CPU / 2 PLAYERS、1p と cpu はその下位。 */
 type Level = "top" | "1p" | "cpu";
 
-const GROUP_LABEL: Record<Level, string> = { top: "", "1p": "1 PLAYER", cpu: "VS CPU" };
+const GROUP_LABEL: Record<Level, string> = { top: "", "1p": t("1 PLAYER"), cpu: t("VS CPU") };
 
 /** `?stage=2-3` または 1 始まりの通し番号を 0 始まりの番号にする。なければ 0。 */
 function parseStageParam(raw: string | null): number {
@@ -44,40 +45,40 @@ const clampNumber = (v: number, lo: number, hi: number): number => Math.max(lo, 
 
 function bestLine(list: HighScores["endless"]): string {
   const best = list[0];
-  return best ? `BEST ${String(best.score).padStart(6, "0")}   MAX CHAIN x${best.maxChain}` : "no record yet";
+  return best ? t("BEST {score}   MAX CHAIN x{chain}", { score: String(best.score).padStart(6, "0"), chain: best.maxChain }) : t("no record yet");
 }
 
 /** 階層ごとの項目。記録は開くたびに読み直すので、ここで組み立てる。 */
 function itemsFor(level: Level, hs: HighScores): MenuItem[] {
   if (level === "1p") {
     return [
-      { label: "ENDLESS", caption: bestLine(hs.endless), start: { mode: "endless" }, name: "item-endless" },
-      { label: "TIME ATTACK", caption: bestLine(hs.timeattack), start: { mode: "timeattack" }, name: "item-timeattack" },
-      { label: "PUZZLE", caption: `${hs.puzzle.length} / ${PUZZLES.length} CLEARED`, start: { mode: "puzzle" }, name: "item-puzzle" },
-      { label: "◂ BACK", caption: "", back: true, name: "item-back" },
+      { label: t("ENDLESS"), caption: bestLine(hs.endless), start: { mode: "endless" }, name: "item-endless" },
+      { label: t("TIME ATTACK"), caption: bestLine(hs.timeattack), start: { mode: "timeattack" }, name: "item-timeattack" },
+      { label: t("PUZZLE"), caption: t("{count} / {total} CLEARED", { count: hs.puzzle.length, total: PUZZLES.length }), start: { mode: "puzzle" }, name: "item-puzzle" },
+      { label: t("◂ BACK"), caption: "", back: true, name: "item-back" },
     ];
   }
   if (level === "cpu") {
     const rec = (l: CpuLevel): string => `${hs.cpu[l].wins}W ${hs.cpu[l].losses}L`;
     return [
-      { label: "EASY", caption: rec("easy"), start: { mode: "cpu", cpuLevel: "easy" }, name: "item-easy" },
-      { label: "NORMAL", caption: rec("normal"), start: { mode: "cpu", cpuLevel: "normal" }, name: "item-normal" },
-      { label: "HARD", caption: rec("hard"), start: { mode: "cpu", cpuLevel: "hard" }, name: "item-hard" },
-      { label: "◂ BACK", caption: "", back: true, name: "item-back" },
+      { label: t("EASY"), caption: rec("easy"), start: { mode: "cpu", cpuLevel: "easy" }, name: "item-easy" },
+      { label: t("NORMAL"), caption: rec("normal"), start: { mode: "cpu", cpuLevel: "normal" }, name: "item-normal" },
+      { label: t("HARD"), caption: rec("hard"), start: { mode: "cpu", cpuLevel: "hard" }, name: "item-hard" },
+      { label: t("◂ BACK"), caption: "", back: true, name: "item-back" },
     ];
   }
   return [
-    { label: "1 PLAYER", caption: "endless · time attack · puzzle", group: "1p", name: "group-1p" },
-    { label: "VS CPU", caption: "easy · normal · hard", group: "cpu", name: "group-cpu" },
-    { label: "2 PLAYERS", caption: "one screen, two players", start: { mode: "versus" }, name: "group-2p" },
-    { label: "ONLINE", caption: "invite a friend · find an opponent", online: true, name: "group-online" },
+    { label: t("1 PLAYER"), caption: t("endless · time attack · puzzle"), group: "1p", name: "group-1p" },
+    { label: t("VS CPU"), caption: t("easy · normal · hard"), group: "cpu", name: "group-cpu" },
+    { label: t("2 PLAYERS"), caption: t("one screen, two players"), start: { mode: "versus" }, name: "group-2p" },
+    { label: t("ONLINE"), caption: t("invite a friend · find an opponent"), online: true, name: "group-online" },
   ];
 }
 
 /** 下段の小さなボタン。 */
 const TOOLS = ["records", "settings", "howto"] as const;
 type Tool = (typeof TOOLS)[number];
-const TOOL_LABEL: Record<Tool, string> = { records: "RECORDS", settings: "SETTINGS", howto: "HOW TO PLAY" };
+const TOOL_LABEL: Record<Tool, string> = { records: t("RECORDS"), settings: t("SETTINGS"), howto: t("HOW TO PLAY") };
 
 /** キー操作で開いているオーバーレイ。↑↓ でボタンを選び、Enter で押し、Esc で閉じる。 */
 interface Overlay {
@@ -174,7 +175,7 @@ export class MenuScene extends Phaser.Scene {
       .text(cx, titleY, "SWAPRISE", { fontFamily: FONT, fontSize: `${layout.portrait ? MENU_TYPE.titlePortrait : MENU_TYPE.titleLandscape}px`, color: TEXT_COLOR, fontStyle: "bold" })
       .setOrigin(0.5);
     this.add
-      .text(cx, titleY + (compact ? 36 : 44), "Swap & match action puzzle", { fontFamily: FONT, fontSize: compact ? "12px" : "14px", color: "#7a7a90" })
+      .text(cx, titleY + (compact ? 36 : 44), t("Swap & match action puzzle"), { fontFamily: FONT, fontSize: compact ? "12px" : "14px", color: "#7a7a90" })
       .setOrigin(0.5);
     // 柄の飾り。背の低い画面では省いて項目の場所を空ける
     if (!compact) {
@@ -452,7 +453,7 @@ export class MenuScene extends Phaser.Scene {
     const panel = this.add.container(0, 0, [dim]).setDepth(50).setName("character-picker");
     const state = { slot: 0 as 0 | 1, sel: loadSelection() };
     const top = compact ? 16 : layout.portrait ? 44 : 36;
-    panel.add(this.add.text(cx, top, "CHOOSE CHARACTERS", { fontFamily: FONT, fontSize: compact ? "20px" : "24px", color: TEXT_COLOR, fontStyle: "bold" }).setOrigin(0.5));
+    panel.add(this.add.text(cx, top, t("CHOOSE CHARACTERS"), { fontFamily: FONT, fontSize: compact ? "20px" : "24px", color: TEXT_COLOR, fontStyle: "bold" }).setOrigin(0.5));
     const sub = mode === "cpu" ? `VS CPU ${cpuLevel?.toUpperCase() ?? ""}` : "2 PLAYERS";
     panel.add(this.add.text(cx, top + (compact ? 20 : 26), sub, { fontFamily: FONT, fontSize: "11px", color: "#7a7a90" }).setOrigin(0.5));
 
@@ -492,8 +493,8 @@ export class MenuScene extends Phaser.Scene {
         refresh();
       });
     });
-    const play = new Button(this, cx - 60, btnY, "PLAY", () => start(), { minWidth: 100, minHeight: 40 }).setName("char-play");
-    const back = new Button(this, cx + 60, btnY, "BACK", () => this.closeCharPicker(), { minWidth: 100, minHeight: 40 });
+    const play = new Button(this, cx - 60, btnY, t("PLAY"), () => start(), { minWidth: 100, minHeight: 40 }).setName("char-play");
+    const back = new Button(this, cx + 60, btnY, t("BACK"), () => this.closeCharPicker(), { minWidth: 100, minHeight: 40 });
     panel.add([play, back]);
 
     const refresh = (): void => {
@@ -511,7 +512,7 @@ export class MenuScene extends Phaser.Scene {
         }
         names[slot].setText(c.name);
         roles[slot].setText(c.role);
-        notes[slot].setText(hasGameAssets(c) ? (Object.keys(c.assets).length < 9 ? "some motions pending" : "") : "artwork pending");
+        notes[slot].setText(hasGameAssets(c) ? (Object.keys(c.assets).length < 9 ? t("some motions pending") : "") : t("artwork pending"));
         frames[slot].setStrokeStyle(2, state.slot === slot ? 0xffe066 : 0x5a5a72);
       });
     };
@@ -572,7 +573,7 @@ export class MenuScene extends Phaser.Scene {
       ? this.add.text(cx, 0, body, { fontFamily: FONT, fontSize: "12px", color: TEXT_COLOR, align: "left", lineSpacing: 3, wordWrap: { width: W - 40 } }).setOrigin(0.5, 0)
       : null;
     const bodyH = bodyText ? bodyText.height + 16 : 0;
-    const all: OverlayButton[] = [...buttons, { label: "CLOSE", onPress: () => this.closeOverlay() }];
+    const all: OverlayButton[] = [...buttons, { label: t("CLOSE"), onPress: () => this.closeOverlay() }];
     const total = 44 + bodyH + all.length * btnH;
     const top = Math.max(this.compact ? 10 : 30, (H - total) / 2);
     panel.add(this.add.text(cx, top + 14, title, { fontFamily: FONT, fontSize: "24px", color: TEXT_COLOR, fontStyle: "bold" }).setOrigin(0.5));
@@ -606,30 +607,30 @@ export class MenuScene extends Phaser.Scene {
     const hs = loadHighScores();
     const lines: string[] = [];
     for (const [title, list] of [
-      ["ENDLESS  TOP 5", hs.endless],
-      ["TIME ATTACK 2:00  TOP 5", hs.timeattack],
+      [t("ENDLESS  TOP 5"), hs.endless],
+      [t("TIME ATTACK 2:00  TOP 5"), hs.timeattack],
     ] as const) {
       lines.push(title);
-      if (list.length === 0) lines.push("no records yet");
+      if (list.length === 0) lines.push(t("no records yet"));
       list.forEach((e, i) => {
         lines.push(`${i + 1}.  ${String(e.score).padStart(6, "0")}   x${String(e.maxChain).padEnd(2)}  ${e.date || "----------"}`);
       });
       lines.push("");
     }
-    lines.push("VS CPU");
+    lines.push(t("VS CPU"));
     for (const l of ["easy", "normal", "hard"] as CpuLevel[]) {
       const r = hs.cpu[l];
       lines.push(`${l.toUpperCase().padEnd(7)} ${r.wins}W ${r.losses}L`);
     }
     lines.push("");
-    lines.push(`PUZZLE  ${hs.puzzle.length} / ${PUZZLES.length} cleared`);
-    this.openOverlay("records-list", "RECORDS", lines.join("\n"), []);
+    lines.push(t("PUZZLE  {count} / {total} cleared", { count: hs.puzzle.length, total: PUZZLES.length }));
+    this.openOverlay("records-list", t("RECORDS"), lines.join("\n"), []);
   }
 
   /** 音・振動（対応端末のみ）・全画面（対応端末のみ）。 */
   private showSettings(): void {
     const layout = layoutFor("menu");
-    const soundLabel = (): string => `SOUND: ${audio.muted ? "OFF" : "ON"}`;
+    const soundLabel = (): string => t("SOUND: {state}", { state: t(audio.muted ? "OFF" : "ON") });
     const buttons: OverlayButton[] = [
       {
         label: soundLabel(),
@@ -641,7 +642,7 @@ export class MenuScene extends Phaser.Scene {
       },
     ];
     if (haptics.supported) {
-      const label = (): string => `VIBRATION: ${haptics.enabled ? "ON" : "OFF"}`;
+      const label = (): string => t("VIBRATION: {state}", { state: t(haptics.enabled ? "ON" : "OFF") });
       buttons.push({
         label: label(),
         name: "vibration",
@@ -653,9 +654,9 @@ export class MenuScene extends Phaser.Scene {
     }
     // 全画面（Android Chrome など）。standalone の PWA では不要なので出さない。要求はボタンの押下（ユーザー操作）の中で通る
     const withFullscreen = fullscreen.supported && layout.touch;
-    const fsLabel = (): string => `FULL SCREEN: ${fullscreen.active ? "ON" : "OFF"}`;
+    const fsLabel = (): string => t("FULL SCREEN: {state}", { state: t(fullscreen.active ? "ON" : "OFF") });
     if (withFullscreen) buttons.push({ label: fsLabel(), name: "fullscreen", onPress: () => fullscreen.toggle() });
-    const overlay = this.openOverlay("settings-panel", "SETTINGS", "", buttons);
+    const overlay = this.openOverlay("settings-panel", t("SETTINGS"), "", buttons);
     if (!withFullscreen) return;
     const fsBtn = overlay.buttons.find((b) => b.name === "fullscreen");
     const onChange = (): void => {
@@ -674,26 +675,26 @@ export class MenuScene extends Phaser.Scene {
   /** 操作の説明。端末に合わせてタッチかキーボードの説明を出す。 */
   private showHowTo(): void {
     const layout = layoutFor("menu");
-    const lines = ["Line up 3 or more of the same panel to clear them.", "Chains and combos send garbage to the opponent.", ""];
+    const lines = [t("Line up 3 or more of the same panel to clear them."), t("Chains and combos send garbage to the opponent."), ""];
     if (layout.touch) {
-      lines.push("Swap: tap between two panels, or drag a panel sideways");
-      lines.push("Raise: hold ▲ ▲ ▲ under the board, or press the board with 2 fingers");
-      lines.push("Pause: the ❚❚ button");
+      lines.push(t("Swap: tap between two panels, or drag a panel sideways"));
+      lines.push(t("Raise: hold ▲ ▲ ▲ under the board, or press the board with 2 fingers"));
+      lines.push(t("Pause: the ❚❚ button"));
       // iPhone の Safari は Fullscreen API を使えない。ホーム画面に追加すれば URL バーが消えることを案内する
       if (!fullscreen.supported && !fullscreen.standalone && fullscreen.isIOS) {
         lines.push("");
-        lines.push("Full screen: Share ▸ Add to Home Screen");
+        lines.push(t("Full screen: Share ▸ Add to Home Screen"));
       }
     } else {
-      lines.push("P1: ←↑↓→ move   Z swap   X raise");
-      lines.push("P2: WASD move   F swap   H raise");
-      lines.push("Gamepad: D-pad / stick move   A,B swap   L,R raise");
-      lines.push("Mouse: click between two panels, or drag a panel sideways.");
-      lines.push("       Hold ▲ ▲ ▲ under the board to raise");
+      lines.push(t("P1: ←↑↓→ move   Z swap   X raise"));
+      lines.push(t("P2: WASD move   F swap   H raise"));
+      lines.push(t("Gamepad: D-pad / stick move   A,B swap   L,R raise"));
+      lines.push(t("Mouse: click between two panels, or drag a panel sideways."));
+      lines.push(t("       Hold ▲ ▲ ▲ under the board to raise"));
       lines.push("");
-      lines.push("P pause   R restart   Esc menu   M mute   V vibration");
+      lines.push(t("P pause   R restart   Esc menu   M mute   V vibration"));
     }
-    this.openOverlay("howto-panel", "HOW TO PLAY", lines.join("\n"), []);
+    this.openOverlay("howto-panel", t("HOW TO PLAY"), lines.join("\n"), []);
   }
 
   /**
@@ -714,10 +715,10 @@ export class MenuScene extends Phaser.Scene {
     const compact = H < 560;
     const cx = W / 2;
     const top = compact ? 22 : layout.portrait ? 64 : 52;
-    panel.add(this.add.text(cx, top, "PUZZLE", { fontFamily: FONT, fontSize: "28px", color: TEXT_COLOR, fontStyle: "bold" }).setOrigin(0.5));
+    panel.add(this.add.text(cx, top, t("PUZZLE"), { fontFamily: FONT, fontSize: "28px", color: TEXT_COLOR, fontStyle: "bold" }).setOrigin(0.5));
     panel.add(
       this.add
-        .text(cx, top + 24, `${PUZZLE_STAGES} STAGES  x  ${PUZZLES_PER_STAGE} PUZZLES`, { fontFamily: FONT, fontSize: "11px", color: "#7a7a90" })
+        .text(cx, top + 24, t("{stages} STAGES  x  {puzzles} PUZZLES", { stages: PUZZLE_STAGES, puzzles: PUZZLES_PER_STAGE }), { fontFamily: FONT, fontSize: "11px", color: "#7a7a90" })
         .setOrigin(0.5),
     );
 
@@ -736,7 +737,7 @@ export class MenuScene extends Phaser.Scene {
       const x = cx + (col - (stageCols - 1) / 2) * (stageW + gap);
       const y = stageTop + row * (stageH + gap);
       const done = PUZZLES.slice(s * PUZZLES_PER_STAGE, (s + 1) * PUZZLES_PER_STAGE).filter((_, f) => cleared.has(s * PUZZLES_PER_STAGE + f)).length;
-      const b = new Button(this, x, y - 6, `STAGE ${s + 1}\n${done}/${PUZZLES_PER_STAGE}`, () => {
+      const b = new Button(this, x, y - 6, `${t("STAGE {stage}", { stage: s + 1 })}\n${done}/${PUZZLES_PER_STAGE}`, () => {
         state.stage = s;
         refresh();
       }, { minWidth: stageW, minHeight: stageH, fontSize: 12 }).setName(`stage-${s + 1}`);
@@ -774,8 +775,8 @@ export class MenuScene extends Phaser.Scene {
     const info = this.add.text(cx, infoY, "", { fontFamily: FONT, fontSize: "13px", color: "#9a9ab0", align: "center" }).setOrigin(0.5);
     panel.add(info);
     const btnY = infoY + 38;
-    const play = new Button(this, cx - 60, btnY, "PLAY", () => this.startPuzzle(state.stage * PUZZLES_PER_STAGE + state.face), { minWidth: 100, minHeight: 40 }).setName("play");
-    const close = new Button(this, cx + 60, btnY, "CLOSE", () => this.closePicker(), { minWidth: 100, minHeight: 40 });
+    const play = new Button(this, cx - 60, btnY, t("PLAY"), () => this.startPuzzle(state.stage * PUZZLES_PER_STAGE + state.face), { minWidth: 100, minHeight: 40 }).setName("play");
+    const close = new Button(this, cx + 60, btnY, t("CLOSE"), () => this.closePicker(), { minWidth: 100, minHeight: 40 });
     panel.add([play, close]);
 
     const refresh = (): void => {
@@ -793,7 +794,7 @@ export class MenuScene extends Phaser.Scene {
           dotsGfx.fillRect(x0 + f * (dotW + dotGap), y0, dotW, 4);
         }
       });
-      heading.setText(` STAGE ${state.stage + 1} `);
+      heading.setText(` ${t("STAGE {stage}", { stage: state.stage + 1 })} `);
       faceBtns.forEach((b, f) => {
         const index = state.stage * PUZZLES_PER_STAGE + f;
         const done = cleared.has(index);
@@ -805,7 +806,7 @@ export class MenuScene extends Phaser.Scene {
       });
       const index = state.stage * PUZZLES_PER_STAGE + state.face;
       const st = PUZZLES[index];
-      info.setText(`PUZZLE ${puzzleName(index)}   ${st.moves} MOVE${st.moves === 1 ? "" : "S"}${cleared.has(index) ? "   CLEARED" : ""}`);
+      info.setText(`${t("PUZZLE")} ${puzzleName(index)}   ${st.moves} ${st.moves === 1 ? "MOVE" : "MOVES"}${cleared.has(index) ? t("   CLEARED") : ""}`);
     };
     refresh();
     dim.on("pointerdown", (_p: Phaser.Input.Pointer, _x: number, _y: number, event: Phaser.Types.Input.EventData) => {
