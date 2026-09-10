@@ -12,14 +12,18 @@ export interface Connection {
   token: string;
   invite?: string;
 }
+export class ApiError extends Error {
+  constructor(message: string, readonly code?: string) { super(message); }
+}
 export async function api(path: string, data: unknown = {}): Promise<any> {
   const response = await fetch("/api/" + path, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
+    signal: AbortSignal.timeout(8000),
   });
   const body = await response.json();
-  if (!response.ok) throw new Error(body.error ?? "Could not connect.");
+  if (!response.ok) throw new ApiError(body.error ?? "Could not connect.", body.code);
   return body;
 }
 export const savedConnection = (): Connection | null => {
@@ -31,6 +35,28 @@ export const savedConnection = (): Connection | null => {
     return null;
   }
 };
+export interface Participation {
+  connection: Connection | null;
+  queueId?: string;
+}
+export interface LeaveTarget { roomId?: string; token?: string; queueId?: string }
+const PENDING_LEAVE = "swaprise.pending-leave.v1";
+export function clearConnection(connection: Connection): void {
+  const saved = savedConnection();
+  if (saved?.roomId === connection.roomId && saved.token === connection.token)
+    sessionStorage.removeItem("swaprise.connection.v1");
+}
+export async function leaveParticipation(target: LeaveTarget): Promise<void> {
+  sessionStorage.setItem(PENDING_LEAVE, JSON.stringify(target));
+  await api("online/leave", target);
+  if (target.roomId && target.token) clearConnection(target as Connection);
+  if (sessionStorage.getItem(PENDING_LEAVE) === JSON.stringify(target))
+    sessionStorage.removeItem(PENDING_LEAVE);
+}
+export async function retryPendingLeave(): Promise<void> {
+  const saved = sessionStorage.getItem(PENDING_LEAVE);
+  if (saved) await leaveParticipation(JSON.parse(saved));
+}
 export class OnlineSession extends EventTarget {
   socket: WebSocket | null = null;
   state: RoomState | null = null;
@@ -39,7 +65,7 @@ export class OnlineSession extends EventTarget {
   error = "";
   syncTarget: number | null = null;
   private disposed = false;
-  private waitingForLeave = false;
+  private leaving = false;
   private attempts = 0;
   private reconnect: ReturnType<typeof setTimeout> | null = null;
   private pinger: ReturnType<typeof setInterval>;
@@ -71,6 +97,7 @@ export class OnlineSession extends EventTarget {
     url.protocol = location.protocol === "https:" ? "wss:" : "ws:";
     const ws = (this.socket = new WebSocket(url));
     ws.onopen = () => {
+      if (this.disposed || this.leaving) return;
       this.error = "";
       this.send({
         type: "hello",
@@ -84,6 +111,7 @@ export class OnlineSession extends EventTarget {
       this.notify();
     };
     ws.onmessage = (e) => {
+      if (this.disposed || this.leaving) return;
       const m = JSON.parse(e.data) as ServerMessage;
       if (m.type === "state") {
         this.attempts = 0;
@@ -100,8 +128,8 @@ export class OnlineSession extends EventTarget {
           this.syncTarget = null;
         }
         if (m.state.phase === "closed") {
-          sessionStorage.removeItem("swaprise.connection.v1");
-          if (!this.waitingForLeave) this.dispose();
+          clearConnection(this.connection);
+          this.dispose();
         }
       } else if (m.type === "left") {
         this.dispatchEvent(new Event("left"));
@@ -110,12 +138,12 @@ export class OnlineSession extends EventTarget {
       else if (m.type === "sync" && m.matchId === this.lockstep?.match.id)
         this.syncTarget = m.frame;
       else if (m.type === "requeue") {
-        sessionStorage.removeItem("swaprise.connection.v1");
+        clearConnection(this.connection);
         this.dispatchEvent(new Event("requeue"));
       } else if (m.type === "error") {
         this.error = m.message;
         if (m.fatal) {
-          sessionStorage.removeItem("swaprise.connection.v1");
+          clearConnection(this.connection);
           this.state = null;
           this.dispose();
         }
@@ -131,11 +159,11 @@ export class OnlineSession extends EventTarget {
       this.notify();
     };
     ws.onclose = (event) => {
-      if (this.disposed) return;
+      if (this.disposed || this.leaving) return;
       if (event.code === 4001) {
         this.error = "This room was opened in another tab.";
         this.state = null;
-        sessionStorage.removeItem("swaprise.connection.v1");
+        clearConnection(this.connection);
         this.dispose();
         this.notify();
         return;
@@ -152,6 +180,7 @@ export class OnlineSession extends EventTarget {
       this.reconnect = setTimeout(() => this.open(), 1000);
     };
     ws.onerror = () => {
+      if (this.disposed || this.leaving) return;
       this.error = "Checking connection…";
       this.notify();
     };
@@ -200,29 +229,16 @@ export class OnlineSession extends EventTarget {
     return true;
   }
   async leaveAndWait(): Promise<boolean> {
-    if (this.socket?.readyState !== WebSocket.OPEN) return false;
-    this.waitingForLeave = true;
-    const released = await new Promise<boolean>((resolve) => {
-      const done = () => {
-        clearTimeout(timer);
-        resolve(true);
-      };
-      const timer = setTimeout(() => {
-        this.removeEventListener("left", done);
-        resolve(false);
-      }, 5000);
-      this.addEventListener("left", done, { once: true });
-      this.send({ type: "leave" });
-    });
-    this.waitingForLeave = false;
-    sessionStorage.removeItem("swaprise.connection.v1");
-    this.dispose();
-    return released;
-  }
-  leave(): void {
-    this.send({ type: "leave" });
-    sessionStorage.removeItem("swaprise.connection.v1");
-    this.dispose();
+    // ソケットの状態に関係なくHTTPで退出し、応答を失ったら次回も再試行する。
+    this.leaving = true;
+    try {
+      await leaveParticipation(this.connection);
+      this.dispose();
+      return true;
+    } catch {
+      this.leaving = false;
+      return false;
+    }
   }
   dispose(): void {
     this.disposed = true;

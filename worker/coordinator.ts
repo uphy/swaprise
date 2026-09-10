@@ -3,7 +3,14 @@ import type { Env } from "./types";
 import { displayName, GAME_VERSION, type MatchKind } from "../src/net/protocol";
 import { dayKey, emptyBudget, reserve, type Budget } from "./budget";
 import { json } from "./index";
+interface Assignment {
+  roomId: string;
+  token?: string;
+  queueId?: string;
+  expires: number;
+}
 interface Waiting {
+  queueId?: string;
   session: string;
   name: string;
   visible: boolean;
@@ -22,7 +29,7 @@ export class Coordinator extends DurableObject<Env> {
     const a = await this.ctx.storage.get<{ roomId: string; expires: number }>(
       "active:" + session,
     );
-    if (!a || a.expires <= Date.now()) return null;
+    if (!a) return null;
     const response = await this.env.ROOMS.get(
       this.env.ROOMS.idFromName(a.roomId),
     ).fetch(new Request("https://internal/membership", {
@@ -34,8 +41,8 @@ export class Coordinator extends DurableObject<Env> {
     await this.ctx.storage.delete("active:" + session);
     return null;
   }
-  private async assign(session: string, roomId: string, token?: string, kind: MatchKind = "random"): Promise<void> {
-    const previous = token ? undefined : await this.ctx.storage.get<{ roomId: string; token?: string }>("active:" + session);
+  private async assign(session: string, roomId: string, token?: string, kind: MatchKind = "random", queueId?: string): Promise<void> {
+    const previous = await this.ctx.storage.get<Assignment>("active:" + session);
     const expires = Date.now() + (kind === "invite" ? 86_400_000 + 660_000 : 660_000);
     const alarm = await this.ctx.storage.getAlarm();
     if (!alarm || alarm > expires) await this.ctx.storage.setAlarm(expires);
@@ -43,7 +50,20 @@ export class Coordinator extends DurableObject<Env> {
       roomId,
       token: token ?? (previous?.roomId === roomId ? previous.token : undefined),
       expires,
+      queueId: queueId ?? (previous?.roomId === roomId && (!token || previous.token === token) ? previous.queueId : undefined),
     });
+  }
+  private async queueRejection(session: string, version: unknown, budget: Budget): Promise<Response | null> {
+    if (version !== GAME_VERSION)
+      return json({ code: "UPDATE_REQUIRED", error: "Please reload to update the game." }, 409);
+    if ((await this.active(session)) || this.ctx.getWebSockets().some((ws) =>
+      ws.readyState === WebSocket.OPEN && ws.deserializeAttachment()?.session === session))
+      return json({ code: "PARTICIPATION_EXISTS", error: "You have an existing room or search. Check your participation to continue." }, 409);
+    if (!reserve(structuredClone(budget), "check", "random"))
+      return json({ code: "DAILY_LIMIT", error: "Daily matchmaking limit reached. Try again after 00:00 UTC, or invite a friend if available." }, 429);
+    if (this.ctx.getWebSockets().filter((ws) => ws.readyState === WebSocket.OPEN).length >= 20)
+      return json({ code: "SERVER_BUSY", error: "Server busy. Try again later." }, 429);
+    return null;
   }
   async fetch(req: Request): Promise<Response> {
     return this.run(() => this.handle(req));
@@ -80,10 +100,14 @@ export class Coordinator extends DurableObject<Env> {
       return json({ ok: true });
     }
     if (u.pathname === "/return") {
-      const { session: returning, since } = (await req.json()) as {
+      const { session: returning, since, roomId, token } = (await req.json()) as {
         session: string;
         since: number;
+        roomId: string;
+        token: string;
       };
+      const assigned = await this.ctx.storage.get<Assignment>("active:" + returning);
+      if (assigned?.roomId !== roomId || assigned?.token !== token) return json({ ok: true });
       await this.ctx.storage.delete("active:" + returning);
       await this.ctx.storage.put("return:" + returning, {
         since,
@@ -93,9 +117,62 @@ export class Coordinator extends DurableObject<Env> {
     }
     if (u.pathname === "/release") {
       const { roomId, token } = (await req.json()) as { roomId: string; token?: string };
-      const assigned = await this.ctx.storage.get<{ roomId: string; token?: string }>("active:" + session);
+      const assigned = await this.ctx.storage.get<Assignment>("active:" + session);
       if (assigned?.roomId === roomId && (!assigned.token || assigned.token === token))
         await this.ctx.storage.delete("active:" + session);
+      return json({ ok: true });
+    }
+    // 復旧・退出はゲーム版や対戦用の日次上限に阻まれない。
+    if (req.method === "POST" && ["/api/online/recovery", "/api/online/leave", "/api/online/resume"].includes(u.pathname)) {
+      const body = await req.text();
+      if (body.length > 4096) return json({ error: "Request too large." }, 413);
+      const data = JSON.parse(body || "{}");
+      const assigned = await this.ctx.storage.get<Assignment>("active:" + session);
+      if (u.pathname === "/api/online/recovery") {
+        const roomId = await this.active(session);
+        if (roomId) {
+          const response = await this.room(roomId, "/recovery", { session });
+          if (!response.ok) return response;
+          const result = await response.json() as { connection: { token: string } | null; kind?: MatchKind };
+          if (result.connection) await this.assign(session, roomId, result.connection.token, result.kind);
+          else await this.ctx.storage.delete("active:" + session);
+          return json(result);
+        }
+        const queued = this.ctx.getWebSockets().find((ws) =>
+          ws.readyState === WebSocket.OPEN && ws.deserializeAttachment()?.session === session);
+        if (queued) {
+          const a: Waiting = queued.deserializeAttachment();
+          a.queueId ??= crypto.randomUUID();
+          queued.serializeAttachment(a);
+          return json({ connection: null, queueId: a.queueId });
+        }
+        return json({ connection: null });
+      }
+      if (u.pathname === "/api/online/resume") {
+        if (!assigned || assigned.roomId !== data.roomId || assigned.token !== data.token)
+          return json({ error: "Room participation changed. Please check again." }, 409);
+        const response = await this.room(assigned.roomId, "/takeover", { session, token: data.token });
+        if (!response.ok) return response;
+        const result = await response.json() as { connection: { roomId: string; token: string }; kind: MatchKind };
+        await this.assign(session, assigned.roomId, result.connection.token, result.kind);
+        return json(result.connection);
+      }
+      // 待機から割り当て直後の部屋も、同じ待機IDなら退出できる。
+      if (typeof data.queueId === "string") {
+        for (const ws of this.ctx.getWebSockets()) {
+          const a: Waiting = ws.deserializeAttachment();
+          if (a.session === session && a.queueId === data.queueId) ws.close(1000, "cancelled");
+        }
+      }
+      const matches = assigned && ((typeof data.token === "string" && assigned.roomId === data.roomId && assigned.token === data.token) ||
+        (typeof data.queueId === "string" && assigned.queueId === data.queueId));
+      if (matches) {
+        const response = await this.room(assigned.roomId, "/leave", { session, token: assigned.token });
+        if (!response.ok) return response;
+        const result = await response.json() as { stale?: boolean };
+        if (!result.stale) await this.ctx.storage.delete("active:" + session);
+        console.log(JSON.stringify({ event: "online_leave", via: data.queueId ? "queue" : "room" }));
+      }
       return json({ ok: true });
     }
     const key = "budget:" + dayKey(Date.now());
@@ -110,28 +187,23 @@ export class Coordinator extends DurableObject<Env> {
         resetAt: Date.parse(dayKey(Date.now() + 86400000) + "T00:00:00Z"),
       });
     }
+    if (u.pathname === "/api/queue/status" && req.method === "POST") {
+      const body = await req.text();
+      if (body.length > 4096) return json({ error: "Request too large." }, 413);
+      const data = JSON.parse(body || "{}");
+      return await this.queueRejection(session, data.version, budget) ?? json({ ok: true });
+    }
     if (budget.requests >= 60000 || budget.writes >= 60000)
       return json(
-        { error: "Daily limit reached. Resets at 00:00 UTC." },
+        { code: "DAILY_LIMIT", error: "Daily limit reached. Resets at 00:00 UTC." },
         429,
       );
     if (
       u.pathname === "/api/queue/ws" &&
       req.headers.get("Upgrade") === "websocket"
     ) {
-      if (u.searchParams.get("version") !== GAME_VERSION)
-        return json({ error: "Please reload to update the game." }, 409);
-      if (!reserve(structuredClone(budget), "check", "random"))
-        return json({ error: "Daily matchmaking limit reached. Try again after 00:00 UTC." }, 429);
-      if (
-        (await this.active(session)) ||
-        this.ctx
-          .getWebSockets()
-          .some((ws) => ws.deserializeAttachment()?.session === session)
-      )
-        return json({ error: "You are already in a match or queue." }, 409);
-      if (this.ctx.getWebSockets().length >= 20)
-        return json({ error: "Server busy. Try again later." }, 429);
+      const rejection = await this.queueRejection(session, u.searchParams.get("version"), budget);
+      if (rejection) return rejection;
       const pair = new WebSocketPair();
       const ws = pair[1];
       this.ctx.acceptWebSocket(ws);
@@ -141,6 +213,7 @@ export class Coordinator extends DurableObject<Env> {
       }>("return:" + session);
       await this.ctx.storage.delete("return:" + session);
       ws.serializeAttachment({
+        queueId: crypto.randomUUID(),
         session,
         name: displayName(u.searchParams.get("name")),
         visible: u.searchParams.get("visible") !== "false",
@@ -154,6 +227,7 @@ export class Coordinator extends DurableObject<Env> {
       ws.send(
         JSON.stringify({
           type: "queued",
+          queueId: ws.deserializeAttachment().queueId,
           since: ws.deserializeAttachment().since,
         }),
       );
@@ -180,7 +254,7 @@ export class Coordinator extends DurableObject<Env> {
         )
     )
       return json(
-        { error: "You are in another room. Leave it from the original tab." },
+        { error: "You have an existing room or search. Check your participation to continue." },
         409,
       );
     if (u.pathname === "/api/rooms") {
@@ -244,7 +318,7 @@ export class Coordinator extends DurableObject<Env> {
       const id = crypto.randomUUID();
       await this.room(id, "/init", { id, kind: "random", members });
       for (let i = 0; i < 2; i++) {
-        await this.assign(members[i].session, id, members[i].token);
+        await this.assign(members[i].session, id, members[i].token, "random", members[i].queueId);
         sockets[i].send(
           JSON.stringify({
             type: "matched",
@@ -320,7 +394,14 @@ export class Coordinator extends DurableObject<Env> {
         }
       }
       const all = await this.ctx.storage.list<{ expires?: number }>();
-      for (const [key, value] of all)
+      for (const [key, value] of all) {
+        if (key.startsWith("active:") && (value.expires ?? 0) < Date.now()) {
+          if (await this.active(key.slice(7))) {
+            value.expires = Date.now() + 660000;
+            await this.ctx.storage.put(key, value);
+          }
+          continue;
+        }
         if (
           ((key.startsWith("active:") || key.startsWith("return:")) &&
             (value.expires ?? 0) < Date.now()) ||
@@ -328,6 +409,7 @@ export class Coordinator extends DurableObject<Env> {
             key.slice(7) < dayKey(Date.now() - 86400000))
         )
           await this.ctx.storage.delete(key);
+      }
       if (this.ctx.getWebSockets().length)
         await this.ctx.storage.setAlarm(Date.now() + 30000);
       else {

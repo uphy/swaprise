@@ -118,6 +118,8 @@ export class MenuScene extends Phaser.Scene {
     super("menu");
   }
 
+  private checkedOnlineResume = false;
+
   create(): void {
     // Scene のインスタンスは使い回されるので、前回の表示物への参照を捨てる。
     // 残したままだと refresh() が破棄済みの Text を触って描画が止まる。
@@ -133,7 +135,9 @@ export class MenuScene extends Phaser.Scene {
     createTextures(this);
     // URL の ?mode= は最初の1回だけ効かせる。Esc でメニューに戻ったときに再び飛ばされないよう、ここで消す。
     const params = new URLSearchParams(location.search);
-    if (params.has("room") || sessionStorage.getItem("swaprise.connection.v1")) { this.scene.start("online"); return; }
+    const restoreOnline = !this.checkedOnlineResume;
+    this.checkedOnlineResume = true;
+    if (restoreOnline && (params.has("room") || sessionStorage.getItem("swaprise.connection.v1"))) { this.scene.start("online"); return; }
     const mode = params.get("mode");
     if (mode === "endless" || mode === "timeattack" || mode === "versus" || mode === "cpu" || mode === "puzzle") {
       const cpu = params.get("cpu");
