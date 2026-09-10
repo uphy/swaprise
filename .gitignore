@@ -14,3 +14,7 @@ test-results-online/
 public/characters/
 src/generated/characters.ts
 output/imagegen/
+
+# sprite-genのローカル排他制御ファイル
+.sprite-gen.lock
+.*.sg-rwlock

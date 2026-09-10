@@ -129,8 +129,9 @@ export class BoardView {
   /**
    * Board のイベントを音と演出に変える。tick 直後に呼ぶ。負け・勝ちの音は GameScene が鳴らす。
    * hapticOn は自分が触っている盤面だけ true にする（CPU の盤面で震わせない）。
+   * warnOn を false にすると、危険・天井の警告音を鳴らさない（オンラインの相手の盤面。相手のピンチはこの端末で知らせない）。
    */
-  handleEvents(events: BoardEvent[], soundOn: boolean, hapticOn = false): void {
+  handleEvents(events: BoardEvent[], soundOn: boolean, hapticOn = false, warnOn = soundOn): void {
     if (hapticOn && this.board.panic && !this.board.gameOver) haptics.panic(this.scene.time.now);
     for (const e of events) {
       switch (e.type) {
@@ -169,10 +170,10 @@ export class BoardView {
           if (soundOn) audio.levelUp();
           break;
         case "danger":
-          if (soundOn && e.on) audio.dangerWarn();
+          if (warnOn && e.on) audio.dangerWarn();
           break;
         case "panic":
-          if (soundOn && e.on) audio.panicWarn();
+          if (warnOn && e.on) audio.panicWarn();
           break;
         default:
           break;

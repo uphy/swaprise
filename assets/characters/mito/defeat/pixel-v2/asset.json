@@ -1,0 +1,115 @@
+{
+  "id": "mito-defeat-pixel-v2",
+  "label": "敗北 · ドット絵 v2（透過再生成）",
+  "kind": "animation",
+  "action": "defeat",
+  "image": "mito-defeat-pixel-v2.png",
+  "prompt": "mito-defeat-pixel-v2.prompt.txt",
+  "model": "gpt-image（内蔵画像生成ツール、モデル版指定なし）",
+  "status": "採用版",
+  "pixelArt": true,
+  "notes": "gpt-imageで再生成した透過PNG。色抜き・画像加工なし。旧版は比較用に保存。 全コマ共通倍率。アルファ128以上の足元から基準点と床位置を計測。",
+  "frameCount": 12,
+  "fps": 7,
+  "loop": false,
+  "frames": [
+    {
+      "x": 0,
+      "y": 0,
+      "width": 384,
+      "height": 363,
+      "pivotX": 181.5,
+      "baselineY": 356
+    },
+    {
+      "x": 384,
+      "y": 0,
+      "width": 384,
+      "height": 363,
+      "pivotX": 181.5,
+      "baselineY": 356
+    },
+    {
+      "x": 768,
+      "y": 0,
+      "width": 384,
+      "height": 363,
+      "pivotX": 196,
+      "baselineY": 356
+    },
+    {
+      "x": 1152,
+      "y": 0,
+      "width": 384,
+      "height": 363,
+      "pivotX": 214,
+      "baselineY": 357
+    },
+    {
+      "x": 0,
+      "y": 363,
+      "width": 384,
+      "height": 336,
+      "pivotX": 181.5,
+      "baselineY": 331
+    },
+    {
+      "x": 384,
+      "y": 363,
+      "width": 384,
+      "height": 336,
+      "pivotX": 185.5,
+      "baselineY": 331
+    },
+    {
+      "x": 768,
+      "y": 363,
+      "width": 384,
+      "height": 336,
+      "pivotX": 199,
+      "baselineY": 331
+    },
+    {
+      "x": 1152,
+      "y": 363,
+      "width": 384,
+      "height": 336,
+      "pivotX": 215.5,
+      "baselineY": 331
+    },
+    {
+      "x": 0,
+      "y": 699,
+      "width": 384,
+      "height": 325,
+      "pivotX": 182,
+      "baselineY": 321
+    },
+    {
+      "x": 384,
+      "y": 699,
+      "width": 384,
+      "height": 325,
+      "pivotX": 186.5,
+      "baselineY": 321
+    },
+    {
+      "x": 768,
+      "y": 699,
+      "width": 384,
+      "height": 325,
+      "pivotX": 200.5,
+      "baselineY": 321
+    },
+    {
+      "x": 1152,
+      "y": 699,
+      "width": 384,
+      "height": 325,
+      "pivotX": 214,
+      "baselineY": 321
+    }
+  ],
+  "scale": 1.0286,
+  "lastHoldMs": 0
+}

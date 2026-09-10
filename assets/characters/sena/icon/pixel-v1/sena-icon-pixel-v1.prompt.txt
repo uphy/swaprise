@@ -1,0 +1,4 @@
+Create a square transparent-background pixel art face icon of this exact technical trainee Sena. Head and shoulders three-quarter view facing screen right, composed serious but approachable expression, narrow gray eyes and thin brows. Preserve exact blue-black chin-length bob, ear tuck, pale limestone standing collar and two small brass jacket clasps. Entire hair and shoulders inside canvas with clear margins. Crisp deliberate dark pixel outlines and restrained two-step shading. Only character and transparent empty space.
+
+生成: 内蔵gpt-image。画像加工なし。
+参照: ../../portrait/pixel-v1/sena-portrait-pixel-v1.png

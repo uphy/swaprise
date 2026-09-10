@@ -1,0 +1,28 @@
+{
+  "id": "mito-danger-pixel-v1",
+  "label": "ピンチ · ドット絵 v1",
+  "kind": "animation",
+  "action": "danger",
+  "image": "mito-danger-pixel-v1.png",
+  "prompt": "mito-danger-pixel-v1.prompt.txt",
+  "model": "内蔵画像生成ツール（モデル名未確認）",
+  "status": "旧版・比較用",
+  "pixelArt": true,
+  "history": [
+    {
+      "label": "背景処理前のシート",
+      "url": "mito-danger-pixel-v1-magenta.png"
+    }
+  ],
+  "columns": 3,
+  "rows": 2,
+  "frameWidth": 409,
+  "frameHeight": 642,
+  "frameCount": 6,
+  "fps": 4,
+  "loop": true,
+  "baselineY": 620,
+  "scale": 0.64,
+  "lastHoldMs": 0,
+  "notes": "6コマ。均一なマゼンタ背景を透過し、グリッド用に右端と下端へ1pxの透明余白を追加。"
+}

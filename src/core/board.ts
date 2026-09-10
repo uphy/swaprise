@@ -666,21 +666,41 @@ export class Board {
         }
       }
     }
-    for (const id of ids) {
-      const g = this.garbage.get(id);
-      if (!g || g.state !== "idle") continue;
+    // 今回パネルになるのは各板の最下段。原作どおり、そのパネル同士だけで3つ並ぶ柄は選ばない
+    // （既存のパネルと合わさって揃うのはよい）。下の板から順に決め、左と下の決まった柄を見て避ける
+    const blocks = [...ids]
+      .map((id) => this.garbage.get(id))
+      .filter((g): g is GarbageBlock => !!g && g.state === "idle")
+      .sort((a, b) => a.y - b.y || a.x - b.x);
+    const converting = new Set<number>();
+    for (const g of blocks) for (let c = g.x; c < g.x + g.width; c++) converting.add(g.y * COLS + c);
+    const convertingKind = (x: number, y: number): Kind =>
+      x >= 0 && y >= 0 && converting.has(y * COLS + x) ? this.cells[y][x].revealKind : EMPTY;
+    for (const g of blocks) {
       g.state = "transforming";
       let i = 0;
       for (let r = g.y + g.height - 1; r >= g.y; r--) {
         for (let c = g.x; c < g.x + g.width; c++) {
           const cell = this.cells[r][c];
-          cell.revealKind = this.randomKind();
+          if (r === g.y) {
+            const banned = new Set<Kind>();
+            const left = convertingKind(c - 1, r);
+            if (left !== EMPTY && left === convertingKind(c - 2, r)) banned.add(left);
+            const below = convertingKind(c, r - 1);
+            if (below !== EMPTY && below === convertingKind(c, r - 2)) banned.add(below);
+            let k = this.randomKind();
+            let guard = 0;
+            while (banned.has(k) && guard++ < 32) k = this.randomKind();
+            cell.revealKind = k;
+          } else {
+            cell.revealKind = this.randomKind();
+          }
           cell.revealAt = TIMING.transformFlash + i * TIMING.transformInterval;
           i++;
         }
       }
       g.transformEnd = TIMING.transformFlash + i * TIMING.transformInterval + clearTiming(this.level).transformHover;
-      this.emit({ type: "garbageTransform", id });
+      this.emit({ type: "garbageTransform", id: g.id });
     }
   }
 

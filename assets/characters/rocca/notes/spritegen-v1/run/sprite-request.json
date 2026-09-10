@@ -1,0 +1,87 @@
+{
+  "version": 1,
+  "kind": "sprite-gen-request",
+  "engine": "component-row",
+  "character": {
+    "id": "rocca",
+    "description": "Rocca, 23-year-old female mechanic. Dark brown skin, light brown eyes, very short pale sandy cropped hair. Five heads tall, broad shoulders, muscular forearms, sturdy legs. Grape-purple work overalls, short ivory canvas waist apron, square knee patches, broad safety boots. Small inspection hammer at HER left hip. Feet spread, one hand on hip, warm confident smile. No armor or oversized weapon.",
+    "base_image": "base-source.png"
+  },
+  "cell": {
+    "shape": "square",
+    "width": 512,
+    "height": 512,
+    "safe_margin_x": 12,
+    "safe_margin_y": 12,
+    "size": 512,
+    "safe_margin": 12
+  },
+  "chroma_key": {
+    "name": "green",
+    "hex": "#00FF00",
+    "rgb": [
+      0,
+      255,
+      0
+    ],
+    "selection": "manual"
+  },
+  "states": {
+    "idle": {
+      "frames": 6,
+      "fps": 6,
+      "loop": true,
+      "action": "Gentle breathing and one blink, hand on hip, feet fixed. Seamless relaxed cycle."
+    },
+    "danger": {
+      "frames": 6,
+      "fps": 6,
+      "loop": true,
+      "action": "Focused concerned expression, lean forward slightly and brace shoulders. Small looping tension, feet fixed."
+    },
+    "success": {
+      "frames": 6,
+      "fps": 8,
+      "loop": false,
+      "action": "A quick confident small fist pump then lower hand."
+    },
+    "garbage-land": {
+      "frames": 6,
+      "fps": 8,
+      "loop": false,
+      "action": "Briefly brace knees and shoulders in surprise then steady herself."
+    },
+    "victory": {
+      "frames": 6,
+      "fps": 6,
+      "loop": false,
+      "action": "Bring arms together to cross them, smile proudly and nod once, finish arms crossed."
+    },
+    "defeat": {
+      "frames": 6,
+      "fps": 6,
+      "loop": false,
+      "action": "Lower into a squat and look down thoughtfully at the board, finish crouched without standing back up."
+    },
+    "finish": {
+      "frames": 6,
+      "fps": 6,
+      "loop": false,
+      "action": "Relax shoulders and wipe forehead with one hand, settle contentedly."
+    }
+  },
+  "style": "Detailed pixel-style 2D sprite, crisp outlines and restrained shading, preserve reference details",
+  "motion_phase_guides": false,
+  "layout": "taxonomy/v1",
+  "fit": {
+    "resample": "lanczos",
+    "align_x": "foot-centroid",
+    "align_y": "bottom",
+    "pixel_unfake": false
+  },
+  "chroma": {
+    "mode": "rgb",
+    "unmix_reach": 4,
+    "spill_max_fraction": 0.005
+  }
+}

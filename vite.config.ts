@@ -47,6 +47,8 @@ export default defineConfig({
         ],
       },
       workbox: {
+        // 採用した高解像度の動作シート（約2.2MB）もオフラインで表示する。
+        maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
         globPatterns: ["**/*.{js,css,html,png,webmanifest}"],
         // SKIP_WAITING のあと、開いているページをすぐ新版の管理下に置く。これで workbox-window の controlling が発火して reload できる
         clientsClaim: true,

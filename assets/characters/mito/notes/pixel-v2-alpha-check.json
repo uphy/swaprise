@@ -1,0 +1,83 @@
+[
+  {
+    "action": "portrait",
+    "width": 1024,
+    "height": 1536,
+    "mode": "RGBA",
+    "transparentPixels": 1020915,
+    "transparentPercent": 64.91,
+    "magentaPixels": 0
+  },
+  {
+    "action": "icon",
+    "width": 1254,
+    "height": 1254,
+    "mode": "RGBA",
+    "transparentPixels": 768601,
+    "transparentPercent": 48.88,
+    "magentaPixels": 0
+  },
+  {
+    "action": "idle",
+    "width": 1536,
+    "height": 1024,
+    "mode": "RGBA",
+    "transparentPixels": 1104590,
+    "transparentPercent": 70.23,
+    "magentaPixels": 0
+  },
+  {
+    "action": "danger",
+    "width": 1536,
+    "height": 1024,
+    "mode": "RGBA",
+    "transparentPixels": 892656,
+    "transparentPercent": 56.75,
+    "magentaPixels": 0
+  },
+  {
+    "action": "success",
+    "width": 1536,
+    "height": 1024,
+    "mode": "RGBA",
+    "transparentPixels": 912034,
+    "transparentPercent": 57.99,
+    "magentaPixels": 0
+  },
+  {
+    "action": "garbage-land",
+    "width": 1536,
+    "height": 1024,
+    "mode": "RGBA",
+    "transparentPixels": 922149,
+    "transparentPercent": 58.63,
+    "magentaPixels": 0
+  },
+  {
+    "action": "victory",
+    "width": 1536,
+    "height": 1024,
+    "mode": "RGBA",
+    "transparentPixels": 1052315,
+    "transparentPercent": 66.9,
+    "magentaPixels": 0
+  },
+  {
+    "action": "defeat",
+    "width": 1536,
+    "height": 1024,
+    "mode": "RGBA",
+    "transparentPixels": 1049506,
+    "transparentPercent": 66.73,
+    "magentaPixels": 0
+  },
+  {
+    "action": "finish",
+    "width": 1536,
+    "height": 1024,
+    "mode": "RGBA",
+    "transparentPixels": 943320,
+    "transparentPercent": 59.97,
+    "magentaPixels": 0
+  }
+]

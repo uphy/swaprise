@@ -1,0 +1,12 @@
+{
+  "id": "mito-icon-pixel-v2",
+  "label": "顔アイコン · ドット絵 v2（透過再生成）",
+  "kind": "image",
+  "action": "icon",
+  "image": "mito-icon-pixel-v2.png",
+  "prompt": "mito-icon-pixel-v2.prompt.txt",
+  "model": "gpt-image（内蔵画像生成ツール、モデル版指定なし）",
+  "status": "採用版",
+  "pixelArt": true,
+  "notes": "gpt-imageで再生成した透過PNG。色抜き・画像加工なし。旧版は比較用に保存。"
+}

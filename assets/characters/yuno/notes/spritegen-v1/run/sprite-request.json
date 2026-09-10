@@ -1,0 +1,87 @@
+{
+  "version": 1,
+  "kind": "sprite-gen-request",
+  "engine": "component-row",
+  "character": {
+    "id": "yuno",
+    "description": "Yuno, 20-year-old female cartographer. Four-and-a-half heads tall, round cheeks, soft stocky build. Dark chestnut thick single braid to middle back, dark green eyes. Moss-green waist jacket, pale pink shirt, loose brown trousers, brown shoes. Flat oval map case on back. Hands hold half-open accordion-folded paper map at waist. Warm gentle face. No hat or cloak.",
+    "base_image": "base-source.png"
+  },
+  "cell": {
+    "shape": "square",
+    "width": 512,
+    "height": 512,
+    "safe_margin_x": 12,
+    "safe_margin_y": 12,
+    "size": 512,
+    "safe_margin": 12
+  },
+  "chroma_key": {
+    "name": "manual",
+    "hex": "#0000FF",
+    "rgb": [
+      0,
+      0,
+      255
+    ],
+    "selection": "manual"
+  },
+  "states": {
+    "idle": {
+      "frames": 6,
+      "fps": 6,
+      "loop": true,
+      "action": "Breathe softly and blink, holding half-open map steady. Seamless cycle."
+    },
+    "danger": {
+      "frames": 6,
+      "fps": 6,
+      "loop": true,
+      "action": "Glance down at map then forward, brows concerned, hold map close. Seamless subtle cycle."
+    },
+    "success": {
+      "frames": 6,
+      "fps": 8,
+      "loop": false,
+      "action": "Brighten and point to a place on the map with one finger then settle."
+    },
+    "garbage-land": {
+      "frames": 6,
+      "fps": 8,
+      "loop": false,
+      "action": "Startle briefly, grip map securely and regain balance."
+    },
+    "victory": {
+      "frames": 6,
+      "fps": 6,
+      "loop": false,
+      "action": "Smile and hug the partly unfolded map to chest, finishing with map held happily."
+    },
+    "defeat": {
+      "frames": 6,
+      "fps": 6,
+      "loop": false,
+      "action": "Look down sadly and carefully straighten the map edges, end looking down without recovery."
+    },
+    "finish": {
+      "frames": 6,
+      "fps": 6,
+      "loop": false,
+      "action": "Fold map neatly and breathe out with a gentle satisfied expression."
+    }
+  },
+  "style": "Detailed pixel-style 2D sprite, crisp outlines and restrained shading, preserve reference details",
+  "motion_phase_guides": false,
+  "layout": "taxonomy/v1",
+  "fit": {
+    "resample": "lanczos",
+    "align_x": "foot-centroid",
+    "align_y": "bottom",
+    "pixel_unfake": false
+  },
+  "chroma": {
+    "mode": "rgb",
+    "unmix_reach": 4,
+    "spill_max_fraction": 0.005
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "kind": "sprite-gen-image-report",
+  "provider": "codex",
+  "prompt": "One full-body base idle game sprite. Detailed pixel-style 2D art, crisp dark-brown outlines, broad colors, restrained two-tone shading, cozy workshop puzzle game. Preserve details readable at 512 pixels tall, not coarse 96/128px art. Whole subject contained with generous margin. Humans/animal face slightly screen right. No floor, shadow, text or detached objects. Rocca, 23-year-old female mechanic. Dark brown skin, light brown eyes, very short pale sandy cropped hair. Five heads tall, broad shoulders, muscular forearms, sturdy legs. Grape-purple work overalls, short ivory canvas waist apron, square knee patches, broad safety boots. Small inspection hammer at HER left hip. Feet spread, one hand on hip, warm confident smile. No armor or oversized weapon. Perfectly flat solid #00FF00 background everywhere including holes.",
+  "out": "/private/tmp/swaprise-mito-assets/assets/characters/rocca/notes/spritegen-v1/base.png",
+  "raw": "/private/tmp/swaprise-mito-assets/assets/characters/rocca/notes/spritegen-v1/base.png.raw.png",
+  "raw_bytes": 1498448,
+  "elapsed_seconds": 67.954,
+  "model": null,
+  "session_id": "01a08685-7df7-7a63-aefa-ee4935a7b4d5",
+  "refs": [],
+  "transparent": false,
+  "alpha": null,
+  "chroma": null,
+  "extra": {
+    "inline_results": 1,
+    "rollout_cleaned": true,
+    "transparent_background_reported": false
+  },
+  "provider_resolved_from": "explicit"
+}

@@ -1,0 +1,51 @@
+{
+  "id": "sena-idle-spritegen-v1",
+  "label": "待機 · sprite-gen v1",
+  "kind": "animation",
+  "action": "idle",
+  "image": "../../notes/spritegen-v1/run/sprite-sheet-alpha.png",
+  "prompt": "../../notes/spritegen-v1/run/prompts/idle.txt",
+  "model": "gpt-image（sprite-gen / Codex CLI、モデル版指定なし）",
+  "status": "比較試作・未採用",
+  "pixelArt": true,
+  "notes": "sprite-gen v2.0.3。背景除去・コマ抽出・24色パレット・2倍ピクセル整形済み。生成原画の格子検出に警告あり。動作はbest-effort。",
+  "frameCount": 4,
+  "fps": 4,
+  "loop": true,
+  "lastHoldMs": 0,
+  "scale": 1.5,
+  "frames": [
+    {
+      "x": 0,
+      "y": 0,
+      "width": 192,
+      "height": 256,
+      "pivotX": 96,
+      "baselineY": 244
+    },
+    {
+      "x": 192,
+      "y": 0,
+      "width": 192,
+      "height": 256,
+      "pivotX": 96,
+      "baselineY": 244
+    },
+    {
+      "x": 384,
+      "y": 0,
+      "width": 192,
+      "height": 256,
+      "pivotX": 96,
+      "baselineY": 244
+    },
+    {
+      "x": 576,
+      "y": 0,
+      "width": 192,
+      "height": 256,
+      "pivotX": 96,
+      "baselineY": 244
+    }
+  ]
+}

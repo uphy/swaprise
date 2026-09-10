@@ -1,0 +1,4 @@
+Create a WIDE LANDSCAPE 1536x1024 transparent-background pixel art sprite sheet of this exact courier girl. SIX full-body frames in a 3-column 2-row grid of square cells. Each figure centered within its own cell with empty margins on all sides. DANGER LOOP: crouch slightly, grip satchel strap, tense focused eyebrows, subtle breathing and a small bead of sweat, tags tremble gently; keep feet planted and end close to initial pose. Identical face, teal coat, low ponytail, satchel and accessories, fixed size and foot baseline, crisp dark pixel outlines. Only characters and empty transparent space.
+
+生成: 内蔵 gpt-image。参照: ../../portrait/pixel-v2/mito-portrait-pixel-v2.png
+画像の後処理なし。生成されたアルファチャンネルを保持。

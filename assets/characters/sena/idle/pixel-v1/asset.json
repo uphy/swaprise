@@ -1,0 +1,67 @@
+{
+  "id": "sena-idle-pixel-v1",
+  "label": "待機 · ドット絵 v1",
+  "kind": "animation",
+  "action": "idle",
+  "image": "sena-idle-pixel-v1.png",
+  "prompt": "sena-idle-pixel-v1.prompt.txt",
+  "model": "gpt-image（内蔵画像生成ツール、モデル版指定なし）",
+  "status": "試作・確認用",
+  "pixelArt": true,
+  "notes": "セナの人物設定と基準立ち絵から生成。生成PNGのアルファを保持し、色抜き・画像加工なし。 全コマ共通倍率。足元から基準点と床位置を計測。",
+  "frameCount": 6,
+  "fps": 4,
+  "loop": true,
+  "frames": [
+    {
+      "x": 0,
+      "y": 0,
+      "width": 512,
+      "height": 516,
+      "pivotX": 284.5,
+      "baselineY": 510
+    },
+    {
+      "x": 512,
+      "y": 0,
+      "width": 512,
+      "height": 516,
+      "pivotX": 264.0,
+      "baselineY": 510
+    },
+    {
+      "x": 1024,
+      "y": 0,
+      "width": 512,
+      "height": 516,
+      "pivotX": 248.5,
+      "baselineY": 510
+    },
+    {
+      "x": 0,
+      "y": 516,
+      "width": 512,
+      "height": 508,
+      "pivotX": 285.0,
+      "baselineY": 506
+    },
+    {
+      "x": 512,
+      "y": 516,
+      "width": 512,
+      "height": 508,
+      "pivotX": 262.5,
+      "baselineY": 505
+    },
+    {
+      "x": 1024,
+      "y": 516,
+      "width": 512,
+      "height": 508,
+      "pivotX": 248.0,
+      "baselineY": 506
+    }
+  ],
+  "scale": 0.72,
+  "lastHoldMs": 0
+}
