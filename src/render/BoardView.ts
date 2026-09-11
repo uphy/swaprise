@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { t } from "./i18n";
 import { Board, COLS, EMPTY, ROWS, TIMING, TOTAL_ROWS, isPanel, type BoardEvent } from "../core";
 import { BOARD_BG, BOARD_H, BOARD_W, CELL, FONT, TEXT_COLOR, isTouchDevice } from "./theme";
 import { audio } from "./shared";
@@ -319,6 +320,7 @@ export class BoardView {
     const mm = String(Math.floor(seconds / 60)).padStart(2, "0");
     const ss = String(seconds % 60).padStart(2, "0");
     const parts = [`${mm}:${ss}`];
+    if (this.timeLimit !== null && b.frame >= this.timeLimit && !b.isSettled()) parts.push(t("SETTLING"));
     // 残り10秒を切ったら赤く
     this.infoText.setColor(this.timeLimit !== null && seconds <= 10 ? "#ff5c6c" : "#9a9ab0");
     if (this.showLevel) parts.push(`SPEED ${b.level}`);

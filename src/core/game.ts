@@ -89,8 +89,17 @@ export class Game {
 
   tick(inputs: Input[]): void {
     if (this.finished) return;
+    if (this.timeUp) {
+      // After the deadline, only finish existing board motion. No input,
+      // automatic/manual rise, or late top-out may interrupt these chains.
+      const board = this.boards[0];
+      board.tick(NO_INPUT, true);
+      this.finished = board.isSettled();
+      return;
+    }
     const resolved = this.boards.map((_, i) => inputs[i] ?? NO_INPUT);
     if (this.cpu) resolved[1] = this.cpu.next();
+    const risenBefore = this.boards[0].risenRows;
     this.boards.forEach((b, i) => b.tick(resolved[i]));
     if (this.boards.length === 2) {
       const [a, b] = this.boards;
@@ -117,8 +126,9 @@ export class Game {
         this.puzzleResult = "fail";
       }
     } else if (this.timeLimit !== null && this.boards[0].frame >= this.timeLimit) {
-      this.finished = true;
       this.timeUp = true;
+      // A row raised on the final tick is matched on the next tick.
+      this.finished = this.boards[0].isSettled() && this.boards[0].risenRows === risenBefore;
     }
   }
 

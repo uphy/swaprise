@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { SCORE_RULES, eligibleRun, validSubmission, type Submission } from "../src/scores/model";
+import { SCORE_RULES, scoreRules, eligibleRun, validSubmission, type Submission } from "../src/scores/model";
 import { enqueueScore, flushScores, pendingScores, playerName, publication, savePlayerName, setPublication } from "../src/scores/client";
 
 const entry = (): Submission => ({ id: crypto.randomUUID(), rules: SCORE_RULES, mode: "endless", name: "Player", score: 1200, maxChain: 4, seed: 7, frames: 600 });
@@ -14,8 +14,9 @@ afterEach(async () => { setPublication(false); await vi.advanceTimersByTimeAsync
 describe("standard score rules", () => {
   it("accepts both modes, including an early time-attack loss", () => {
     expect(validSubmission(entry())).toBe(true);
-    expect(validSubmission({ ...entry(), mode: "timeattack", frames: 1 })).toBe(true);
-    expect(validSubmission({ ...entry(), mode: "timeattack", frames: 7201 })).toBe(false);
+    expect(validSubmission({ ...entry(), mode: "timeattack", rules: scoreRules("timeattack"), frames: 1 })).toBe(true);
+    expect(validSubmission({ ...entry(), mode: "timeattack", rules: scoreRules("timeattack"), frames: 7201 })).toBe(false);
+    expect(validSubmission({ ...entry(), mode: "timeattack", frames: 7200 })).toBe(false);
   });
   it("rejects malformed, out-of-range and old rules records", () => {
     for (const patch of [{ score: 100000 }, { score: -1 }, { score: 1.5 }, { seed: NaN }, { name: "a\nb" }, { name: "😀".repeat(21) }, { id: "bad" }, { rules: "old" }, { frames: 0 }, { mode: "cpu" }])

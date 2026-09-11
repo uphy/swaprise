@@ -1,8 +1,8 @@
 import { expect, test, type APIRequestContext } from "@playwright/test";
-import { SCORE_RULES } from "../src/scores/model";
+import { scoreRules, type ScoreMode } from "../src/scores/model";
 import { randomUUID } from "node:crypto";
 
-const score = (mode = "endless") => ({ id: randomUUID(), rules: SCORE_RULES, mode, name: "D1 player", score: 90000, maxChain: 7, seed: 123, frames: 600 });
+const score = (mode: ScoreMode = "endless") => ({ id: randomUUID(), rules: scoreRules(mode), mode, name: "D1 player", score: 90000, maxChain: 7, seed: 123, frames: 600 });
 async function connect(request: APIRequestContext, baseURL: string): Promise<Record<string, string>> {
   const headers = { Origin: baseURL, "CF-Connecting-IP": `test-${randomUUID()}` };
   expect((await request.post("/api/session", { headers })).ok()).toBe(true);
@@ -25,6 +25,12 @@ test("D1: public top 50, mode separation, chain/date ordering and idempotent upl
   expect(ids).not.toContain(time.id);
   expect(Object.keys(rows[0]).sort()).toEqual(["createdAt", "id", "maxChain", "name", "score"]);
   expect((await (await request.get("/api/scores?mode=timeattack")).json()).scores.some((r: { id: string }) => r.id === time.id)).toBe(true);
+  const around = await (await request.get(`/api/scores?mode=endless&around=${first.id}`)).json();
+  expect(around.rank).toBe(ids.indexOf(first.id) + 1);
+  expect(around.scores.map((r: { id: string }) => r.id)).toEqual([higherChain.id, first.id, later.id]);
+  expect(around.scores.map((r: { rank: number }) => r.rank)).toEqual([around.rank - 1, around.rank, around.rank + 1]);
+  expect((await request.get(`/api/scores?mode=timeattack&around=${first.id}`)).status()).toBe(404);
+  expect((await request.get("/api/scores?mode=endless&around=bad")).status()).toBe(400);
 });
 test("D1: invalid payloads, origins, versions, no session and rate limits", async ({ request, baseURL }) => {
   expect((await request.get("/api/scores?mode=endless")).status()).toBe(200);
@@ -40,4 +46,11 @@ test("D1: invalid payloads, origins, versions, no session and rate limits", asyn
   expect(outcomes.filter((r) => r.status() === 201)).toHaveLength(60);
   expect(outcomes.filter((r) => r.status() === 429)).toHaveLength(5);
   expect((await (await request.get("/api/scores?mode=endless")).json()).scores).toHaveLength(50);
+  const bottom = { ...score(), score: 0 };
+  expect((await request.post("/api/scores", { headers: await connect(request, baseURL!), data: bottom })).status()).toBe(201);
+  const around = await (await request.get(`/api/scores?mode=endless&around=${bottom.id}`)).json();
+  expect(around.rank).toBeGreaterThan(50);
+  expect(around.rank).toBe(around.total);
+  expect(around.scores.at(-1).id).toBe(bottom.id);
+  expect(around.scores).toHaveLength(2);
 });

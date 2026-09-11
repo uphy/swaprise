@@ -1,6 +1,8 @@
 /** Bump independently of the multiplayer protocol when scoring/gameplay changes. */
 export const SCORE_RULES = "scores-v1";
 export type ScoreMode = "endless" | "timeattack";
+/** Deadline settlement changes scoring for time attack only. */
+export const scoreRules = (mode: ScoreMode): string => mode === "timeattack" ? "scores-ta-v2" : SCORE_RULES;
 export interface Submission {
   id: string;
   rules: string;
@@ -18,13 +20,18 @@ export interface RankedScore {
   maxChain: number;
   createdAt: number;
 }
+export interface ScoreStanding {
+  rank: number;
+  total: number;
+  scores: (RankedScore & { rank: number })[];
+}
 export const scoreMode = (value: unknown): value is ScoreMode => value === "endless" || value === "timeattack";
 const integer = (v: unknown, min: number, max: number): v is number => typeof v === "number" && Number.isInteger(v) && v >= min && v <= max;
 export function validSubmission(v: unknown): v is Submission {
   if (!v || typeof v !== "object") return false;
   const s = v as Submission;
   return typeof s.id === "string" && /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/.test(s.id)
-    && s.rules === SCORE_RULES && scoreMode(s.mode)
+    && scoreMode(s.mode) && s.rules === scoreRules(s.mode)
     && typeof s.name === "string" && Array.from(s.name).length >= 1 && Array.from(s.name).length <= 20
     && s.name === s.name.trim() && !/[\p{C}\p{Zl}\p{Zp}]/u.test(s.name)
     && integer(s.score, 0, 99999) && integer(s.maxChain, 0, 9999)

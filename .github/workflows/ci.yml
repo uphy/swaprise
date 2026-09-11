@@ -38,6 +38,11 @@ jobs:
 
   e2e:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    container:
+      # Update alongside the locked @playwright/test version.
+      image: mcr.microsoft.com/playwright:v1.63.0-noble
+      options: --init --ipc=host
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -49,6 +54,7 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - uses: ./.github/actions/playwright
+        timeout-minutes: 2
       - run: pnpm e2e
         env:
           CI: "1"
@@ -62,6 +68,10 @@ jobs:
 
   e2e-online:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    container:
+      image: mcr.microsoft.com/playwright:v1.63.0-noble
+      options: --init --ipc=host
     strategy:
       fail-fast: false
       matrix:
@@ -77,6 +87,7 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - uses: ./.github/actions/playwright
+        timeout-minutes: 2
       # 各 runner で別々の Wrangler を起動するので、待機列も部屋も混ざらない。
       - run: pnpm e2e:online --shard=${{ matrix.shard }}/3
         env:

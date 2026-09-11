@@ -1,6 +1,14 @@
 /* Focus containment is native; presentation is a full game menu, not a card. */
 .score-dialog { position: fixed; inset: 0; margin: 0; width: 100%; max-width: none; max-height: none; padding: 0; border: 0; border-radius: 0; background: #14141c; color: #f4f4f8; font: 22px/1.5 "Menlo", "Consolas", monospace; box-sizing: border-box; overflow: hidden; outline: none; touch-action: pan-y; }
 .score-dialog::backdrop { background: #14141c; }
+.score-result { z-index: 10; height: 100dvh; }
+.result-summary strong { font-size: 36px; color: #ffe066; }
+.result-summary p { margin: 4px 0 8px; }
+.score-result .result-you { background: #303044; color: #ffe066; }
+.score-result nav { flex-wrap: wrap; }
+.score-result nav button:first-child { flex: 2; }
+.score-dialog.score-result ol { padding-left: 0; list-style-position: inside; }
+.score-dialog.score-result li { padding: 8px 10px; }
 .score-screen { box-sizing: border-box; width: min(100%, 680px); height: 100%; margin: auto; display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto; padding: max(20px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left)); }
 .player-screen .score-screen { max-width: 480px; }
 .score-screen header { padding-bottom: 16px; }

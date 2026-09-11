@@ -1,16 +1,25 @@
-name: Playwright の準備
-description: ブラウザのキャッシュと Chromium の実行に必要な依存関係を準備する
+name: Playwright コンテナの確認
+description: インストール済みブラウザのバージョン一致と起動を確認する（ダウンロードなし）
 runs:
   using: composite
   steps:
-    - uses: actions/cache@v4
-      id: browser-cache
-      with:
-        path: ~/.cache/ms-playwright
-        key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
-    - if: steps.browser-cache.outputs.cache-hit != 'true'
+    - name: イメージのバージョンと Chromium の起動を確認
       shell: bash
-      run: pnpm exec playwright install --with-deps chromium
-    - if: steps.browser-cache.outputs.cache-hit == 'true'
-      shell: bash
-      run: pnpm exec playwright install-deps chromium
+      run: |
+        node --input-type=module <<'NODE'
+        import assert from 'node:assert/strict';
+        import { readFileSync } from 'node:fs';
+        import { createRequire } from 'node:module';
+        import { chromium } from '@playwright/test';
+        const require = createRequire(import.meta.url);
+        const version = require('@playwright/test/package.json').version;
+        const workflow = readFileSync('.github/workflows/ci.yml', 'utf8');
+        const images = [...workflow.matchAll(/image:\s*mcr\.microsoft\.com\/playwright:v([^\s]+)-noble/g)];
+        assert.equal(images.length, 2, 'Both E2E jobs must use a pinned Playwright image');
+        for (const [, imageVersion] of images) {
+          assert.equal(imageVersion, version, 'Update CI image tags alongside @playwright/test');
+        }
+        const browser = await chromium.launch();
+        console.log(`Playwright ${version}: bundled Chromium ${browser.version()} ready`);
+        await browser.close();
+        NODE

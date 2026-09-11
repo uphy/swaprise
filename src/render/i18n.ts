@@ -3,6 +3,19 @@ export type Locale = "en" | "ja";
 const locale: Locale = typeof navigator !== "undefined" && navigator.language.toLowerCase().startsWith("ja") ? "ja" : "en";
 
 const JA: Record<string, string> = {
+  "SETTLING": "連鎖を集計中",
+  "Ranked per play · unverified scores": "プレイ単位・プレイ内容の検証なし",
+  "RESULT": "結果", "POINTS": "点", "First record!": "初めての記録！", "New best! +{points}": "自己ベスト更新！ ＋{points}",
+  "Matched your best!": "自己ベストと同点！", "{points} to your best": "自己ベストまであと{points}",
+  "vs previous {count} average: {difference}": "直近{count}回の平均比 {difference}",
+  "Recent trend appears from your next game.": "次回から直近の成績と比較できます。",
+  "YOUR RANKING": "今回の順位", "VIEW RANKING": "ランキングを見る", "REFRESH": "再取得", "THIS RUN": "今回",
+  "Private record · only your progress is shown.": "公開オフ · 自分の成績のみ表示しています。",
+  "Upload pending. Your rank will appear after publishing.": "送信待ちです。公開後に順位を表示します。",
+  "This score is not available in the ranking yet.": "この記録の順位はまだ取得できません。",
+  "TOP 50 · each play is a separate record": "上位50件 · プレイごとの記録です",
+  "#{rank} / {total} records": "{total}件中 {rank}位（プレイ単位）",
+  "Could not load rankings. Your record is saved on this device.": "順位を取得できませんでした。記録はこの端末に保存されています。",
   "OFFLINE DATA": "オフライン用データ",
   "Character images download only when needed. Saved images work offline; images not yet saved may be unavailable.": "キャラ画像は必要になったときだけ取得します。保存済みの画像はオフラインでも使えますが、未取得の画像は表示できないことがあります。",
   "Save all characters: up to {mb} MB. Wi-Fi recommended. Already saved files will be reused.": "全キャラの保存は最大約{mb}MBです。Wi-Fiでの保存をおすすめします。保存済みの画像は再利用します。",
