@@ -4,6 +4,7 @@ import type { ScoreMode } from "../scores/model";
 import { t } from "./i18n";
 import { loadHighScores } from "./highscore";
 import { PUZZLES, type CpuLevel } from "../core";
+import { characterFiles, savedCharacterCount, saveAllCharacters } from "../characters/offline";
 import "./score-dialog.css";
 
 const element = <K extends keyof HTMLElementTagNameMap>(tag: K, text = ""): HTMLElementTagNameMap[K] => {
@@ -137,4 +138,32 @@ export function showRecordsDialog(scene: Phaser.Scene): void {
   localButton.setAttribute("aria-pressed", "true"); onlineButton.setAttribute("aria-pressed", "false");
   button(footer, "CLOSE", close);
   root.addEventListener("close", () => request?.abort(), { once: true });
+}
+
+export function showOfflineSettings(scene: Phaser.Scene): void {
+  let download: AbortController | undefined;
+  const { root, body, footer, close } = dialog(scene, t("OFFLINE DATA"));
+  const files = characterFiles();
+  const mb = (files.reduce((n, f) => n + f.bytes, 0) / 1000000).toFixed(1);
+  body.append(element("p", t("Character images download only when needed. Saved images work offline; images not yet saved may be unavailable.")),
+    element("p", t("Save all characters: up to {mb} MB. Wi-Fi recommended. Already saved files will be reused.", { mb })),
+    element("p", t("Browser storage may be cleared. Check here before playing offline.")));
+  const status = element("p"); status.setAttribute("role", "status"); body.append(status);
+  const refresh = (): void => {
+    void savedCharacterCount().then((count) => { if (!download && root.isConnected) status.textContent = t("SAVED: {count} / {total}", { count, total: files.length }); })
+      .catch(() => { if (root.isConnected) status.textContent = t("Offline storage is unavailable."); });
+  };
+  const start = button(body, "SAVE ALL CHARACTERS", () => {
+    if (download) return;
+    download = new AbortController(); start.disabled = true; cancel.hidden = false;
+    status.textContent = t("Loading…");
+    void saveAllCharacters(download.signal, (count, total) => { status.textContent = t("SAVED: {count} / {total}", { count, total }); })
+      .then(() => { status.textContent = t("All characters are ready offline."); })
+      .catch(() => { if (root.isConnected) status.textContent = t("Download stopped. Saved files remain; retry to continue."); })
+      .finally(() => { download = undefined; start.disabled = false; cancel.hidden = true; });
+  });
+  const cancel = button(body, "CANCEL", () => download?.abort()); cancel.hidden = true;
+  button(footer, "CLOSE", close);
+  root.addEventListener("close", () => download?.abort(), { once: true });
+  refresh();
 }

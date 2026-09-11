@@ -3,6 +3,15 @@ export type Locale = "en" | "ja";
 const locale: Locale = typeof navigator !== "undefined" && navigator.language.toLowerCase().startsWith("ja") ? "ja" : "en";
 
 const JA: Record<string, string> = {
+  "OFFLINE DATA": "オフライン用データ",
+  "Character images download only when needed. Saved images work offline; images not yet saved may be unavailable.": "キャラ画像は必要になったときだけ取得します。保存済みの画像はオフラインでも使えますが、未取得の画像は表示できないことがあります。",
+  "Save all characters: up to {mb} MB. Wi-Fi recommended. Already saved files will be reused.": "全キャラの保存は最大約{mb}MBです。Wi-Fiでの保存をおすすめします。保存済みの画像は再利用します。",
+  "Browser storage may be cleared. Check here before playing offline.": "ブラウザーの保存データは消去されることがあります。オフラインで遊ぶ前に、ここで保存状況を確認できます。",
+  "SAVED: {count} / {total}": "保存済み: {count} / {total}",
+  "Offline storage is unavailable.": "この環境ではオフライン用の保存ができません。",
+  "SAVE ALL CHARACTERS": "全キャラを保存",
+  "All characters are ready offline.": "全キャラをオフラインで使えるようになりました。",
+  "Download stopped. Saved files remain; retry to continue.": "保存を中断しました。保存済み分は残っています。再実行すると続きから保存します。",
   "Your name is shared with online play.": "名前はオンライン対戦と共通です。",
   "Publish scores automatically": "スコアを自動公開する",
   "Endless / time attack. Your name and records will be visible to everyone.": "エンドレス・タイムアタックが対象です。名前と記録は誰でも閲覧できます。",

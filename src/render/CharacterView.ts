@@ -2,6 +2,7 @@ import Phaser from "phaser";
 import { type Character, type CharacterAction, type CharacterAsset, type FrameRect, resolveAction } from "../characters/catalog";
 import { Reaction, type ReactionAction, type ResultAction, type ShortReaction } from "../characters/reaction";
 import { FONT, TEXT_COLOR } from "./theme";
+import { characterImage } from "../characters/offline";
 
 /**
  * 画廊の表示と同じ寸法の基準。画廊は 432px の canvas の下 24px を床にして素材を等倍で描くので、
@@ -76,8 +77,12 @@ export function loadCharacterAsset(scene: Phaser.Scene, asset: CharacterAsset): 
   const pending = loading.get(key);
   if (pending) return pending;
   const promise = new Promise<void>((resolve, reject) => {
+    const controller = new AbortController();
+    let objectUrl: string | undefined;
     const event = `filecomplete-image-${key}`;
     const cleanup = (): void => {
+      controller.abort();
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
       scene.load.off(event, complete);
       scene.load.off("loaderror", failed);
       scene.events.off("shutdown", stopped);
@@ -106,8 +111,12 @@ export function loadCharacterAsset(scene: Phaser.Scene, asset: CharacterAsset): 
     scene.load.once(event, complete);
     scene.load.on("loaderror", failed);
     scene.events.once("shutdown", stopped);
-    scene.load.image(key, asset.image);
-    scene.load.start();
+    void characterImage(asset.image, controller.signal).then((response) => response.blob()).then((blob) => {
+      if (controller.signal.aborted) return;
+      objectUrl = URL.createObjectURL(blob);
+      scene.load.image(key, objectUrl);
+      scene.load.start();
+    }).catch((error: unknown) => { cleanup(); reject(error); });
   }).finally(() => { if (loading!.get(key) === promise) loading!.delete(key); });
   loading.set(key, promise);
   return promise;

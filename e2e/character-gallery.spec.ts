@@ -26,10 +26,20 @@ test('ローカル画廊で全素材の画像と再生設定を読み込める',
   expect(errors).toEqual([]);
 });
 
-test('採用素材の一覧と全画像をオフラインで取得できる', async ({ page, context }) => {
+test('明示的に全素材を保存すると一覧と全画像をオフラインで取得できる', async ({ page, context }) => {
+  const images: string[] = [];
+  context.on('request', (r) => { if (/\/characters\/.*\.png/.test(r.url())) images.push(r.url()); });
   await page.goto('/?bgm=0');
   await page.evaluate(() => navigator.serviceWorker.ready);
   await page.waitForFunction(() => navigator.serviceWorker.controller !== null);
+  expect(images).toEqual([]);
+  await page.waitForFunction(() => Boolean((window as any).__swapriseScenes?.menu));
+  await page.evaluate(() => {
+    const s = (window as any).__swapriseScenes.menu;
+    s.showSettings(); s.overlay.buttons.find((b: any) => b.name === 'offline-data').emit('pointerdown');
+  });
+  await page.getByRole('button', { name: 'SAVE ALL CHARACTERS', exact: true }).click();
+  await expect(page.getByRole('status')).toHaveText('All characters are ready offline.', { timeout: 30000 });
   await context.setOffline(true);
   const result = await page.evaluate(async () => {
     const response = await fetch('characters/manifest.json');

@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { showRecordsDialog, showPlayerSettings } from "./score-dialog";
+import { showRecordsDialog, showPlayerSettings, showOfflineSettings } from "./score-dialog";
 import { FONT, MENU_TYPE, KIND_COLORS, TEXT_COLOR, layoutFor, sameLayout } from "./theme";
 import { createTextures } from "./textures";
 import { PUZZLES, PUZZLES_PER_STAGE, PUZZLE_STAGES, puzzleName, type CpuLevel, type GameMode } from "../core";
@@ -617,6 +617,7 @@ export class MenuScene extends Phaser.Scene {
     const soundLabel = (): string => t("SOUND: {state}", { state: t(audio.muted ? "OFF" : "ON") });
     const buttons: OverlayButton[] = [
       { label: t("PLAYER SETTINGS"), name: "player-settings", onPress: () => showPlayerSettings(this) },
+      { label: t("OFFLINE DATA"), name: "offline-data", onPress: () => showOfflineSettings(this) },
       {
         label: soundLabel(),
         name: "sound",
