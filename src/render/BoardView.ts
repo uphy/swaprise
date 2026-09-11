@@ -336,17 +336,19 @@ export class BoardView {
     }
     this.scoreText.setText(`${this.label}  ${String(b.score).padStart(6, "0")}`);
     let seconds: number;
+    // Preview animation advances its copy, not the live run's clock.
+    const clockFrame = this.preview ? this.board.frame : b.frame;
     if (this.timeLimit !== null) {
       // 残り時間。ゲームのフレームで数えるので、ポーズ中は減らない
-      seconds = Math.ceil(Math.max(0, this.timeLimit - b.frame) / 60);
+      seconds = Math.ceil(Math.max(0, this.timeLimit - clockFrame) / 60);
     } else {
       // 経過時間。ゲームのフレームで数えるので、決着後は frame が止まって表示も止まる
-      seconds = Math.floor(b.frame / 60);
+      seconds = Math.floor(clockFrame / 60);
     }
     const mm = String(Math.floor(seconds / 60)).padStart(2, "0");
     const ss = String(seconds % 60).padStart(2, "0");
     const parts = [`${mm}:${ss}`];
-    if (this.timeLimit !== null && b.frame >= this.timeLimit && !b.isSettled()) parts.push(t("SETTLING"));
+    if (this.timeLimit !== null && clockFrame >= this.timeLimit && !b.isSettled()) parts.push(t("SETTLING"));
     // 残り10秒を切ったら赤く
     this.infoText.setColor(this.timeLimit !== null && seconds <= 10 ? "#ff5c6c" : "#9a9ab0");
     if (this.showLevel) parts.push(`SPEED ${b.level}`);

@@ -1,5 +1,6 @@
 .coach-controls { position:fixed; bottom:max(12px,env(safe-area-inset-bottom)); left:50%; transform:translateX(-50%); z-index:6; display:grid; grid-template-columns:.85fr 1fr 1fr; gap:10px; width:min(480px,calc(100vw - 24px)); }
 .coach-controls button { font:22px monospace; white-space:nowrap; min-height:64px; min-width:0; padding:12px 6px; background:#2e2e40; color:white; border:1px solid #676780; border-radius:6px; touch-action:manipulation; }
+.coach-controls .coach-open { font-size:18px; }
 .coach-controls [hidden],.coach-controls[hidden] { display:none; }
 .coach-controls button:disabled { opacity:.4; }
 .coach-controls button[aria-pressed=true] { border:2px solid #ffe066; color:#ffe066; }

@@ -3,8 +3,8 @@ test.use({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem("swaprise.scores.publish.v1", "true"));
 });
-async function prepare(page: Page, multi = false) {
-  await page.goto("/?mode=endless&bgm=0&countdown=0");
+async function prepare(page: Page, multi = false, mode = "endless") {
+  await page.goto(`/?mode=${mode}&bgm=0&countdown=0`);
   await page.waitForFunction(() => Boolean((window as any).__swaprise?.scene));
   await expect(page.locator(".coach-controls")).toBeHidden();
   return page.evaluate(multi => {
@@ -55,7 +55,7 @@ test("opening once excludes records, cancellation is safe, restart restores elig
   await prepare(page);
   await openHint(page);
   expect(await page.evaluate(() => (window as any).__swaprise.scene.scoreRun)).toBeNull();
-  await page.getByRole("button", { name: "HINT", exact: true }).click();
+  await page.getByRole("button", { name: "RESUME", exact: true }).click();
   await expect(page.getByRole("button", { name: "NEXT STEP", exact: true })).toBeHidden();
   await page.evaluate(() => { const p = (window as any).__swaprise; p.scene.setPaused(true); p.game.boards[0].score = 987654; p.scene.finish(); });
   expect(await page.evaluate(() => localStorage.getItem("swaprise.highscores.v1") ?? "")).not.toContain("987654");
@@ -80,4 +80,22 @@ test("multiple moves never auto-advance, and PREVIOUS interrupts animation", asy
   expect(await page.evaluate(() => JSON.stringify((window as any).__swaprise.scene.coach.board.syncState()))).toBe(stopped);
   await previous.click();
   expect(await page.evaluate(() => JSON.stringify((window as any).__swaprise.scene.coach.board.syncState()))).toBe(initial);
+});
+
+test("time attack hints freeze both the live clock and HUD, resume normally, and exclude records", async ({ page }) => {
+  await prepare(page, false, "timeattack");
+  const frame = await page.evaluate(() => (window as any).__swaprise.game.boards[0].frame);
+  await openHint(page);
+  const next = page.getByRole("button", { name: "NEXT STEP", exact: true });
+  await expect(next).toBeEnabled({ timeout: 15000 });
+  const clock = await page.evaluate(() => (window as any).__swaprise.scene.views[0].infoText.text.split("   ")[0]);
+  await next.click();
+  await expect.poll(() => page.evaluate(() => (window as any).__swaprise.scene.coach.running), { timeout: 15000 }).toBe(false);
+  expect(await page.evaluate(() => (window as any).__swaprise.game.boards[0].frame)).toBe(frame);
+  expect(await page.evaluate(() => (window as any).__swaprise.scene.views[0].infoText.text.split("   ")[0])).toBe(clock);
+  await page.getByRole("button", { name: "RESUME", exact: true }).click();
+  await expect.poll(() => page.evaluate(() => (window as any).__swaprise.game.boards[0].frame)).toBeGreaterThan(frame);
+  await page.evaluate(() => { const p = (window as any).__swaprise; p.scene.setPaused(true); p.game.boards[0].score = 987654; p.scene.finish(); });
+  expect(await page.evaluate(() => (window as any).__swaprise.scene.scoreRun)).toBeNull();
+  expect(await page.evaluate(() => localStorage.getItem("swaprise.highscores.v1") ?? "")).not.toContain("987654");
 });
