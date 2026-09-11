@@ -289,6 +289,144 @@ SONGS.push({
   ],
 });
 
+// ============================================================ メニュー曲の候補（docs/menu-music-design.md）
+// 7〜9 は「1. ポップ・フェアリー」の置き換え候補。どれも 16 小節（A 8 + B 8）で、A は主題、B は間を空けた息継ぎ。
+// オープニングの閃光で鳴る一撃（C のハープ）に続くよう、いずれも C major。
+
+// ---- 7. せり上がりのテーマ（推奨）
+{
+  const C4 = { C:['c4','e4','g4','c5'], Em:['e4','g4','b4','e5'], Am:['a3','c4','e4','a4'], F:['f3','a3','c4','f4'], G:['g3','b3','d4','g4'] };
+  const B = { C:['c2','c3','g2'], Em:['e2','e3','b2'], Am:['a2','a3','e3'], F:['f2','f3','c3'], G:['g2','g3','d3'] };
+  const P = { Am:['a3','c4','e4','a4'], F:['f3','a3','c4','f4'], C:['c4','e4','g4','c5'], G:['g3','b3','d4','g4'] };
+  const progA = ['C','Em','Am','F','C','G','F','G'];
+  const progB = ['Am','F','C','G','Am','F','G','G'];
+  const bounce = ([lo, hi, fi]) => `${lo}:2 r:2 ${lo}:2 ${hi}:2 ${lo}:2 r:2 ${fi}:2 ${hi}:2`;
+  const soft = ([lo, , fi]) => `${lo}:6 r:2 ${lo}:4 ${fi}:4`;
+  const rest8 = rep('r:16', 8);
+  SONGS.push({
+    name: '7. せり上がりのテーマ', key: 'C major / 132 BPM / 16小節',
+    desc: '今の曲と同じ明るさ・テンポのまま、主題を「下から上へ昇る分散和音」（オープニングの一撃と同じ c-e-g-c）にし、後半 8 小節は刻みを止めてハープとフルートで息継ぎ。29 秒で 1 周。',
+    spec: '前半: 三角波の跳ねるベース / 25%パルスの16分アルペジオ / 矩形波の旋律。後半: 柔らかいベース / ハープの8分 / パッド / フルート。ドラムも後半は間引く',
+    tempo: 132, beat: 16, swing: 0, echoSteps: 3,
+    tracks: [
+      { inst:'bassTri', seq: progA.map((k) => bounce(B[k])).join(' ') + ' ' + rest8 },
+      { inst:'bassSoft', seq: rest8 + ' ' + progB.slice(0, 7).map((k) => soft(B[k])).join(' ') + ' g2:4 a2:4 b2:4 d3:4' },
+      { inst:'arpPulse', seq: arpSeq(progA.map((k) => C4[k]), [0,1,2,3,2,1], 16) + ' ' + rest8 },
+      { inst:'harp', seq: rest8 + ' ' + arpSeq(progB.map((k) => P[k]), [0,1,2,3], 8, 2) },
+      { inst:'pad', seq: rest8 + ' ' + progB.map((k) => `${chordTok(P[k])}:16`).join(' ') },
+      { inst:'leadSq', seq: [
+        'c5:2 e5:2 g5:2 c6:4 g5:2 e5:4',
+        'b4:2 e5:2 g5:2 b5:4 g5:2 e5:4',
+        'a4:2 c5:2 e5:2 a5:4 e5:2 c5:4',
+        'f5:4 e5:2 d5:2 c5:8',
+        'c5:2 e5:2 g5:2 c6:4 d6:2 e6:4',
+        'd6:4 b5:2 g5:2 d5:2 g5:2 b5:4',
+        'a5:4 g5:2 f5:2 c6:4 a5:4',
+        'g5:4 f5:2 d5:2 b4:4 d5:4',
+        rest8,
+      ].join(' ') },
+      { inst:'flute', seq: [
+        rest8,
+        'e5:8 c5:4 a4:4',
+        'f5:6 e5:2 c5:8',
+        'e5:8 g5:4 c6:4',
+        'd6:8 b5:4 g5:4',
+        'a5:6 g5:2 e5:8',
+        'a5:4 f5:4 c5:8',
+        'd5:4 e5:4 f5:4 g5:4',
+        'g5:2 a5:2 b5:2 c6:2 d6:2 b5:2 g5:2 d5:2',
+      ].join(' ') },
+      { drum:'kick',  pat: rep('x.....x.x.....x.', 8) + rep('x.......x.......', 8) },
+      { drum:'snare', pat: rep('....x.......x...', 16) },
+      { drum:'hat',   pat: rep('x.x.x.x.x.x.x.xo', 8) + rep('..x...x...x...x.', 8) },
+    ],
+  });
+}
+
+// ---- 8. 継ぎ市の朝（6/8）
+{
+  const H = { C:['c4','e4','g4','c5'], Am:['a3','c4','e4','a4'], F:['f3','a3','c4','f4'], G:['g3','b3','d4','g4'], Em:['e4','g4','b4','e5'], Dm:['d4','f4','a4','d5'] };
+  const S = { C:['e4','g4','c5'], Am:['c4','e4','a4'], F:['a3','c4','f4'], G:['b3','d4','g4'], Em:['g4','b4','e5'], Dm:['f4','a4','d5'] };
+  const R = { C:['c2','g2'], Am:['a2','e3'], F:['f2','c3'], G:['g2','d3'], Em:['e2','b2'], Dm:['d2','a2'] };
+  const prog = ['C','Am','F','G','C','Em','F','G', 'Am','F','C','G','Dm','F','G','C'];
+  SONGS.push({
+    name: '8. 継ぎ市の朝', key: 'C major / 6拍子 138 BPM / 16小節',
+    desc: '段々の街の朝。6/8 の揺れにハープの分散和音と、フルートの素朴な節。市場や工房の「手仕事」の温度で、長く居ても疲れない方向。',
+    spec: 'ベース: 三角波 根音と5度 / 刻み: 25%パルスの和音を 2・3 拍目 / ハープ: 三角波+正弦波の8分 / 旋律: 正弦波+三角波にビブラート / キックとリムだけ',
+    tempo: 138, beat: 12, swing: 0, echoSteps: 4, drumGain: 0.5,
+    tracks: [
+      { inst:'bassSoft', seq: prog.map((k) => `${R[k][0]}:6 ${R[k][1]}:6`).join(' ') },
+      { inst:'stab', seq: prog.map((k) => { const X = chordTok(S[k]); return `r:2 ${X}:2 ${X}:2 r:2 ${X}:2 ${X}:2`; }).join(' ') },
+      { inst:'harp', seq: arpSeq(prog.map((k) => H[k]), [0,1,2,3,2,1], 6, 2) },
+      { inst:'flute', seq: [
+        'e5:4 d5:2 c5:6',
+        'a4:4 b4:2 c5:6',
+        'f5:4 g5:2 a5:6',
+        'g5:4 f5:2 d5:6',
+        'e5:4 f5:2 g5:6',
+        'g5:4 f5:2 e5:6',
+        'a5:4 g5:2 f5:6',
+        'd5:4 e5:2 g5:6',
+        'c5:4 b4:2 a4:6',
+        'c6:4 a5:2 f5:6',
+        'g5:4 e5:2 c5:6',
+        'd5:6 b4:6',
+        'f5:4 e5:2 d5:6',
+        'a5:4 c6:2 a5:6',
+        'g5:4 f5:2 d5:6',
+        'e5:6 c5:6',
+      ].join(' ') },
+      { drum:'kick', pat: rep('x.....x.....', 16) },
+      { drum:'rim',  pat: rep('...x.....x..', 16) },
+    ],
+  });
+}
+
+// ---- 9. 跳ねる工房（シャッフル）
+{
+  const S = { C:['e4','g4','c5'], F:['f4','a4','c5'], G:['d4','g4','b4'], Am:['c4','e4','a4'], Em:['e4','g4','b4'] };
+  const B = { C:['c2','c3','e2','g2'], F:['f2','f3','a2','c3'], G:['g2','g3','b2','d3'], Am:['a2','a3','c3','e3'], Em:['e2','e3','g2','b2'] };
+  const prog = ['C','C','F','G','C','Am','F','G', 'Am','Em','F','C','Am','Em','F','G'];
+  const bass = ([r, r8, third, fifth]) => `${r}:2 r:2 ${r}:1 ${r8}:1 r:2 ${third}:2 ${fifth}:2 r:1 ${r8}:1 ${r}:2`;
+  const stab = (k) => { const X = chordTok(S[k]); return `r:2 ${X}:1 r:3 ${X}:2 r:4 ${X}:1 r:3`; };
+  const rest8 = rep('r:16', 8);
+  SONGS.push({
+    name: '9. 跳ねる工房', key: 'C major / 124 BPM シャッフル / 16小節',
+    desc: 'ノリで押す案。16分をスウィングさせた跳ねるベースとカッティング風の刻みに、クラビ風の短い旋律。後半はデチューンのパルスで歌わせて戻る。',
+    spec: 'ベース: 三角波+ノコギリ波のシンコペーション / 刻み: 25%パルスの和音スタブ / 前半: クラビ風パルス / 後半: 2オシレータのデチューンパルス / スウィング 0.6',
+    tempo: 124, beat: 16, swing: 0.6, echoSteps: 2,
+    tracks: [
+      { inst:'bassFunk', seq: prog.map((k) => bass(B[k])).join(' ') },
+      { inst:'stab', seq: prog.map(stab).join(' ') },
+      { inst:'clav', seq: [
+        'r:2 g4:1 c5:1 e5:2 r:2 g5:2 e5:2 c5:2 r:2',
+        'r:4 e5:2 g5:2 c6:1 a5:1 g5:2 e5:4',
+        'r:2 a4:1 c5:1 f5:2 r:2 a5:2 f5:2 c5:2 r:2',
+        'r:4 d5:2 g5:2 b5:1 a5:1 g5:2 d5:4',
+        'r:2 g4:1 c5:1 e5:2 r:2 g5:2 e5:2 c5:2 r:2',
+        'r:4 c5:2 e5:2 a5:1 g5:1 e5:2 c5:4',
+        'r:2 c5:1 f5:1 a5:2 r:2 c6:2 a5:2 f5:2 r:2',
+        'd5:2 e5:2 f5:2 g5:2 b5:4 d6:4',
+        rest8,
+      ].join(' ') },
+      { inst:'leadPulse', seq: [
+        rest8,
+        'e5:4 c5:2 a4:2 e5:8',
+        'b4:4 g4:2 e5:2 g5:8',
+        'a5:4 f5:2 c5:2 a5:8',
+        'g5:4 e5:2 c5:2 e5:8',
+        'a5:4 c6:2 a5:2 e5:8',
+        'g5:4 b5:2 g5:2 e5:8',
+        'f5:4 a5:2 c6:2 a5:8',
+        'g5:2 a5:2 b5:2 d6:2 b5:4 g5:4',
+      ].join(' ') },
+      { drum:'kick',  pat: rep('x..x..x...x.x...', 8) + rep('x.......x.x.....', 8) },
+      { drum:'snare', pat: rep('....x.......x..x', 8) + rep('....x.......x...', 8) },
+      { drum:'hat',   pat: rep('x.x.x.xox.x.x.xo', 8) + rep('x.x.x.x.x.x.x.x.', 8) },
+    ],
+  });
+}
+
 // ============================================================ 検証
 function buildSong(song) {
   const tracks = song.tracks.map((t) => {
