@@ -5,7 +5,6 @@ runs:
   steps:
     - name: イメージのバージョンと Chromium の起動を確認
       shell: bash
-      timeout-minutes: 2
       run: |
         node --input-type=module <<'NODE'
         import assert from 'node:assert/strict';

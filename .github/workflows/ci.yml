@@ -54,6 +54,7 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - uses: ./.github/actions/playwright
+        timeout-minutes: 2
       - run: pnpm e2e
         env:
           CI: "1"
@@ -86,6 +87,7 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - uses: ./.github/actions/playwright
+        timeout-minutes: 2
       # 各 runner で別々の Wrangler を起動するので、待機列も部屋も混ざらない。
       - run: pnpm e2e:online --shard=${{ matrix.shard }}/3
         env:
