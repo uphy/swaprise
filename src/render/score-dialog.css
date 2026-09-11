@@ -24,7 +24,7 @@
 .score-footer { display: flex; gap: 10px; padding-top: 12px; border-top: 1px solid #343444; background: #14141c; }
 .score-footer button { flex: 1; }
 .player-screen .score-footer button.primary { flex: 1.6; }
-.score-dialog ol { margin: 0; padding-left: 30px; font-variant-numeric: tabular-nums; }
+.score-dialog ol { margin: 0; padding-left: 44px; font-variant-numeric: tabular-nums; }
 .score-dialog li { padding: 10px 4px; border-bottom: 1px solid #2e2e40; overflow-wrap: anywhere; }
 .score-dialog li::marker { color: #ffe066; }
 .score-dialog li span { display: block; font-size: 18px; color: #c0c0d0; margin-top: 4px; }
