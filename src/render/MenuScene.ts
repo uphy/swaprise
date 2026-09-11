@@ -25,6 +25,7 @@ interface MenuItem {
   start?: { mode: GameMode; cpuLevel?: CpuLevel };
   back?: boolean;
   online?: boolean;
+  training?: boolean;
   name: string;
 }
 
@@ -56,6 +57,7 @@ function itemsFor(level: Level, hs: HighScores): MenuItem[] {
       { label: t("ENDLESS"), caption: bestLine(hs.endless), start: { mode: "endless" }, name: "item-endless" },
       { label: t("TIME ATTACK"), caption: bestLine(hs.timeattack), start: { mode: "timeattack" }, name: "item-timeattack" },
       { label: t("PUZZLE"), caption: t("{count} / {total} CLEARED", { count: hs.puzzle.length, total: PUZZLES.length }), start: { mode: "puzzle" }, name: "item-puzzle" },
+      { label: t("CHAIN PRACTICE"), caption: t("Hints from the CPU coach"), training: true, name: "item-training" },
       { label: t("◂ BACK"), caption: "", back: true, name: "item-back" },
     ];
   }
@@ -141,6 +143,10 @@ export class MenuScene extends Phaser.Scene {
     this.checkedOnlineResume = true;
     if (restoreOnline && (params.has("room") || sessionStorage.getItem("swaprise.connection.v1"))) { this.scene.start("online"); return; }
     const mode = params.get("mode");
+    if (mode === "training") {
+      params.delete("mode"); history.replaceState(null, "", location.pathname + (params.size ? `?${params}` : ""));
+      this.scene.start("training"); return;
+    }
     if (mode === "endless" || mode === "timeattack" || mode === "versus" || mode === "cpu" || mode === "puzzle") {
       const cpu = params.get("cpu");
       const cpuLevel: CpuLevel = cpu === "easy" || cpu === "hard" ? cpu : "normal";
@@ -190,7 +196,7 @@ export class MenuScene extends Phaser.Scene {
     this.itemGap = compact ? 46 : layout.portrait ? 60 : 52;
     this.crumb = this.add.text(cx, this.itemTop - (compact ? 26 : 34), "", { fontFamily: FONT, fontSize: "12px", color: "#ffe066" }).setOrigin(0.5).setName("crumb");
 
-    // 下段の小ボタン。項目は最大 4 つなので、その下に置く
+    // 下段の小ボタン。buildList で現在の項目数に合わせて位置を更新する
     const toolY = this.itemTop + 4 * this.itemGap - (compact ? 6 : 4);
     const toolW = layout.portrait ? 92 : 112;
     TOOLS.forEach((tool, i) => {
@@ -267,6 +273,8 @@ export class MenuScene extends Phaser.Scene {
     this.captions = [];
     const hs = loadHighScores();
     this.items = itemsFor(this.level, hs);
+    const toolY = this.itemTop + Math.max(4, this.items.length) * this.itemGap - (this.compact ? 6 : 4);
+    this.tools.forEach((button) => button.setY(toolY));
     const cx = this.cx;
     const pad = this.compact ? 3 : 6;
     this.items.forEach((item, i) => {
@@ -422,6 +430,7 @@ export class MenuScene extends Phaser.Scene {
       return;
     }
     if (item.online) { this.scene.start("online"); return; }
+    if (item.training) { this.scene.start("training"); return; }
     if (!item.start) return;
     audio.select();
     if (item.start.mode === "puzzle") {

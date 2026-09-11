@@ -3,6 +3,23 @@ export type Locale = "en" | "ja";
 const locale: Locale = typeof navigator !== "undefined" && navigator.language.toLowerCase().startsWith("ja") ? "ja" : "en";
 
 const JA: Record<string, string> = {
+  "CHAIN PRACTICE": "連鎖練習", "Hints from the CPU coach": "CPU先生のヒントで練習", "LESSON": "練習メニュー",
+  "{count} CHAIN": "{count}連鎖", "PRACTICE BOARD": "練習盤面", "HINT": "ヒント", "DEMONSTRATION": "お手本",
+  "SLOW: OFF": "スロー: オフ", "SLOW: ON": "スロー: オン", "TRY AGAIN": "やり直す", "NEXT LESSON": "次の練習",
+  "Drag sideways, or select two neighboring panels. Hints pause time. Practice scores are not published.": "横にスワイプ、または隣り合う2枚を順にタップして交換します。ヒント中は時間が止まります。練習の得点は記録・公開されません。",
+  "Build a {count}-chain. Think first, then ask the CPU coach.": "{count}連鎖を作ってみましょう。困ったらCPU先生のヒントをどうぞ。",
+  "Watch how the panels fall.": "パネルが落ちて、次が揃う流れを見てみましょう。",
+  "CPU coach is thinking…": "CPU先生が考え中…",
+  "Let this move settle, then ask for a hint. Press RESUME to continue.": "この動きが終わったら次のヒントを出せます。「再開」で続けましょう。",
+  "No one-swap chain found here. Try again or watch the demonstration.": "この盤面では1手で作れる目標の連鎖が見つかりません。やり直すか、お手本を見てみましょう。",
+  "Aim to clear the highlighted area first. Press HINT again for the move.": "まず白枠のあたりで消して、上のパネルを落としましょう。もう一度ヒントを押すと動かす場所が分かります。",
+  "Swap the two highlighted panels. Falling panels will match again: {count}-chain.": "白枠の2枚を交換します。落ちたパネルが次々に揃って、{count}連鎖になります。",
+  "Demonstration ready. The highlighted pair is the first move. Press RESUME.": "お手本の準備ができました。白枠の2枚が最初の一手です。「再開」で再生します。",
+  "Demonstration complete. TRY AGAIN to do it yourself.": "お手本はここまで。「やり直す」で自分でも試してみましょう。",
+  "Success! Try the next lesson, or repeat without hints.": "成功！ 次の練習へ進むか、ヒントなしでもう一度やってみましょう。",
+  "Not a chain yet. Try another move or ask for a hint.": "まだ目標の連鎖になっていません。別の一手を考えるか、ヒントをどうぞ。",
+  "GOAL ×{target} · BEST ×{chain}": "目標 {target}連鎖 · 今回の最大 {chain}",
+  "Column {x}, row {y}: {panel}": "左から{x}列、下から{y}段: {panel}", "EMPTY": "空き",
   "SETTLING": "連鎖を集計中",
   "Ranked per play · unverified scores": "プレイ単位・プレイ内容の検証なし",
   "RESULT": "結果", "POINTS": "点", "First record!": "初めての記録！", "New best! +{points}": "自己ベスト更新！ ＋{points}",

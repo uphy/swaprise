@@ -3,6 +3,7 @@ import "./render/storage";
 import Phaser from "phaser";
 import { OnlineScene } from "./render/OnlineScene";
 import { GameScene } from "./render/GameScene";
+import { TrainingScene } from "./render/TrainingScene";
 import { MenuScene } from "./render/MenuScene";
 import { BG_COLOR, layoutFor } from "./render/theme";
 import { DPR, installHiDpiText } from "./render/hidpi";
@@ -31,6 +32,6 @@ waitForUpdate().then(() => {
       autoCenter: Phaser.Scale.CENTER_BOTH,
     },
     input: { gamepad: true, activePointers: 4 },
-    scene: [MenuScene, GameScene, OnlineScene],
+    scene: [MenuScene, GameScene, OnlineScene, TrainingScene],
   });
 });
