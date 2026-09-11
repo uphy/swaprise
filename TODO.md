@@ -53,8 +53,8 @@
 - [ ] オンライン機能（Cloudflare の無料枠で足りる。順に 1 → 2 → 3）
   - 今の構成は `wrangler deploy` で静的ファイルを配るだけ。同じ Worker に API を足し、`wrangler.jsonc` に `main`・`d1_databases`・`durable_objects` を追加する。CI の secret はそのまま使える
   - 無料枠（2026-09 時点の公開値）: Workers リクエスト 10万/日・CPU 10ms/回。D1 読み 500万行/日・書き 10万行/日・5GB。Durable Objects は SQLite 版のみ、リクエスト 10万/日・13,000 GB秒/日、WebSocket の受信は 20通で1リクエスト換算
-  - [ ] 1. スコアのオンライン共有
-    - D1 に `scores(mode, score, max_chain, name, date, seed)` の1テーブル。Worker が `POST /api/scores` と `GET /api/scores?mode=` を受ける
+  - [x] 1. スコアのオンライン共有
+    - 標準エンドレス・2分タイムアタックを初回の公開設定後に自動投稿。名前はオンライン対戦と共通。記録画面からモード別上位50件へ。D1・再送・重複防止・公開オフを実装。仕様と運用は `docs/online-scores.md`
     - 不正対策は別件。決定論的シミュレーションなので入力列を送れば検証できるが、2分ぶん（7,200 tick）の再生は Worker の CPU 10ms に収まらないので、検証は保存とは別の Worker に分けるか後回し
   - [ ] 2. 「今日の seed」でスコア勝負
     - 日付から seed を決めて同じ盤面を配り、seed 付きで D1 に保存する。サーバーにゲームのロジックは要らない

@@ -16,6 +16,9 @@ import { BOARD_H, BOARD_W, FONT, TEXT_COLOR, type Layout, layoutFor, sameLayout 
 import { CharacterView } from "./CharacterView";
 import { characterById, isCharacterId, loadSelection } from "../characters/catalog";
 import { t } from "./i18n";
+import { eligibleRun } from "../scores/model";
+import { enqueueScore, publication } from "../scores/client";
+import { showPlayerSettings } from "./score-dialog";
 
 const STEP_MS = 1000 / 60;
 /** 縦持ちの CPU 対戦で、CPU の盤面を描く大きさ。 */
@@ -62,6 +65,7 @@ export class GameScene extends Phaser.Scene {
   /** 対戦で表示する人物。盤面と同じ順。1人用のモードでは空。 */
   characters: CharacterView[] = [];
   private characterIds: [string, string] | null = null;
+  private scoreRun: { id: string; seed: number } | null = null;
 
   constructor() {
     super("game");
@@ -83,6 +87,7 @@ export class GameScene extends Phaser.Scene {
     } else this.characterIds = null;
     const params = new URLSearchParams(location.search);
     const seed = Number(params.get("seed")) || (Date.now() & 0xffffff);
+    this.scoreRun = eligibleRun(this.mode, params) ? { id: crypto.randomUUID(), seed } : null;
     const speedLevel = Number(params.get("speed")) || 1;
     const shockMax = params.has("shock") ? Number(params.get("shock")) || 0 : undefined;
     // ?time=秒 でタイムアタックの制限時間を変える（e2e 用）
@@ -249,8 +254,14 @@ export class GameScene extends Phaser.Scene {
       tick: (inputs: Input[]) => this.stepOnce(inputs),
     };
 
-    if (params.get("countdown") === "0") this.beginPlay();
-    else this.runCountdown();
+    const start = (): void => {
+      if (params.get("countdown") === "0") this.beginPlay();
+      else this.runCountdown();
+    };
+    if (this.scoreRun && publication() === null) {
+      this.starting = true;
+      showPlayerSettings(this, true, start);
+    } else start();
   }
 
   /** 画面の向きやサイズが変わったとき。レイアウトが変わるなら置き直す。ゲームの進行はそのまま。 */
@@ -549,6 +560,7 @@ export class GameScene extends Phaser.Scene {
     } else if (this.mode === "endless" || this.mode === "timeattack") {
       const b = g.boards[0];
       const rank = recordScore(this.mode, b.score, b.maxChain);
+      if (this.scoreRun) enqueueScore({ ...this.scoreRun, mode: this.mode, score: b.score, maxChain: b.maxChain, frames: b.frame });
       const rankLine = rank === 1 ? t("NEW RECORD!") : rank > 0 ? t("RANK {rank}", { rank }) : "";
       this.views[0].showOverlay(g.timeUp ? t("TIME UP") : t("GAME OVER"), `${t("SCORE")} ${b.score}\n${t("MAX CHAIN")} x${b.maxChain}\n${t("COMBOS")} ${b.stats.combos}  ${t("CHAINS")} ${b.stats.chains}\n${rankLine}`);
     } else {

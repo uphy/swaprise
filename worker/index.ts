@@ -1,5 +1,6 @@
 /// <reference types="@cloudflare/workers-types" />
 import type { Env } from "./types";
+import { scores } from "./scores";
 export { Room } from "./room";
 export { Coordinator } from "./coordinator";
 export const json = (data: unknown, status = 200): Response =>
@@ -29,6 +30,10 @@ export default {
           "Set-Cookie": `swaprise_session=${token}; Path=/api; HttpOnly; SameSite=Strict; Max-Age=2592000${url.protocol === "https:" ? "; Secure" : ""}`,
         },
       });
+    }
+    if (url.pathname === "/api/scores") {
+      try { return await scores(request, env, session); }
+      catch { return json({ error: "Rankings are currently unavailable." }, 503); }
     }
     if (!session) return json({ error: "Please reconnect." }, 401);
     if (Number(request.headers.get("Content-Length") ?? 0) > 4096)

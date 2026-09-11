@@ -10,6 +10,10 @@ test("メニューから始めたゲームを Esc で抜けると、メニュー
   await page.waitForTimeout(150);
   await page.keyboard.press("Enter");
   await page.waitForFunction(() => Boolean((window as any).__swaprise?.game));
+  // 初回案内の Escape は「あとで」。次の Escape がゲームからメニューへ戻る。
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
   await page.waitForTimeout(300);
   await page.keyboard.press("Escape");
   await page.waitForTimeout(500);

@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { playerName, savePlayerName } from "../scores/client";
 import { BoardView } from "./BoardView";
 import { PlayerInput, P1_KEYS } from "./input";
 import { TouchInput } from "./touch";
@@ -257,12 +258,11 @@ export class OnlineScene extends Phaser.Scene {
     input.type = "text";
     input.maxLength = 40;
     input.placeholder = t("Guest");
-    input.value = localStorage.getItem("swaprise.name.v1") ?? "";
+    input.value = playerName();
     label.append(input);
     this.actions.append(label);
     const run = (kind: string): void => {
-      const name = displayName(input.value);
-      localStorage.setItem("swaprise.name.v1", name);
+      const name = savePlayerName(input.value);
       this.status.textContent = t("Connecting…");
       this.actions
         .querySelectorAll("button")
@@ -405,7 +405,7 @@ export class OnlineScene extends Phaser.Scene {
       this.session?.dispose();
       this.session = null;
       this.clearBoard();
-      this.startQueue(localStorage.getItem("swaprise.name.v1") ?? "Guest");
+      this.startQueue(displayName(playerName()));
     });
     this.actionKey = "";
     this.refresh();
@@ -579,7 +579,7 @@ export class OnlineScene extends Phaser.Scene {
             this.session = null;
             this.clearBoard();
             this.startQueue(
-              localStorage.getItem("swaprise.name.v1") ?? "Guest",
+              displayName(playerName()),
             );
           });
         });

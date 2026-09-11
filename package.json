@@ -15,7 +15,7 @@
     "deploy:redirect": "wrangler deploy -c redirect/wrangler.jsonc",
     "puzzles": "esbuild tools/make-puzzles.ts --bundle --platform=node --format=esm --log-level=warning | node --input-type=module -",
     "sim": "sh tools/sim/run.sh",
-    "dev:online": "wrangler dev --port 8788 --var ONLINE_ENABLED:true",
+    "dev:online": "wrangler d1 migrations apply SCORES_DB --local && wrangler dev --port 8788 --var ONLINE_ENABLED:true",
     "e2e:online": "playwright test -c playwright.online.config.ts",
     "assets": "node tools/character-assets.mjs",
     "assets:check": "node tools/character-assets.mjs --check",

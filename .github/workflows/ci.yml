@@ -129,6 +129,7 @@ jobs:
         id: upload
         run: |
           node tools/prepare-preview.mjs
+          node tools/prepare-score-database.mjs .wrangler-preview.json .wrangler-preview.json
           pnpm exec wrangler deploy -c .wrangler-preview.json | tee upload.log
           url=$(grep -o 'https://[a-z0-9.-]*workers\.dev' upload.log | head -1)
           echo "url=$url" >> "$GITHUB_OUTPUT"
@@ -154,4 +155,3 @@ jobs:
           else
             gh pr comment "${{ github.event.pull_request.number }}" --body "$body"
           fi
-

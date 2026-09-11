@@ -33,27 +33,11 @@ test("メニューの RECORDS をタップすると上位5件の一覧が開き�
     return { x: rect.left + t.x * s, y: rect.top + t.y * s };
   });
   await page.touchscreen.tap(pos.x, pos.y);
-  await page.waitForTimeout(200);
-  const list = await page.evaluate(() => {
-    const scene = (window as any).__swapriseScenes.menu;
-    const panel = scene.children.getByName("records-list");
-    return panel ? panel.list.find((o: any) => typeof o.text === "string" && o.text.includes("TOP 5"))?.text : null;
-  });
-  expect(list).toContain("1.  004321   x4   2026-09-01");
-  expect(list).toContain("2.  001000   x2   2026-09-02");
-  expect(list).toContain("NORMAL  0W 2L");
-
-  const close = await page.evaluate(() => {
-    const scene = (window as any).__swapriseScenes.menu;
-    const panel = scene.children.getByName("records-list");
-    const b = panel.list.find((o: any) => o.text === "CLOSE");
-    const rect = document.querySelector("canvas")!.getBoundingClientRect();
-    const s = (rect.width / scene.scale.width) * scene.cameras.main.zoom;
-    return { x: rect.left + b.x * s, y: rect.top + b.y * s };
-  });
-  await page.touchscreen.tap(close.x, close.y);
-  await page.waitForTimeout(200);
-  expect(await page.evaluate(() => Boolean((window as any).__swapriseScenes.menu.children.getByName("records-list")))).toBe(false);
+  await expect(page.getByRole("dialog")).toContainText("4321 · x4 · 2026-09-01");
+  await expect(page.getByRole("dialog")).toContainText("1000 · x2 · 2026-09-02");
+  await expect(page.getByRole("dialog")).toContainText("NORMAL 0W 2L");
+  await page.getByRole("button", { name: "CLOSE", exact: true }).tap();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
 });
 
 test("結果画面の SHARE で navigator.share に得点が渡る", async ({ page }) => {
