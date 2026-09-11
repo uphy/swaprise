@@ -4,6 +4,7 @@ const locale: Locale = typeof navigator !== "undefined" && navigator.language.to
 
 const JA: Record<string, string> = {
   "PREVIOUS STEP": "前へ", "NEXT STEP": "次へ",
+  "PREV": "前へ", "NEXT": "次へ",
   "HINT · UNRANKED": "ヒント利用・記録対象外",
   "HINT": "ヒント",
   "SETTLING": "連鎖を集計中",

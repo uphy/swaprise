@@ -1,10 +1,10 @@
-.coach-controls { position:fixed; bottom:max(8px,env(safe-area-inset-bottom)); left:50%; transform:translateX(-50%); z-index:6; display:flex; gap:6px; width:max-content; }
-.coach-controls button { font:16px monospace; white-space:nowrap; flex-shrink:0; min-height:44px; min-width:64px; padding:8px 12px; background:#2e2e40; color:white; border:1px solid #676780; border-radius:4px; touch-action:manipulation; }
+.coach-controls { position:fixed; bottom:max(12px,env(safe-area-inset-bottom)); left:50%; transform:translateX(-50%); z-index:6; display:grid; grid-template-columns:.85fr 1fr 1fr; gap:10px; width:min(480px,calc(100vw - 24px)); }
+.coach-controls button { font:22px monospace; white-space:nowrap; min-height:64px; min-width:0; padding:12px 6px; background:#2e2e40; color:white; border:1px solid #676780; border-radius:6px; touch-action:manipulation; }
 .coach-controls [hidden],.coach-controls[hidden] { display:none; }
 .coach-controls button:disabled { opacity:.4; }
 .coach-controls button[aria-pressed=true] { border:2px solid #ffe066; color:#ffe066; }
 .coach-controls button[aria-busy=true] { animation:coach-thinking 1s ease-in-out infinite alternate; }
 .coach-controls button[data-failed=true] { border-color:#ff5c6c; }
 @keyframes coach-thinking { to { opacity:.4; } }
-@media(orientation:landscape) { .coach-controls { top:max(8px,env(safe-area-inset-top)); bottom:auto; right:max(8px,env(safe-area-inset-right)); left:auto; transform:none; } }
+@media(orientation:landscape) { .coach-controls { top:max(8px,env(safe-area-inset-top)); bottom:auto; right:max(8px,env(safe-area-inset-right)); left:auto; transform:none; width:min(360px,calc(100vw - 24px)); } }
 @media(prefers-reduced-motion:reduce) { .coach-controls button[aria-busy=true] { animation:none; opacity:.6; } }

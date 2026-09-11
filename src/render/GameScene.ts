@@ -169,6 +169,7 @@ export class GameScene extends Phaser.Scene {
     const soundLabel = (): string => t("SOUND: {state}", { state: t(audio.muted ? "OFF" : "ON") });
     const vibLabel = (): string => t("VIBRATION: {state}", { state: t(haptics.enabled ? "ON" : "OFF") });
     this.pauseButtons.push(new Button(this, 0, 0, t("RESUME"), () => this.setPaused(false), { minWidth: 180, minHeight: 40 }));
+    if (this.mode === "endless") this.pauseButtons.push(new Button(this, 0, 0, t("HINT"), () => this.openCoach(), { minWidth: 180, minHeight: 40 }).setName("pause-hint"));
     this.pauseButtons.push(new Button(this, 0, 0, t("RESTART"), () => this.restart(), { minWidth: 180, minHeight: 40 }));
     const toggleSound = (): void => {
       audio.setMuted(!audio.muted);
@@ -193,12 +194,12 @@ export class GameScene extends Phaser.Scene {
     this.pauseButtons.push(new Button(this, 0, 0, t("MENU"), () => this.toMenu(), { minWidth: 180, minHeight: 40 }));
     this.pauseMenu = this.add.container(0, 0, [this.pauseDim, this.pauseTitle, ...this.pauseButtons]).setDepth(30).setVisible(false);
     if (this.mode === "endless") {
-      this.coachControls = document.createElement("div"); this.coachControls.className = "coach-controls";
+      this.coachControls = document.createElement("div"); this.coachControls.className = "coach-controls"; this.coachControls.hidden = true;
       const button = this.coachButton = document.createElement("button");
       button.className = "coach-open"; button.textContent = t("HINT"); button.onclick = () => this.coach ? this.closeCoach() : this.openCoach();
-      const previous = this.coachPrevious = document.createElement("button"); previous.textContent = t("PREVIOUS STEP"); previous.hidden = true;
+      const previous = this.coachPrevious = document.createElement("button"); previous.textContent = t("PREV"); previous.setAttribute("aria-label", t("PREVIOUS STEP")); previous.hidden = true;
       previous.onclick = () => { this.coach?.previous(); this.views[0].clearEffects(); this.refreshCoach(); };
-      const next = this.coachNext = document.createElement("button"); next.textContent = t("NEXT STEP"); next.hidden = true;
+      const next = this.coachNext = document.createElement("button"); next.textContent = t("NEXT"); next.setAttribute("aria-label", t("NEXT STEP")); next.hidden = true;
       next.onclick = () => { this.coach?.next(events => this.views[0].handleEvents(events, false)); this.refreshCoach(); };
       this.coachControls.append(button, previous, next); document.body.append(this.coachControls);
     }
@@ -373,7 +374,7 @@ export class GameScene extends Phaser.Scene {
     if (!L.phoneLandscape) this.pauseButton.setPosition(this.views[0].ox + BOARD_W - 22, top - 24);
 
     this.pauseDim.setSize(W, H);
-    this.pauseTitle.setPosition(W / 2, H / 2 - 40 - this.pauseButtons.length * 23 - 20);
+    this.pauseTitle.setPosition(W / 2, Math.max(24, H / 2 - 40 - this.pauseButtons.length * 23 - 20));
     this.pauseButtons.forEach((b, i) => b.setPosition(W / 2, H / 2 - (this.pauseButtons.length - 1) * 23 + i * 46));
 
     this.hintText.setPosition(W / 2, H - 14).setVisible(!L.touch);
@@ -498,6 +499,7 @@ export class GameScene extends Phaser.Scene {
 
   private refreshCoach(): void {
     if (!this.coachButton) return;
+    this.coachControls!.hidden = !this.coach;
     this.coachButton.setAttribute("aria-pressed", String(Boolean(this.coach)));
     this.coachButton.setAttribute("aria-busy", String(this.coach?.searching ?? false));
     this.coachButton.dataset.failed = String(this.coach?.failed ?? false);
