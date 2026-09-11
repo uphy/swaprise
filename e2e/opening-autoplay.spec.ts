@@ -57,6 +57,29 @@ test("せり上がり → 入れ替え → 連鎖 → 題字と待たずに進�
   expect(errors).toEqual([]);
 });
 
+test("メニューの曲は閃光の直前に始まり、メニューへ切り替わっても鳴らし直さない", async ({ page }) => {
+  // ?bgm=0 を付けずに開く。曲の状態は __swapriseAudio から読む
+  await page.goto("/");
+  await page.waitForFunction(() => Boolean((window as any).__swapriseScenes?.opening));
+  const bgm = (): Promise<{ playing: string | null; step: number }> =>
+    page.evaluate(() => {
+      const a = (window as any).__swapriseAudio;
+      return { playing: a.bgm?.playing ?? null, step: a.bgm?.step ?? -1 };
+    });
+  await waitPhase(page, "chain");
+  expect((await bgm()).playing).toBeNull();
+  await waitPhase(page, "reveal");
+  expect((await bgm()).playing).toBe("menu");
+  // 曲の頭（1 拍目）から始まっている。16 分音符 1 つが約 114 ms
+  expect((await bgm()).step).toBeLessThan(8);
+  await page.waitForFunction(() => Boolean((window as any).__swapriseScenes.menu) && (window as any).__swapriseScenes.opening.phase === "done");
+  await page.waitForTimeout(1500);
+  const after = await bgm();
+  expect(after.playing).toBe("menu");
+  // メニューに切り替わっても曲は途中から続いている。閃光からここまで約 2.4 秒 = 21 歩。切り替えで鳴らし直していれば 13 歩ほどに戻る
+  expect(after.step).toBeGreaterThan(17);
+});
+
 test("続きが始まったあとにキーを押すとすぐメニューへ飛び、そのキーはメニューの操作にならない", async ({ page }) => {
   await page.goto("/?bgm=0");
   await page.waitForFunction(() => Boolean((window as any).__swapriseScenes?.opening));

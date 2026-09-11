@@ -260,7 +260,7 @@ export function makePulseWave(ctx: AudioContext, duty: number): PeriodicWave {
 /** 音を予約しておく先読みの長さ（秒）。 */
 const LOOKAHEAD = 0.12;
 /** 曲を切り替えるとき、前の曲の予約済みの音が終わるまで出力を絞っておく長さ（秒）。LOOKAHEAD より長くする。 */
-const SWITCH_GAP = 0.15;
+export const SWITCH_GAP = 0.15;
 /** 危険状態を抜けてからゲーム曲に戻すまでの待ち（ミリ秒）。 */
 export const DANGER_RELEASE_MS = 2500;
 
