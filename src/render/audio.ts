@@ -77,6 +77,14 @@ export class GameAudio {
   /** false のとき startBgm() を無視する。e2e で ?bgm=0 を付けるときに使う。 */
   bgmEnabled = true;
 
+  /**
+   * 今すぐ音を鳴らせるか。AudioContext は操作の前には動かせないが、Chrome はインストール済みの PWA や
+   * よく音を鳴らしているサイトでは操作なしで動かす。start() のあとに見れば、その環境で鳴らせるかが分かる。
+   */
+  get unlocked(): boolean {
+    return this.ctx?.state === "running";
+  }
+
   constructor() {
     // ミュートは localStorage に覚えておく。スマホでは画面のボタンで切り替えるので、次回も同じ状態で始める
     try {

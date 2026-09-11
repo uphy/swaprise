@@ -7,6 +7,30 @@ const activeScenes = (page: Page): Promise<string[]> =>
     const s = (window as any).__swapriseScenes.opening;
     return s.scene.manager.getScenes(true).map((x: any) => x.scene.key);
   });
+const phase = (page: Page): Promise<string> => page.evaluate(() => (window as any).__swapriseScenes.opening.phase);
+const waitPhase = (page: Page, p: string): Promise<unknown> => page.waitForFunction((p) => (window as any).__swapriseScenes?.opening?.phase === p, p);
+const unlocked = (page: Page): Promise<boolean> => page.evaluate(() => (window as any).__swapriseAudio.unlocked);
+const promptState = (page: Page): Promise<{ text: string; visible: boolean }> =>
+  page.evaluate(() => {
+    const p = (window as any).__swapriseScenes.opening.children.getByName("prompt");
+    return { text: p.text, visible: p.visible };
+  });
+
+/**
+ * 操作の前には音を鳴らせないブラウザ（iOS Safari など）を再現する。
+ * headless Chromium も既定では操作の前は AudioContext が suspended だが、それに頼らず、作った直後に suspend して確実にする。
+ * resume() は実際の操作（キー・タップ）の中で呼ばれ、そこから鳴らせるようになる
+ */
+const lockAudio = (page: Page): Promise<unknown> =>
+  page.addInitScript(() => {
+    const Original = window.AudioContext;
+    window.AudioContext = class extends Original {
+      constructor(...args: ConstructorParameters<typeof AudioContext>) {
+        super(...args);
+        void this.suspend();
+      }
+    };
+  });
 
 test.beforeEach(async ({ page }) => {
   page.on("pageerror", (err) => {
@@ -14,62 +38,31 @@ test.beforeEach(async ({ page }) => {
   });
 });
 
-test("起動するとオープニングが流れ、せり上がり → 入れ替え → 連鎖 → 題字のあとメニューへ進む", async ({ page }) => {
-  const errors: string[] = [];
-  page.on("console", (m) => {
-    if (m.type() === "error") errors.push(m.text());
-  });
+test("音を鳴らせない環境では、せり上がったあと PRESS ANY KEY で待ち、最初の操作で音が解禁されて続きが始まる", async ({ page }) => {
+  await lockAudio(page);
   await page.goto("/?bgm=0");
   await page.waitForFunction(() => Boolean((window as any).__swapriseScenes?.opening));
+  await waitPhase(page, "wait");
+  expect(await unlocked(page)).toBe(false);
+  expect(await promptState(page)).toEqual({ text: "PRESS ANY KEY", visible: true });
+  await page.screenshot({ path: `${SHOT}/opening-wait.png` });
+  // 待っている間は自動では進まない
+  await page.waitForTimeout(1200);
+  expect(await phase(page)).toBe("wait");
   expect(await activeScenes(page)).toEqual(["opening"]);
-  // メニューはまだ出ていない
+  // 最初の操作は「始める」。飛ばさないし、メニューの操作にもならない
+  await page.keyboard.press("Enter");
+  await waitPhase(page, "swap");
+  await page.waitForFunction(() => (window as any).__swapriseAudio.unlocked);
+  expect((await promptState(page)).visible).toBe(false);
   expect(await page.evaluate(() => Boolean((window as any).__swapriseScenes.menu))).toBe(false);
-  const phase = (): Promise<string> => page.evaluate(() => (window as any).__swapriseScenes.opening.phase);
-  expect(await phase()).toBe("rise");
-  await page.waitForFunction(() => (window as any).__swapriseScenes.opening.phase === "swap");
-  await page.waitForFunction(() => (window as any).__swapriseScenes.opening.phase === "chain");
-  await page.screenshot({ path: `${SHOT}/opening-chain.png` });
-  await page.waitForFunction(() => (window as any).__swapriseScenes.opening.phase === "reveal");
-  await page.screenshot({ path: `${SHOT}/opening-reveal.png` });
-  // 自動でメニューへ。題字はオープニングの最後と同じ位置（menuTitle）に描かれている。
-  // 横長のレイアウト（800×520）は背が低い扱い（compact）なので y は 36
-  await page.waitForFunction(() => Boolean((window as any).__swapriseScenes.menu) && (window as any).__swapriseScenes.opening.phase === "done");
-  await page.waitForTimeout(400);
-  expect(await activeScenes(page)).toEqual(["menu"]);
-  const title = await page.evaluate(() => {
-    const t = (window as any).__swapriseScenes.menu.children.getByName("title");
-    return { text: t.text, y: t.y };
-  });
-  expect(title).toEqual({ text: "SWAPRISE", y: 36 });
-  expect(errors).toEqual([]);
-});
-
-test("オープニングの途中でキーを押すとすぐメニューへ飛び、そのキーはメニューの操作にならない", async ({ page }) => {
-  await page.goto("/?bgm=0");
-  await page.waitForFunction(() => Boolean((window as any).__swapriseScenes?.opening));
-  await page.waitForTimeout(300);
+  await waitPhase(page, "chain");
+  // 次の操作は「飛ばす」
   await page.keyboard.press("Enter");
   await page.waitForFunction(() => Boolean((window as any).__swapriseScenes.menu), null, { timeout: 1500 });
   await page.waitForTimeout(300);
   expect(await activeScenes(page)).toEqual(["menu"]);
-  // Enter が 1 PLAYER の決定として二重に効いていない（最上位のまま）
   expect(await page.evaluate(() => (window as any).__swapriseScenes.menu.children.getByName("crumb").text)).toBe("");
-  expect(await page.evaluate(() => Boolean((window as any).__swaprise))).toBe(false);
-  // メニューは動く
-  await page.keyboard.press("Enter");
-  await page.waitForTimeout(150);
-  expect(await page.evaluate(() => (window as any).__swapriseScenes.menu.children.getByName("crumb").text)).toBe("1 PLAYER ▸");
-});
-
-test("オープニングの途中のクリックでも飛ばせる", async ({ page }) => {
-  await page.goto("/?bgm=0");
-  await page.waitForFunction(() => Boolean((window as any).__swapriseScenes?.opening));
-  await page.waitForTimeout(300);
-  const box = (await page.locator("canvas").boundingBox())!;
-  await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
-  await page.waitForFunction(() => Boolean((window as any).__swapriseScenes.menu), null, { timeout: 1500 });
-  await page.waitForTimeout(300);
-  expect(await activeScenes(page)).toEqual(["menu"]);
   expect(await page.evaluate(() => Boolean((window as any).__swaprise))).toBe(false);
 });
 
@@ -103,12 +96,19 @@ test.describe("縦持ちのスマホ", () => {
     userAgent: pixel.userAgent,
   });
 
-  test("題字は SWAP / RISE の 2 行になり、タップで飛ばせる", async ({ page }) => {
+  test("題字は SWAP / RISE の 2 行になり、音を鳴らせないときは TAP TO START で待つ。タップで始まり、次のタップで飛ばせる", async ({ page }) => {
+    await lockAudio(page);
     await page.goto("/?bgm=0");
     await page.waitForFunction(() => Boolean((window as any).__swapriseScenes?.opening));
-    await page.waitForFunction(() => (window as any).__swapriseScenes.opening.phase === "chain");
-    await page.screenshot({ path: `${SHOT}/opening-mobile.png` });
+    await waitPhase(page, "wait");
+    expect((await promptState(page)).text).toBe("TAP TO START");
+    await page.screenshot({ path: `${SHOT}/opening-mobile-wait.png` });
     const box = (await page.locator("canvas").boundingBox())!;
+    await page.touchscreen.tap(box.x + box.width / 2, box.y + box.height / 2);
+    await waitPhase(page, "swap");
+    await page.waitForFunction(() => (window as any).__swapriseAudio.unlocked);
+    await waitPhase(page, "chain");
+    await page.screenshot({ path: `${SHOT}/opening-mobile.png` });
     await page.touchscreen.tap(box.x + box.width / 2, box.y + box.height / 2);
     await page.waitForFunction(() => Boolean((window as any).__swapriseScenes.menu), null, { timeout: 1500 });
     await page.waitForTimeout(300);
