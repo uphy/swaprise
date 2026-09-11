@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
 async function enter(page: Page) {
-  await page.goto("/");
+  await page.goto("/?opening=0");
   await page.waitForFunction(() => !!(window as any).__swapriseScenes?.menu);
   await page.evaluate(() => {
     const m = (window as any).__swapriseScenes.menu;
