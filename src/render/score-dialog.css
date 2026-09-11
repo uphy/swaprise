@@ -1,21 +1,21 @@
 /* Focus containment is native; presentation is a full game menu, not a card. */
-.score-dialog { position: fixed; inset: 0; margin: 0; width: 100%; max-width: none; max-height: none; padding: 0; border: 0; border-radius: 0; background: #14141c; color: #f4f4f8; font: 16px/1.5 "Menlo", "Consolas", monospace; box-sizing: border-box; overflow: hidden; outline: none; touch-action: pan-y; }
+.score-dialog { position: fixed; inset: 0; margin: 0; width: 100%; max-width: none; max-height: none; padding: 0; border: 0; border-radius: 0; background: #14141c; color: #f4f4f8; font: 22px/1.5 "Menlo", "Consolas", monospace; box-sizing: border-box; overflow: hidden; outline: none; touch-action: pan-y; }
 .score-dialog::backdrop { background: #14141c; }
 .score-screen { box-sizing: border-box; width: min(100%, 680px); height: 100%; margin: auto; display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto; padding: max(20px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left)); }
 .player-screen .score-screen { max-width: 480px; }
 .score-screen header { padding-bottom: 16px; }
 .score-screen header small { color: #7a7a90; font-size: 11px; letter-spacing: .2em; }
-.score-dialog h2 { font-size: 26px; margin: 4px 0 0; }
-.score-dialog h3 { font-size: 15px; color: #ffe066; margin: 22px 0 8px; }
+.score-dialog h2 { font-size: 32px; margin: 4px 0 0; }
+.score-dialog h3 { font-size: 22px; color: #ffe066; margin: 22px 0 8px; }
 .score-content { overflow-y: auto; min-height: 0; overscroll-behavior: contain; padding: 0 2px 16px; }
-.score-dialog p { color: #a9a9bd; font-size: 13px; margin: 10px 0; overflow-wrap: anywhere; }
-.score-dialog label { display: block; margin: 18px 0 8px; font-size: 15px; }
-.score-dialog input[type=text] { box-sizing: border-box; display: block; width: 100%; margin-top: 8px; background: #1e1e2a; color: #fff; padding: 12px; border: 1px solid #66667d; border-radius: 2px; font: inherit; font-size: 16px; user-select: text; -webkit-user-select: text; touch-action: manipulation; }
+.score-dialog p { color: #c0c0d0; font-size: 18px; margin: 12px 0; overflow-wrap: anywhere; }
+.score-dialog label { display: block; margin: 18px 0 8px; font-size: 20px; }
+.score-dialog input[type=text] { box-sizing: border-box; display: block; width: 100%; min-height: 58px; margin-top: 8px; background: #1e1e2a; color: #fff; padding: 12px; border: 1px solid #66667d; border-radius: 2px; font: inherit; font-size: 22px; user-select: text; -webkit-user-select: text; touch-action: manipulation; }
 .score-dialog .score-consent { display: flex; gap: 12px; align-items: center; min-height: 48px; margin-top: 22px; cursor: pointer; }
-.score-dialog input[type=checkbox] { flex: 0 0 22px; width: 22px; height: 22px; margin: 0; accent-color: #ffe066; }
+.score-dialog input[type=checkbox] { flex: 0 0 28px; width: 28px; height: 28px; margin: 0; accent-color: #ffe066; }
 .score-dialog details { margin-top: 18px; border-top: 1px solid #343444; }
-.score-dialog summary { cursor: pointer; padding: 12px 0; min-height: 24px; font-size: 13px; color: #c0c0d6; }
-.score-dialog button { min-height: 44px; padding: 9px 12px; border: 1px solid #5a5a72; border-radius: 2px; background: #2e2e40; color: #f4f4f8; font: inherit; font-size: 14px; cursor: pointer; touch-action: manipulation; }
+.score-dialog summary { cursor: pointer; padding: 14px 0; min-height: 28px; font-size: 18px; color: #c0c0d6; }
+.score-dialog button { min-height: 56px; padding: 10px 12px; border: 1px solid #5a5a72; border-radius: 2px; background: #2e2e40; color: #f4f4f8; font: inherit; font-size: 20px; cursor: pointer; touch-action: manipulation; }
 .score-dialog button[aria-pressed=true], .score-dialog button.primary { color: #ffe066; background: #46466a; border-color: #ffe066; }
 .score-dialog :focus-visible { outline: 2px solid #ffe066; outline-offset: 2px; }
 .score-dialog nav { display: flex; gap: 8px; margin-bottom: 10px; }
@@ -23,9 +23,11 @@
 .score-dialog [hidden] { display: none !important; }
 .score-footer { display: flex; gap: 10px; padding-top: 12px; border-top: 1px solid #343444; background: #14141c; }
 .score-footer button { flex: 1; }
+.player-screen .score-footer button.primary { flex: 1.6; }
 .score-dialog ol { margin: 0; padding-left: 30px; font-variant-numeric: tabular-nums; }
 .score-dialog li { padding: 10px 4px; border-bottom: 1px solid #2e2e40; overflow-wrap: anywhere; }
 .score-dialog li::marker { color: #ffe066; }
-.score-dialog li span { display: block; font-size: 12px; color: #a9a9bd; margin-top: 4px; }
+.score-dialog li span { display: block; font-size: 18px; color: #c0c0d0; margin-top: 4px; }
 @media (min-height: 750px) { .score-screen { padding-top: max(40px, env(safe-area-inset-top)); } }
-@media (max-height: 480px) { .score-screen { padding-top: max(8px, env(safe-area-inset-top)); } .score-screen header { padding-bottom: 8px; } .score-screen header small { display: none; } .score-dialog h2 { font-size: 20px; margin: 0; } .score-footer { padding-top: 8px; } }
+@media (max-height: 480px) { .score-screen { padding-top: max(8px, env(safe-area-inset-top)); } .score-screen header { padding-bottom: 8px; } .score-screen header small { display: none; } .score-dialog h2 { margin: 0; } .score-footer { padding-top: 8px; } }
+@media (max-height: 480px) and (min-width: 700px) { .score-tools { display: flex; gap: 12px; } .score-tools nav { flex: 1; min-width: 0; } }

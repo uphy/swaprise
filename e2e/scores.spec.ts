@@ -62,6 +62,7 @@ test("settings share online name and rankings handle network failures safely", a
   await page.route("**/api/scores?*", (r) => r.fulfill({ json: { scores: [{ id: "one", name: "<img src=x onerror=alert(1)>", score: 321, maxChain: 2, createdAt: Date.now() }] } }));
   await page.getByRole("button", { name: "RETRY", exact: true }).click();
   await expect(page.getByRole("listitem")).toContainText("<img src=x onerror=alert(1)>");
+  expect(await page.getByRole("listitem").evaluate((el) => parseFloat(getComputedStyle(el).fontSize))).toBeGreaterThanOrEqual(22);
   await expect(page.locator("dialog img")).toHaveCount(0);
   await page.getByRole("button", { name: "TIME ATTACK", exact: true }).click();
   await expect(page.getByRole("button", { name: "TIME ATTACK", exact: true })).toHaveAttribute("aria-pressed", "true");
@@ -143,6 +144,10 @@ for (const viewport of [{ width: 360, height: 640 }, { width: 844, height: 390 }
 test("player screen is concise and follows the keyboard's visual viewport", async ({ page }) => {
   await page.goto("/?mode=endless&bgm=0&countdown=0");
   await expect(page.getByRole("dialog")).toBeVisible();
+  expect(await page.getByRole("textbox").evaluate((el) => parseFloat(getComputedStyle(el).fontSize))).toBeGreaterThanOrEqual(22);
+  const primary = page.getByRole("button", { name: "SAVE AND PLAY" });
+  expect(await primary.evaluate((el) => parseFloat(getComputedStyle(el).fontSize))).toBeGreaterThanOrEqual(20);
+  expect((await primary.boundingBox())!.height).toBeGreaterThanOrEqual(56);
   await expect(page.getByRole("checkbox")).not.toBeChecked();
   await expect(page.locator("details")).not.toHaveAttribute("open", "");
   // Desktop automation cannot open a phone OS keyboard: emulate its viewport resize.
