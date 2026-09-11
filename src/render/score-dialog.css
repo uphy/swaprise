@@ -1,0 +1,13 @@
+.score-dialog { box-sizing: border-box; width: min(94vw, 520px); max-height: 90dvh; overflow: auto; background: #161625; color: #eeeef8; border: 1px solid #73739b; border-radius: 14px; padding: 20px; font: 16px/1.5 system-ui, sans-serif; }
+.score-dialog::backdrop { background: #000b; }
+.score-dialog h2 { margin-top: 0; font-size: 22px; }
+.score-dialog p { color: #c0c0d6; font-size: 14px; }
+.score-dialog label { display: block; margin: 16px 0; }
+.score-dialog input[type=text] { box-sizing: border-box; display: block; width: 100%; background: #272739; color: white; padding: 10px; border: 1px solid #8a8aa5; border-radius: 5px; font: inherit; }
+.score-dialog input[type=checkbox] { width: 22px; height: 22px; vertical-align: middle; margin-right: 10px; }
+.score-dialog button { min-height: 44px; margin: 4px; padding: 8px 14px; border: 1px solid #73739b; border-radius: 6px; background: #30304b; color: white; font: inherit; cursor: pointer; }
+.score-dialog button[aria-pressed=true] { background: #555591; }
+.score-dialog :focus-visible { outline: 3px solid #aab6ff; outline-offset: 2px; }
+.score-dialog ol { padding-left: 28px; }
+.score-dialog li { margin: 12px 0; overflow-wrap: anywhere; }
+.score-dialog li span { display: block; font-size: 13px; }

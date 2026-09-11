@@ -1,0 +1,44 @@
+# オンラインスコア
+
+## 対象と公開設定
+
+- 標準エンドレスと2分タイムアタック（途中ゲームオーバーも含む）。CPU・対人・パズルは対象外。
+- URL の `seed` / `speed` / `time` / `shock` 指定はカスタム扱いで対象外。音声・カウントダウンなど表示オプションは対象に影響しない。
+- 初回の対象プレイ前に名前と公開設定を案内。チェックは初期オフ。「あとで」や Escape なら端末内だけで記録し、再案内はしない。設定 → プレイヤー設定から後で変更できる。
+- 公開オン以降は結果時に自動投稿。名前はオンライン対戦と同じ `swaprise.name.v1`（20 Unicode codepoints、空なら Guest）。既存の名前があっても公開への同意とはみなさない。
+- 公開設定は端末内の `swaprise.scores.publish.v1`。変更後の名前は以降のプレイへ適用し、公開済み記録や再送待ち記録は当時の名前を保つ。同名は許可、アカウント不要。
+- オフにすると未送信記録は破棄し、進行中の通信は中断する。ただしサーバーが受領済みの投稿は取り消せず、公開済み記録も削除しない。この点を設定画面で説明する。
+
+## 記録と通信
+
+- 従来のローカル上位5件は毎回保存。過去のローカル記録には seed / ルール情報がないので遡って投稿しない。
+- 投稿はプレイ単位の UUID、mode、score、maxChain、name、seed、frames、rules。標準設定は `scores-v1` によって定義される。ゲーム性・得点計算を変えたら `src/scores/model.ts` の `SCORE_RULES` を更新し、異なるルールのランキングを混ぜない（対戦の `GAME_VERSION` とは独立）。
+- Worker が保存時刻を付ける。モード別上位50件を得点降順 → 最大連鎖降順 → 登録時刻昇順 → ID昇順で表示する。個人ベスト方式ではなくプレイ単位。
+- POST 前に既存の `/api/session` で匿名セッションを取得する。Cookie は HttpOnly / SameSite=Strict。GET は公開・Cookie不要。クロスサイト投稿は拒否する。
+- 送信待ちは `swaprise.scores.pending.v1` に最大50件（超過時は古い順に破棄）。アプリ起動・ネット復帰・失敗後60秒で再送。通信タイムアウト8秒。スコアの UUID は再送で変えない。
+- 400 / 409 / 413 は再送しても成功しないため破棄。他の失敗は保持する。古い rules の待機分は新ルールとして送らない。保存領域が使えないときは公開しない。
+- 投稿済みの同一 ID + 同一内容は成功扱い。異なる内容なら409。SQLiteの単一文で投稿数確認と INSERT を行い、競合しても重複・上限超過を防ぐ。
+- 最大4KB、数値の整数・範囲（得点上限99,999、タイムアタック7,200 frames等）、名前、ルールを検査。送信元ごと毎時60件。CloudflareのIPヘッダーを日付と SHA-256 化して保存し、生IP・Cookieは保存も公開もしない（ローカルはセッションにフォールバック）。このハッシュは匿名化の保証ではない。日付境界では制限枠がリセットされる。
+- リプレイ照合は未実装なので偽の得点は完全には防げない。画面にも「プレイ内容の検証なし」と明記する。アカウント本人認証・名前の予約・今日のseed・個別記録リンクは別件。
+
+## D1 とデプロイ
+
+`migrations/0001_scores.sql` は追記型の初回 migration。ランキングとレート制限に専用インデックスを使い、上位取得で全件走査しない。API と対戦の有効化は現状ともに `ONLINE_ENABLED` で制御する。
+
+ローカルでは `pnpm build && pnpm dev:online`。D1 migration もローカルへ適用する。`pnpm e2e:online` はテスト専用保存先へ migration して起動し、本番DBには触れない。
+
+CI の `CLOUDFLARE_API_TOKEN` には対象アカウントの **D1 Read/Write** を追加する。`CLOUDFLARE_ACCOUNT_ID` は既存の値を使う。
+
+手動デプロイも CI と同じ手順を使う（認証情報は環境変数）：
+
+```sh
+pnpm build
+node tools/prepare-score-database.mjs wrangler.jsonc .wrangler-deploy.json
+pnpm exec wrangler deploy -c .wrangler-deploy.json
+```
+
+準備スクリプトは Worker 名から DB を解決、なければ作成し、実ID入りの設定を生成して migration を適用する。追跡中の設定はローカル専用ダミーIDなのでそのまま remote deploy しない。
+
+PR は `swaprise-pr-N-scores`、本番は `swaprise-scores`。プレビューから本番へ記録を移さない。DBを作れない・migrationに失敗した場合は公開を中止する。PR終了時のDB自動削除は行わないので、不要なプレビューDBは対象名を確認して管理者が削除する。無料枠のDB数上限にも注意する。
+
+検証: `pnpm typecheck` / `pnpm test` / `pnpm e2e` / `pnpm e2e:online`。D1 E2E は順位・モード分離・二重送信・不正入力・セッション・Origin・レート制限を実Workerで確認する。

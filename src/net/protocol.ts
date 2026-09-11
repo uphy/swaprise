@@ -105,7 +105,7 @@ export function validInput(value: unknown): value is Input {
 }
 export function displayName(value: unknown): string {
   return typeof value === "string"
-    ? [...value.replace(/[\p{C}\r\n]/gu, "").trim()].slice(0, 20).join("") ||
+    ? [...value.replace(/[\p{C}\p{Zl}\p{Zp}]/gu, "").trim()].slice(0, 20).join("").trim() ||
         "Guest"
     : "Guest";
 }

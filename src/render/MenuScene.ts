@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { showRecordsDialog, showPlayerSettings } from "./score-dialog";
 import { FONT, MENU_TYPE, KIND_COLORS, TEXT_COLOR, layoutFor, sameLayout } from "./theme";
 import { createTextures } from "./textures";
 import { PUZZLES, PUZZLES_PER_STAGE, PUZZLE_STAGES, puzzleName, type CpuLevel, type GameMode } from "../core";
@@ -218,6 +219,9 @@ export class MenuScene extends Phaser.Scene {
       if (resizeTimer !== null) window.clearTimeout(resizeTimer);
       resizeTimer = window.setTimeout(() => {
         resizeTimer = null;
+        // ソフトキーボードや回転で、名前の入力中にダイアログを消さない。
+        // ダイアログが閉じたときの resize 通知でキャンバスを追従させる。
+        if (document.querySelector(".score-dialog[open]")) return;
         if (!sameLayout(layoutFor("menu"), layout)) this.scene.restart();
       }, 150);
     };
@@ -604,27 +608,7 @@ export class MenuScene extends Phaser.Scene {
 
   /** 上位5件と CPU 戦の勝敗、パズルのクリア数。 */
   private showRecords(): void {
-    const hs = loadHighScores();
-    const lines: string[] = [];
-    for (const [title, list] of [
-      [t("ENDLESS  TOP 5"), hs.endless],
-      [t("TIME ATTACK 2:00  TOP 5"), hs.timeattack],
-    ] as const) {
-      lines.push(title);
-      if (list.length === 0) lines.push(t("no records yet"));
-      list.forEach((e, i) => {
-        lines.push(`${i + 1}.  ${String(e.score).padStart(6, "0")}   x${String(e.maxChain).padEnd(2)}  ${e.date || "----------"}`);
-      });
-      lines.push("");
-    }
-    lines.push(t("VS CPU"));
-    for (const l of ["easy", "normal", "hard"] as CpuLevel[]) {
-      const r = hs.cpu[l];
-      lines.push(`${l.toUpperCase().padEnd(7)} ${r.wins}W ${r.losses}L`);
-    }
-    lines.push("");
-    lines.push(t("PUZZLE  {count} / {total} cleared", { count: hs.puzzle.length, total: PUZZLES.length }));
-    this.openOverlay("records-list", t("RECORDS"), lines.join("\n"), []);
+    showRecordsDialog(this);
   }
 
   /** 音・振動（対応端末のみ）・全画面（対応端末のみ）。 */
@@ -632,6 +616,7 @@ export class MenuScene extends Phaser.Scene {
     const layout = layoutFor("menu");
     const soundLabel = (): string => t("SOUND: {state}", { state: t(audio.muted ? "OFF" : "ON") });
     const buttons: OverlayButton[] = [
+      { label: t("PLAYER SETTINGS"), name: "player-settings", onPress: () => showPlayerSettings(this) },
       {
         label: soundLabel(),
         name: "sound",

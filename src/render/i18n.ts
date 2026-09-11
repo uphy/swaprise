@@ -3,6 +3,16 @@ export type Locale = "en" | "ja";
 const locale: Locale = typeof navigator !== "undefined" && navigator.language.toLowerCase().startsWith("ja") ? "ja" : "en";
 
 const JA: Record<string, string> = {
+  "Share your scores?": "スコアをオンライン公開しますか？",
+  "PLAYER SETTINGS": "プレイヤー設定", "ONLINE RECORDS": "オンライン記録", "THIS DEVICE": "この端末の記録",
+  "Your name is shared with online play. No account is required.": "名前はオンライン対戦と共通です。アカウント登録は不要です。",
+  "Automatically publish standard endless and time attack scores": "標準のエンドレス・タイムアタックのスコアを自動公開する",
+  "Your name, score, chain and date will be public. Each play is a separate record. Past names and published records remain when you change this setting.": "名前・スコア・最大連鎖・日付が公開されます。プレイごとに記録します。名前の変更や公開オフのあとも、公開済みの記録と当時の名前は残ります。",
+  "Custom games stay on this device. Failed uploads retry later (up to 50). Turning this off discards pending uploads; an upload already received cannot be recalled.": "カスタム設定は端末内のみの記録です。通信失敗時は最大50件を保存し、あとで再送します。公開オフで未送信分を破棄しますが、サーバーに到着済みの送信は取り消せません。",
+  "SAVE AND PLAY": "保存して遊ぶ", SAVE: "保存", LATER: "あとで",
+  "Standard rules · top 50 per mode · unverified scores": "標準ルール・モード別上位50件・プレイ内容の検証なし",
+  "PENDING UPLOADS: {count}": "未送信の記録: {count}件", "Loading…": "読み込み中…",
+  "Could not load rankings. Local records are still available.": "ランキングを取得できませんでした。端末内の記録は引き続き利用できます。",
   "Swap & match action puzzle": "入れ替えて揃えるアクションパズル",
   "1 PLAYER": "1人プレイ", "VS CPU": "CPU対戦", "2 PLAYERS": "2人プレイ", ONLINE: "オンライン",
   "endless · time attack · puzzle": "エンドレス・タイムアタック・パズル",

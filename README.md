@@ -141,6 +141,8 @@ e2e/            Playwright によるブラウザ動作確認とスクリーン�
 
 main への push で GitHub Actions が Cloudflare Workers の `swaprise` にデプロイする（`wrangler.jsonc`）。旧名称の URL（`panepon.*.workers.dev`）には `redirect/` の転送用 Worker を置いていて、新 URL へ 301 で飛ばす。転送用 Worker は自動デプロイの対象外なので、変えたら `pnpm deploy:redirect` で手動で上げる。
 
+オンライン記録は D1 を使う。CI は本番 `swaprise-scores` / PRごと `swaprise-pr-N-scores` を作成・解決して migration を適用する。Cloudflare の既存 API token に **D1 Read/Write** が必要。追跡中の `wrangler.jsonc` の DB ID はローカル用のダミーで、直接本番に deploy せず生成済み設定を使う。開発・手動デプロイ・公開設定の詳細は [オンラインスコア](docs/online-scores.md)。
+
 タイミングは `src/core/constants.ts` の `TIMING` にフレーム数でまとめてあり、手触りの調整はここを変える。消去の点滅・柄を見せる時間・1枚ずつ消える間隔・落下前の猶予は `clearTiming(level)` でスピードレベルに応じて短くなる（レベル1が最長、レベル50以上で最短）。
 
 アクティブ連鎖を仕込みやすいよう、消去後の落下前には18フレーム（0.3秒、レベル50以上は8フレーム）の猶予がある。消去で落ちたパネルは着地後も12フレーム連鎖フラグを保持し、その間に交換を完了して揃えれば連鎖になる。落下先や周囲のパネルを動かして仕込めるが、落下中のパネルそのものは交換できない。
