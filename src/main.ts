@@ -4,6 +4,7 @@ import Phaser from "phaser";
 import { OnlineScene } from "./render/OnlineScene";
 import { GameScene } from "./render/GameScene";
 import { MenuScene } from "./render/MenuScene";
+import { OpeningScene } from "./render/OpeningScene";
 import { BG_COLOR, layoutFor } from "./render/theme";
 import { DPR, installHiDpiText } from "./render/hidpi";
 import { waitForUpdate } from "./render/update";
@@ -31,6 +32,7 @@ waitForUpdate().then(() => {
       autoCenter: Phaser.Scale.CENTER_BOTH,
     },
     input: { gamepad: true, activePointers: 4 },
-    scene: [MenuScene, GameScene, OnlineScene],
+    // 最初のシーンがオープニング。直接開始や ?opening=0 のときはすぐメニューへ渡す
+    scene: [OpeningScene, MenuScene, GameScene, OnlineScene],
   });
 });

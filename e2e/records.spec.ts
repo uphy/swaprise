@@ -22,7 +22,7 @@ test("メニューの RECORDS をタップすると上位5件の一覧が開き�
       }),
     );
   });
-  await page.goto("/?bgm=0");
+  await page.goto("/?bgm=0&opening=0");
   await page.waitForTimeout(400);
   // 記録のテキストを叩く
   const pos = await page.evaluate(() => {

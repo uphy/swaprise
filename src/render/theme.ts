@@ -72,3 +72,21 @@ export function layoutFor(mode: "menu" | "endless" | "timeattack" | "versus" | "
 }
 
 export const MENU_TYPE = { titlePortrait: 48, titleLandscape: 56, item: 22, itemCompact: 20, caption: 14 } as const;
+
+/**
+ * メニューの題字まわりの位置と大きさ。オープニングは最後に題字をここへ寄せてからメニューへ切り替えるので、
+ * 両方がこの値を使うことで、切り替わっても題字が動かない。
+ * 背の低い画面（Safari のツールバーがある iPhone、横持ちのスマホ）は compact で、縦の間隔を詰めて柄の飾りを省く。
+ */
+export function menuTitle(layout: Layout): { compact: boolean; y: number; size: number; subtitleY: number; subtitleSize: number; iconsY: number } {
+  const compact = layout.height < 560;
+  const y = compact ? 36 : layout.portrait ? 72 : 60;
+  return {
+    compact,
+    y,
+    size: layout.portrait ? MENU_TYPE.titlePortrait : MENU_TYPE.titleLandscape,
+    subtitleY: y + (compact ? 36 : 44),
+    subtitleSize: compact ? 12 : 14,
+    iconsY: y + 82,
+  };
+}

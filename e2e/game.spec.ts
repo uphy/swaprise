@@ -33,7 +33,7 @@ test("メニューが表示され、キーボードでエンドレスを開始�
   page.on("console", (m) => {
     if (m.type() === "error") errors.push(m.text());
   });
-  await page.goto("/?bgm=0&countdown=0");
+  await page.goto("/?bgm=0&countdown=0&opening=0");
   await expect(page.locator("canvas")).toBeVisible();
   await page.waitForTimeout(500);
   await page.screenshot({ path: `${SHOT}/menu.png` });

@@ -10,7 +10,7 @@ test.use({
 });
 
 test("戻る操作: 1回目はポーズ、2回目でメニュー。ページは離れない", async ({ page }) => {
-  await page.goto("/?bgm=0&countdown=0");
+  await page.goto("/?bgm=0&countdown=0&opening=0");
   await page.waitForTimeout(300);
   await page.goto("/?mode=versus&seed=7&bgm=0&countdown=0");
   await page.waitForFunction(() => Boolean((window as any).__swaprise?.game));

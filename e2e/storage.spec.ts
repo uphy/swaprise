@@ -8,7 +8,7 @@ test("旧名称のキー（panepon.*）に残った記録と設定は起動時�
     );
     localStorage.setItem("panepon.mute.v1", "on");
   });
-  await page.goto("/?bgm=0");
+  await page.goto("/?bgm=0&opening=0");
   await page.waitForFunction(() => Boolean((window as any).__swapriseScenes?.menu));
   const stored = await page.evaluate(() => ({
     oldScores: localStorage.getItem("panepon.highscores.v1"),

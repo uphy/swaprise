@@ -299,7 +299,7 @@ test("横持ちの 2P 対戦は盤面を左右の端に寄せ、HUD を内側に
 });
 
 test("SETTINGS の FULL SCREEN ボタンで全画面の希望が保存され、もう一度押すと戻る", async ({ page }) => {
-  await page.goto("/?bgm=0");
+  await page.goto("/?bgm=0&opening=0");
   await page.waitForFunction(() => Boolean((window as any).__swapriseScenes?.menu));
   await page.waitForTimeout(300);
   await page.evaluate(() => (window as any).__swapriseScenes.menu.children.getByName("settings").emit("pointerdown"));

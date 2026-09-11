@@ -107,7 +107,7 @@ test("CPU対戦: 相手だけがピンチでも曲は変わらず、自分がピ
 });
 
 test("メニューで画面が隠れると曲が止まり、戻ると鳴り直す", async ({ page }) => {
-  await page.goto("/?countdown=0");
+  await page.goto("/?countdown=0&opening=0");
   await page.mouse.click(10, 10);
   await page.waitForTimeout(300);
   expect((await bgmState(page)).playing).toBe("menu");

@@ -28,7 +28,7 @@ test("新しい版があると、メニューを出す前に切り替えて relo
     }).observe(document, { childList: true, subtree: true }); // この時点では documentElement がまだ無い
   });
 
-  await page.goto("/?bgm=0");
+  await page.goto("/?bgm=0&opening=0");
   await waitForPrecache(page);
   await expect(page.locator("canvas")).toBeVisible();
 
@@ -54,7 +54,7 @@ test("新しい版があると、メニューを出す前に切り替えて relo
 });
 
 test("新しい版がなければ、確認のあとそのままメニューが出る", async ({ page }) => {
-  await page.goto("/?bgm=0");
+  await page.goto("/?bgm=0&opening=0");
   await waitForPrecache(page);
   await page.reload();
   await expect(page.locator("canvas")).toBeVisible();

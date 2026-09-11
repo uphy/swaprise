@@ -201,7 +201,7 @@ test.describe("スマホ縦画面", () => {
   });
 
   test("縦レイアウトになり、タップでは交換せず横ドラッグで交換する", async ({ page }) => {
-    await page.goto("/?bgm=0&countdown=0");
+    await page.goto("/?bgm=0&countdown=0&opening=0");
     await page.waitForTimeout(500);
     await page.screenshot({ path: `${SHOT}/mobile-menu.png` });
 
