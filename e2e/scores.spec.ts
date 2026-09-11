@@ -114,3 +114,47 @@ test("custom runs do not prompt or upload even with publication enabled", async 
   await expect(page.getByRole("dialog")).toHaveCount(0);
   expect(requests).toEqual([]);
 });
+
+for (const viewport of [{ width: 360, height: 640 }, { width: 844, height: 390 }]) {
+  test(`records keep navigation visible while 50 rows scroll: ${viewport.width}`, async ({ page }) => {
+    await page.setViewportSize(viewport);
+    await page.route("**/api/scores?*", (route) => route.fulfill({ json: { scores: Array.from({ length: 50 }, (_, i) => ({
+      id: String(i), name: `Player ${i + 1}`, score: 99999 - i, maxChain: 5, createdAt: Date.now(),
+    })) } }));
+    await page.goto("/?bgm=0");
+    await page.waitForFunction(() => Boolean((window as any).__swapriseScenes?.menu));
+    await page.evaluate(() => (window as any).__swapriseScenes.menu.showRecords());
+    await page.getByRole("button", { name: "ONLINE", exact: true }).click();
+    await expect(page.getByRole("listitem")).toHaveCount(50);
+    const close = page.getByRole("button", { name: "CLOSE", exact: true });
+    const before = await close.boundingBox();
+    await page.locator(".score-content").evaluate((el) => { el.scrollTop = el.scrollHeight; });
+    await expect(page.getByText("Player 50", { exact: true })).toBeInViewport();
+    await expect(close).toBeInViewport();
+    await expect(page.getByRole("button", { name: "THIS DEVICE" })).toBeInViewport();
+    await expect(page.getByRole("button", { name: "TIME ATTACK", exact: true })).toBeInViewport();
+    expect(await close.boundingBox()).toEqual(before);
+    expect(await page.getByRole("dialog").evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
+    await close.click();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+  });
+}
+
+test("player screen is concise and follows the keyboard's visual viewport", async ({ page }) => {
+  await page.goto("/?mode=endless&bgm=0&countdown=0");
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await expect(page.getByRole("checkbox")).not.toBeChecked();
+  await expect(page.locator("details")).not.toHaveAttribute("open", "");
+  // Desktop automation cannot open a phone OS keyboard: emulate its viewport resize.
+  await page.evaluate(() => {
+    Object.defineProperty(window.visualViewport!, "height", { configurable: true, value: 320 });
+    window.visualViewport!.dispatchEvent(new Event("resize"));
+  });
+  const save = page.getByRole("button", { name: "SAVE AND PLAY" });
+  const bounds = (await save.boundingBox())!;
+  expect(bounds.y + bounds.height).toBeLessThanOrEqual(320);
+  await page.getByRole("textbox").fill("Mobile player");
+  await save.click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  expect(await page.evaluate(() => localStorage.getItem("swaprise.name.v1"))).toBe("Mobile player");
+});

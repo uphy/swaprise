@@ -3,6 +3,10 @@ export type Locale = "en" | "ja";
 const locale: Locale = typeof navigator !== "undefined" && navigator.language.toLowerCase().startsWith("ja") ? "ja" : "en";
 
 const JA: Record<string, string> = {
+  "Your name is shared with online play.": "名前はオンライン対戦と共通です。",
+  "Publish scores automatically": "スコアを自動公開する",
+  "Endless / time attack. Your name and records will be visible to everyone.": "エンドレス・タイムアタックが対象です。名前と記録は誰でも閲覧できます。",
+  "About publishing scores": "公開・保存について詳しく",
   "Share your scores?": "スコアをオンライン公開しますか？",
   "PLAYER SETTINGS": "プレイヤー設定", "ONLINE RECORDS": "オンライン記録", "THIS DEVICE": "この端末の記録",
   "Your name is shared with online play. No account is required.": "名前はオンライン対戦と共通です。アカウント登録は不要です。",

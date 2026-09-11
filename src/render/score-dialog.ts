@@ -9,10 +9,23 @@ import "./score-dialog.css";
 const element = <K extends keyof HTMLElementTagNameMap>(tag: K, text = ""): HTMLElementTagNameMap[K] => {
   const node = document.createElement(tag); node.textContent = text; return node;
 };
-function dialog(scene: Phaser.Scene, title: string, onClose: () => void = () => {}): { root: HTMLDialogElement; close: () => void } {
+function dialog(scene: Phaser.Scene, title: string, onClose: () => void = () => {}) {
   const root = element("dialog");
   root.className = "score-dialog"; root.setAttribute("aria-label", title);
-  root.append(element("h2", title));
+  const shell = element("div"); shell.className = "score-screen";
+  const header = element("header"); header.append(element("small", "SWAPRISE"), element("h2", title));
+  const tools = element("div"); tools.className = "score-tools";
+  const body = element("div"); body.className = "score-content";
+  const footer = element("footer"); footer.className = "score-footer";
+  shell.append(header, tools, body, footer); root.append(shell);
+  // Follow the visible viewport when the software keyboard is open.
+  const viewport = window.visualViewport;
+  const fit = (): void => {
+    root.style.height = `${viewport?.height ?? window.innerHeight}px`;
+    root.style.top = `${viewport?.offsetTop ?? 0}px`;
+  };
+  viewport?.addEventListener("resize", fit); viewport?.addEventListener("scroll", fit);
+  window.addEventListener("resize", fit); fit();
   // Phaser's global keyboard listener must not navigate/restart while typing.
   const keyboard = scene.input.keyboard;
   const inputEnabled = scene.input.enabled;
@@ -25,6 +38,8 @@ function dialog(scene: Phaser.Scene, title: string, onClose: () => void = () => 
   const cleanup = (): void => {
     if (cleaned) return;
     cleaned = true;
+    viewport?.removeEventListener("resize", fit); viewport?.removeEventListener("scroll", fit);
+    window.removeEventListener("resize", fit);
     root.remove(); scene.events.off("shutdown", shutdown);
     scene.input.enabled = inputEnabled;
     if (keyboard) { keyboard.enabled = enabled; keyboard.manager.preventDefault = preventDefault; keyboard.resetKeys(); }
@@ -36,32 +51,37 @@ function dialog(scene: Phaser.Scene, title: string, onClose: () => void = () => 
     if (root.returnValue !== "shutdown") { onClose(); window.dispatchEvent(new Event("resize")); }
   }, { once: true });
   document.body.append(root); root.showModal();
-  return { root, close };
+  return { root, body, tools, footer, close };
 }
 function button(parent: HTMLElement, text: string, action: () => void): HTMLButtonElement {
   const b = element("button", t(text)); b.type = "button"; b.onclick = action; parent.append(b); return b;
 }
 export function showPlayerSettings(scene: Phaser.Scene, first = false, done: () => void = () => {}): void {
-  const { root, close } = dialog(scene, t(first ? "Share your scores?" : "PLAYER SETTINGS"), () => {
+  const { root, body, footer, close } = dialog(scene, t("PLAYER SETTINGS"), () => {
     if (first && publication() === null) setPublication(false);
     done();
   });
-  root.append(element("p", t("Your name is shared with online play. No account is required.")));
+  root.classList.add("player-screen");
+  body.append(element("p", t("Your name is shared with online play.")));
   const label = element("label", t("Name (optional)"));
   const input = element("input"); input.type = "text"; input.maxLength = 40;
-  input.value = playerName(); input.placeholder = t("Guest"); label.append(input); root.append(label);
+  input.value = playerName(); input.placeholder = t("Guest"); label.append(input); body.append(label);
   const consent = element("label");
   const checkbox = element("input"); checkbox.type = "checkbox"; checkbox.checked = publication() === true;
-  consent.append(checkbox, document.createTextNode(t("Automatically publish standard endless and time attack scores")));
-  root.append(consent, element("p", t("Your name, score, chain and date will be public. Each play is a separate record. Past names and published records remain when you change this setting.")),
+  consent.className = "score-consent";
+  consent.append(checkbox, document.createTextNode(t("Publish scores automatically")));
+  body.append(consent, element("p", t("Endless / time attack. Your name and records will be visible to everyone.")));
+  const details = element("details");
+  details.append(element("summary", t("About publishing scores")), element("p", t("Your name, score, chain and date will be public. Each play is a separate record. Past names and published records remain when you change this setting.")),
     element("p", t("Custom games stay on this device. Failed uploads retry later (up to 50). Turning this off discards pending uploads; an upload already received cannot be recalled.")));
-  button(root, first ? "SAVE AND PLAY" : "SAVE", () => { savePlayerName(input.value); setPublication(checkbox.checked); close(); });
-  button(root, first ? "LATER" : "CANCEL", close);
+  body.append(details);
+  button(footer, first ? "SAVE AND PLAY" : "SAVE", () => { savePlayerName(input.value); setPublication(checkbox.checked); close(); }).className = "primary";
+  button(footer, first ? "LATER" : "CANCEL", close);
 }
 export function showRecordsDialog(scene: Phaser.Scene): void {
-  const { root, close } = dialog(scene, t("RECORDS"));
-  const sources = element("nav"); root.append(sources);
-  const local = element("section"); root.append(local);
+  const { root, body, tools, footer, close } = dialog(scene, t("RECORDS"));
+  const sources = element("nav"); tools.append(sources);
+  const local = element("section"); body.append(local);
   const hs = loadHighScores();
   for (const [title, entries] of [["ENDLESS  TOP 5", hs.endless], ["TIME ATTACK 2:00  TOP 5", hs.timeattack]] as const) {
     local.append(element("h3", t(title)));
@@ -76,10 +96,10 @@ export function showRecordsDialog(scene: Phaser.Scene): void {
     local.append(element("p", `${level.toUpperCase()}  ${t("{wins}W {losses}L", { wins: r.wins, losses: r.losses })}`));
   }
   local.append(element("p", t("PUZZLE  {count} / {total} cleared", { count: hs.puzzle.length, total: PUZZLES.length })));
-  const online = element("section"); root.append(online); online.hidden = true;
+  const online = element("section"); body.append(online); online.hidden = true;
   online.append(element("p", t("Standard rules · top 50 per mode · unverified scores")));
   const pending = element("p"); online.append(pending);
-  const tabs = element("nav"); online.append(tabs);
+  const tabs = element("nav"); tools.append(tabs); tabs.hidden = true;
   const status = element("p"); status.setAttribute("role", "status"); online.append(status);
   const list = element("ol"); online.append(list);
   let request: AbortController | undefined;
@@ -106,15 +126,15 @@ export function showRecordsDialog(scene: Phaser.Scene): void {
   }
   button(online, "RETRY", () => { void flushScores(); void load(current); });
   const localButton = button(sources, "THIS DEVICE", () => {
-    request?.abort(); online.hidden = true; local.hidden = false;
+    request?.abort(); online.hidden = true; tabs.hidden = true; local.hidden = false; body.scrollTop = 0;
     localButton.setAttribute("aria-pressed", "true"); onlineButton.setAttribute("aria-pressed", "false");
   });
   const onlineButton = button(sources, "ONLINE", () => {
-    local.hidden = true; online.hidden = false;
+    local.hidden = true; online.hidden = false; tabs.hidden = false; body.scrollTop = 0;
     onlineButton.setAttribute("aria-pressed", "true"); localButton.setAttribute("aria-pressed", "false");
     void load(current);
   });
   localButton.setAttribute("aria-pressed", "true"); onlineButton.setAttribute("aria-pressed", "false");
-  button(root, "CLOSE", close);
+  button(footer, "CLOSE", close);
   root.addEventListener("close", () => request?.abort(), { once: true });
 }
