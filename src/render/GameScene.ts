@@ -192,18 +192,13 @@ export class GameScene extends Phaser.Scene {
     this.game.events.on("hidden", onHidden);
     this.game.events.on("blur", onHidden);
     // Android の戻るジェスチャ・戻るボタンでアプリが閉じないよう、履歴を1つ積んで popstate を受ける。
-    // 戻る1回目はポーズ、ポーズ中や終了後の戻るはメニューへ。
+    // 戻るジェスチャ（画面端からの横スワイプ）は盤面のドラッグと重なりやすいので、ゲーム中の戻る操作には
+    // 何もさせない。ポーズもメニューも画面のボタンから行う。
     history.pushState({ swaprise: "game" }, "");
     this.historyPushed = true;
     const onPop = (): void => {
       if (!this.historyPushed) return;
-      if (this.paused || this.ended) {
-        this.historyPushed = false;
-        this.toMenu();
-        return;
-      }
       history.pushState({ swaprise: "game" }, "");
-      this.setPaused(true);
     };
     window.addEventListener("popstate", onPop);
     // 回転・ウィンドウサイズの変更。連続して来るので少し待ってからレイアウトし直す

@@ -43,10 +43,26 @@ test("招待URLから2人で対戦し、降参して再戦する", async ({ brow
   expect(
     await q.evaluate(() => (window as any).__swapriseOnline.session.player),
   ).toBe(1);
+  // Android の戻るジェスチャ（画面端からの横スワイプ）は盤面のドラッグと重なりやすい。対戦中の戻る操作では
+  // ページを離れず（招待URLで開いた側は履歴を積んでいなければ前のページへ戻っていた）、案内を出して試合を続ける
+  await q.goBack();
+  await expect(q.getByRole("status")).toContainText("Back is disabled during a match");
+  await expect(q.locator(".online-ui.playing")).toHaveCount(1);
+  const frameAtBack = await q.evaluate(() => (window as any).__swapriseOnline.session.lockstep.frame);
+  await q.waitForFunction(
+    (f) => (window as any).__swapriseOnline?.session?.lockstep?.frame > f + 60,
+    frameAtBack,
+  );
+  // 案内は数秒で消え、相手の名前の表示に戻る
+  await expect(q.getByRole("status")).toContainText("招待した人", { timeout: 10000 });
   await p.getByRole("button", { name: "SETTINGS", exact: true }).click();
   await p.getByRole("button", { name: "SURRENDER", exact: true }).click();
   await p.getByRole("button", { name: "YES, SURRENDER", exact: true }).click();
   await expect(q.getByRole("status")).toContainText("YOU WIN");
+  await expect(p.getByRole("status")).toContainText("YOU LOSE");
+  // 結果画面での戻る操作も何もしない。メニューへは画面のボタンから
+  await p.goBack();
+  await p.waitForTimeout(300);
   await expect(p.getByRole("status")).toContainText("YOU LOSE");
   // CPU 対戦と同じように、盤面の上にも勝敗を出す
   const overlays = (page: Page) =>

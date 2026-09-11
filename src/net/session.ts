@@ -236,7 +236,9 @@ export class OnlineSession extends EventTarget {
       this.dispose();
       return true;
     } catch {
-      this.leaving = false;
+      // 応答を失っても退出の意思は変わらない（画面は RETRY と BACK TO MENU だけになる）。
+      // サーバーが退出を処理済みなら、この後にソケットが 4001（別タブで開いた）で閉じられて届く。
+      // leaving を戻すとそれを他タブの参加と誤って表示するので、戻さない。
       return false;
     }
   }

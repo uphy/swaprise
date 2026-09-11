@@ -9,7 +9,7 @@ test.use({
   userAgent: pixel.userAgent,
 });
 
-test("戻る操作: 1回目はポーズ、2回目でメニュー。ページは離れない", async ({ page }) => {
+test("戻る操作: ゲーム中は何も起きず、ページも離れない", async ({ page }) => {
   await page.goto("/?bgm=0&countdown=0&opening=0");
   await page.waitForTimeout(300);
   await page.goto("/?mode=versus&seed=7&bgm=0&countdown=0");
@@ -32,16 +32,31 @@ test("戻る操作: 1回目はポーズ、2回目でメニュー。ページは�
   expect(margins.left).toBeGreaterThanOrEqual(24);
   expect(margins.right).toBeGreaterThanOrEqual(24);
 
+  const activeScenes = () =>
+    page.evaluate(() =>
+      (window as any).__swaprise.scene.scene.manager.getScenes(true).map((s: any) => s.scene.key),
+    );
+  const frameAt = await page.evaluate(() => (window as any).__swaprise.game.boards[0].frame);
   await page.goBack();
-  await page.waitForTimeout(200);
-  expect(await page.evaluate(() => (window as any).__swaprise?.scene.paused)).toBe(true);
+  await page.waitForFunction((f) => (window as any).__swaprise.game.boards[0].frame > f + 30, frameAt);
+  expect(await page.evaluate(() => (window as any).__swaprise?.scene.paused)).toBe(false);
+  expect(await activeScenes()).toEqual(["game"]);
   expect(page.url()).toContain("seed=7");
 
+  // 何度戻っても同じ。ポーズ中・終了後も同じ
   await page.goBack();
-  await page.waitForTimeout(400);
-  const active = await page.evaluate(() =>
-    (window as any).__swaprise.scene.scene.manager.getScenes(true).map((s: any) => s.scene.key),
+  await page.goBack();
+  await page.evaluate(() => (window as any).__swaprise.scene.setPaused(true));
+  await page.goBack();
+  await page.waitForTimeout(300);
+  expect(await page.evaluate(() => (window as any).__swaprise?.scene.paused)).toBe(true);
+  expect(await activeScenes()).toEqual(["game"]);
+  expect(page.url()).toContain("seed=7");
+
+  // メニューへ戻ると、積んだ履歴は消えて元のURLに戻る
+  await page.evaluate(() => (window as any).__swaprise.scene.toMenu());
+  await page.waitForFunction(
+    () => (window as any).__swaprise.scene.scene.manager.getScenes(true).map((s: any) => s.scene.key).join() === "menu",
   );
-  expect(active).toEqual(["menu"]);
   expect(page.url()).toContain("seed=7");
 });
