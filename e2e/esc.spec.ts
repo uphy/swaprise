@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 test("メニューから始めたゲームを Esc で抜けると、メニューが描画されて再度始められる", async ({ page }) => {
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
-  await page.goto("/?bgm=0&countdown=0");
+  await page.goto("/?bgm=0&countdown=0&opening=0");
   await page.waitForTimeout(400);
   // 1 PLAYER → ENDLESS
   await page.keyboard.press("Enter");

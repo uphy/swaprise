@@ -72,6 +72,7 @@ const JA: Record<string, string> = {
   "NEW RECORD!": "新記録!", "RANK {rank}": "{rank}位", "TIME UP": "時間切れ", "GAME OVER": "ゲームオーバー",
   SCORE: "スコア", "MAX CHAIN": "最大連鎖", COMBOS: "同時消し", CHAINS: "連鎖", DRAW: "引き分け", WIN: "勝利", LOSE: "敗北",
   "UPDATING…": "更新中…", "CHECKING FOR UPDATES…": "更新を確認中…",
+  "TAP TO START": "タップでスタート", "PRESS ANY KEY": "キーを押してスタート",
   "Connecting…": "接続中…", "Reconnecting…": "再接続中…", "Leaving…": "退出中…",
   "Checking matchmaking…": "マッチングを確認中…", "Cancelling search…": "検索をキャンセル中…",
   "Finding an opponent…": "対戦相手を検索中…", "Search cancelled. You can start again.": "検索をキャンセルしました。再度開始できます。",

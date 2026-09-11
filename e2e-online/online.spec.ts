@@ -1,7 +1,7 @@
 import { test, expect, type Page } from "@playwright/test";
 import { GAME_VERSION } from "../src/net/protocol";
 async function enter(page: Page) {
-  await page.goto("/");
+  await page.goto("/?opening=0");
   await page.waitForFunction(() => !!(window as any).__swapriseScenes?.menu);
   const typography = await page.evaluate(() => {
     const m = (window as any).__swapriseScenes.menu;
@@ -386,7 +386,7 @@ test("旧タブの待機列も新しいタブから解除できる", async ({ co
   await page.getByRole("button", { name: "FIND MATCH", exact: true }).click();
   await page.waitForFunction(() => (window as any).__swapriseOnline?.queue?.readyState === WebSocket.OPEN);
   const next = await context.newPage();
-  await next.goto("/");
+  await next.goto("/?opening=0");
   await next.waitForFunction(() => !!(window as any).__swapriseScenes?.menu);
   await next.evaluate(() => {
     const menu = (window as any).__swapriseScenes.menu;

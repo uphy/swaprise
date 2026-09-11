@@ -3,7 +3,7 @@ import { test, expect } from "@playwright/test";
 test("cold startup caches only the app shell, not character images", async ({ page, context }) => {
   const images: string[] = [];
   context.on("request", (r) => { if (/\/characters\/.*\.(png|webp)$/.test(r.url())) images.push(r.url()); });
-  await page.goto("/?bgm=0");
+  await page.goto("/?bgm=0&opening=0");
   await page.evaluate(() => navigator.serviceWorker.ready);
   await page.waitForFunction(() => Boolean(navigator.serviceWorker.controller));
   const cached = await page.evaluate(async () => {
@@ -58,7 +58,7 @@ test("first-visit character downloads are saved even without a Service Worker", 
 test.describe("download failures", () => {
 test.use({ serviceWorkers: "block", viewport: { width: 360, height: 640 }, isMobile: true, hasTouch: true });
 test("bulk saving failures allow retry", async ({ page }) => {
-  await page.goto("/?bgm=0");
+  await page.goto("/?bgm=0&opening=0");
   await page.waitForFunction(() => Boolean((window as any).__swapriseScenes?.menu));
   await page.evaluate(() => {
     const s = (window as any).__swapriseScenes.menu;

@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 test("manifest にアイコンがあり、Service Worker が登録されてオフラインでも開ける", async ({ page, context }) => {
-  await page.goto("/?bgm=0");
+  await page.goto("/?bgm=0&opening=0");
   const manifest = await page.evaluate(async () => {
     const link = document.querySelector<HTMLLinkElement>('link[rel="manifest"]')!;
     const res = await fetch(link.href);

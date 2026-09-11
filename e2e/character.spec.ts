@@ -25,7 +25,7 @@ async function press(page: Page, ...keys: string[]): Promise<void> {
 }
 
 test("VS CPU: 難易度のあとに人物を選び、選択が保存されて対戦に引き継がれる", async ({ page }) => {
-  await page.goto("/?bgm=0");
+  await page.goto("/?bgm=0&opening=0");
   await page.waitForFunction(() => Boolean((window as any).__swapriseScenes?.menu?.charPicker === null));
   // VS CPU ▸ NORMAL
   await press(page, "ArrowDown", "Enter", "ArrowDown", "Enter");
@@ -74,7 +74,7 @@ test("VS CPU: 難易度のあとに人物を選び、選択が保存されて対
 });
 
 test("2 PLAYERS: 同じ人物を選べる", async ({ page }) => {
-  await page.goto("/?bgm=0");
+  await page.goto("/?bgm=0&opening=0");
   await page.waitForFunction(() => Boolean((window as any).__swapriseScenes?.menu));
   await press(page, "ArrowDown", "ArrowDown", "Enter");
   await page.waitForFunction(() => Boolean((window as any).__swapriseScenes.menu.charPicker));
@@ -270,7 +270,7 @@ test.describe("立ち絵の読み込み", () => {
       await route.continue();
     });
     await page.addInitScript(() => localStorage.setItem("swaprise.characters.v1", JSON.stringify({ p1: "nika", p2: "pirika" })));
-    await page.goto("/?bgm=0");
+    await page.goto("/?bgm=0&opening=0");
     await page.waitForFunction(() => Boolean((window as any).__swapriseScenes?.menu));
     await press(page, "ArrowDown", "ArrowDown", "Enter");
     await page.waitForFunction(() => Boolean((window as any).__swapriseScenes.menu.charPicker));

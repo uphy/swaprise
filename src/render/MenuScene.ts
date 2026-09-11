@@ -1,6 +1,6 @@
 import Phaser from "phaser";
 import { showRecordsDialog, showPlayerSettings, showOfflineSettings } from "./score-dialog";
-import { FONT, MENU_TYPE, KIND_COLORS, TEXT_COLOR, layoutFor, sameLayout } from "./theme";
+import { FONT, MENU_TYPE, KIND_COLORS, TEXT_COLOR, layoutFor, menuTitle, sameLayout } from "./theme";
 import { createTextures } from "./textures";
 import { PUZZLES, PUZZLES_PER_STAGE, PUZZLE_STAGES, puzzleName, type CpuLevel, type GameMode } from "../core";
 import { audio } from "./shared";
@@ -122,7 +122,8 @@ export class MenuScene extends Phaser.Scene {
 
   private checkedOnlineResume = false;
 
-  create(): void {
+  /** fromOpening はオープニングから続けて開いたとき。題字は動かさず、項目だけを短く浮かび上がらせる。 */
+  create(data: { fromOpening?: boolean } = {}): void {
     // Scene のインスタンスは使い回されるので、前回の表示物への参照を捨てる。
     // 残したままだと refresh() が破棄済みの Text を触って描画が止まる。
     this.texts = [];
@@ -168,20 +169,20 @@ export class MenuScene extends Phaser.Scene {
     const cx = W / 2;
     this.cx = cx;
 
-    // 背の低い画面（Safari のツールバーがある iPhone、横持ちのスマホ）では、縦の間隔を詰める
-    const compact = H < 560;
+    // 背の低い画面（Safari のツールバーがある iPhone、横持ちのスマホ）では、縦の間隔を詰める。
+    // 題字の位置はオープニングの最後の位置と同じ（menuTitle）
+    const title = menuTitle(layout);
+    const compact = title.compact;
     this.compact = compact;
-    const titleY = compact ? 36 : layout.portrait ? 72 : 60;
+    const titleY = title.y;
+    this.add.text(cx, titleY, "SWAPRISE", { fontFamily: FONT, fontSize: `${title.size}px`, color: TEXT_COLOR, fontStyle: "bold" }).setOrigin(0.5).setName("title");
     this.add
-      .text(cx, titleY, "SWAPRISE", { fontFamily: FONT, fontSize: `${layout.portrait ? MENU_TYPE.titlePortrait : MENU_TYPE.titleLandscape}px`, color: TEXT_COLOR, fontStyle: "bold" })
-      .setOrigin(0.5);
-    this.add
-      .text(cx, titleY + (compact ? 36 : 44), t("Swap & match action puzzle"), { fontFamily: FONT, fontSize: compact ? "12px" : "14px", color: "#7a7a90" })
+      .text(cx, title.subtitleY, t("Swap & match action puzzle"), { fontFamily: FONT, fontSize: `${title.subtitleSize}px`, color: "#7a7a90" })
       .setOrigin(0.5);
     // 柄の飾り。背の低い画面では省いて項目の場所を空ける
     if (!compact) {
       KIND_COLORS.forEach((_, k) => {
-        this.add.image(cx - 100 + k * 40, titleY + 82, `panel-${k}`).setScale(1 / DPR);
+        this.add.image(cx - 100 + k * 40, title.iconsY, `panel-${k}`).setScale(1 / DPR);
       });
     }
 
@@ -200,7 +201,7 @@ export class MenuScene extends Phaser.Scene {
 
     // ビルド識別子（日付と commit）。スマホで今どの版が動いているかを確かめるため、左下に小さく出す
     const buildText = this.add.text(6, H - 4, __BUILD_ID__, { fontFamily: FONT, fontSize: "9px", color: "#4a4a60" }).setOrigin(0, 1).setName("build");
-    this.add
+    const githubLink = this.add
       .text(6 + buildText.width + 8, H - 4, "GitHub", { fontFamily: FONT, fontSize: "9px", color: "#6a6a90" })
       .setOrigin(0, 1)
       .setInteractive({ useHandCursor: true })
@@ -212,6 +213,12 @@ export class MenuScene extends Phaser.Scene {
     this.level = "top";
     this.index = last ? (last.mode === "versus" ? 2 : last.mode === "cpu" ? 1 : 0) : 0;
     this.buildList();
+    // オープニングから続くときは、題字はそのままに、項目・小ボタン・隅の文字を上から順に浮かび上がらせる
+    if (data.fromOpening) {
+      const targets = [...this.texts, ...this.captions, ...this.tools, buildText, githubLink];
+      targets.forEach((o) => o.setAlpha(0));
+      this.tweens.add({ targets, alpha: 1, duration: 260, ease: "Quad.Out", delay: this.tweens.stagger(28) });
+    }
 
     // 回転・ウィンドウサイズの変更でレイアウトが変わったら、メニューは作り直す
     let resizeTimer: number | null = null;
@@ -261,6 +268,8 @@ export class MenuScene extends Phaser.Scene {
 
   /** 現在の階層の項目を並べ直す。ラベルの下に小文字の説明・記録を添える。 */
   private buildList(): void {
+    // 浮かび上がりの途中で階層が変わることがある。破棄した Text を tween が触り続けないよう先に止める
+    this.tweens.killTweensOf([...this.texts, ...this.captions]);
     this.texts.forEach((t) => t.destroy());
     this.captions.forEach((t) => t.destroy());
     this.texts = [];

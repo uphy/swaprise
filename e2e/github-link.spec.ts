@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 test("メニュー左下の GitHub リンクをクリックするとリポジトリを新しいタブで開く", async ({ page }) => {
-  await page.goto("/?bgm=0");
+  await page.goto("/?bgm=0&opening=0");
   await page.waitForTimeout(400);
   await page.evaluate(() => {
     (window as any).__openCalls = [];

@@ -42,7 +42,7 @@ test("later keeps scores local, no session or upload requests", async ({ page })
   expect(await page.evaluate(() => localStorage.getItem("swaprise.scores.publish.v1"))).toBe("false");
 });
 test("settings share online name and rankings handle network failures safely", async ({ page }) => {
-  await page.goto("/?bgm=0");
+  await page.goto("/?bgm=0&opening=0");
   await page.waitForFunction(() => Boolean((window as any).__swapriseScenes?.menu));
   await page.evaluate(() => (window as any).__swapriseScenes.menu.showSettings());
   await page.evaluate(() => (window as any).__swapriseScenes.menu.overlay.buttons.find((b: any) => b.name === "player-settings").emit("pointerdown"));
@@ -84,7 +84,7 @@ test("failed uploads survive reload, retry with the same ID, and opt-out clears 
   await finish(page);
   await expect.poll(() => posts.length).toBe(1);
   const id = posts[0].id;
-  await page.goto("/?bgm=0");
+  await page.goto("/?bgm=0&opening=0");
   await expect.poll(() => posts.length).toBe(2);
   expect(posts[1].id).toBe(id);
   fail = false;
@@ -95,7 +95,7 @@ test("failed uploads survive reload, retry with the same ID, and opt-out clears 
   await page.goto("/?mode=timeattack&countdown=0&bgm=0");
   await finish(page);
   await expect.poll(() => posts.length).toBe(4);
-  await page.goto("/?bgm=0");
+  await page.goto("/?bgm=0&opening=0");
   await page.waitForFunction(() => Boolean((window as any).__swapriseScenes?.menu));
   await page.evaluate(() => {
     const s = (window as any).__swapriseScenes.menu; s.showSettings();
@@ -122,7 +122,7 @@ for (const viewport of [{ width: 360, height: 640 }, { width: 844, height: 390 }
     await page.route("**/api/scores?*", (route) => route.fulfill({ json: { scores: Array.from({ length: 50 }, (_, i) => ({
       id: String(i), name: `Player ${i + 1}`, score: 99999 - i, maxChain: 5, createdAt: Date.now(),
     })) } }));
-    await page.goto("/?bgm=0");
+    await page.goto("/?bgm=0&opening=0");
     await page.waitForFunction(() => Boolean((window as any).__swapriseScenes?.menu));
     await page.evaluate(() => (window as any).__swapriseScenes.menu.showRecords());
     await page.getByRole("button", { name: "ONLINE", exact: true }).click();

@@ -1,6 +1,6 @@
 import { test, expect, type Page } from "@playwright/test";
 async function online(page: Page) {
-  await page.goto("/");
+  await page.goto("/?opening=0");
   await page.waitForFunction(() => !!(window as any).__swapriseScenes?.menu || !!document.querySelector(".online-ui"));
   await page.evaluate(() => {
     if (document.querySelector(".online-ui")) return;

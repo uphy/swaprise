@@ -123,7 +123,7 @@ test("メニュー: 1P PUZZLE で面選びが開き、クリア済みの次の�
   await page.addInitScript(() => {
     localStorage.setItem("swaprise.highscores.v1", JSON.stringify({ puzzle: [0, 1] }));
   });
-  await page.goto("/?bgm=0");
+  await page.goto("/?bgm=0&opening=0");
   await page.waitForTimeout(400);
   // 1 PLAYER → 3 番目の PUZZLE。キーは間を空けて押す（続けて押すと Phaser が取りこぼす）
   await page.keyboard.press("Enter");
