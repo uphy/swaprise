@@ -334,6 +334,40 @@ describe("おじゃまパネル", () => {
 });
 
 describe("せり上がりとゲームオーバー", () => {
+  it("消去中も手動で1段上げられ、消去対象は移動後の位置で消える", () => {
+    const b = emptyBoard(); b.setColumns([[0], [0], [0]]);
+    b.tick();
+    const clearing = b.cell(0, 0);
+    expect(clearing.state).toBe("matched");
+    run(b, TIMING.manualRisePerRow, { moveX: 0, moveY: 0, swap: false, raise: true });
+    expect(b.risenRows).toBe(1);
+    expect(b.cell(0, 1)).toBe(clearing);
+    expect(b.isSettled()).toBe(false);
+    const rise = b.riseProgress;
+    run(b, 3); expect(b.riseProgress).toBe(rise);
+    run(b, 400);
+    expect(b.cells.flat()).not.toContain(clearing);
+    expect(b.score).toBeGreaterThanOrEqual(30);
+  });
+  it("消去中の自動せり上がりと天井に触れた手動せり上げは止まる", () => {
+    const b = new Board({ seed: 1, initialHeight: 0 }); b.setColumns([[0], [0], [0]]);
+    b.tick(); const rise = b.riseProgress;
+    run(b, TIMING.manualRisePerRow); expect(b.riseProgress).toBe(rise);
+    b.setColumns([Array.from({ length: ROWS }, (_, i) => i % 2), [0], [0], [0]]);
+    run(b, TIMING.manualRisePerRow, { moveX: 0, moveY: 0, swap: false, raise: true });
+    expect(b.risenRows).toBe(0);
+  });
+  it("連鎖の消去中に1段上げても3連鎖が最後まで続く", () => {
+    const b = emptyBoard(); b.setColumns(CHAIN3); moveCursor(b, 0, 4);
+    let events = press(b, { swap: true });
+    for (let i = 0; i < 600 && !matches(events).length; i++) events.push(...run(b, 1));
+    expect(matches(events)).toHaveLength(1);
+    events.push(...run(b, TIMING.manualRisePerRow, { moveX: 0, moveY: 0, swap: false, raise: true }));
+    events.push(...run(b, 400));
+    expect(b.risenRows).toBe(1);
+    expect(matches(events).map((e) => e.chain)).toEqual([1, 2, 3]);
+    expect(b.maxChain).toBe(3);
+  });
   it("手動せり上げで1段上がるごとに1点入り、次の行がせり上がる", () => {
     const b = emptyBoard();
     const next = [...b.nextRow];

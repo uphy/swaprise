@@ -31,6 +31,16 @@ describe("standard score rules", () => {
   });
 });
 describe("shared profile and retry queue", () => {
+  it("retains and sends old queued records under their original rules", async () => {
+    const old = { ...entry(), mode: "timeattack", rules: "scores-ta-v2" };
+    localStorage.setItem("swaprise.scores.pending.v1", JSON.stringify([old]));
+    expect(pendingScores()).toEqual([old]);
+    vi.mocked(fetch).mockResolvedValue(new Response("{}", { status: 200 }));
+    setPublication(true); await vi.advanceTimersByTimeAsync(0);
+    const posted = vi.mocked(fetch).mock.calls.find(([url]) => url === "/api/scores");
+    expect(JSON.parse(posted![1]!.body as string)).toEqual(old);
+    expect(pendingScores()).toEqual([]);
+  });
   it("does not infer consent from an existing online name", () => {
     localStorage.setItem("swaprise.name.v1", "Existing");
     expect(playerName()).toBe("Existing"); expect(publication()).toBe(null);

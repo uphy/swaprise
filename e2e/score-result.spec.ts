@@ -76,7 +76,7 @@ test("time up blocks input, settles the last chain, then posts final points with
   });
   await expect(page.locator(".score-result")).toBeVisible();
   await expect.poll(() => posts.length).toBe(1);
-  expect(posts[0]).toMatchObject({ score: 220, maxChain: 3, frames: 7200, rules: "scores-ta-v2" });
+  expect(posts[0]).toMatchObject({ score: 220, maxChain: 3, frames: 7200, rules: "scores-ta-v3" });
   await expect(page.getByRole("status")).toContainText("Could not load rankings");
   await page.getByRole("button", { name: "RETRY", exact: true }).click();
   await expect(page.locator(".score-result")).toHaveCount(0);
