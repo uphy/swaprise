@@ -47,8 +47,13 @@ test("settings share online name and rankings handle network failures safely", a
   await page.evaluate(() => (window as any).__swapriseScenes.menu.showSettings());
   await page.evaluate(() => (window as any).__swapriseScenes.menu.overlay.buttons.find((b: any) => b.name === "player-settings").emit("pointerdown"));
   await page.getByRole("textbox").pressSequentially("Space R Z name");
+  await page.setViewportSize({ width: 915, height: 412 });
+  await page.waitForTimeout(250);
+  await expect(page.getByRole("textbox")).toHaveValue("Space R Z name");
   await page.getByRole("button", { name: "SAVE", exact: true }).click();
   expect(await page.evaluate(() => localStorage.getItem("swaprise.name.v1"))).toBe("Space R Z name");
+  // 閉じた後に保留していたキャンバスの回転レイアウトが反映される。
+  await page.waitForTimeout(250);
   await page.evaluate(() => { const s = (window as any).__swapriseScenes.menu; s.closeOverlay(); s.showRecords(); });
   await page.route("**/api/scores?*", (r) => r.fulfill({ status: 503, json: {} }));
   await page.getByRole("button", { name: "ONLINE", exact: true }).click();
@@ -64,4 +69,48 @@ test("settings share online name and rankings handle network failures safely", a
   await expect(page.getByRole("heading", { name: "ENDLESS TOP 5" })).toBeVisible();
   await page.getByRole("button", { name: "CLOSE", exact: true }).click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
+});
+
+test("failed uploads survive reload, retry with the same ID, and opt-out clears pending", async ({ page }) => {
+  await page.addInitScript(() => {
+    if (!localStorage.getItem("swaprise.scores.publish.v1")) localStorage.setItem("swaprise.scores.publish.v1", "true");
+  });
+  await page.route("**/api/session", (r) => r.fulfill({ json: { ok: true } }));
+  const posts: any[] = [];
+  let fail = true;
+  await page.route("**/api/scores", (r) => { posts.push(r.request().postDataJSON()); return r.fulfill({ status: fail ? 503 : 201, json: { ok: !fail } }); });
+  await page.goto("/?mode=endless&countdown=0&bgm=0");
+  await finish(page);
+  await expect.poll(() => posts.length).toBe(1);
+  const id = posts[0].id;
+  await page.goto("/?bgm=0");
+  await expect.poll(() => posts.length).toBe(2);
+  expect(posts[1].id).toBe(id);
+  fail = false;
+  await page.evaluate(() => window.dispatchEvent(new Event("online")));
+  await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem("swaprise.scores.pending.v1")!))).toEqual([]);
+  expect(posts[2].id).toBe(id);
+  fail = true;
+  await page.goto("/?mode=timeattack&countdown=0&bgm=0");
+  await finish(page);
+  await expect.poll(() => posts.length).toBe(4);
+  await page.goto("/?bgm=0");
+  await page.waitForFunction(() => Boolean((window as any).__swapriseScenes?.menu));
+  await page.evaluate(() => {
+    const s = (window as any).__swapriseScenes.menu; s.showSettings();
+    s.overlay.buttons.find((b: any) => b.name === "player-settings").emit("pointerdown");
+  });
+  await page.getByRole("checkbox").uncheck();
+  await page.getByRole("button", { name: "SAVE", exact: true }).click();
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem("swaprise.scores.pending.v1")!))).toEqual([]);
+});
+
+test("custom runs do not prompt or upload even with publication enabled", async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem("swaprise.scores.publish.v1", "true"));
+  const requests: string[] = []; page.on("request", (r) => { if (r.url().includes("/api/")) requests.push(r.url()); });
+  await page.goto("/?mode=endless&seed=7&countdown=0&bgm=0");
+  await finish(page);
+  await expect.poll(() => page.evaluate(() => localStorage.getItem("swaprise.highscores.v1"))).not.toBeNull();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  expect(requests).toEqual([]);
 });
