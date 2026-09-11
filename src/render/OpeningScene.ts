@@ -11,7 +11,7 @@ import { buildLogo, logoCellSize, logoLines, type LogoCell, type LogoLetter } fr
  *
  * 1. rise   パネルを 5×7 のドット文字に並べた "SWAPRISE" が、盤面のように画面の下からせり上がる
  * 2. swap   最初の S は角のパネルがひとつずれている。カーソルが現れてそれを入れ替えると S が完成する
- * 3. chain  S が揃って消え、W・A・P…と 8 文字が順に連鎖して消えていく（吹き出しは x2 … x8）
+ * 3. chain  S が揃って消え、W・A・P…と 8 文字が順に連鎖して消えていく
  * 4. reveal 白い閃光のあと、文字の題字が中央に現れてメニューの位置へ上がり、柄の飾りが降りてくる
  *
  * 3.5 秒ほどで自動的にメニューへ進む。キー・タップ・ゲームパッドのどれかで途中でも飛ばせる。
@@ -250,7 +250,7 @@ export class OpeningScene extends Phaser.Scene {
 
   /**
    * 1 文字ぶんの消去。ゲーム中と同じく、点滅 → 明るい柄を見せる → 1 枚ずつ消える、の順。
-   * 吹き出しは盤面と同じ書式（枚数は赤、連鎖数は緑）。
+   * 盤面の吹き出し（枚数・連鎖数）は出さない。文字が読めればよく、数字は題字の邪魔になる。
    */
   private clearLetter(
     letter: LogoLetter,
@@ -284,19 +284,6 @@ export class OpeningScene extends Phaser.Scene {
           emitters[cell.kind].explode(4, cellX(cell.col) + c / 2, cellY(cell.row) + c / 2);
         });
       });
-    });
-    // 吹き出し。文字の上の中央から浮かんで消える
-    const fontSize = Math.max(12, Math.min(18, Math.round(c * 1.15)));
-    const px = cellX(letter.col) + (5 * c) / 2;
-    const py = cellY(letter.row) - 4;
-    const items: { text: string; color: string }[] = [{ text: String(cells.length), color: "#ff5c6c" }];
-    if (chain >= 2) items.push({ text: `x${chain}`, color: "#6cff7a" });
-    items.forEach((it, i) => {
-      const text = this.add
-        .text(px, py + i * (fontSize + 4), it.text, { fontFamily: FONT, fontSize: `${fontSize}px`, fontStyle: "bold", color: "#ffffff", backgroundColor: it.color, padding: { x: 4, y: 1 } })
-        .setOrigin(0.5)
-        .setDepth(7);
-      this.tweens.add({ targets: text, y: text.y - 26, alpha: 0, delay: 350, duration: 500, onComplete: () => text.destroy() });
     });
   }
 
