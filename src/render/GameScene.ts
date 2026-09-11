@@ -1,7 +1,8 @@
 import Phaser from "phaser";
 import { Game, PUZZLES, puzzleName, type CpuLevel, type GameMode, type Input, NO_INPUT } from "../core";
 import { loadHighScores, recordCpuResult, recordPuzzleClear, recordScore } from "./highscore";
-import { ChainCoach } from "./ChainCoach";
+import { ChainCoach } from "../core/coach";
+import "./coach.css";
 import { recordProgress } from "../scores/progress";
 import { showScoreResult } from "./score-result";
 import { BoardView, type HudSide } from "./BoardView";
@@ -71,6 +72,9 @@ export class GameScene extends Phaser.Scene {
   private scoreRun: { id: string; seed: number } | null = null;
   private coach?: ChainCoach;
   private coachButton?: HTMLButtonElement;
+  private coachControls?: HTMLDivElement;
+  private coachPrevious?: HTMLButtonElement;
+  private coachNext?: HTMLButtonElement;
   private assisted = false;
 
   constructor() {
@@ -189,9 +193,14 @@ export class GameScene extends Phaser.Scene {
     this.pauseButtons.push(new Button(this, 0, 0, t("MENU"), () => this.toMenu(), { minWidth: 180, minHeight: 40 }));
     this.pauseMenu = this.add.container(0, 0, [this.pauseDim, this.pauseTitle, ...this.pauseButtons]).setDepth(30).setVisible(false);
     if (this.mode === "endless") {
+      this.coachControls = document.createElement("div"); this.coachControls.className = "coach-controls";
       const button = this.coachButton = document.createElement("button");
-      button.className = "coach-open"; button.textContent = t("HINT"); button.onclick = () => this.openCoach();
-      document.body.append(button);
+      button.className = "coach-open"; button.textContent = t("HINT"); button.onclick = () => this.coach ? this.closeCoach() : this.openCoach();
+      const previous = this.coachPrevious = document.createElement("button"); previous.textContent = t("PREVIOUS STEP"); previous.hidden = true;
+      previous.onclick = () => { this.coach?.previous(); this.views[0].clearEffects(); this.refreshCoach(); };
+      const next = this.coachNext = document.createElement("button"); next.textContent = t("NEXT STEP"); next.hidden = true;
+      next.onclick = () => { this.coach?.next(events => this.views[0].handleEvents(events, false)); this.refreshCoach(); };
+      this.coachControls.append(button, previous, next); document.body.append(this.coachControls);
     }
     // ポーズ中の暗幕タップは再開だけに使う（入れ替えにはしない）
     this.input.on("pointerdown", () => {
@@ -230,7 +239,7 @@ export class GameScene extends Phaser.Scene {
     void wakeLock.request();
     this.events.once("shutdown", () => {
       this.coach?.destroy(); this.coach = undefined;
-      this.coachButton?.remove(); this.coachButton = undefined;
+      this.coachControls?.remove(); this.coachControls = undefined; this.coachButton = undefined;
       wakeLock.release();
       this.game.events.off("hidden", onHidden);
       this.game.events.off("blur", onHidden);
@@ -246,7 +255,7 @@ export class GameScene extends Phaser.Scene {
     const kb = this.input.keyboard!;
     kb.on("keydown-P", () => this.togglePause());
     kb.on("keydown-R", () => this.restart());
-    kb.on("keydown-ESC", () => this.toMenu());
+    kb.on("keydown-ESC", () => this.coach ? this.closeCoach() : this.toMenu());
     kb.on("keydown-M", toggleSound);
     kb.on("keydown-V", () => haptics.toggle());
     kb.on("keydown", () => audio.start());
@@ -434,6 +443,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private togglePause(): void {
+    if (this.coach) { this.closeCoach(); return; }
     if (this.ended || this.starting) return;
     this.setPaused(!this.paused);
   }
@@ -457,6 +467,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private onHidden(): void {
+    if (this.coach?.running) { this.coach.previous(); this.views[0].clearEffects(); }
     if (this.ended) {
       audio.suspend();
       return;
@@ -467,15 +478,33 @@ export class GameScene extends Phaser.Scene {
   private openCoach(): void {
     if (this.mode !== "endless" || this.starting || this.ended || this.coach) return;
     this.assisted = true; this.scoreRun = null;
-    this.coachButton!.textContent = t("HINT · UNRANKED");
     this.setPaused(true);
     this.pauseMenu.setVisible(false);
-    this.coachButton!.hidden = true;
-    this.coach = new ChainCoach(this.game_.boards[0], () => {
-      this.coach?.destroy(); this.coach = undefined;
-      this.pauseMenu.setVisible(true);
-      this.coachButton!.hidden = false;
-    });
+    this.touches.forEach(touch => touch.setEnabled(false));
+    this.raiseHints.forEach(hint => hint.setVisible(false));
+    this.views[0].clearEffects();
+    this.coach = new ChainCoach(this.game_.boards[0]);
+    this.views[0].preview = this.coach.board;
+    this.refreshCoach();
+  }
+
+  private closeCoach(): void {
+    this.coach?.destroy(); this.coach = undefined;
+    this.views[0].preview = null; this.views[0].hintPair = null; this.views[0].clearEffects();
+    this.touches.forEach(touch => touch.setEnabled(true));
+    this.raiseHints.forEach(hint => hint.setVisible(true));
+    this.refreshCoach(); this.setPaused(false);
+  }
+
+  private refreshCoach(): void {
+    if (!this.coachButton) return;
+    this.coachButton.setAttribute("aria-pressed", String(Boolean(this.coach)));
+    this.coachButton.setAttribute("aria-busy", String(this.coach?.searching ?? false));
+    this.coachButton.dataset.failed = String(this.coach?.failed ?? false);
+    this.coachPrevious!.hidden = this.coachNext!.hidden = !this.coach;
+    this.coachPrevious!.disabled = !this.coach?.canPrevious;
+    this.coachNext!.disabled = !this.coach?.canNext;
+    this.views[0].hintPair = this.coach?.pair ?? null;
   }
 
   private stepOnce(inputs: Input[]): void {
@@ -498,6 +527,10 @@ export class GameScene extends Phaser.Scene {
   }
 
   override update(_time: number, delta: number): void {
+    if (this.coach) {
+      this.coach.update(delta, events => this.views[0].handleEvents(events, false));
+      this.refreshCoach();
+    }
     if (!this.paused && !this.ended && !this.starting) {
       this.accumulator += Math.min(delta, 250);
       let steps = 0;
@@ -549,7 +582,7 @@ export class GameScene extends Phaser.Scene {
   private finish(): void {
     this.ended = true;
     this.pauseButton.setVisible(false);
-    if (this.coachButton) this.coachButton.hidden = true;
+    if (this.coachControls) this.coachControls.hidden = true;
     const g = this.game_;
     // 曲を止めて勝敗の音だけにする。危険状態のテンポはここで戻す（残すとメニューの曲まで速くなる）
     audio.stopBgm();
