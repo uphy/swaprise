@@ -15,4 +15,8 @@
 .training-controls { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
 .training-controls button { font:inherit; min-height:52px; padding:8px; color:#f4f4f8; background:#2e2e40; border:1px solid #676780; border-radius:3px; touch-action:manipulation; }
 .training button:focus-visible,.training select:focus-visible { outline:3px solid #ffe066; }
+.coach-open { position:fixed; top:max(8px,env(safe-area-inset-top)); right:max(8px,env(safe-area-inset-right)); z-index:6; font:16px monospace; min-height:44px; padding:8px 12px; background:#2e2e40; color:white; border:1px solid #676780; border-radius:4px; }
+.coach-open[hidden] { display:none; }
+.coach-note { font-size:14px; color:#bcbccc; }
+.training button:disabled { opacity:.5; }
 @media(max-width:650px) { .training { padding:12px; } .training-board { width:min(264px,calc(100vw - 32px)); } .training main { gap:8px; margin:8px auto; } .training aside { width:100%; max-width:440px; } .training-controls { grid-template-columns:repeat(3,1fr); gap:6px; } .training-controls button { font-size:16px; min-height:48px; padding:6px; } .training-status { min-height:54px; font-size:16px; } .training h1 { font-size:22px; } }

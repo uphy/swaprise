@@ -2,44 +2,67 @@ import { Board } from "./board";
 import { COLS, ROWS } from "./constants";
 import { EMPTY, NO_INPUT } from "./types";
 
-export interface Lesson { columns: number[][]; target: number }
-const two = [[2, 1, 0, 0, 4, 0, 1, 1], [4, 3], [4, 3]];
-const three = [[2, 1, 0, 0, 4, 0, 1, 1, 3], [4, 3], [4, 3]];
-export const LESSONS: Lesson[] = [two, three].flatMap((columns, i) => [
-  { columns, target: i + 2 },
-  { columns: Array.from({ length: COLS }, (_, x) => columns[COLS - x - 1] ?? []), target: i + 2 },
-  { columns: columns.map((col) => col.map((kind) => (kind + 2) % 5)), target: i + 2 },
-]);
-export function lessonBoard(index: number): Board {
-  const b = new Board({ seed: 1, initialHeight: 0, noRise: true });
-  b.setColumns(LESSONS[index].columns); return b;
+export interface CoachMove { x: number; y: number; frames: number }
+export interface ChainHint { moves: CoachMove[]; chain: number; waitFrames: number }
+export function quiet(board: Board): boolean {
+  return board.isSettled() && board.cells.every(row => row.every(c => c.kind === EMPTY || !c.chain));
 }
-export interface ChainHint { x: number; y: number; chain: number; goal: { x: number; y: number } }
-/** Exact one-swap search, intentionally separate from the CPU's survival policy.
- * Yield between candidates so mobile controls can cancel a search. Never mutate
- * the live board and never promise a chain beyond the bounded simulation. */
-export async function chainHint(board: Board, target: number, signal: AbortSignal): Promise<ChainHint | null> {
-  if (!board.isSettled()) return null;
+function settle(board: Board): number {
+  let frames = 0;
+  while (!quiet(board) && !board.gameOver && frames < 600) { board.tick(); frames++; }
+  return frames;
+}
+function promiseScore(board: Board): number {
+  let score = 0;
+  for (let y = 0; y < ROWS; y++) for (let x = 0; x < COLS; x++) {
+    const k = board.cell(x, y).kind;
+    if (k === EMPTY) continue;
+    if (x + 1 < COLS && board.cell(x + 1, y).kind === k) score += 2;
+    if (y + 1 < ROWS && board.cell(x, y + 1).kind === k) score += 2;
+    if (x + 2 < COLS && board.cell(x + 2, y).kind === k) score++;
+    if (y + 2 < ROWS && board.cell(x, y + 2).kind === k) score++;
+  }
+  return score;
+}
+/** Bounded beam search: up to three swaps, waiting for each to settle.
+ * Results are verified by the actual core, not a claim of optimality. */
+export async function chainHint(source: Board, signal: AbortSignal, budgetMs = 3000): Promise<ChainHint | null> {
+  signal.throwIfAborted();
+  const start = source.practiceCopy();
+  const waitFrames = settle(start);
+  if (!quiet(start) || start.gameOver) return null;
+  const deadline = performance.now() + budgetMs;
+  let yieldAt = performance.now() + 8;
   let best: ChainHint | null = null;
-  for (let y = 0; y < ROWS; y++) {
-    for (let x = 0; x < COLS - 1; x++) {
+  let frontier = [{ board: start, moves: [] as CoachMove[], value: 0 }];
+  const seen = new Set<string>();
+  for (let depth = 0; depth < 3; depth++) {
+    const next: typeof frontier = [];
+    for (const node of frontier) for (let y = 0; y < ROWS; y++) for (let x = 0; x < COLS - 1; x++) {
       signal.throwIfAborted();
-      if (board.cell(x, y).kind === EMPTY && board.cell(x + 1, y).kind === EMPTY) continue;
-      const trial = new Board({ seed: 1, initialHeight: 0, noRise: true }); trial.copyFrom(board);
+      if (performance.now() > deadline) return best;
+      if (node.board.cell(x, y).kind === node.board.cell(x + 1, y).kind) continue;
+      const trial = node.board.practiceCopy();
       trial.maxChain = 1; trial.chain = 1; trial.cursor.x = x; trial.cursor.y = y;
       trial.tick({ ...NO_INPUT, swap: true });
-      if (!trial.events.some((e) => e.type === "swap")) continue;
-      let goal: ChainHint["goal"] | undefined;
-      for (let frame = 0; frame < 600; frame++) {
-        const match = trial.events.find((e) => e.type === "match");
-        if (match?.type === "match" && !goal) goal = { x: match.x, y: match.y };
-        if (trial.isSettled()) break;
-        trial.tick();
+      if (!trial.events.some(e => e.type === "swap")) continue;
+      const frames = settle(trial);
+      if (quiet(trial) && !trial.gameOver) {
+        const moves = [...node.moves, { x, y, frames }];
+        if (trial.maxChain >= 2 && (!best || trial.maxChain > best.chain)) best = { moves, chain: trial.maxChain, waitFrames };
+        const key = trial.toString();
+        if (!seen.has(key)) {
+          seen.add(key); next.push({ board: trial, moves, value: promiseScore(trial) });
+          next.sort((a, b) => b.value - a.value);
+          if (next.length > 12) next.pop();
+        }
       }
-      if (trial.isSettled() && goal && trial.maxChain >= target && (!best || trial.maxChain > best.chain))
-        best = { x, y, chain: trial.maxChain, goal };
-      await new Promise<void>((resolve) => setTimeout(resolve, 0));
+      if (performance.now() >= yieldAt) {
+        await new Promise<void>(resolve => setTimeout(resolve, 0));
+        signal.throwIfAborted(); yieldAt = performance.now() + 8;
+      }
     }
+    frontier = next;
   }
   signal.throwIfAborted(); return best;
 }
