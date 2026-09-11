@@ -336,6 +336,26 @@ export class GameAudio {
     this.voice({ wave: "pulse25", f: n("c6"), dur: 0.25, gain: 0.14, t: 0.12, echo: 0.3 });
   }
 
+  /**
+   * オープニングで題字の柄が左から右へ灯る間のライザー。dur 秒かけてノイズの帯域と音程が上がり、終わりで6音が弾ける。
+   * 灯り終わりでカーソルが現れるので、そこへ向けて張る音にする。
+   */
+  riser(dur: number): void {
+    this.noise({ type: "bandpass", freq: 300, freq2: 5000, q: 1.2, dur, gain: 0.22, echo: 0.2 });
+    this.voice({ wave: "pulse25", f: n("c5"), f2: n("c6"), slide: dur, dur, gain: 0.09, echo: 0.3, curve: "hold" });
+    this.arp([0, 4, 7, 12, 16, 19].map((s) => st(n("e5"), s)), { step: 0.04, dur: 0.1, wave: "pulse12", gain: 0.1, echo: 0.4, t: dur });
+  }
+
+  /**
+   * オープニングで題字が現れる瞬間。キックと C のハープの駆け上がり、高い和音。
+   * メニューの曲（C major）の 1 拍目と同時に鳴らすので、曲は止めない（win() は止める）。
+   */
+  titleSting(): void {
+    this.kick(0);
+    this.arp(["c5", "e5", "g5", "c6", "e6", "g6"].map(n), { step: 0.04, dur: 0.25, wave: "triangle", gain: 0.14, echo: 0.4 });
+    this.chord(["c6", "e6", "g6"].map(n), { dur: 0.8, gain: 0.1, t: 0.24, wave: "sine", echo: 0.5 });
+  }
+
   /** 一時停止は下降、解除は上昇の2音。 */
   pause(on: boolean): void {
     const [a, b] = on ? ["c6", "g5"] : ["g5", "c6"];

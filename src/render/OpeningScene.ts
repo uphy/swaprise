@@ -5,6 +5,7 @@ import { DPR, applyLayout } from "./hidpi";
 import { audio } from "./shared";
 import { t } from "./i18n";
 import { buildLogo, logoCellSize, logoLines, type LogoCell, type LogoLetter } from "./logo";
+import { SWITCH_GAP } from "./bgm";
 
 /**
  * 起動時のオープニング。ゲームの仕組みそのものを題字で見せる。
@@ -16,6 +17,10 @@ import { buildLogo, logoCellSize, logoLines, type LogoCell, type LogoLetter } fr
  * 4. chain  S が揃って消え、W・A・P…と 8 文字が順に連鎖して消えていく
  * 5. reveal 白い閃光のあと、文字の題字が中央に現れてメニューの位置へ上がり、柄の飾りが降りてくる
  *
+ * 音は、灯る間のライザー → 入れ替え → 文字ごとの揃いの音（連鎖数で上がる）と間引いた pop → 最後の消去で連鎖の終わりの音階、
+ * と効果音だけで運び、閃光の瞬間にメニューの曲の 1 拍目と題字の一撃（キック・ハープ・和音）を重ねる。
+ * 曲はそのままメニューへ続く（同じ曲なら BgmPlayer は鳴らし直さない）。
+ *
  * 続きが始まってからは 3 秒ほどで自動的にメニューへ進む。キー・タップ・ゲームパッドのどれかで途中でも飛ばせる
  * （待っている間の最初の操作は「始める」で、その次から「飛ばす」）。
  * `?mode=` などの直接開始、招待 URL、`?opening=0` ではオープニングを出さずにメニューへ渡す（判定はメニューが行う）。
@@ -26,22 +31,26 @@ export type OpeningPhase = "rise" | "wait" | "swap" | "chain" | "reveal" | "done
 
 /** せり上がりが収まり、続きを始めてよいか決める時刻（ms）。 */
 const RISE_MS = 700;
+/** 続きを始めてから、柄が左から右へ灯り終わるまで（ms）。ライザーの長さでもある。 */
+const IGNITE_MS = 400;
 /** 続きを始めてからの各段階の時刻（ms）。 */
 const T = {
-  cursor: 300,
-  swap: 520,
-  chain: 640,
-  reveal: 2140,
-  subtitle: 2380,
-  settle: 2520,
-  icons: 2780,
-  menu: 3020,
+  cursor: 480,
+  swap: 700,
+  chain: 820,
+  reveal: 2320,
+  subtitle: 2560,
+  settle: 2700,
+  icons: 2960,
+  menu: 3200,
 } as const;
 /** 文字ごとの連鎖の間隔（ms）。 */
 const CHAIN_STEP = 150;
 /** 揃った文字の点滅の長さ（ms）と、1 枚ずつ消える間隔（ms）。ゲーム中の最速の消去より少し速い。 */
 const FLASH_MS = 200;
 const POP_STEP = 13;
+/** pop の音は何枚に 1 回か。13 ms 間隔で全部鳴らすと 1.5 秒に 136 発の連射になる。 */
+const POP_SOUND_EVERY = 3;
 
 /** "#rrggbb" の 2 色を k（0〜1）で混ぜる。 */
 function mixColor(from: string, to: string, k: number): string {
@@ -125,12 +134,12 @@ export class OpeningScene extends Phaser.Scene {
     }
 
     // 1. rise。列ごとに少しずつ遅らせて、画面の下端の外から持ち上げる
-    const stagger = Math.min(9, 330 / logo.cols);
+    const riseStagger = Math.min(9, 330 / logo.cols);
     const startDy = H - by + c;
     for (const cell of logo.cells) {
       const img = sprites.get(cell)!;
       img.y += startDy;
-      this.tweens.add({ targets: img, y: cellY(cell.row), delay: cell.col * stagger, duration: 460, ease: "Back.Out", easeParams: [1.0] });
+      this.tweens.add({ targets: img, y: cellY(cell.row), delay: cell.col * riseStagger, duration: 460, ease: "Back.Out", easeParams: [1.0] });
     }
 
     // 2. wait。音を鳴らせない環境では、暗い題字の下で最初の操作を待つ
@@ -168,29 +177,39 @@ export class OpeningScene extends Phaser.Scene {
       this.tweens.killTweensOf(prompt);
       prompt.setVisible(false);
 
-      // 3. swap。止まった列から順に柄が灯り、カーソルが現れて、ずれたパネルを元の位置へ入れ替える
-      audio.garbageTransform();
-      byCol.forEach((cells, col) => this.at(col * stagger, () => cells.forEach((cell) => sprites.get(cell)!.setTexture(`panel-${cell.kind}`))));
-      this.at(T.cursor, () => this.tweens.add({ targets: cursor, scale: imgScale, alpha: 1, duration: 150, ease: "Back.Out" }));
+      // 3. swap。ライザーとともに柄が左から右へ灯り、カーソルが現れて、ずれたパネルを元の位置へ入れ替える
+      audio.riser(IGNITE_MS / 1000);
+      const igniteStagger = IGNITE_MS / logo.cols;
+      byCol.forEach((cells, col) => this.at(col * igniteStagger, () => cells.forEach((cell) => sprites.get(cell)!.setTexture(`panel-${cell.kind}`))));
+      this.at(T.cursor, () => {
+        audio.move();
+        this.tweens.add({ targets: cursor, scale: imgScale, alpha: 1, duration: 150, ease: "Back.Out" });
+      });
       this.at(T.swap, () => {
         audio.swap();
         this.tweens.add({ targets: sprites.get(swapCell)!, x: cellX(swapCell.col), duration: 70 });
       });
       this.at(T.swap + 110, () => cursor.setVisible(false));
 
-      // 4. chain。文字ごとに 点滅 → 1 枚ずつ消える。次の文字は消え始めてすぐに点滅を始めるので、連鎖が走って見える
+      // 4. chain。文字ごとに 点滅 → 1 枚ずつ消える。次の文字は消え始めてすぐに点滅を始めるので、連鎖が走って見える。
+      // 最後の文字が消え終わったところで連鎖の終わりの音階
       this.at(T.chain, () => {
         this.phase = "chain";
       });
       logo.letters.forEach((letter, i) => {
-        this.at(T.chain + i * CHAIN_STEP, () => this.clearLetter(letter, i + 1, sprites, emitters, c, cellX, cellY));
+        const last = i === logo.letters.length - 1;
+        this.at(T.chain + i * CHAIN_STEP, () => this.clearLetter(letter, i + 1, sprites, emitters, c, cellX, cellY, last ? () => audio.chainEnd(logo.letters.length) : undefined));
       });
 
-      // 5. reveal。閃光と揺れのあと、文字の題字が中央に現れ、メニューの位置へ上がる
+      // 5. reveal。閃光と揺れのあと、文字の題字が中央に現れ、メニューの位置へ上がる。
+      // メニューの曲は閃光の瞬間に 1 拍目が鳴るよう、鳴り始めまでの間（SWITCH_GAP）だけ先に始める。曲はそのままメニューへ続く
+      this.at(T.reveal - Math.round(SWITCH_GAP * 1000), () => {
+        audio.setDanger(false);
+        audio.startBgm("menu");
+      });
       this.at(T.reveal, () => {
         this.phase = "reveal";
-        audio.chainEnd(logo.letters.length);
-        audio.gameStart();
+        audio.titleSting();
         this.cameras.main.shake(140, 0.004);
         const flash = this.add.rectangle(0, 0, W, H, 0xffffff, 0.5).setOrigin(0).setDepth(20);
         this.tweens.add({ targets: flash, alpha: 0, duration: 260, ease: "Quad.Out", onComplete: () => flash.destroy() });
@@ -290,6 +309,7 @@ export class OpeningScene extends Phaser.Scene {
   /**
    * 1 文字ぶんの消去。ゲーム中と同じく、点滅 → 明るい柄を見せる → 1 枚ずつ消える、の順。
    * 盤面の吹き出し（枚数・連鎖数）は出さない。文字が読めればよく、数字は題字の邪魔になる。
+   * pop の音は POP_SOUND_EVERY 枚に 1 回。onDone は最後の 1 枚が消えたときに呼ぶ。
    */
   private clearLetter(
     letter: LogoLetter,
@@ -299,6 +319,7 @@ export class OpeningScene extends Phaser.Scene {
     c: number,
     cellX: (col: number) => number,
     cellY: (row: number) => number,
+    onDone?: () => void,
   ): void {
     const cells = letter.cells;
     audio.match(cells.length, chain);
@@ -319,8 +340,9 @@ export class OpeningScene extends Phaser.Scene {
         this.at(j * POP_STEP, () => {
           const img = sprites.get(cell)!;
           img.setVisible(false);
-          audio.pop(j);
+          if (j % POP_SOUND_EVERY === 0) audio.pop(j / POP_SOUND_EVERY);
           emitters[cell.kind].explode(4, cellX(cell.col) + c / 2, cellY(cell.row) + c / 2);
+          if (j === cells.length - 1) onDone?.();
         });
       });
     });
