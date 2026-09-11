@@ -20,6 +20,7 @@ export interface CharacterAsset {
   action: string;
   kind: "image" | "animation";
   image: string;
+  bytes?: number;
   pixelArt?: boolean;
   columns?: number;
   rows?: number;

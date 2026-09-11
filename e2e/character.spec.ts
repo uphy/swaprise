@@ -49,6 +49,7 @@ test("VS CPU: 難易度のあとに人物を選び、選択が保存されて対
   await press(page, "Enter");
   await page.waitForFunction(() => Boolean((window as any).__swaprise?.game));
   expect(await page.evaluate(() => JSON.parse(localStorage.getItem("swaprise.characters.v1") ?? "{}"))).toEqual({ p1: "mito", p2: "nika" });
+  await expect.poll(async () => (await characters(page)).every((c) => !c.fallback)).toBe(true);
   const chars = await characters(page);
   expect(chars.map((c) => c.id)).toEqual(["mito", "nika"]);
   // 採用された待機画像で表示する
@@ -95,7 +96,13 @@ test("対戦中の反応: 連鎖で成功、おじゃま着地で着地、危険
   page.on("pageerror", (e) => errors.push(e.message));
   await page.goto("/?mode=versus&p1=pirika&p2=nika&seed=5&speed=1&bgm=0&countdown=0");
   await page.waitForFunction(() => Boolean((window as any).__swaprise?.game));
-  await page.waitForTimeout(300);
+  await page.waitForFunction(() => {
+    const s = (window as any).__swaprise.scene;
+    return s.characters.every((c: any) => ["idle", "danger", "success", "garbage-land", "victory", "defeat", "finish"].every((action) => {
+      const a = c.character.assets[action];
+      return !a || s.textures.exists(`char:${a.id}`);
+    }));
+  });
   expect((await characters(page)).map((c) => [c.id, c.action])).toEqual([
     ["pirika", "idle"],
     ["nika", "idle"],

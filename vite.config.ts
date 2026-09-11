@@ -24,7 +24,7 @@ export default defineConfig({
   server: { port: DEV_PORT, strictPort: true },
   preview: { port: PREVIEW_PORT, strictPort: true },
   plugins: [
-    // ホーム画面に追加してオフラインでも開けるようにする。Service Worker はビルド成果物を丸ごと precache する。
+    // 起動に必要なファイルだけprecache。キャラ画像は必要時に取得する。
     // autoUpdate だと新版の precache が終わった瞬間に reload され、試合の途中でメニューへ戻される。
     // prompt にして、切り替えのタイミングは src/render/update.ts が決める
     VitePWA({
@@ -47,9 +47,13 @@ export default defineConfig({
         ],
       },
       workbox: {
-        // 採用した高解像度の動作シート（約2.2MB）もオフラインで表示する。
-        maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
         globPatterns: ["**/*.{js,css,html,png,webmanifest}"],
+        globIgnores: ["characters/**/*.png", "characters/**/*.webp"],
+        runtimeCaching: [{
+          urlPattern: ({ url, sameOrigin }) => sameOrigin && /\/characters\/[a-z0-9-]+\/[a-f0-9]+\.(png|webp)$/.test(url.pathname),
+          handler: "CacheFirst",
+          options: { cacheName: "swaprise-character-images-v1", cacheableResponse: { statuses: [200] } },
+        }],
         // SKIP_WAITING のあと、開いているページをすぐ新版の管理下に置く。これで workbox-window の controlling が発火して reload できる
         clientsClaim: true,
         navigateFallbackDenylist: [/^\/api\//],

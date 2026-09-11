@@ -112,7 +112,7 @@ export function gameFiles(root, data) {
       const hash = createHash('sha256').update(bytes).digest('hex').slice(0, 12);
       const url = `characters/${c.id}/${hash}${path.extname(a.image)}`;
       files.set(path.join(root, 'public', url), bytes);
-      assets[action] = { ...Object.fromEntries(gameKeys.filter(k => a[k] !== undefined).map(k => [k, a[k]])), image: url };
+      assets[action] = { ...Object.fromEntries(gameKeys.filter(k => a[k] !== undefined).map(k => [k, a[k]])), image: url, bytes: bytes.length };
     }
     return { id: c.id, name: c.name, role: c.role, color: c.color, assets };
   });
