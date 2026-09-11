@@ -38,7 +38,7 @@ interface Playing {
 }
 
 /** 読み込み中・読み込み済みの素材。同じ画像を複数の画面が同時に要求しても一度しか読まない。 */
-const loading = new Map<string, Promise<void>>();
+const loadingByTextures = new WeakMap<Phaser.Textures.TextureManager, Map<string, Promise<void>>>();
 
 function textureKey(asset: CharacterAsset): string {
   return `char:${asset.id}`;
@@ -68,10 +68,22 @@ function frameRect(asset: CharacterAsset, i: number): Required<Pick<FrameRect, "
 export function loadCharacterAsset(scene: Phaser.Scene, asset: CharacterAsset): Promise<void> {
   const key = textureKey(asset);
   if (scene.textures.exists(key)) return Promise.resolve();
+  let loading = loadingByTextures.get(scene.textures);
+  if (!loading) {
+    loading = new Map();
+    loadingByTextures.set(scene.textures, loading);
+  }
   const pending = loading.get(key);
   if (pending) return pending;
   const promise = new Promise<void>((resolve, reject) => {
-    scene.load.once(`filecomplete-image-${key}`, () => {
+    const event = `filecomplete-image-${key}`;
+    const cleanup = (): void => {
+      scene.load.off(event, complete);
+      scene.load.off("loaderror", failed);
+      scene.events.off("shutdown", stopped);
+    };
+    const complete = (): void => {
+      cleanup();
       const tex = scene.textures.get(key);
       if (asset.kind === "animation") {
         for (let i = 0; i < (asset.frameCount ?? 0); i++) {
@@ -80,13 +92,23 @@ export function loadCharacterAsset(scene: Phaser.Scene, asset: CharacterAsset): 
         }
       }
       resolve();
-    });
-    scene.load.once(`loaderror`, (file: { key: string }) => {
-      if (file.key === key) reject(new Error(`character image failed: ${asset.image}`));
-    });
+    };
+    const failed = (file: { key: string }): void => {
+      if (file.key !== key) return;
+      cleanup();
+      reject(new Error(`character image failed: ${asset.image}`));
+    };
+    const stopped = (): void => {
+      cleanup();
+      loading!.delete(key);
+      reject(new Error(`character image cancelled: ${asset.image}`));
+    };
+    scene.load.once(event, complete);
+    scene.load.on("loaderror", failed);
+    scene.events.once("shutdown", stopped);
     scene.load.image(key, asset.image);
     scene.load.start();
-  }).finally(() => loading.delete(key));
+  }).finally(() => { if (loading!.get(key) === promise) loading!.delete(key); });
   loading.set(key, promise);
   return promise;
 }
@@ -102,8 +124,8 @@ export interface CharacterViewOptions {
 
 /**
  * 1人ぶんの人物表示。床の中央を基準点にして、指定した高さに収めて描く。
- * 素材のない動作は待機で代替し、待機もない人物は色の札に名前を出す代替表示にする。
- * 代替しているときは足元に動作名を出し、試作中の表示だと分かるようにする。
+ * 未読込の動作は待機や読み込み済みの立ち絵で代替する。
+ * 素材のない人物だけ名前札を使い、画像待ちでは名前札や動作名を出さない。
  */
 export class CharacterView {
   readonly root: Phaser.GameObjects.Container;
@@ -115,6 +137,9 @@ export class CharacterView {
   private readonly reaction = new Reaction();
   private playing: Playing | null = null;
   private height = 100;
+  private width = 100;
+  /** 全動作の左右の広がり。動作・コマごとに倍率を変えて揺れを増やさない。 */
+  private animationHalfWidth = 0;
   private destroyed = false;
 
   constructor(
@@ -122,31 +147,40 @@ export class CharacterView {
     readonly character: Character,
     private readonly opts: CharacterViewOptions = {},
   ) {
+    for (const asset of Object.values(character.assets)) {
+      if (asset.kind !== "animation") continue;
+      for (let i = 0; i < (asset.frameCount ?? 1); i++) {
+        const r = frameRect(asset, i);
+        this.animationHalfWidth = Math.max(this.animationHalfWidth, r.pivotX * r.scale, (r.width - r.pivotX) * r.scale);
+      }
+    }
     this.root = scene.add.container(0, 0);
+    this.root.once("destroy", () => { this.destroyed = true; });
     this.image = scene.add.image(0, 0, "__DEFAULT").setVisible(false);
     this.cardBg = scene.add.rectangle(0, 0, 10, 10, Phaser.Display.Color.HexStringToColor(character.color).color, 0.35).setStrokeStyle(2, Phaser.Display.Color.HexStringToColor(character.color).color);
     this.cardName = scene.add.text(0, 0, opts.caption ?? character.name, { fontFamily: FONT, fontSize: "14px", color: TEXT_COLOR, fontStyle: "bold", align: "center" }).setOrigin(0.5);
     this.card = scene.add.container(0, 0, [this.cardBg, this.cardName]).setVisible(false);
     this.caption = scene.add.text(0, 4, "", { fontFamily: FONT, fontSize: "10px", color: "#ffe066" }).setOrigin(0.5, 0);
     this.root.add([this.image, this.card, this.caption]);
-    const wanted: CharacterAction[] = opts.portrait ? ["portrait"] : ["idle", "danger", "success", "garbage-land", "victory", "defeat", "finish"];
-    for (const action of wanted) {
-      const asset = character.assets[action];
-      if (!asset) continue;
-      loadCharacterAsset(scene, asset).then(
-        () => {
-          // 読み込み中に代替表示していた動作を、素材で描き直す
-          if (!this.destroyed && this.playing?.action === action) this.restart(action);
-        },
-        () => undefined,
-      );
-    }
     this.restart(opts.portrait ? "portrait" : "idle");
+    if (opts.portrait) {
+      // 選択中に立ち絵を表示できたら、試合の最初に使う待機も先読みする。
+      void this.requestAsset(character.assets.portrait).then(() => this.requestAsset(character.assets.idle));
+    } else {
+      // 最初に見せる待機画像を優先し、結果画像は試合中の反応が揃ってから読む。
+      void this.requestAsset(character.assets.idle).then(async () => {
+        if (this.destroyed) return;
+        await Promise.all(["danger", "success", "garbage-land"].map((a) => this.requestAsset(character.assets[a as CharacterAction])));
+        if (this.destroyed) return;
+        await Promise.all(["victory", "defeat", "finish"].map((a) => this.requestAsset(character.assets[a as CharacterAction])));
+      });
+    }
   }
 
-  /** 床の中央の画面座標と、収める高さ（論理 px）。 */
-  place(x: number, floorY: number, height: number): void {
+  /** 床の中央の画面座標と、収める高さ・横幅（論理 px）。 */
+  place(x: number, floorY: number, height: number, width = height): void {
     this.height = height;
+    this.width = width;
     this.root.setPosition(x, floorY);
     this.layout();
   }
@@ -238,17 +272,42 @@ export class CharacterView {
 
   private restart(action: ReactionAction | "portrait"): void {
     const resolved = action === "portrait" ? (this.character.assets.portrait ? "portrait" : null) : resolveAction(this.character, action);
-    const asset = resolved ? this.character.assets[resolved] ?? null : null;
-    const loaded = asset ? this.scene.textures.exists(textureKey(asset)) : false;
-    this.playing = { action, asset: loaded ? asset : null, fallback: resolved !== action || !loaded, frame: 0, elapsed: 0, age: 0, done: false };
+    const wanted = resolved ? this.character.assets[resolved] ?? null : null;
+    const asset = this.loadedAsset(action);
+    const previous = this.playing;
+    const keepFrame = asset?.loop && previous?.asset === asset;
+    this.playing = { action, asset, fallback: resolved !== action || asset !== wanted, frame: keepFrame ? previous.frame : 0, elapsed: keepFrame ? previous.elapsed : 0, age: 0, done: false };
+    if (wanted && !this.scene.textures.exists(textureKey(wanted))) void this.requestAsset(wanted);
     this.layout();
+  }
+
+  private loadedAsset(action: ReactionAction | "portrait"): CharacterAsset | null {
+    const resolved = action === "portrait" ? "portrait" : resolveAction(this.character, action);
+    const candidates = [resolved, ...(action === "portrait" ? [] : ["idle", "portrait"])] as (CharacterAction | null)[];
+    for (const a of candidates) {
+      const asset = a ? this.character.assets[a] : null;
+      if (asset && this.scene.textures.exists(textureKey(asset))) return asset;
+    }
+    return null;
+  }
+
+  private async requestAsset(asset: CharacterAsset | undefined): Promise<void> {
+    if (!asset || this.destroyed) return;
+    try {
+      await loadCharacterAsset(this.scene, asset);
+      const p = this.playing;
+      // 遅れて届いた画像で、再生済みの反応や同じアニメーションを巻き戻さない。
+      if (!this.destroyed && p && p.asset !== this.loadedAsset(p.action)) this.restart(p.action);
+    } catch {
+      // 失敗時も表示中の待機画像を保ち、次の操作・画面で再試行できる。
+    }
   }
 
   /** いまのコマを、床の中央を基準に指定の高さへ収めて置く。 */
   private layout(): void {
     const p = this.playing;
     if (!p) return;
-    const factor = this.height / REF_HEIGHT;
+    const factor = Math.min(this.height / REF_HEIGHT, this.animationHalfWidth > 0 ? this.width / (2 * this.animationHalfWidth) : Infinity);
     const asset = p.asset;
     const labelAction = p.action === "portrait" ? "" : ACTION_LABEL[p.action];
     if (asset && this.scene.textures.exists(textureKey(asset))) {
@@ -268,17 +327,17 @@ export class CharacterView {
         this.image.setOrigin(0.5, 1);
         this.image.setFlipX(Boolean(this.opts.flip));
         const h = this.image.frame.height || 1;
-        this.image.setScale(this.height / h);
+        this.image.setScale(Math.min(this.height / h, this.width / (this.image.frame.width || 1)));
       }
-      this.caption.setText(p.fallback ? labelAction : "");
+      this.caption.setText("");
     } else {
-      // 選択画面では読み込み中も代替の札を出さず、立ち絵を待つ。
+      // 読み込み待ちを名前札で置き換えない。素材が一切ない人物だけ札を使う。
       this.image.setVisible(false);
-      this.card.setVisible(!this.opts.portrait);
+      this.card.setVisible(!this.opts.portrait && !this.character.assets.idle && !this.character.assets.portrait);
       const w = Math.max(40, this.height * 0.5);
       this.cardBg.setSize(w, this.height).setPosition(0, -this.height / 2);
       this.cardName.setPosition(0, -this.height / 2).setFontSize(Math.max(9, Math.min(16, Math.round(w / 3.2))));
-      this.caption.setText(labelAction);
+      this.caption.setText(this.card.visible ? labelAction : "");
     }
     this.caption.setFontSize(Math.max(8, Math.min(11, Math.round(this.height / 10))));
   }
@@ -294,6 +353,7 @@ export class CharacterView {
   }
 
   destroy(): void {
+    if (this.destroyed) return;
     this.destroyed = true;
     this.root.destroy(true);
   }
