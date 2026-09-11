@@ -17,8 +17,23 @@ test("endless hints preview the current board without changing the game; assiste
   await page.getByRole("button", { name: "HINT", exact: true }).click();
   await page.getByRole("button", { name: "FIND CHAIN", exact: true }).click();
   await expect(page.getByRole("status")).toContainText("Found 3-chain", { timeout: 15000 });
-  await page.getByRole("button", { name: "PLAY / PAUSE", exact: true }).click();
-  await expect(page.getByRole("status")).toContainText("Preview complete: 3-chain", { timeout: 20000 });
+  await expect(page.locator(".training-hint")).toHaveCount(2);
+  await expect(page.locator(".coach-arrow")).toHaveCount(2);
+  await expect(page.locator(".coach-phase")).toContainText("BEFORE");
+  const appearance = () => page.locator(".training-board > button").evaluateAll(cells => cells.map(cell => [cell.textContent, cell.getAttribute("style"), cell.className]));
+  const before = await appearance();
+  const previous = page.getByRole("button", { name: "PREVIOUS STEP", exact: true });
+  const next = page.getByRole("button", { name: "NEXT STEP", exact: true });
+  await expect(previous).toBeDisabled();
+  await page.waitForTimeout(500);
+  expect(await appearance()).toEqual(before);
+  await next.click();
+  await expect(page.locator(".coach-phase")).toContainText("Preview complete: 3-chain");
+  await expect(next).toBeDisabled();
+  expect(await page.locator(".coach-changed").count()).toBeGreaterThan(0);
+  await previous.click();
+  expect(await appearance()).toEqual(before);
+  await expect(previous).toBeDisabled();
   expect(await page.evaluate(() => JSON.stringify((window as any).__swaprise.game.boards[0].syncState()))).toBe(original);
   await page.getByRole("button", { name: "BACK TO GAME", exact: true }).click();
   await expect(page.locator(".training")).toHaveCount(0);
@@ -27,10 +42,19 @@ test("endless hints preview the current board without changing the game; assiste
   expect(await page.evaluate(() => localStorage.getItem("swaprise.highscores.v1") ?? "")).not.toContain("987654");
   expect(uploads).toEqual([]);
 });
-test("closing during search cancels; merely opening leaves ranked eligibility intact", async ({ page }) => {
+test("opening once makes the run unranked, closing does not undo it, and restart clears it", async ({ page }) => {
   await page.goto("/?mode=endless&bgm=0&countdown=0");
   await page.getByRole("button", { name: "HINT", exact: true }).click();
+  expect(await page.evaluate(() => (window as any).__swaprise.scene.assisted)).toBe(true);
+  expect(await page.evaluate(() => (window as any).__swaprise.scene.scoreRun)).toBeNull();
+  await page.getByRole("button", { name: "BACK TO GAME", exact: true }).click();
+  await page.evaluate(() => { const p = (window as any).__swaprise; p.game.boards[0].score = 987654; p.scene.finish(); });
+  expect(await page.evaluate(() => localStorage.getItem("swaprise.highscores.v1") ?? "")).not.toContain("987654");
+  await page.evaluate(() => (window as any).__swaprise.scene.restart());
+  await expect(page.getByRole("button", { name: "HINT", exact: true })).toBeVisible();
   expect(await page.evaluate(() => (window as any).__swaprise.scene.assisted)).toBe(false);
+  expect(await page.evaluate(() => (window as any).__swaprise.scene.scoreRun)).not.toBeNull();
+  await page.getByRole("button", { name: "HINT", exact: true }).click();
   await page.getByRole("button", { name: "FIND CHAIN", exact: true }).click();
   await page.getByRole("button", { name: "BACK TO GAME", exact: true }).click();
   await expect(page.locator(".training")).toHaveCount(0);
@@ -39,4 +63,28 @@ test("closing during search cancels; merely opening leaves ranked eligibility in
   await page.goto("/?mode=timeattack&bgm=0&countdown=0");
   await expect(page.locator("canvas")).toBeVisible();
   await expect(page.locator(".coach-open")).toHaveCount(0);
+});
+
+test("multiple moves stay on each before/after page until NEXT, and PREVIOUS restores the earlier move", async ({ page }) => {
+  await page.goto("/?mode=endless&bgm=0&countdown=0");
+  await expect(page.locator(".coach-open")).toBeVisible();
+  await page.evaluate(() => {
+    const p = (window as any).__swaprise; p.scene.setPaused(true);
+    p.game.boards[0].setColumns([[2, 3, 0, 0, 4, 0, 1, 1, 3], [4, 1], [4, 3]]);
+  });
+  await page.getByRole("button", { name: "HINT", exact: true }).click();
+  await page.getByRole("button", { name: "FIND CHAIN", exact: true }).click();
+  await expect(page.getByRole("status")).toContainText("Found", { timeout: 15000 });
+  const phase = page.locator(".coach-phase");
+  await expect(phase).toContainText("Move 1/");
+  const initial = await page.evaluate(() => JSON.stringify((window as any).__swaprise.scene.coach.board.syncState()));
+  const next = page.getByRole("button", { name: "NEXT STEP", exact: true });
+  const previous = page.getByRole("button", { name: "PREVIOUS STEP", exact: true });
+  await next.click(); await expect(phase).toContainText("AFTER");
+  await page.waitForTimeout(500); await expect(phase).toContainText("Move 1/");
+  await next.click(); await expect(phase).toContainText("Move 2/"); await expect(phase).toContainText("BEFORE");
+  await expect(page.locator(".training-hint")).toHaveCount(2);
+  await previous.click(); await expect(phase).toContainText("AFTER");
+  await previous.click(); await expect(phase).toContainText("Move 1/");
+  expect(await page.evaluate(() => JSON.stringify((window as any).__swaprise.scene.coach.board.syncState()))).toBe(initial);
 });

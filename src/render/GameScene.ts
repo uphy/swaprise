@@ -466,6 +466,8 @@ export class GameScene extends Phaser.Scene {
 
   private openCoach(): void {
     if (this.mode !== "endless" || this.starting || this.ended || this.coach) return;
+    this.assisted = true; this.scoreRun = null;
+    this.coachButton!.textContent = t("HINT · UNRANKED");
     this.setPaused(true);
     this.pauseMenu.setVisible(false);
     this.coachButton!.hidden = true;
@@ -473,7 +475,7 @@ export class GameScene extends Phaser.Scene {
       this.coach?.destroy(); this.coach = undefined;
       this.pauseMenu.setVisible(true);
       this.coachButton!.hidden = false;
-    }, () => { this.assisted = true; this.scoreRun = null; this.coachButton!.textContent = t("HINT · UNRANKED"); });
+    });
   }
 
   private stepOnce(inputs: Input[]): void {

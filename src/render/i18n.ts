@@ -3,6 +3,11 @@ export type Locale = "en" | "ja";
 const locale: Locale = typeof navigator !== "undefined" && navigator.language.toLowerCase().startsWith("ja") ? "ja" : "en";
 
 const JA: Record<string, string> = {
+  "PREVIOUS STEP": "前へ", "NEXT STEP": "次へ",
+  "This run is unranked because you opened a hint. Find a chain from this board.": "ヒントを開いたため、この回はスコア記録・ランキング対象外です。今の盤面から連鎖を探せます。",
+  "Found {chain}-chain in {moves} swaps. Use NEXT and PREVIOUS to compare each move.": "{moves}回の交換で{chain}連鎖が見つかりました。「次へ／前へ」で1手ずつ見比べられます。",
+  "Move {step}/{total}: BEFORE. Swap the yellow pair ↔. NEXT shows the result.": "{step}/{total}手目・交換前。黄色の2マスを↔交換します。「次へ」で結果を確認できます。",
+  "Move {step}/{total}: AFTER. Cyan marks changed cells; yellow marks the swapped pair.": "{step}/{total}手目・交換後。水色の枠は変化したマス、黄色は交換した場所です。",
   "CHAIN COACH": "この盤面の連鎖ヒント", "FIND CHAIN": "連鎖を探す", "PLAY / PAUSE": "お手本を再生", "REPLAY": "最初に戻す", "BACK TO GAME": "元のゲームへ",
   "HINT · UNRANKED": "ヒント利用・記録対象外",
   "Find a chain from this board. Using hints makes this run unranked.": "今の盤面から連鎖の手順を探します。探索を使った回はスコア記録・ランキングの対象外になります。",
