@@ -306,13 +306,13 @@ export class Board {
 
   // ------------------------------------------------------------------ tick
 
-  tick(input: Input = NO_INPUT): void {
+  tick(input: Input = NO_INPUT, resolving = false): void {
     this.events = [];
     this.attacksOut = [];
     if (this.gameOver) return;
     this.frame++;
 
-    this.handleInput(input);
+    if (!resolving) this.handleInput(input);
     this.updateCells();
     this.updateGarbageTimers();
     this.applyGravity();
@@ -321,10 +321,14 @@ export class Board {
     this.clearStaleChainFlags();
     this.dropPendingGarbage();
     this.updateLevel();
-    this.updateRise(input);
+    if (!resolving) this.updateRise(input);
+    else {
+      if (this.stopTimer > 0) this.stopTimer--;
+      if (this.shakeTimer > 0) this.shakeTimer--;
+    }
     this.updateChainEnd();
     this.updateOutbox();
-    this.updateStatus();
+    if (!resolving) this.updateStatus();
   }
 
   /** 相手が送った板を受け取る。予告に出て、garbageTransit のあと盤面が静止したときに降る。 */

@@ -1,6 +1,8 @@
 import Phaser from "phaser";
 import { Game, PUZZLES, puzzleName, type CpuLevel, type GameMode, type Input, NO_INPUT } from "../core";
-import { recordCpuResult, recordPuzzleClear, recordScore } from "./highscore";
+import { loadHighScores, recordCpuResult, recordPuzzleClear, recordScore } from "./highscore";
+import { recordProgress } from "../scores/progress";
+import { showScoreResult } from "./score-result";
 import { BoardView, type HudSide } from "./BoardView";
 import { P1_KEYS, P2_KEYS, PlayerInput } from "./input";
 import { audio } from "./shared";
@@ -450,7 +452,12 @@ export class GameScene extends Phaser.Scene {
   }
 
   private stepOnce(inputs: Input[]): void {
+    const timeWasUp = this.game_.timeUp;
     this.game_.tick(inputs);
+    if (!timeWasUp && this.game_.timeUp) {
+      this.touches.forEach((touch) => touch.destroy());
+      this.raiseHints.forEach((hint) => hint.setVisible(false));
+    }
     this.game_.boards.forEach((b, i) => {
       this.views[i].handleEvents(b.events, true, Boolean(this.inputs[i]));
       // 人物の反応。連鎖・大きな同時消しで成功、自分の盤面へのおじゃま着地で着地。相手の連鎖には反応しない
@@ -493,7 +500,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   /** 結果を共有する。共有シートがなければクリップボードへコピーし、ボタンの文字で伝える。 */
-  private async share(button: Button): Promise<void> {
+  private async share(button: { setText: (text: string) => unknown }): Promise<void> {
     const g = this.game_;
     const b = g.boards[0];
     let text: string;
@@ -559,10 +566,16 @@ export class GameScene extends Phaser.Scene {
       }
     } else if (this.mode === "endless" || this.mode === "timeattack") {
       const b = g.boards[0];
+      const progress = this.scoreRun ? recordProgress(this.mode, b.score, loadHighScores()[this.mode][0]?.score ?? null) : null;
       const rank = recordScore(this.mode, b.score, b.maxChain);
-      if (this.scoreRun) enqueueScore({ ...this.scoreRun, mode: this.mode, score: b.score, maxChain: b.maxChain, frames: b.frame });
+      if (this.scoreRun) enqueueScore({ ...this.scoreRun, mode: this.mode, score: b.score, maxChain: b.maxChain, frames: Math.min(b.frame, g.timeLimit ?? b.frame) });
       const rankLine = rank === 1 ? t("NEW RECORD!") : rank > 0 ? t("RANK {rank}", { rank }) : "";
       this.views[0].showOverlay(g.timeUp ? t("TIME UP") : t("GAME OVER"), `${t("SCORE")} ${b.score}\n${t("MAX CHAIN")} x${b.maxChain}\n${t("COMBOS")} ${b.stats.combos}  ${t("CHAINS")} ${b.stats.chains}\n${rankLine}`);
+      if (this.scoreRun && progress) showScoreResult(this, {
+        mode: this.mode, title: g.timeUp ? t("TIME UP") : t("GAME OVER"), score: b.score, chain: b.maxChain,
+        progress, id: this.scoreRun.id, retry: () => this.restart(), menu: () => this.toMenu(),
+        share: canShare() ? (button) => { void this.share({ setText: (text) => { button.textContent = text; } }); } : undefined,
+      });
     } else {
       let recordLine = "";
       if (this.mode === "cpu" && g.winner >= 0) {
