@@ -215,6 +215,26 @@ test("盤面の下の ▲ ▲ ▲ を1本指で押している間はせり上げ
   expect(await manualRows()).toBe(rowsBeside);
 });
 
+test("消去中もスマホのせり上げボタンで上げられ、消去対象が盤面に追従する", async ({ page }) => {
+  await page.goto("/?mode=endless&seed=7&bgm=0&countdown=0");
+  await page.waitForFunction(() => Boolean((window as any).__swaprise?.game));
+  const hint = await page.evaluate(() => {
+    const p = (window as any).__swaprise;
+    p.game.boards[0].setColumns([[0], [0], [0]]);
+    const h = p.scene.raiseHints[0]; return { x: h.x, y: h.y };
+  });
+  const at = await toScreen(page, hint.x, hint.y);
+  const cdp = await page.context().newCDPSession(page);
+  await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ ...at, id: 0 }] });
+  await page.waitForFunction(() => (window as any).__swaprise.game.boards[0].risenRows > 0);
+  await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+  const state = await page.evaluate(() => {
+    const b = (window as any).__swaprise.game.boards[0];
+    return { row: b.risenRows, state: b.cell(0, b.risenRows).state, kind: b.cell(0, b.risenRows).kind };
+  });
+  expect(state.row).toBeGreaterThan(0); expect(state.state).not.toBe("idle"); expect(state.kind).toBe(0);
+});
+
 test.describe("iPhone 14", () => {
   const iphone = devices["iPhone 14"];
   test.use({

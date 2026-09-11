@@ -1,5 +1,5 @@
 import type { Env } from "./types";
-import { scoreRules, scoreMode, validSubmission, type Submission } from "../src/scores/model";
+import { scoreRules, supportedScoreRules, scoreMode, validSubmission, type Submission } from "../src/scores/model";
 
 const json = (data: unknown, status = 200): Response => Response.json(data, { status, headers: { "Cache-Control": "no-store" } });
 export async function scores(request: Request, env: Env, session?: string): Promise<Response> {
@@ -7,7 +7,9 @@ export async function scores(request: Request, env: Env, session?: string): Prom
   const url = new URL(request.url);
   if (request.method === "GET") {
     const mode = url.searchParams.get("mode");
-    if (!scoreMode(mode) || (url.searchParams.has("rules") && url.searchParams.get("rules") !== scoreRules(mode)))
+    if (!scoreMode(mode)) return json({ error: "Unsupported ranking." }, 400);
+    const rules = url.searchParams.get("rules") ?? scoreRules(mode);
+    if (!supportedScoreRules(mode, rules))
       return json({ error: "Unsupported ranking." }, 400);
     if (url.searchParams.has("around")) {
       const id = url.searchParams.get("around")!;
@@ -33,15 +35,15 @@ export async function scores(request: Request, env: Env, session?: string): Prom
         FROM scores s, target t WHERE s.rules = t.rules AND s.mode = t.mode
       ) SELECT n.id, n.name, n.score, n.max_chain AS maxChain, n.created_at AS createdAt,
         targetRank + delta AS rank, total, targetRank FROM neighbors n, stats ORDER BY rank`)
-        .bind(scoreRules(mode), mode, id).all<{ id: string; name: string; score: number; maxChain: number; createdAt: number; rank: number; total: number; targetRank: number }>();
+        .bind(rules, mode, id).all<{ id: string; name: string; score: number; maxChain: number; createdAt: number; rank: number; total: number; targetRank: number }>();
       if (!result.results.length) return json({ error: "Score not published yet." }, 404);
       const first = result.results[0];
       return json({ rank: first.targetRank, total: first.total, scores: result.results.map(({ total, targetRank, ...row }) => row) });
     }
     const rows = await env.SCORES_DB.prepare(`SELECT id, name, score, max_chain AS maxChain, created_at AS createdAt
       FROM scores WHERE rules = ? AND mode = ? ORDER BY score DESC, max_chain DESC, created_at, id LIMIT 50`)
-      .bind(scoreRules(mode), mode).all();
-    return json({ rules: scoreRules(mode), mode, scores: rows.results });
+      .bind(rules, mode).all();
+    return json({ rules, mode, scores: rows.results });
   }
   if (request.method !== "POST") return json({ error: "Method not allowed." }, 405);
   if (!session) return json({ error: "Please reconnect." }, 401);

@@ -1,7 +1,7 @@
 import type { Input } from "../core/types";
 import { COLS, ROWS } from "../core/constants";
 export const PROTOCOL = 1;
-export const GAME_VERSION = "online-v4";
+export const GAME_VERSION = "online-v5";
 export const BATCH = 3;
 export const DELAY = 6;
 export const MAX_FRAMES = 36_000;

@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { recordProgress } from "../src/scores/progress";
+import { scoreRules } from "../src/scores/model";
 beforeEach(() => {
   const values = new Map();
   vi.stubGlobal("localStorage", { getItem: (key: string) => values.get(key) ?? null, setItem: (key: string, value: string) => values.set(key, value) });
@@ -13,7 +14,7 @@ it("compares against preceding five attempts, not top five or current score", ()
 });
 it("preserves existing best and tolerates missing, corrupted and full storage", () => {
   expect(recordProgress("endless", 200, 500).best).toBe(500);
-  localStorage.setItem("swaprise.progress.scores-v1.endless", "null");
+  localStorage.setItem(`swaprise.progress.${scoreRules("endless")}.endless`, "null");
   expect(recordProgress("endless", 1).average).toBeNull();
   vi.stubGlobal("localStorage", { getItem: () => { throw Error(); }, setItem: () => { throw Error(); } });
   expect(() => recordProgress("endless", 5)).not.toThrow();

@@ -8,6 +8,18 @@ async function connect(request: APIRequestContext, baseURL: string): Promise<Rec
   expect((await request.post("/api/session", { headers })).ok()).toBe(true);
   return headers;
 }
+test("D1: old clients can still publish and read their own rule-specific rankings", async ({ request, baseURL }) => {
+  const headers = await connect(request, baseURL!);
+  for (const [mode, rules] of [["endless", "scores-v1"], ["timeattack", "scores-v1"], ["timeattack", "scores-ta-v2"]] as const) {
+    const old = { ...score(mode), rules };
+    expect((await request.post("/api/scores", { headers, data: old })).status()).toBe(201);
+    const query = `mode=${mode}&rules=${rules}`;
+    const rows = await (await request.get(`/api/scores?${query}`)).json();
+    expect(rows.scores.some((row: { id: string }) => row.id === old.id)).toBe(true);
+    expect((await request.get(`/api/scores?${query}&around=${old.id}`)).status()).toBe(200);
+    expect((await request.get(`/api/scores?mode=${mode}&around=${old.id}`)).status()).toBe(404);
+  }
+});
 test("D1: public top 50, mode separation, chain/date ordering and idempotent uploads", async ({ request, baseURL }) => {
   const headers = await connect(request, baseURL!);
   const first = score();

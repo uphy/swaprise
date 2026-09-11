@@ -974,7 +974,8 @@ export class Board {
     const busy = this.hasMatched() || this.hasTransforming();
     const touching = this.topTouching();
     let manual = false;
-    if (input.raise && this.movesLeft === null && !busy && this.shakeTimer === 0 && !touching) {
+    // Clearing pauses automatic rise only; the player can still choose to raise.
+    if (input.raise && this.movesLeft === null && this.shakeTimer === 0 && !touching) {
       this.riseProgress += 1 / TIMING.manualRisePerRow;
       manual = true;
     } else if (!this.noRise && !busy && this.shakeTimer === 0 && !touching && this.stopTimer === 0) {
