@@ -70,13 +70,13 @@ test("メニューの曲は閃光の直前に始まり、メニューへ切り�
   expect((await bgm()).playing).toBeNull();
   await waitPhase(page, "reveal");
   expect((await bgm()).playing).toBe("menu");
-  // 曲の頭（1 拍目）から始まっている。16 分音符 1 つが約 114 ms
+  // 曲の頭（1 拍目）から始まっている。16 分音符 1 つが約 124 ms（120.5 BPM）
   expect((await bgm()).step).toBeLessThan(8);
   await page.waitForFunction(() => Boolean((window as any).__swapriseScenes.menu) && (window as any).__swapriseScenes.opening.phase === "done");
   await page.waitForTimeout(1500);
   const after = await bgm();
   expect(after.playing).toBe("menu");
-  // メニューに切り替わっても曲は途中から続いている。閃光からここまで約 2.4 秒 = 21 歩。切り替えで鳴らし直していれば 13 歩ほどに戻る
+  // メニューに切り替わっても曲は途中から続いている。閃光からここまで約 2.4 秒 = 19 歩。切り替えで鳴らし直していれば 12 歩ほどに戻る
   expect(after.step).toBeGreaterThan(17);
 });
 

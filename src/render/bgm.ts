@@ -1,11 +1,13 @@
 /**
- * Web Audio だけで鳴らす BGM のシーケンサ。音声ファイルは使わない。
- * 曲データは tools/bgm-candidates.html から移植したもの。
- * オープニング（メニュー）は「1. ポップ・フェアリー」、ゲーム中は「5. チル・幻想」、危険状態（ピンチ）は「2. スピード・テクノ」。
+ * BGM の再生。メニュー・ゲーム中・危険状態（ピンチ）の曲は音声ファイル（public/audio/*.mp3）を区間で繰り返す（SAMPLED）。
+ * Web Audio だけで鳴らすシーケンサの曲（曲データは tools/bgm-candidates.html から移植したもの）は、音声ファイルを読み込めないときの予備:
+ * メニュー「1. ポップ・フェアリー」、ゲーム中「5. チル・幻想」、ピンチ「2. スピード・テクノ」。
  *
  * 音符列は "c4:2 e4+g4:4 r:2" の形式。長さの単位は16分音符で、省略時は 1。
  * "+" で和音、"r" で休符。ドラムは "x...x..." の形式で、x がヒット、o がオープンハイハット。
  */
+
+import { bakeLoopCrossfade, loopPosition } from "./loopBuffer";
 
 type Wave = OscillatorType | "pulse25" | "pulse12";
 
@@ -110,7 +112,77 @@ export type SongName = "menu" | "game";
 /** 実際に鳴らす曲。game は危険状態のとき danger に置き換わる。 */
 export type TuneName = SongName | "danger";
 
-/** オープニング: C major 132 BPM。跳ねるベースと分散和音の明るい曲。 */
+/**
+ * 音声ファイルの曲。頭から鳴らし、loopEnd に達したら loopStart へ戻って繰り返す（イントロは 1 回）。
+ * 継ぎ目は loopEnd の手前 60 ms を loopStart の直前の音と溶かしてある（bakeLoopCrossfade）。
+ * 位置はすべて、無音を落とした素材の秒数。区間は小節ごとの似ている度合いで候補を出し、聞き比べて決めた。
+ */
+export interface SampledSong {
+  /** index.html からの相対パス */
+  url: string;
+  tempo: number;
+  /** 1 小節の長さ（秒）。ピンチから戻るときに小節の頭へ揃えるのに使う */
+  bar: number;
+  /** 最初の拍（1 小節目の頭）の位置（秒）。オープニングの閃光にこの拍を合わせる */
+  downbeat: number;
+  /** 鳴らし始める位置（秒）。省略で頭から。ピンチの曲は導入を飛ばしてドロップから */
+  start?: number;
+  loopStart: number;
+  loopEnd: number;
+  /** 合成の曲との音量合わせ */
+  gain: number;
+}
+
+/**
+ * メニュー曲「The Last Block Standing」（Gemini で生成。G major、120.5 BPM、32 小節 63.8 秒。頭は C の和音）。
+ * 1〜8 小節（イントロと薄い主部）を 1 回鳴らしたあと、9〜30 小節（主部 → 別の部分 → 主部）を繰り返す。
+ * 30 小節目の末尾は 8 小節目の末尾と似ているので、30 → 9 の飛びが元の 8 → 9 と同じ入り方になる。
+ */
+export const MENU_SONG: SampledSong = {
+  url: "audio/menu.mp3",
+  tempo: 120.53,
+  bar: 1.9912,
+  downbeat: 0.0416,
+  loopStart: 15.9711,
+  loopEnd: 59.7774,
+  gain: 1.4,
+};
+
+/**
+ * ゲーム曲「Triple Tile Cascade」（Gemini で生成。3 連のノリ（12/8 相当）106 BPM、28 小節 63.7 秒）。
+ * 1 小節目（薄い導入）を 1 回鳴らしたあと、2〜25 小節（本体すべて）を繰り返す。26 小節目から終わりに向かうので、そこへは行かない。
+ * 継ぎ目（25 → 2）は元の曲にない遷移だが、25 は 2〜9 の再現部の中にあり、聞いて違和感がなかったので長さを優先した。
+ */
+export const GAME_SONG: SampledSong = {
+  url: "audio/game.mp3",
+  tempo: 106.0,
+  bar: 2.2642,
+  downbeat: 0.0231,
+  loopStart: 2.2873,
+  loopEnd: 56.6289,
+  gain: 1.7,
+};
+
+/**
+ * ピンチの曲「Crisis Mode」（Gemini で生成。4/4 150 BPM、40 小節 64.0 秒）。
+ * 1〜8 小節の導入（12.8 秒）は飛ばし、9 小節目のドロップから鳴らして 9〜24 小節（16 小節・25.6 秒）を繰り返す。
+ * 9 小節目は 25 小節目とほぼ同じ音なので、24 → 9 の飛びが元の 24 → 25 と同じ入り方になる。
+ */
+export const DANGER_SONG: SampledSong = {
+  url: "audio/danger.mp3",
+  tempo: 150.0,
+  bar: 1.59997,
+  downbeat: 0.0454,
+  start: 12.8452,
+  loopStart: 12.8452,
+  loopEnd: 38.4447,
+  gain: 1.6,
+};
+
+/** 音声ファイルの曲。 */
+export const SAMPLED: Record<TuneName, SampledSong> = { menu: MENU_SONG, game: GAME_SONG, danger: DANGER_SONG };
+
+/** メニュー曲の予備（音声ファイルを読み込めないとき）: C major 132 BPM。跳ねるベースと分散和音の明るい曲。 */
 function buildMenuSong(): Song {
   const bassTri: Instrument = { wave: "triangle", wave2: "square", mix2: 0.18, gain: 0.45, a: 0.004, d: 0.12, s: 0.75, r: 0.06, cutoff: 900, fenv: 2, gate: 0.85, echo: 0 };
   const arp: Instrument = { wave: "pulse25", gain: 0.11, a: 0.002, d: 0.09, s: 0.35, r: 0.04, cutoff: 4500, fenv: 1.5, gate: 0.7, echo: 0.35 };
@@ -157,7 +229,7 @@ function buildMenuSong(): Song {
   };
 }
 
-/** ゲーム中: D major 96 BPM。メジャーセブンスのパッドとエコー多めのリード。 */
+/** ゲーム曲の予備（音声ファイルを読み込めないとき）: D major 96 BPM。メジャーセブンスのパッドとエコー多めのリード。 */
 function buildGameSong(): Song {
   const pad: Instrument = { wave: "pulse25", wave2: "sawtooth", mix2: 0.5, detune2: 9, gain: 0.055, a: 0.5, d: 0.4, s: 0.85, r: 0.6, cutoff: 1600, gate: 0.98, echo: 0.5 };
   const bassSoft: Instrument = { wave: "triangle", gain: 0.45, a: 0.01, d: 0.2, s: 0.8, r: 0.15, cutoff: 600, gate: 0.95, echo: 0.1 };
@@ -201,7 +273,7 @@ function buildGameSong(): Song {
   };
 }
 
-/** ピンチ: A minor 150 BPM。16分刻みのオクターブベースで疾走感を出し、危険状態に気づかせる。 */
+/** ピンチの予備（音声ファイルを読み込めないとき）: A minor 150 BPM。16分刻みのオクターブベースで疾走感を出し、危険状態に気づかせる。 */
 function buildDangerSong(): Song {
   const bassSaw: Instrument = { wave: "sawtooth", wave2: "square", mix2: 0.3, gain: 0.28, a: 0.003, d: 0.1, s: 0.6, r: 0.05, cutoff: 700, fenv: 3, gate: 0.7, echo: 0 };
   const arpThin: Instrument = { wave: "pulse12", gain: 0.11, a: 0.002, d: 0.06, s: 0.3, r: 0.03, cutoff: 6000, gate: 0.6, echo: 0.4 };
@@ -264,6 +336,13 @@ export const SWITCH_GAP = 0.15;
 /** 危険状態を抜けてからゲーム曲に戻すまでの待ち（ミリ秒）。 */
 export const DANGER_RELEASE_MS = 2500;
 
+/** 音声ファイルの曲の position（秒）を、その小節の頭に揃える。繰り返し区間の中なら区間の頭からの小節割り。 */
+export function barStart(song: SampledSong, position: number): number {
+  if (position < song.downbeat) return 0;
+  const base = position >= song.loopStart ? song.loopStart : song.downbeat;
+  return base + Math.floor((position - base) / song.bar) * song.bar;
+}
+
 export class BgmPlayer {
   private readonly songs: Record<TuneName, Song> = { menu: buildMenuSong(), game: buildGameSong(), danger: buildDangerSong() };
   private song: Song = this.songs.game;
@@ -272,8 +351,9 @@ export class BgmPlayer {
   /** 実際に鳴っている曲。 */
   private tune_: TuneName | null = null;
   private danger = false;
-  /** ゲーム曲からピンチの曲へ切り替えたときの位置。戻るときはこの小節から続ける。 */
+  /** ゲーム曲からピンチの曲へ切り替えたときの位置。戻るときはこの小節から続ける（合成の予備は 16 分音符の数、音声ファイルは秒） */
   private gameStep = 0;
+  private gamePosition = 0;
   private readonly out: GainNode;
   private readonly echoIn: GainNode;
   private readonly delay: DelayNode;
@@ -283,12 +363,28 @@ export class BgmPlayer {
   private timer: number | null = null;
   /** 危険状態を抜けてからゲーム曲に戻すまでの待ち。戻す前に危険状態へ戻れば取り消す。 */
   private releaseTimer: number | null = null;
-  private step = 0;
+  /** 合成の曲の位置（16 分音符の数） */
+  private seqStep = 0;
   private nextTime = 0;
+  /** 音声ファイルの曲の出力。合成の曲とは別で、9 kHz のローパスを通さない */
+  private readonly sampleOut: GainNode;
+  private readonly sampleLoad: Record<TuneName, "loading" | "ready" | "failed"> = { menu: "failed", game: "failed", danger: "failed" };
+  private readonly sampleBuffer: Partial<Record<TuneName, AudioBuffer>> = {};
+  private sampleSource: AudioBufferSourceNode | null = null;
+  /** 鳴っている音声ファイルの曲 */
+  private sampleTune: TuneName | null = null;
+  /** 音声ファイルの曲を鳴らし始めた（予約した）時刻と、そのときの素材の位置 */
+  private sampleStartedAt = 0;
+  private sampleOffset = 0;
+  /** 読み込みが終わる前に求められた曲。終わったら samplePosition から鳴らす */
+  private samplePending: TuneName | null = null;
+  private samplePosition = 0;
 
   constructor(
     private readonly ctx: AudioContext,
     dest: AudioNode,
+    /** 曲の音声ファイル。ない曲は合成の予備を鳴らす */
+    samples?: Partial<Record<TuneName, Promise<ArrayBuffer>>>,
   ) {
     // SFC の音の丸さを出すために高域を削る
     const tone = ctx.createBiquadFilter();
@@ -317,6 +413,114 @@ export class BgmPlayer {
     this.noiseBuf = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
     const d = this.noiseBuf.getChannelData(0);
     for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+
+    this.sampleOut = ctx.createGain();
+    this.sampleOut.connect(dest);
+    for (const name of ["menu", "game", "danger"] as const) {
+      const bytes = samples?.[name];
+      if (bytes) this.loadSample(name, bytes);
+    }
+  }
+
+  /** 曲の音声ファイルを読み込み、継ぎ目を準備する。失敗したら合成の予備を使う。 */
+  private loadSample(name: TuneName, bytes: Promise<ArrayBuffer>): void {
+    const song = SAMPLED[name];
+    this.sampleLoad[name] = "loading";
+    bytes
+      .then((b) => this.ctx.decodeAudioData(b))
+      .then((buffer) => {
+        for (let c = 0; c < buffer.numberOfChannels; c++) {
+          bakeLoopCrossfade(buffer.getChannelData(c), buffer.sampleRate, song.loopStart, song.loopEnd);
+        }
+        this.sampleBuffer[name] = buffer;
+        this.sampleLoad[name] = "ready";
+        if (this.samplePending === name) {
+          this.samplePending = null;
+          this.playSample(name, this.samplePosition);
+        }
+      })
+      .catch((e: unknown) => {
+        console.warn(`曲の音声ファイルを読み込めないので合成の予備を鳴らす: ${name}`, e);
+        this.sampleLoad[name] = "failed";
+        if (this.samplePending === name) {
+          this.samplePending = null;
+          this.play(name, 0);
+        }
+      });
+  }
+
+  /**
+   * 音声ファイルの曲を素材の offset 秒から鳴らす（0 なら曲の start、省略時は頭）。
+   * 頭から鳴らすときは、最初の拍が SWITCH_GAP 後（オープニングの閃光）に来るよう downbeat ぶん早く始める。
+   * 途中からのときはすぐ鳴らす（前の音は stopSample() で絞ってあり、待つ必要がない）。
+   */
+  private playSample(name: TuneName, offset: number): void {
+    const buffer = this.sampleBuffer[name];
+    if (!buffer) return;
+    const song = SAMPLED[name];
+    if (offset === 0 && song.start) offset = song.start;
+    this.stopSample();
+    const ctx = this.ctx;
+    const now = ctx.currentTime;
+    const src = ctx.createBufferSource();
+    src.buffer = buffer;
+    src.loop = true;
+    src.loopStart = song.loopStart;
+    src.loopEnd = song.loopEnd;
+    src.connect(this.sampleOut);
+    src.onended = () => src.disconnect();
+    this.sampleOut.gain.cancelScheduledValues(now);
+    this.sampleOut.gain.setValueAtTime(song.gain, now);
+    const at = offset === 0 ? now + SWITCH_GAP - song.downbeat : now;
+    src.start(at, offset);
+    this.sampleSource = src;
+    this.sampleTune = name;
+    this.sampleStartedAt = at;
+    this.sampleOffset = offset;
+  }
+
+  /** 音声ファイルの曲を素早く絞って止める。 */
+  private stopSample(): void {
+    this.samplePending = null;
+    const src = this.sampleSource;
+    if (!src) return;
+    this.sampleSource = null;
+    this.sampleTune = null;
+    const now = this.ctx.currentTime;
+    this.sampleOut.gain.cancelScheduledValues(now);
+    this.sampleOut.gain.setTargetAtTime(0, now, 0.01);
+    src.stop(now + 0.05);
+  }
+
+  /** 音声ファイルの曲の読み込み状態。 */
+  get samples(): Record<TuneName, "loading" | "ready" | "failed"> {
+    return { ...this.sampleLoad };
+  }
+
+  /** 鳴っている音声ファイルの曲の繰り返す区間（素材の秒数）。鳴っていなければ null。 */
+  get loop(): { start: number; end: number } | null {
+    if (!this.sampleTune) return null;
+    const song = SAMPLED[this.sampleTune];
+    return { start: song.loopStart, end: song.loopEnd };
+  }
+
+  /** 鳴っている音声ファイルの曲の、素材の中の今の位置（秒）。鳴っていなければ null。 */
+  get position(): number | null {
+    if (!this.sampleSource || !this.sampleTune) return null;
+    const song = SAMPLED[this.sampleTune];
+    return loopPosition(this.ctx.currentTime - this.sampleStartedAt + this.sampleOffset, song.loopStart, song.loopEnd);
+  }
+
+  /** 鳴っている音声ファイルの曲を素材の seconds 秒へ飛ばす（e2e で継ぎ目を確かめる用）。 */
+  seek(seconds: number): void {
+    if (this.sampleTune) this.playSample(this.sampleTune, seconds);
+  }
+
+  /** 今の位置（16 分音符の数）。合成の曲はシーケンサの歩数、音声ファイルの曲は位置から換算する。 */
+  get step(): number {
+    const pos = this.position;
+    if (pos === null || !this.sampleTune) return this.seqStep;
+    return Math.floor(pos / (60 / SAMPLED[this.sampleTune].tempo / 4));
   }
 
   /** 求められている曲。止まっていれば null。 */
@@ -329,12 +533,17 @@ export class BgmPlayer {
     return this.tune_;
   }
 
-  start(name: SongName): void {
+  /**
+   * 曲を鳴らし始める。position は音声ファイルの曲（メニュー）を素材の何秒から鳴らすか。
+   * 画面が隠れて止めたあと戻るときに、止めた位置から続けるのに使う。省略すると頭から
+   */
+  start(name: SongName, position = 0): void {
     if (this.current === name) return;
     this.stop();
     this.current = name;
     this.gameStep = 0;
-    this.play(name === "game" && this.danger ? "danger" : name, 0);
+    this.gamePosition = 0;
+    this.play(name === "game" && this.danger ? "danger" : name, 0, position);
   }
 
   /** 止める。予約済みの音も出力ごと素早く絞り、止めた直後に1音だけ漏れないようにする。 */
@@ -357,7 +566,8 @@ export class BgmPlayer {
     if (on) {
       this.clearRelease();
       if (this.tune_ === "game") {
-        this.gameStep = this.step;
+        this.gameStep = this.seqStep;
+        this.gamePosition = this.position ?? 0;
         this.halt();
         this.play("danger", 0);
       }
@@ -367,7 +577,7 @@ export class BgmPlayer {
         if (this.current !== "game" || this.tune_ !== "danger" || this.danger) return;
         this.halt();
         const beat = this.songs.game.beat;
-        this.play("game", Math.floor(this.gameStep / beat) * beat);
+        this.play("game", Math.floor(this.gameStep / beat) * beat, barStart(SAMPLED.game, this.gamePosition));
       }, DANGER_RELEASE_MS);
     }
   }
@@ -381,6 +591,7 @@ export class BgmPlayer {
   private halt(): void {
     if (this.timer !== null) window.clearTimeout(this.timer);
     this.timer = null;
+    this.stopSample();
     const now = this.ctx.currentTime;
     this.out.gain.cancelScheduledValues(now);
     this.out.gain.setTargetAtTime(0, now, 0.01);
@@ -391,15 +602,25 @@ export class BgmPlayer {
    * 直前の曲は LOOKAHEAD ぶん先まで音を予約しているので、出力を絞ったまま SWITCH_GAP 待ってから開ける。
    * すぐ開けると前の曲の予約済みの音が新しい曲に重なる。
    */
-  private play(tune: TuneName, step: number): void {
+  private play(tune: TuneName, step: number, position = 0): void {
+    this.tune_ = tune;
+    // 音声ファイルの曲。読み込み中なら終わってから鳴らし、読み込めなければ合成の予備を鳴らす
+    if (this.sampleLoad[tune] !== "failed") {
+      if (this.sampleLoad[tune] === "ready") {
+        this.playSample(tune, position);
+      } else {
+        this.samplePending = tune;
+        this.samplePosition = position;
+      }
+      return;
+    }
     const now = this.ctx.currentTime;
     this.out.gain.cancelScheduledValues(now);
     this.out.gain.setValueAtTime(0, now);
     this.out.gain.setValueAtTime(1, now + SWITCH_GAP - 0.01);
-    this.tune_ = tune;
     this.song = this.songs[tune];
     this.feedback.gain.value = this.song.echoFeedback;
-    this.step = step;
+    this.seqStep = step;
     this.nextTime = now + SWITCH_GAP;
     this.tick();
   }
@@ -412,7 +633,7 @@ export class BgmPlayer {
     while (this.nextTime < ctx.currentTime + LOOKAHEAD) {
       const t = this.nextTime;
       for (const tr of song.tracks) {
-        const ev = tr.events.get(this.step % tr.total);
+        const ev = tr.events.get(this.seqStep % tr.total);
         if (!ev) continue;
         if ("drum" in ev) {
           this.playDrum(ev.drum, ev.open, t, song.drumGain);
@@ -422,7 +643,7 @@ export class BgmPlayer {
         }
       }
       this.nextTime += stepDur;
-      this.step++;
+      this.seqStep++;
     }
     this.timer = window.setTimeout(() => this.tick(), 30);
   }
