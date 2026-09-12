@@ -469,7 +469,7 @@ export class MenuScene extends Phaser.Scene {
     const panel = this.add.container(0, 0, [dim]).setDepth(50).setName(name);
     const btnH = 46;
     const bodyText = body
-      ? this.add.text(cx, 0, body, { fontFamily: FONT_UI, fontSize: "14px", color: TEXT_COLOR, align: "left", lineSpacing: 4, wordWrap: { width: W - 40 } }).setOrigin(0.5, 0)
+      ? this.add.text(cx, 0, body, { fontFamily: FONT_UI, fontSize: "14px", color: TEXT_COLOR, align: "left", lineSpacing: 4, wordWrap: { width: W - 40, useAdvancedWrap: true } }).setOrigin(0.5, 0)
       : null;
     // 見出しと本文の間に絵（遊び方の図）を入れるときは、その高さぶん本文を下げる
     const deco = this.add.container(0, 0);
@@ -583,7 +583,7 @@ export class MenuScene extends Phaser.Scene {
   }
 
   /**
-   * 遊び方の図。左の 3 枚（赤・緑・赤）の真ん中を右へ入れ替えると、右の 3 枚が揃って光る。
+   * 遊び方の図。左は 赤・赤・緑・赤 で、緑と右端の赤を入れ替えると、右のように赤が 3 つ揃って光る。
    * 戻り値は使った高さ
    */
   private drawHowToDiagram(panel: Phaser.GameObjects.Container, cx: number, y: number): number {
@@ -593,9 +593,8 @@ export class MenuScene extends Phaser.Scene {
     const step = 34 * fit;
     const row = y + 22;
     const left = cx - 136 * fit;
-    [0, 1, 0].forEach((k, i) => panel.add(this.add.image(left + i * step, row, `panel-${k}`).setScale(s)));
-    panel.add(this.add.image(left + step * 3, row, "panel-1").setScale(s));
-    panel.add(this.add.image(left + step * 1.5, row, "cursor").setScale(s).setOrigin(0.5).setAlpha(0.9));
+    [0, 0, 1, 0].forEach((k, i) => panel.add(this.add.image(left + i * step, row, `panel-${k}`).setScale(s)));
+    panel.add(this.add.image(left + step * 2.5, row, "cursor").setScale(s).setOrigin(0.5).setAlpha(0.9));
     panel.add(this.add.text(cx, row, "▶", { fontFamily: FONT_UI, fontSize: `${Math.round(20 * fit)}px`, color: ACCENT }).setOrigin(0.5));
     const right = cx + 34 * fit;
     [0, 0, 0].forEach((k, i) => panel.add(this.add.image(right + i * step, row, `panel-${k}-bright`).setScale(s)));
