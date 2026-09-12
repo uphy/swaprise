@@ -92,12 +92,15 @@ jobs:
       - run: pnpm e2e:online --shard=${{ matrix.shard }}/3
         env:
           CI: "1"
+          WRANGLER_LOG_PATH: ./test-server-logs
       - name: 失敗したテストのスクリーンショットと trace を残す
         if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: e2e-online-results-${{ matrix.shard }}
-          path: test-results-online/
+          path: |
+            test-results-online/
+            test-server-logs/
           retention-days: 7
 
   # 普段の pnpm test に入れていない、CPU に何分も遊ばせるバランスの回帰テスト
