@@ -46,7 +46,7 @@ test("招待URLから2人で対戦し、降参して再戦する", async ({ brow
   // Android の戻るジェスチャ（画面端からの横スワイプ）は盤面のドラッグと重なりやすい。対戦中の戻る操作では
   // ページを離れず（招待URLで開いた側は履歴を積んでいなければ前のページへ戻っていた）、案内を出して試合を続ける
   await q.goBack();
-  await expect(q.getByRole("status")).toContainText("Back is disabled during a match");
+  await expect(q.getByRole("status")).toContainText("Back does not leave the game");
   await expect(q.locator(".online-ui.playing")).toHaveCount(1);
   const frameAtBack = await q.evaluate(() => (window as any).__swapriseOnline.session.lockstep.frame);
   await q.waitForFunction(

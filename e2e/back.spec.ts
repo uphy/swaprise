@@ -42,6 +42,16 @@ test("戻る操作: ゲーム中は何も起きず、ページも離れない", 
   expect(await page.evaluate(() => (window as any).__swaprise?.scene.paused)).toBe(false);
   expect(await activeScenes()).toEqual(["game"]);
   expect(page.url()).toContain("seed=7");
+  // 離れないこととやめる手順の案内を、盤面の外に数秒だけ出す
+  const shown = await page.evaluate(() => {
+    const s = (window as any).__swaprise.scene;
+    const bottom = Math.max(...s.views.map((v: any) => v.oy + 384 * v.scale));
+    return { visible: s.backHintText.visible, text: s.backHintText.text, top: s.backHintText.y - s.backHintText.height / 2, boardBottom: bottom };
+  });
+  expect(shown.visible).toBe(true);
+  expect(shown.text).toContain("Back does not leave the game");
+  expect(shown.top).toBeGreaterThan(shown.boardBottom);
+  await page.waitForFunction(() => !(window as any).__swaprise.scene.backHintText.visible, null, { timeout: 8000 });
 
   // 何度戻っても同じ。ポーズ中・終了後も同じ
   await page.goBack();

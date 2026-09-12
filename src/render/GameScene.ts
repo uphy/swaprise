@@ -18,6 +18,7 @@ import { BOARD_H, BOARD_W, FONT, TEXT_COLOR, type Layout, layoutFor, sameLayout 
 import { CharacterView } from "./CharacterView";
 import { characterById, isCharacterId, loadSelection } from "../characters/catalog";
 import { t } from "./i18n";
+import { backHintDuration } from "./backHint";
 import { eligibleRun } from "../scores/model";
 import { enqueueScore, publication } from "../scores/client";
 import { showPlayerSettings } from "./score-dialog";
@@ -58,6 +59,9 @@ export class GameScene extends Phaser.Scene {
   private pauseTitle!: Phaser.GameObjects.Text;
   private pauseButtons: Button[] = [];
   private hintText!: Phaser.GameObjects.Text;
+  /** 戻る操作を受けたときに数秒出す案内。 */
+  private backHintText!: Phaser.GameObjects.Text;
+  private backHintTimer: number | null = null;
   private ended = false;
   /** 開始のカウントダウン中か。この間はゲームを進めない。 */
   starting = false;
@@ -199,6 +203,7 @@ export class GameScene extends Phaser.Scene {
     const onPop = (): void => {
       if (!this.historyPushed) return;
       history.pushState({ swaprise: "game" }, "");
+      this.showBackHint();
     };
     window.addEventListener("popstate", onPop);
     // 回転・ウィンドウサイズの変更。連続して来るので少し待ってからレイアウトし直す
@@ -220,11 +225,21 @@ export class GameScene extends Phaser.Scene {
       window.removeEventListener("popstate", onPop);
       window.removeEventListener("resize", onResize);
       if (resizeTimer !== null) window.clearTimeout(resizeTimer);
+      if (this.backHintTimer !== null) window.clearTimeout(this.backHintTimer);
+      this.backHintTimer = null;
     });
     // キーボード向けの案内。タッチ端末では出さない（ボタンがある）
     this.hintText = this.add
       .text(0, 0, t("P: pause   R: restart   Esc: menu   M: mute"), { fontFamily: FONT, fontSize: "12px", color: "#6a6a80" })
       .setOrigin(0.5);
+    // 戻る操作の案内。盤面の外（画面の下端、横持ちのスマホは上端）に数秒だけ出す
+    this.backHintText = this.add
+      .text(0, 0, t("Back does not leave the game. To quit, pause and choose MENU."), {
+        fontFamily: FONT, fontSize: "12px", color: TEXT_COLOR, backgroundColor: "#14141cdd", padding: { x: 8, y: 4 }, align: "center",
+      })
+      .setOrigin(0.5)
+      .setDepth(6)
+      .setVisible(false);
 
     const kb = this.input.keyboard!;
     kb.on("keydown-P", () => this.togglePause());
@@ -351,6 +366,17 @@ export class GameScene extends Phaser.Scene {
     this.pauseButtons.forEach((b, i) => b.setPosition(W / 2, H / 2 - (this.pauseButtons.length - 1) * 23 + i * 46));
 
     this.hintText.setPosition(W / 2, H - 14).setVisible(!L.touch);
+    this.backHintText.setWordWrapWidth(W - 16).setPosition(W / 2, L.phoneLandscape ? 6 + this.backHintText.height / 2 : H - 8 - this.backHintText.height / 2);
+  }
+
+  /** 戻る操作を受けたとき、離れないこととやめる手順を数秒だけ出す。 */
+  private showBackHint(): void {
+    this.backHintText.setVisible(true);
+    if (this.backHintTimer !== null) window.clearTimeout(this.backHintTimer);
+    this.backHintTimer = window.setTimeout(() => {
+      this.backHintTimer = null;
+      this.backHintText.setVisible(false);
+    }, backHintDuration());
   }
 
   /** 3・2・1・START のカウントダウン。各盤面の中央に出す。START でゲームが動き出し、BGM が始まる。 */

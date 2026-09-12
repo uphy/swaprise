@@ -26,6 +26,7 @@ import { Prediction } from "../net/prediction";
 import { NO_INPUT } from "../core/types";
 import "./online.css";
 import { t } from "./i18n";
+import { backHintDuration } from "./backHint";
 /** ロビーとオンライン盤面。ローカル対戦のポーズ・再開始処理は呼ばない。 */
 export class OnlineScene extends Phaser.Scene {
   session: OnlineSession | null = null;
@@ -514,7 +515,7 @@ export class OnlineScene extends Phaser.Scene {
       this.status.textContent = this.settings
         ? t("The match continues while settings are open.")
         : Date.now() < this.backHintUntil
-          ? t("Back is disabled during a match. Use SETTINGS to leave.")
+          ? t("Back does not leave the game. Use SETTINGS to leave.")
           : `${other?.name ?? t("Opponent")} · ${t("playing")}${state.remaining <= 60000 ? ` · ${Math.ceil(state.remaining / 1000)}s` : ""}`;
     else if (state.phase === "closed")
       this.status.textContent = t("The opponent left or the room closed.");
@@ -729,9 +730,9 @@ export class OnlineScene extends Phaser.Scene {
       L.phoneLandscape ? view.oy + 180 : view.oy + BOARD_H + 44,
     );
   }
-  /** 対戦中に戻る操作をした人へ、退出の手順を数秒だけ知らせる。 */
+  /** 対戦中に戻る操作をした人へ、離れないことと退出の手順を数秒だけ知らせる。 */
   private showBackHint(): void {
-    const DURATION = 3000;
+    const DURATION = backHintDuration();
     this.backHintUntil = Date.now() + DURATION;
     if (this.backHintTimer !== null) clearTimeout(this.backHintTimer);
     this.backHintTimer = setTimeout(() => {
