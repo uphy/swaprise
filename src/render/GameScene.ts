@@ -65,8 +65,6 @@ export class GameScene extends Phaser.Scene {
   private historyPushed = false;
   /** 背景の空と光の玉。レイアウトが変わったら作り直す */
   private bg: Background | null = null;
-  /** 背景の赤み（0〜1）。危険状態へ滑らかに寄せる */
-  private dangerGlow = 0;
   private scoreRun: { id: string; seed: number } | null = null;
 
   constructor() {
@@ -99,7 +97,7 @@ export class GameScene extends Phaser.Scene {
     applyLayout(this, this.layout);
     this.bg?.destroy();
     this.bg = new Background(this, this.layout.width, this.layout.height, this.mode);
-    this.dangerGlow = 0;
+    this.bg.setTimeRemaining(this.game_.framesLeft, false);
 
     const boards = this.game_.boards;
     if (this.mode === "puzzle") {
@@ -273,6 +271,8 @@ export class GameScene extends Phaser.Scene {
     applyLayout(this, next);
     this.bg?.destroy();
     this.bg = new Background(this, next.width, next.height, this.mode);
+    this.bg.setTimeRemaining(this.game_.framesLeft, !this.ended && !this.starting);
+    this.bg.setStack(this.game_.boards[0], 0, !this.ended && !this.starting);
     this.place();
     (window as unknown as { __swaprise: { layout: Layout } }).__swaprise.layout = next;
   }
@@ -512,14 +512,13 @@ export class GameScene extends Phaser.Scene {
       }
       if (this.game_.finished) this.finish();
     }
-    // 背景。自分の盤面（2 人対戦はどちらか）が危険なら空を赤く染める
-    const humanDanger = !this.ended && this.game_.boards.some((b, i) => Boolean(this.inputs[i]) && musicDanger(b));
-    this.dangerGlow += ((humanDanger ? 1 : 0) - this.dangerGlow) * Math.min(1, delta / 400);
+    // タイムアタックは残り時間、CPU戦は自分の高さで空色を変える。外周の警告は各盤面に出す。
     if (this.bg) {
-      this.bg.danger = this.dangerGlow;
-      this.bg.update(this.paused ? 0 : delta);
+      this.bg.setTimeRemaining(this.game_.framesLeft, !this.ended && !this.starting);
+      this.bg.setStack(this.game_.boards[0], this.paused || this.starting ? 0 : delta, !this.ended && !this.starting);
+      this.bg.update(this.paused || this.starting ? 0 : delta);
     }
-    this.views.forEach((v) => v.draw());
+    this.views.forEach((v) => v.draw(this.paused || this.starting ? 0 : delta, !this.ended));
     this.raiseHints.forEach((h, i) => {
       const on = this.inputs[i]?.lastRaise ?? false;
       h.setColor(on ? "#ffe066" : "rgba(255,255,255,0.5)");
@@ -560,7 +559,7 @@ export class GameScene extends Phaser.Scene {
     if (humanWon) {
       audio.win();
       haptics.win();
-      this.celebrate(this.views[0]);
+      if (this.mode !== "cpu" && this.mode !== "versus") this.celebrate(this.views[0]);
     } else {
       audio.lose();
       haptics.gameOver();
@@ -599,10 +598,12 @@ export class GameScene extends Phaser.Scene {
       if (this.scoreRun) enqueueScore({ ...this.scoreRun, mode: this.mode, score: b.score, maxChain: b.maxChain, frames: Math.min(b.frame, g.timeLimit ?? b.frame) });
       const rankLine = rank === 1 ? t("NEW RECORD!") : rank > 0 ? t("RANK {rank}", { rank }) : "";
       if (rank === 1 && b.score > 0) this.time.delayedCall(300, () => this.celebrate(this.views[0]));
-      this.views[0].showOverlay(g.timeUp ? t("TIME UP") : t("GAME OVER"), `${t("SCORE")} ${b.score}\n${t("MAX CHAIN")} x${b.maxChain}\n${t("COMBOS")} ${b.stats.combos}  ${t("CHAINS")} ${b.stats.chains}\n${rankLine}`);
-      if (this.scoreRun && progress) showScoreResult(this, {
-        mode: this.mode, title: g.timeUp ? t("TIME UP") : t("GAME OVER"), score: b.score, chain: b.maxChain,
-        progress, id: this.scoreRun.id, retry: () => this.restart(), menu: () => this.toMenu(),
+      // タイムアタックの完走は通常の終わり方なので、終了理由の見出しを出さず得点を主役にする。
+      const title = g.timeUp ? null : t("GAME OVER");
+      this.views[0].showOverlay(title ?? "", `${t("SCORE")} ${b.score}\n${t("MAX CHAIN")} x${b.maxChain}\n${t("COMBOS")} ${b.stats.combos}  ${t("CHAINS")} ${b.stats.chains}\n${rankLine}`);
+      if (this.mode === "timeattack" || this.scoreRun) showScoreResult(this, {
+        mode: this.mode, title, score: b.score, chain: b.maxChain, combos: b.stats.combos, chains: b.stats.chains,
+        progress, id: this.scoreRun?.id ?? null, retry: () => this.restart(), menu: () => this.toMenu(),
         share: canShare() ? (button) => { void this.share({ setText: (text) => { button.textContent = text; } }); } : undefined,
       });
     } else {
@@ -615,6 +616,7 @@ export class GameScene extends Phaser.Scene {
       const draw = g.winner < 0;
       g.boards.forEach((b, i) => {
         const won = g.winner === i;
+        if (!draw) this.views[i].playResult(won ? "win" : "lose");
         this.views[i].showOverlay(draw ? t("DRAW") : won ? t("WIN") : t("LOSE"), `${t("MAX CHAIN")} x${b.maxChain}\n${t("COMBOS")} ${b.stats.combos}  ${t("CHAINS")} ${b.stats.chains}${i === 0 ? recordLine : ""}`);
       });
     }

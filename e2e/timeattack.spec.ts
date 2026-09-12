@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-test("タイムアタック: 残り時間を表示し、時間切れで TIME UP と記録が残る", async ({ page }) => {
+test("タイムアタック: 完走すると終了理由の見出しを出さず、得点と記録を残す", async ({ page }) => {
   await page.goto("/?mode=timeattack&seed=7&bgm=0&countdown=0&time=3");
   await page.waitForFunction(() => Boolean((window as any).__swaprise?.game));
   await page.waitForTimeout(200);
@@ -26,7 +26,9 @@ test("タイムアタック: 残り時間を表示し、時間切れで TIME UP 
   });
   expect(result.timeUp).toBe(true);
   expect(result.gameOver).toBe(false);
-  expect(result.title).toBe("TIME UP");
+  expect(result.title).toBe("");
+  await expect(page.locator(".score-result")).toBeVisible();
+  await expect(page.locator(".score-result h2")).toHaveCount(0);
   expect(result.time).toBe("00:00");
   expect(result.stored.timeattack).toHaveLength(1);
   expect(result.stored.endless ?? []).toHaveLength(0);

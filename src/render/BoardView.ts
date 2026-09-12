@@ -6,6 +6,8 @@ import { audio } from "./shared";
 import { haptics } from "./haptics";
 import { DPR } from "./hidpi";
 import type { TouchInput } from "./touch";
+import { DangerGlow } from "./DangerGlow";
+import { ResultEffect, type ResultOutcome } from "./ResultEffect";
 
 export type HudSide = "top" | "left" | "right";
 /** 盤面と横置きの HUD の間隔。 */
@@ -31,10 +33,12 @@ export class BoardView {
   touch: TouchInput | null = null;
   private readonly bg: Phaser.GameObjects.Rectangle;
   private readonly frame: Phaser.GameObjects.Rectangle;
+  private readonly dangerGlow: DangerGlow;
   private readonly scoreText: Phaser.GameObjects.Text;
   private readonly infoText: Phaser.GameObjects.Text;
   private readonly pendingGfx: Phaser.GameObjects.Graphics;
   private readonly overlay: Phaser.GameObjects.Container;
+  private resultEffect: ResultEffect | null = null;
   private readonly overlayTitle: Phaser.GameObjects.Text;
   private readonly overlayBody: Phaser.GameObjects.Text;
   private stopBar: Phaser.GameObjects.Rectangle;
@@ -90,9 +94,10 @@ export class BoardView {
     private readonly puzzle = false,
   ) {
     this.root = scene.add.container(0, 0);
+    this.dangerGlow = new DangerGlow(scene);
     this.frame = scene.add.rectangle(-4, -4, BOARD_W + 8, BOARD_H + 8, 0xffffff, 0.45).setOrigin(0);
     this.bg = scene.add.rectangle(0, 0, BOARD_W, BOARD_H, BOARD_BG).setOrigin(0);
-    this.root.add([this.frame, this.bg]);
+    this.root.add([this.dangerGlow.root, this.frame, this.bg]);
 
     for (let r = 0; r < DRAW_ROWS; r++) {
       const row: Phaser.GameObjects.Image[] = [];
@@ -132,6 +137,8 @@ export class BoardView {
     this.infoText = scene.add
       .text(BOARD_W, BOARD_H + 14, "", { fontFamily: FONT, fontSize: "13px", color: TEXT_DIM, align: "right" })
       .setOrigin(1, 0);
+    // 空が暖色に変わっても、残り時間の赤い数字を読み取れるようにする。
+    if (timeLimit !== null) this.infoText.setBackgroundColor("#211d35dd").setPadding(3, 2);
     this.pendingGfx = scene.add.graphics();
     this.stopBar = scene.add.rectangle(0, BOARD_H + 6, 0, 4, 0x66ccff).setOrigin(0);
     this.root.add([this.scoreText, this.infoText, this.pendingGfx, this.stopBar]);
@@ -142,7 +149,7 @@ export class BoardView {
       .text(0, -34, "", { fontFamily: FONT_UI, fontSize: "34px", color: "#ffe066", fontStyle: "700", stroke: "#3a1a5a", strokeThickness: 6 })
       .setOrigin(0.5);
     this.overlayBody = scene.add
-      .text(0, 24, "", { fontFamily: FONT_UI, fontSize: "14px", color: TEXT_COLOR, align: "center", lineSpacing: 2 })
+      .text(0, 24, "", { fontFamily: FONT_UI, fontSize: puzzle ? "20px" : "14px", color: TEXT_COLOR, align: "center", lineSpacing: 2 })
       .setOrigin(0.5);
     this.overlay.add([dim, this.overlayTitle, this.overlayBody]);
     this.root.add(this.overlay);
@@ -290,7 +297,7 @@ export class BoardView {
   }
 
   /** 毎描画フレーム呼ぶ。Board の現在状態をそのまま画面に反映する。 */
-  draw(): void {
+  draw(delta = 0, active = true): void {
     const b = this.board;
     const rise = b.riseProgress * CELL;
     let shake = 0;
@@ -367,8 +374,13 @@ export class BoardView {
       }
     }
 
-    this.bg.setFillStyle(b.panic ? 0x3a1420 : b.danger ? 0x2c1626 : BOARD_BG);
-    this.frame.setFillStyle(b.panic && blink ? 0xff4a5a : b.danger ? 0xff7a8a : 0xffffff, b.panic ? 0.9 : b.danger ? 0.7 : 0.45);
+    this.dangerGlow.update(b, delta, active);
+    if (this.resultEffect) {
+      for (const image of [...this.cells.flat(), ...this.nextCells]) image.setVisible(false);
+      this.cursor.setVisible(false);
+      this.touchGfx.clear();
+      this.resultEffect.update(delta);
+    }
 
     if (this.puzzle) {
       this.scoreText.setText(this.label);
@@ -434,16 +446,28 @@ export class BoardView {
     return true;
   }
 
+  /** 結果の再通知では繰り返さない。演出は見出し・ボタンの後ろに置く。 */
+  playResult(outcome: ResultOutcome): void {
+    if (this.resultEffect) return;
+    this.draw(0, false);
+    this.resultEffect = new ResultEffect(this.scene, [...this.cells.flat(), ...this.nextCells], outcome);
+    this.overlay.addAt(this.resultEffect.root, 1);
+  }
+
   /** 結果を出す。見出しは大きく出て弾みながら収まり、本文は少し遅れて浮かぶ */
   showOverlay(title: string, body: string): void {
     this.overlay.setVisible(true);
+    this.overlayTitle.setColor(this.resultEffect?.outcome === "lose" ? "#d6c9f2" : "#ffe066");
     this.overlayTitle.setText(title).setScale(2.2).setAlpha(0);
     this.overlayBody.setText(body).setAlpha(0);
+    if (this.resultEffect) this.overlayBody.setBackgroundColor("#1a1030dd").setPadding(4);
     this.scene.tweens.add({ targets: this.overlayTitle, scale: 1, alpha: 1, duration: 360, ease: "Back.Out", easeParams: [1.6] });
     this.scene.tweens.add({ targets: this.overlayBody, alpha: 1, delay: 220, duration: 260 });
   }
 
   hideOverlay(): void {
     this.overlay.setVisible(false);
+    this.resultEffect?.destroy();
+    this.resultEffect = null;
   }
 }

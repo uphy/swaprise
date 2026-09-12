@@ -340,7 +340,8 @@ export class RoomEngine {
     }
     if (
       m.startFrame !== this.next[i] ||
-      m.startFrame > this.history.length + 12
+      // 通信状況で最大18フレームになる入力猶予と同じ上限を使う。
+      m.startFrame > this.history.length + this.state.match!.delay
     )
       throw new Error("Invalid input frame.");
     // 時刻に対する大幅な先行も拒否する。
