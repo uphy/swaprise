@@ -16,7 +16,7 @@ function bgmState(page: Page) {
   });
 }
 
-/** 曲の音量（効果音に対する比）。ゲーム中はメニューの 7 割 */
+/** 曲の音量（効果音に対する比）。ゲーム中はメニューの半分 */
 const bgmLevel = (page: Page): Promise<number> => page.evaluate(() => (window as any).__swapriseAudio.bgmLevel);
 
 test("危険状態ではピンチの曲に切り替わり、抜けるとゲーム曲に戻る。終了後は止まり、メニューではメニュー曲", async ({ page }) => {
@@ -27,7 +27,7 @@ test("危険状態ではピンチの曲に切り替わり、抜けるとゲー�
   await page.waitForTimeout(300);
   expect((await bgmState(page)).playing).toBe("game");
   // ゲーム中の曲は効果音が聞こえるようメニューより小さい
-  expect(await bgmLevel(page)).toBeCloseTo(0.35);
+  expect(await bgmLevel(page)).toBeCloseTo(0.25);
 
   // 高さ 11 までパネルを入れて危険状態にする
   await page.evaluate(() => {
@@ -37,7 +37,7 @@ test("危険状態ではピンチの曲に切り替わり、抜けるとゲー�
   await page.waitForTimeout(300);
   const danger = await bgmState(page);
   expect(danger).toEqual({ playing: "game", tune: "danger", danger: true });
-  expect(await bgmLevel(page)).toBeCloseTo(0.35);
+  expect(await bgmLevel(page)).toBeCloseTo(0.25);
 
   // 低くしてピンチを抜けても、すぐには戻らない（数秒おきに出入りしても曲が行き来しないように）
   await page.evaluate(() => {

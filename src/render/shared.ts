@@ -4,7 +4,12 @@ import { GameAudio } from "./audio";
 export const audio = new GameAudio();
 // e2e 用。曲の状態（鳴っている曲・危険テンポ）を外から調べられるようにする
 (window as unknown as { __swapriseAudio: GameAudio }).__swapriseAudio = audio;
-audio.bgmEnabled = new URLSearchParams(location.search).get("bgm") !== "0";
+const params = new URLSearchParams(location.search);
+audio.bgmEnabled = params.get("bgm") !== "0";
+// 音量の手触りの調整用。数値でなければ既定のまま
+const level = (key: string): number | null => { const v = Number(params.get(key)); return params.has(key) && Number.isFinite(v) && v >= 0 ? v : null; };
+audio.gameBgmLevel = level("bgmlevel") ?? audio.gameBgmLevel;
+audio.sfxLevel = level("sfxlevel") ?? audio.sfxLevel;
 
 // ブラウザは AudioContext の開始をユーザー操作の中でしか許さない。
 // Phaser はキー入力をキューに溜めて次のフレームで処理するので、Phaser のハンドラから start() を呼んでも

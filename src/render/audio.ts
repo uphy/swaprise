@@ -63,10 +63,14 @@ const st = (f: number, semis: number): number => f * Math.pow(2, semis / 12);
 const MUTE_KEY = "swaprise.mute.v1";
 
 /**
- * 曲の音量（効果音に対する比）。ゲーム中（ピンチも同じ）は効果音（入れ替え・消去・連鎖）が曲に埋もれて
- * ほとんど聞こえなかったので、メニューの 7 割にする。メニューとオープニングはほぼ曲だけなので下げない。
+ * 曲と効果音の音量。ゲーム中（ピンチも同じ）は効果音（入れ替え・消去・連鎖）が曲に埋もれてほとんど聞こえなかった。
+ * 曲の mp3 は RMS -14 dBFS で、曲の倍率 1.7 × 0.5 だと -16 dBFS、入れ替えの音（振幅 0.14 の矩形波）は -24 dBFS で
+ * 曲のほうが 8 dB 大きかった。曲を半分（-6 dB）、効果音を 1.4 倍（+3 dB）にして、入れ替えの音が曲と同じ大きさ、
+ * 揃った音（4 声）は曲より 10 dB 大きくなるようにする。メニューとオープニングはほぼ曲だけなので下げない。
+ * 手触りの調整用に ?bgmlevel=0.25&sfxlevel=1.4 で上書きできる。
  */
-const BGM_LEVEL: Record<SongName, number> = { menu: 0.5, game: 0.35 };
+const BGM_LEVEL: Record<SongName, number> = { menu: 0.5, game: 0.25 };
+const SFX_LEVEL = 1.4;
 
 export class GameAudio {
   private ctx: AudioContext | null = null;
@@ -83,6 +87,13 @@ export class GameAudio {
   muted = false;
   /** false のとき startBgm() を無視する。e2e で ?bgm=0 を付けるときに使う。 */
   bgmEnabled = true;
+  /** ゲーム中の曲と効果音の音量の上書き（?bgmlevel= / ?sfxlevel=）。手触りの調整用 */
+  gameBgmLevel = BGM_LEVEL.game;
+  sfxLevel = SFX_LEVEL;
+
+  private levelOf(name: SongName): number {
+    return name === "game" ? this.gameBgmLevel : BGM_LEVEL[name];
+  }
 
   /**
    * 今すぐ音を鳴らせるか。AudioContext は操作の前には動かせないが、Chrome はインストール済みの PWA や
@@ -119,7 +130,7 @@ export class GameAudio {
 
     // 効果音。SFC の丸い音にするため高域を削り、短いエコーを付ける
     this.sfxGain = ctx.createGain();
-    this.sfxGain.gain.value = 0.9;
+    this.sfxGain.gain.value = this.sfxLevel;
     const tone = ctx.createBiquadFilter();
     tone.type = "lowpass";
     tone.frequency.value = 9000;
@@ -145,7 +156,7 @@ export class GameAudio {
     for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
 
     this.bgmGain = ctx.createGain();
-    this.bgmGain.gain.value = BGM_LEVEL[this.pendingBgm ?? "menu"];
+    this.bgmGain.gain.value = this.levelOf(this.pendingBgm ?? "menu");
     this.bgmGain.connect(this.master);
     this.bgm = new BgmPlayer(ctx, this.bgmGain, this.bgmEnabled ? { menu: this.fetchSample("menu"), game: this.fetchSample("game"), danger: this.fetchSample("danger") } : undefined);
     this.bgm.setDanger(this.danger);
@@ -417,14 +428,14 @@ export class GameAudio {
     if (!this.bgmEnabled) return;
     if (this.bgm) {
       // 曲の切り替えは止めてから鳴らすので、音量の段差がそのまま聞こえることはない
-      this.bgmGain!.gain.value = BGM_LEVEL[name];
+      this.bgmGain!.gain.value = this.levelOf(name);
       this.bgm.start(name, position);
     } else this.pendingBgm = name;
   }
 
   /** いまの曲の音量（効果音に対する比）。e2e 用 */
   get bgmLevel(): number {
-    return this.bgmGain?.gain.value ?? BGM_LEVEL[this.pendingBgm ?? "menu"];
+    return this.bgmGain?.gain.value ?? this.levelOf(this.pendingBgm ?? "menu");
   }
 
   stopBgm(): void {
