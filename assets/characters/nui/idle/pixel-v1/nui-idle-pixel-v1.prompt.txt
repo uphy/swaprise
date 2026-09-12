@@ -1,5 +1,0 @@
-Pixel-art animation sprite sheet of this exact cloth spirit reference. Seamless idle loop, gentle slow cloth inflation and settling, the four lower cloth corners stay planted. Around six frames. Same fabric, patch, white string, two sewn expression seams and four cloth corners throughout. No eyes, mouth, arms or legs. Fixed camera and pixel scale. Regular grid read left to right then top to bottom, entire figure inside each cell with margin. Background MUST be uniform solid bright magenta #FF00FF. No shadows, glow, gradient, grid lines, text or extra symbols.
-
-Reference: nui-portrait-pixel-v1-magenta.png
-
-Background correction: Replace only the entire background of this sprite sheet with flat solid magenta #FF00FF, remove background glow and shadows. Preserve all cloth spirit poses, sizes and positions exactly. No transparency or gradient.

@@ -1,1 +1,0 @@
-Derived by cropping nui-portrait-pixel-v1.png. Crop: (120, 98, 1134, 1149). Nearest-neighbor resize to fit 256x256. No additional generation.

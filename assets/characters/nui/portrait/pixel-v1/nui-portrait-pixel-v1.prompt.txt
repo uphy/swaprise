@@ -1,5 +1,0 @@
-Pixel-art game character reference, one full-body figure: Nui, a non-humanoid spirit made of heavy gray-lavender wrapping cloth inflated with air, standing on four loose cloth corners. A small central gathered knot tied with short white string on top, NOT ears. Two dark angled sewn seams on the front convey a gentle expression, no eyeballs or mouth. Ochre rectangular repair patch on lower right of character, old white stitching on upper left. Weighty opaque folds, not a ghost or animal inside, no separate arms or legs. Crisp square pixel clusters, dark warm outlines, limited shading, friendly handmade fantasy puzzle-game look. Whole figure centered with generous space. Solid uniform bright magenta #FF00FF background ONLY; no glow, shadows, gradient, text or checkerboard.
-
-Reference: None (text generation)
-
-Background correction: None

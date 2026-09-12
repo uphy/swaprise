@@ -24,12 +24,12 @@ export default defineConfig({
   server: { port: DEV_PORT, strictPort: true },
   preview: { port: PREVIEW_PORT, strictPort: true },
   plugins: [
-    // 起動に必要なファイルだけprecache（メニュー曲の mp3 を含む）。キャラ画像は必要時に取得する。
+    // ビルド成果物を precache する（曲の mp3 を含む）。
     // autoUpdate だと新版の precache が終わった瞬間に reload され、試合の途中でメニューへ戻される。
     // prompt にして、切り替えのタイミングは src/render/update.ts が決める
     VitePWA({
       registerType: "prompt",
-      includeAssets: ["icons/*.png", "vibrate-test.html", "characters/manifest.json"],
+      includeAssets: ["icons/*.png", "vibrate-test.html"],
       manifest: {
         name: "Swaprise",
         short_name: "Swaprise",
@@ -48,12 +48,6 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ["**/*.{js,css,html,png,webmanifest,mp3}"],
-        globIgnores: ["characters/**/*.png", "characters/**/*.webp"],
-        runtimeCaching: [{
-          urlPattern: ({ url, sameOrigin }) => sameOrigin && /\/characters\/[a-z0-9-]+\/[a-f0-9]+\.(png|webp)$/.test(url.pathname),
-          handler: "CacheFirst",
-          options: { cacheName: "swaprise-character-images-v1", cacheableResponse: { statuses: [200] } },
-        }],
         // SKIP_WAITING のあと、開いているページをすぐ新版の管理下に置く。これで workbox-window の controlling が発火して reload できる
         clientsClaim: true,
         navigateFallbackDenylist: [/^\/api\//],

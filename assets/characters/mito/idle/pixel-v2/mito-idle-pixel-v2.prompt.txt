@@ -1,4 +1,0 @@
-Create a WIDE LANDSCAPE 1536x1024 transparent-background pixel art sprite sheet of this exact courier girl. SIX full-body frames in a 3-column 2-row grid of 512x512 square cells. Each figure is at most 300 pixels tall, centered with generous empty margins on all sides within its own cell. IDLE LOOP: breathing gently and blinking once, feet planted. Identical outfit and accessories, fixed size and foot baseline, clean dark pixel outlines. Only characters and empty transparent space.
-
-生成: 内蔵 gpt-image。参照: ../../portrait/pixel-v2/mito-portrait-pixel-v2.png
-画像の後処理なし。生成されたアルファチャンネルを保持。

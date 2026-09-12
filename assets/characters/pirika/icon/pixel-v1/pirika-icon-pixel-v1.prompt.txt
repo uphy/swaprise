@@ -1,1 +1,0 @@
-Derived by cropping pirika-portrait-pixel-v1.png. Crop: (300, 0, 810, 525). Nearest-neighbor resize to fit 256x256. No additional generation.

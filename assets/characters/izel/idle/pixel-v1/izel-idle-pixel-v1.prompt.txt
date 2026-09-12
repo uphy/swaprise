@@ -1,5 +1,0 @@
-Pixel-art animation SPRITE SHEET of the exact adult woman in this reference. Seamless quiet idle loop: restrained breathing, holds the closed board steadily, planted feet. Around six frames. Same adult face, low bun, charcoal coat, copper clasp, clothes and operations board throughout. Fixed camera and identical body proportions and pixel scale. Arrange all full-body frames in a regular grid read left to right then top to bottom, with margin around each figure. Uniform solid magenta #FF00FF background only, no glow, gradients, shadows, checkerboard, grid lines, text or symbols.
-
-Reference: izel-portrait-pixel-v1-magenta.png
-
-Background correction: Replace only the entire background of this sprite sheet with uniform solid bright magenta #FF00FF. Remove every background glow and shadow. Preserve every character frame, pose, face, size, board, clothes and location exactly. No transparency, gradients or text.

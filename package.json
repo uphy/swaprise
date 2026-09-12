@@ -4,23 +4,19 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "pnpm assets:game && vite",
-    "build": "pnpm assets:game && tsc --noEmit && vite build",
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
-    "test": "pnpm assets:game && pnpm test:assets && vitest run",
+    "test": "vitest run",
     "test:watch": "vitest",
     "test:balance": "vitest run -c vitest.balance.config.ts",
     "e2e": "playwright test",
-    "typecheck": "pnpm assets:game && tsc --noEmit && tsc -p tsconfig.worker.json",
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.worker.json",
     "deploy:redirect": "wrangler deploy -c redirect/wrangler.jsonc",
     "puzzles": "esbuild tools/make-puzzles.ts --bundle --platform=node --format=esm --log-level=warning | node --input-type=module -",
     "sim": "sh tools/sim/run.sh",
     "dev:online": "wrangler d1 migrations apply SCORES_DB --local && wrangler dev --port 8788 --var ONLINE_ENABLED:true",
-    "e2e:online": "playwright test -c playwright.online.config.ts",
-    "assets": "node tools/character-assets.mjs",
-    "assets:check": "node tools/character-assets.mjs --check",
-    "assets:game": "node tools/character-assets.mjs --game",
-    "test:assets": "node --test tools/character-assets.test.mjs"
+    "e2e:online": "playwright test -c playwright.online.config.ts"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20260908.1",

@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { showRecordsDialog, showPlayerSettings, showOfflineSettings } from "./score-dialog";
+import { showRecordsDialog, showPlayerSettings } from "./score-dialog";
 import { FONT, MENU_TYPE, KIND_COLORS, TEXT_COLOR, layoutFor, menuTitle, sameLayout } from "./theme";
 import { createTextures } from "./textures";
 import { PUZZLES, PUZZLES_PER_STAGE, PUZZLE_STAGES, puzzleName, type CpuLevel, type GameMode } from "../core";
@@ -11,8 +11,6 @@ import { Button } from "./ui";
 import { fullscreen } from "./fullscreen";
 import { loadLastMode, saveLastMode } from "./lastmode";
 import { applyPendingUpdate } from "./update";
-import { CharacterView } from "./CharacterView";
-import { CHARACTERS, type CharacterSelection, hasGameAssets, isCharacterId, loadSelection, saveSelection } from "../characters/catalog";
 import type { GameStart } from "./GameScene";
 import { t } from "./i18n";
 
@@ -42,7 +40,6 @@ function parseStageParam(raw: string | null): number {
   return Math.max(0, Math.min(PUZZLES.length - 1, index));
 }
 
-const clampNumber = (v: number, lo: number, hi: number): number => Math.max(lo, Math.min(hi, v));
 
 function bestLine(list: HighScores["endless"]): string {
   const best = list[0];
@@ -113,8 +110,6 @@ export class MenuScene extends Phaser.Scene {
   private overlay: Overlay | null = null;
   /** パズルの面選び。開いている間はメニューのキー操作をこちらへ回す。 */
   private picker: { panel: Phaser.GameObjects.Container; state: { stage: number; face: number }; refresh: () => void } | null = null;
-  /** 対戦の人物選び。↑↓ で 1P / 2P を切り替え、←→ で人物を替え、Enter で始める。 */
-  private charPicker: { panel: Phaser.GameObjects.Container; views: CharacterView[]; state: { slot: 0 | 1; sel: CharacterSelection }; refresh: () => void; start: () => void } | null = null;
 
   constructor() {
     super("menu");
@@ -130,7 +125,6 @@ export class MenuScene extends Phaser.Scene {
     this.captions = [];
     this.tools = [];
     this.picker = null;
-    this.charPicker = null;
     this.overlay = null;
     this.toolIndex = -1;
     // 遊んでいる間に新版が見つかっていたら、メニューへ戻ったこのタイミングで切り替える（まもなく reload される）
@@ -147,15 +141,10 @@ export class MenuScene extends Phaser.Scene {
       const cpuLevel: CpuLevel = cpu === "easy" || cpu === "hard" ? cpu : "normal";
       // パズルの面は ?stage=2-3 か通し番号（1 始まり）
       const stage = parseStageParam(params.get("stage"));
-      // 対戦の人物は ?p1=nika&p2=pirika（e2e 用）。なければ前回の選択
-      const saved = loadSelection();
-      const p1 = params.get("p1");
-      const p2 = params.get("p2");
-      const characters: [string, string] = [isCharacterId(p1) ? p1 : saved.p1, isCharacterId(p2) ? p2 : saved.p2];
-      for (const key of ["mode", "cpu", "stage", "p1", "p2"]) params.delete(key);
+      for (const key of ["mode", "cpu", "stage"]) params.delete(key);
       const rest = params.toString();
       history.replaceState(null, "", location.pathname + (rest ? `?${rest}` : ""));
-      this.scene.start("game", { mode, cpuLevel, stage, characters } satisfies GameStart);
+      this.scene.start("game", { mode, cpuLevel, stage } satisfies GameStart);
       return;
     }
 
@@ -349,19 +338,6 @@ export class MenuScene extends Phaser.Scene {
       } else if (key === "enter") o.buttons[o.index]?.emit("pointerdown");
       return;
     }
-    if (this.charPicker) {
-      const cp = this.charPicker;
-      const st = cp.state;
-      if (key === "back") this.closeCharPicker();
-      else if (key === "up" || key === "down") {
-        st.slot = st.slot === 0 ? 1 : 0;
-        audio.move();
-        cp.refresh();
-      } else if (key === "left" || key === "right") {
-        this.cycleCharacter(st.slot, key === "left" ? -1 : 1);
-      } else if (key === "enter") cp.start();
-      return;
-    }
     if (this.picker) {
       const st = this.picker.state;
       if (key === "back") this.closePicker();
@@ -437,130 +413,14 @@ export class MenuScene extends Phaser.Scene {
       this.showPuzzlePicker();
       return;
     }
-    // 対戦は人物を選んでから始める
-    if (item.start.mode === "cpu" || item.start.mode === "versus") {
-      this.showCharacterPicker(item.start.mode, item.start.cpuLevel);
-      return;
-    }
     this.startGame(item.start.mode, item.start.cpuLevel);
   }
 
-  private startGame(mode: GameMode, cpuLevel?: CpuLevel, stage?: number, characters?: [string, string]): void {
+  private startGame(mode: GameMode, cpuLevel?: CpuLevel, stage?: number): void {
     saveLastMode({ mode, cpuLevel });
     // 全画面を望んでいれば、ゲーム開始の操作の中で取り直す（戻る操作や回転で解除されていることがある）
     fullscreen.sync();
-    this.scene.start("game", { mode, cpuLevel, stage, characters } satisfies GameStart);
-  }
-
-  /**
-   * 対戦の人物選び。1P と 2P（CPU 対戦では相手）を左右に並べ、◂ ▸ で人物を替える。同じ人物も選べる。
-   * 素材のない人物は代替表示のまま選べる（試作）。選択は保存し、次回はそこから始める。
-   */
-  private showCharacterPicker(mode: "cpu" | "versus", cpuLevel?: CpuLevel): void {
-    const layout = layoutFor("menu");
-    const W = layout.width;
-    const H = layout.height;
-    const compact = H < 560;
-    const cx = W / 2;
-    const dim = this.add.rectangle(0, 0, W, H, 0x000000, 0.94).setOrigin(0).setInteractive();
-    const panel = this.add.container(0, 0, [dim]).setDepth(50).setName("character-picker");
-    const state = { slot: 0 as 0 | 1, sel: loadSelection() };
-    const top = compact ? 16 : layout.portrait ? 44 : 36;
-    panel.add(this.add.text(cx, top, t("CHOOSE CHARACTERS"), { fontFamily: FONT, fontSize: compact ? "20px" : "24px", color: TEXT_COLOR, fontStyle: "bold" }).setOrigin(0.5));
-    const sub = mode === "cpu" ? `VS CPU ${cpuLevel?.toUpperCase() ?? ""}` : "2 PLAYERS";
-    panel.add(this.add.text(cx, top + (compact ? 20 : 26), sub, { fontFamily: FONT, fontSize: "11px", color: "#7a7a90" }).setOrigin(0.5));
-
-    // 2つの枠。立ち絵、◂ 名前 ▸、役どころ。立ち絵は縦 2:3 なので、枠の幅からも高さを抑える
-    const colW = Math.min(220, Math.floor(W / 2) - 16);
-    const btnY = H - (compact ? 26 : 40);
-    const frameTop = top + (compact ? 40 : 56);
-    const artH = clampNumber(Math.min(btnY - 32 - frameTop - 92, (colW - 8) * 1.5), 70, 260);
-    const frameH = 30 + artH + 72;
-    const slotX = (slot: 0 | 1): number => cx + (slot === 0 ? -1 : 1) * (colW / 2 + 6);
-    const frames: Phaser.GameObjects.Rectangle[] = [];
-    const names: Phaser.GameObjects.Text[] = [];
-    const roles: Phaser.GameObjects.Text[] = [];
-    const notes: Phaser.GameObjects.Text[] = [];
-    const views: CharacterView[] = [];
-    const slotLabel = (slot: 0 | 1): string => (slot === 0 ? "1P" : mode === "cpu" ? "CPU" : "2P");
-    ([0, 1] as const).forEach((slot) => {
-      const x = slotX(slot);
-      const frame = this.add.rectangle(x, frameTop + frameH / 2, colW, frameH, 0x1a1a26).setStrokeStyle(2, 0x5a5a72);
-      frames.push(frame);
-      panel.add(frame);
-      panel.add(this.add.text(x, frameTop + 14, slotLabel(slot), { fontFamily: FONT, fontSize: "13px", color: "#ffe066", fontStyle: "bold" }).setOrigin(0.5));
-      const name = this.add.text(x, frameTop + 30 + artH + 22, "", { fontFamily: FONT, fontSize: "16px", color: TEXT_COLOR, fontStyle: "bold" }).setOrigin(0.5).setName(`char-name-${slot + 1}`);
-      const role = this.add.text(x, frameTop + 30 + artH + 44, "", { fontFamily: FONT, fontSize: "10px", color: "#9a9ab0" }).setOrigin(0.5);
-      const note = this.add.text(x, frameTop + 30 + artH + 57, "", { fontFamily: FONT, fontSize: "9px", color: "#7a7a90" }).setOrigin(0.5);
-      names.push(name);
-      roles.push(role);
-      notes.push(note);
-      panel.add([name, role, note]);
-      const arrowY = frameTop + 30 + artH + 22;
-      const prev = new Button(this, x - colW / 2 + 24, arrowY, "◂", () => this.cycleCharacter(slot, -1), { minWidth: 40, minHeight: 40, fontSize: 18 }).setName(`char-prev-${slot + 1}`);
-      const next = new Button(this, x + colW / 2 - 24, arrowY, "▸", () => this.cycleCharacter(slot, 1), { minWidth: 40, minHeight: 40, fontSize: 18 }).setName(`char-next-${slot + 1}`);
-      panel.add([prev, next]);
-      // 枠のタップでその側を選ぶ（キー操作の対象）
-      frame.setInteractive().on("pointerdown", () => {
-        state.slot = slot;
-        refresh();
-      });
-    });
-    const play = new Button(this, cx - 60, btnY, t("PLAY"), () => start(), { minWidth: 100, minHeight: 40 }).setName("char-play");
-    const back = new Button(this, cx + 60, btnY, t("BACK"), () => this.closeCharPicker(), { minWidth: 100, minHeight: 40 });
-    panel.add([play, back]);
-
-    const refresh = (): void => {
-      ([0, 1] as const).forEach((slot) => {
-        const id = slot === 0 ? state.sel.p1 : state.sel.p2;
-        const c = CHARACTERS.find((c) => c.id === id) ?? CHARACTERS[0];
-        // 立ち絵は人物ごとに作り直す（画像の読み込みは CharacterView が持つ）
-        const current = views[slot];
-        if (!current || current.character.id !== c.id) {
-          current?.destroy();
-          const v = new CharacterView(this, c, { portrait: true, flip: slot === 1 });
-          v.place(slotX(slot), frameTop + 30 + artH, artH);
-          v.setDepth(51);
-          views[slot] = v;
-        }
-        names[slot].setText(c.name);
-        roles[slot].setText(c.role);
-        notes[slot].setText(hasGameAssets(c) ? (Object.keys(c.assets).length < 9 ? t("some motions pending") : "") : t("artwork pending"));
-        frames[slot].setStrokeStyle(2, state.slot === slot ? 0xffe066 : 0x5a5a72);
-      });
-    };
-    const start = (): void => {
-      audio.select();
-      saveSelection(state.sel);
-      this.closeCharPicker();
-      this.startGame(mode, cpuLevel, undefined, [state.sel.p1, state.sel.p2]);
-    };
-    dim.on("pointerdown", (_p: Phaser.Input.Pointer, _x: number, _y: number, event: Phaser.Types.Input.EventData) => {
-      event.stopPropagation();
-      this.closeCharPicker();
-    });
-    this.charPicker = { panel, views, state, refresh, start };
-    refresh();
-  }
-
-  /** 人物選びで、slot 側の人物を一覧の前後へ替える。 */
-  private cycleCharacter(slot: 0 | 1, dir: -1 | 1): void {
-    const cp = this.charPicker;
-    if (!cp) return;
-    const key = slot === 0 ? "p1" : "p2";
-    const i = CHARACTERS.findIndex((c) => c.id === cp.state.sel[key]);
-    cp.state.sel[key] = CHARACTERS[(i + dir + CHARACTERS.length) % CHARACTERS.length].id;
-    cp.state.slot = slot;
-    audio.move();
-    cp.refresh();
-  }
-
-  private closeCharPicker(): void {
-    const cp = this.charPicker;
-    if (!cp) return;
-    cp.views.forEach((v) => v.destroy());
-    cp.panel.destroy();
-    this.charPicker = null;
+    this.scene.start("game", { mode, cpuLevel, stage } satisfies GameStart);
   }
 
   private openTool(tool: Tool): void {
@@ -626,7 +486,6 @@ export class MenuScene extends Phaser.Scene {
     const soundLabel = (): string => t("SOUND: {state}", { state: t(audio.muted ? "OFF" : "ON") });
     const buttons: OverlayButton[] = [
       { label: t("PLAYER SETTINGS"), name: "player-settings", onPress: () => showPlayerSettings(this) },
-      { label: t("OFFLINE DATA"), name: "offline-data", onPress: () => showOfflineSettings(this) },
       {
         label: soundLabel(),
         name: "sound",

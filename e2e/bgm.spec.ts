@@ -16,6 +16,9 @@ function bgmState(page: Page) {
   });
 }
 
+/** 曲の音量（効果音に対する比）。ゲーム中はメニューの 4 割 */
+const bgmLevel = (page: Page): Promise<number> => page.evaluate(() => (window as any).__swapriseAudio.bgmLevel);
+
 test("危険状態ではピンチの曲に切り替わり、抜けるとゲーム曲に戻る。終了後は止まり、メニューではメニュー曲", async ({ page }) => {
   await page.goto("/?mode=endless&seed=7&countdown=0");
   await page.waitForFunction(() => Boolean((window as any).__swaprise?.game));
@@ -23,6 +26,8 @@ test("危険状態ではピンチの曲に切り替わり、抜けるとゲー�
   await page.mouse.click(10, 10);
   await page.waitForTimeout(300);
   expect((await bgmState(page)).playing).toBe("game");
+  // ゲーム中の曲は効果音が聞こえるようメニューより小さい
+  expect(await bgmLevel(page)).toBeCloseTo(0.2);
 
   // 高さ 11 までパネルを入れて危険状態にする
   await page.evaluate(() => {
@@ -32,6 +37,7 @@ test("危険状態ではピンチの曲に切り替わり、抜けるとゲー�
   await page.waitForTimeout(300);
   const danger = await bgmState(page);
   expect(danger).toEqual({ playing: "game", tune: "danger", danger: true });
+  expect(await bgmLevel(page)).toBeCloseTo(0.2);
 
   // 低くしてピンチを抜けても、すぐには戻らない（数秒おきに出入りしても曲が行き来しないように）
   await page.evaluate(() => {
@@ -80,6 +86,7 @@ test("危険状態ではピンチの曲に切り替わり、抜けるとゲー�
   await page.keyboard.press("Escape");
   await page.waitForTimeout(500);
   expect(await bgmState(page)).toEqual({ playing: "menu", tune: "menu", danger: false });
+  expect(await bgmLevel(page)).toBeCloseTo(0.5);
 });
 
 test("CPU対戦: 相手だけがピンチでも曲は変わらず、自分がピンチのときだけ変わる", async ({ page }) => {

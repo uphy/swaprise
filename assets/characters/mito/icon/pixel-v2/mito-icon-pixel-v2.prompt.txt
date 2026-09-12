@@ -1,4 +1,0 @@
-Create a square transparent-background pixel art face icon of this exact courier girl. Head and shoulders, warm asymmetric smile, three-quarter view facing right. Preserve her exact gray-black low ponytail, forehead, dark brown eyes, teal coat collar, off-white shirt and broad brown diagonal strap. Entire hair and shoulders within square canvas with empty margins. Crisp deliberate dark pixel outlines, two-step shading. Only character and transparent empty space.
-
-生成: 内蔵 gpt-image。参照: ../../portrait/pixel-v2/mito-portrait-pixel-v2.png
-画像の後処理なし。生成されたアルファチャンネルを保持。
