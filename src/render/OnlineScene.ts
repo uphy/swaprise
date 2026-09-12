@@ -771,7 +771,7 @@ export class OnlineScene extends Phaser.Scene {
     });
   }
   override update(_time: number, delta: number): void {
-    this.bg?.update(delta);
+    this.bg?.update(this.session?.state?.phase === "suspended" ? 0 : delta);
     const s = this.session;
     const l = s?.lockstep;
     if (!s || !l) return;
@@ -831,6 +831,7 @@ export class OnlineScene extends Phaser.Scene {
       this.accumulator = 0;
       this.touch?.clear();
     }
-    this.views.forEach((v) => v.draw());
+    const phase = s.state?.phase;
+    this.views.forEach((v) => v.draw(phase === "suspended" || phase === "countdown" ? 0 : delta, phase === "playing" || phase === "suspended"));
   }
 }

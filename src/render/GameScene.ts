@@ -65,8 +65,6 @@ export class GameScene extends Phaser.Scene {
   private historyPushed = false;
   /** 背景の空と光の玉。レイアウトが変わったら作り直す */
   private bg: Background | null = null;
-  /** 背景の赤み（0〜1）。危険状態へ滑らかに寄せる */
-  private dangerGlow = 0;
   private scoreRun: { id: string; seed: number } | null = null;
 
   constructor() {
@@ -99,7 +97,7 @@ export class GameScene extends Phaser.Scene {
     applyLayout(this, this.layout);
     this.bg?.destroy();
     this.bg = new Background(this, this.layout.width, this.layout.height, this.mode);
-    this.dangerGlow = 0;
+    this.bg.setTimeRemaining(this.game_.framesLeft, false);
 
     const boards = this.game_.boards;
     if (this.mode === "puzzle") {
@@ -273,6 +271,7 @@ export class GameScene extends Phaser.Scene {
     applyLayout(this, next);
     this.bg?.destroy();
     this.bg = new Background(this, next.width, next.height, this.mode);
+    this.bg.setTimeRemaining(this.game_.framesLeft, !this.ended && !this.starting);
     this.place();
     (window as unknown as { __swaprise: { layout: Layout } }).__swaprise.layout = next;
   }
@@ -512,14 +511,12 @@ export class GameScene extends Phaser.Scene {
       }
       if (this.game_.finished) this.finish();
     }
-    // 背景。自分の盤面（2 人対戦はどちらか）が危険なら空を赤く染める
-    const humanDanger = !this.ended && this.game_.boards.some((b, i) => Boolean(this.inputs[i]) && musicDanger(b));
-    this.dangerGlow += ((humanDanger ? 1 : 0) - this.dangerGlow) * Math.min(1, delta / 400);
+    // 空色は残り時間、危険の赤みは各盤面の外周で表す。
     if (this.bg) {
-      this.bg.danger = this.dangerGlow;
-      this.bg.update(this.paused ? 0 : delta);
+      this.bg.setTimeRemaining(this.game_.framesLeft, !this.ended && !this.starting);
+      this.bg.update(this.paused || this.starting ? 0 : delta);
     }
-    this.views.forEach((v) => v.draw());
+    this.views.forEach((v) => v.draw(this.paused || this.starting ? 0 : delta, !this.ended));
     this.raiseHints.forEach((h, i) => {
       const on = this.inputs[i]?.lastRaise ?? false;
       h.setColor(on ? "#ffe066" : "rgba(255,255,255,0.5)");

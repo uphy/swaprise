@@ -6,6 +6,7 @@ import { audio } from "./shared";
 import { haptics } from "./haptics";
 import { DPR } from "./hidpi";
 import type { TouchInput } from "./touch";
+import { DangerGlow } from "./DangerGlow";
 
 export type HudSide = "top" | "left" | "right";
 /** 盤面と横置きの HUD の間隔。 */
@@ -31,6 +32,7 @@ export class BoardView {
   touch: TouchInput | null = null;
   private readonly bg: Phaser.GameObjects.Rectangle;
   private readonly frame: Phaser.GameObjects.Rectangle;
+  private readonly dangerGlow: DangerGlow;
   private readonly scoreText: Phaser.GameObjects.Text;
   private readonly infoText: Phaser.GameObjects.Text;
   private readonly pendingGfx: Phaser.GameObjects.Graphics;
@@ -90,9 +92,10 @@ export class BoardView {
     private readonly puzzle = false,
   ) {
     this.root = scene.add.container(0, 0);
+    this.dangerGlow = new DangerGlow(scene);
     this.frame = scene.add.rectangle(-4, -4, BOARD_W + 8, BOARD_H + 8, 0xffffff, 0.45).setOrigin(0);
     this.bg = scene.add.rectangle(0, 0, BOARD_W, BOARD_H, BOARD_BG).setOrigin(0);
-    this.root.add([this.frame, this.bg]);
+    this.root.add([this.dangerGlow.root, this.frame, this.bg]);
 
     for (let r = 0; r < DRAW_ROWS; r++) {
       const row: Phaser.GameObjects.Image[] = [];
@@ -132,6 +135,8 @@ export class BoardView {
     this.infoText = scene.add
       .text(BOARD_W, BOARD_H + 14, "", { fontFamily: FONT, fontSize: "13px", color: TEXT_DIM, align: "right" })
       .setOrigin(1, 0);
+    // 空が暖色に変わっても、残り時間の赤い数字を読み取れるようにする。
+    if (timeLimit !== null) this.infoText.setBackgroundColor("#211d35dd").setPadding(3, 2);
     this.pendingGfx = scene.add.graphics();
     this.stopBar = scene.add.rectangle(0, BOARD_H + 6, 0, 4, 0x66ccff).setOrigin(0);
     this.root.add([this.scoreText, this.infoText, this.pendingGfx, this.stopBar]);
@@ -290,7 +295,7 @@ export class BoardView {
   }
 
   /** 毎描画フレーム呼ぶ。Board の現在状態をそのまま画面に反映する。 */
-  draw(): void {
+  draw(delta = 0, active = true): void {
     const b = this.board;
     const rise = b.riseProgress * CELL;
     let shake = 0;
@@ -367,8 +372,7 @@ export class BoardView {
       }
     }
 
-    this.bg.setFillStyle(b.panic ? 0x3a1420 : b.danger ? 0x2c1626 : BOARD_BG);
-    this.frame.setFillStyle(b.panic && blink ? 0xff4a5a : b.danger ? 0xff7a8a : 0xffffff, b.panic ? 0.9 : b.danger ? 0.7 : 0.45);
+    this.dangerGlow.update(b, delta, active);
 
     if (this.puzzle) {
       this.scoreText.setText(this.label);
