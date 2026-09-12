@@ -11,6 +11,7 @@ import { haptics } from "./haptics";
 import { TouchInput } from "./touch";
 import { DPR, applyLayout } from "./hidpi";
 import { Button } from "./ui";
+import { RaiseBar } from "./RaiseBar";
 import { wakeLock } from "./wakelock";
 import { fullscreen } from "./fullscreen";
 import { canShare, shareText } from "./share";
@@ -19,6 +20,11 @@ import { Background } from "./Background";
 import { t } from "./i18n";
 import { backHintDuration } from "./backHint";
 import { eligibleRun } from "../scores/model";
+
+/** せり上げバーの高さ（タッチ端末・マウス）と、盤面の下端からの間隔。残り時間の行（BOARD_H + 14 から 13px）の下に入れる。 */
+const RAISE_BAR_H = 30;
+const RAISE_BAR_H_MOUSE = 22;
+const RAISE_BAR_GAP = 34;
 import { enqueueScore, publication } from "../scores/client";
 import { showPlayerSettings } from "./score-dialog";
 
@@ -37,7 +43,7 @@ export class GameScene extends Phaser.Scene {
   views: BoardView[] = [];
   private inputs: PlayerInput[] = [];
   touches: TouchInput[] = [];
-  private raiseHints: Phaser.GameObjects.Text[] = [];
+  private raiseHints: RaiseBar[] = [];
   private accumulator = 0;
   /** 一時停止中か。P キー、または画面が隠れたときに true になる。 */
   paused = false;
@@ -125,22 +131,15 @@ export class GameScene extends Phaser.Scene {
       this.inputs[i].touch = t;
       this.views[i].touch = t;
     });
-    // 盤面の下の「▲ ▲ ▲」。押している間は手動せり上げで、せり上げ中（ボタン・2本指・キー・ゲームパッド）は明るくなる。
-    // 当たり判定は余白（padding）で指の大きさ（44dp 以上）まで広げる。盤面の外の余白ならどこでもせり上がる操作は
-    // 誤タップが多かったので外してあり、押せるのはこのボタンの範囲だけ
-    this.raiseHints = boards.map((_, i) => {
-      const hint = this.add
-        .text(0, 0, "▲ ▲ ▲", { fontFamily: FONT_UI, fontSize: this.layout.touch ? "22px" : "16px", color: "rgba(255,255,255,0.5)" })
-        .setPadding(this.layout.touch ? 44 : 30, this.layout.touch ? 18 : 14)
-        .setOrigin(0.5)
-        .setVisible(Boolean(this.inputs[i]) && this.mode !== "puzzle");
-      hint.setInteractive({ useHandCursor: true });
-      hint.on("pointerdown", (p: Phaser.Input.Pointer) => {
+    // 盤面の下のせり上げバー。押している間は手動せり上げで、せり上げ中（バー・2本指・キー・ゲームパッド）は黄色に点灯する。
+    // 大きさと当たり判定は place() で決める。盤面の外の余白ならどこでもせり上がる操作は誤タップが多かったので外してあり、
+    // 押せるのはこのバーの範囲だけ
+    this.raiseHints = boards.map((_, i) =>
+      new RaiseBar(this, (p) => {
         if (this.ended || this.paused) return;
         this.touches[i]?.holdRaise(p.id);
-      });
-      return hint;
-    });
+      }).setVisible(Boolean(this.inputs[i]) && this.mode !== "puzzle"),
+    );
 
     // 画面上のポーズボタン
     this.pauseButton = new Button(this, 0, 0, "❚❚", () => this.togglePause(), { minWidth: 44, minHeight: 30, fontSize: 13 }).setDepth(5);
@@ -283,14 +282,21 @@ export class GameScene extends Phaser.Scene {
     const W = L.width;
     const H = L.height;
     const boards = this.game_.boards;
-    const top = L.phoneLandscape ? 14 : L.portrait ? 52 : 70;
+    // デスクトップは盤面の下にせり上げバーと操作の案内文が並ぶので、上端を詰めて高さ 520 に収める
+    const top = L.phoneLandscape ? 14 : L.portrait ? 52 : 62;
     const placeBoard = (i: number, ox: number, oy: number, scale: number, hud: HudSide = "top"): void => {
       this.views[i].place(ox, oy, scale, hud);
       this.touches[i]?.place(ox, oy, scale);
-      // せり上げの矢印。HUD が上なら盤面の下、横なら HUD の下
-      if (hud === "top") this.raiseHints[i].setPosition(ox + (BOARD_W / 2) * scale, oy + BOARD_H * scale + (L.portrait ? 44 : 34));
-      else if (hud === "right") this.raiseHints[i].setPosition(ox + BOARD_W + 12 + 50, oy + 150);
-      else this.raiseHints[i].setPosition(ox - 12 - 50, oy + 150);
+      // せり上げバー。HUD が上なら盤面の下（残り時間の行の下）に盤面と同じ幅で、横なら HUD の列に置く。
+      // 当たり判定は指の大きさ（44dp）まで上下に広げる
+      const barH = L.touch ? RAISE_BAR_H : RAISE_BAR_H_MOUSE;
+      if (hud === "top") {
+        this.raiseHints[i].resize(BOARD_W * scale, barH, 48).setPosition(ox + (BOARD_W / 2) * scale, oy + BOARD_H * scale + RAISE_BAR_GAP + barH / 2);
+      } else {
+        this.raiseHints[i].resize(100, 44, 48);
+        if (hud === "right") this.raiseHints[i].setPosition(ox + BOARD_W + 12 + 50, oy + 150);
+        else this.raiseHints[i].setPosition(ox - 12 - 50, oy + 150);
+      }
     };
     if (L.phoneLandscape) {
       // 横持ちのスマホ。盤面を高さいっぱいに描き、得点などは盤面の横に置く。
@@ -324,8 +330,8 @@ export class GameScene extends Phaser.Scene {
       const ox2 = Math.floor(W / 2 + gap / 2);
       placeBoard(0, ox1, top, 1);
       placeBoard(1, ox2, top, 1);
-      // 縦持ちでは盤面の隙間が狭いので、盤面の下（▲ ▲ ▲ の段）に置く
-      if (L.portrait) this.vsText?.setPosition(W / 2, top + BOARD_H + 44).setFontSize(18).setVisible(true);
+      // 縦持ちでは盤面の隙間が狭いので、盤面の下（せり上げバーの下）に置く
+      if (L.portrait) this.vsText?.setPosition(W / 2, top + BOARD_H + RAISE_BAR_GAP + RAISE_BAR_H + 16).setFontSize(18).setVisible(true);
       else this.vsText?.setPosition(W / 2, top + BOARD_H / 2).setFontSize(28).setVisible(true);
     }
     // ポーズボタンは自分の盤面の右上（得点表示の右）。横持ちのスマホは上で決めた
@@ -335,7 +341,7 @@ export class GameScene extends Phaser.Scene {
     this.pauseTitle.setPosition(W / 2, H / 2 - 40 - this.pauseButtons.length * 23 - 20);
     this.pauseButtons.forEach((b, i) => b.setPosition(W / 2, H / 2 - (this.pauseButtons.length - 1) * 23 + i * 46));
 
-    this.hintText.setPosition(W / 2, H - 14).setVisible(!L.touch);
+    this.hintText.setPosition(W / 2, H - 10).setVisible(!L.touch);
     this.backHintText.setWordWrapWidth(W - 16).setPosition(W / 2, L.phoneLandscape ? 6 + this.backHintText.height / 2 : H - 8 - this.backHintText.height / 2);
   }
 
@@ -519,10 +525,7 @@ export class GameScene extends Phaser.Scene {
       this.bg.update(this.paused || this.starting ? 0 : delta);
     }
     this.views.forEach((v) => v.draw(this.paused || this.starting ? 0 : delta, !this.ended));
-    this.raiseHints.forEach((h, i) => {
-      const on = this.inputs[i]?.lastRaise ?? false;
-      h.setColor(on ? "#ffe066" : "rgba(255,255,255,0.5)");
-    });
+    this.raiseHints.forEach((h, i) => h.setRaising(this.inputs[i]?.lastRaise ?? false, this.paused ? 0 : delta));
   }
 
   /** 結果を共有する。共有シートがなければクリップボードへコピーし、ボタンの文字で伝える。 */

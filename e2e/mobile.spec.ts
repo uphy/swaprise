@@ -173,7 +173,7 @@ test("盤面を2本指で押している間はせり上げ。離すと止まる"
   expect(bottomAfter).toEqual(bottomBefore);
 });
 
-test("盤面の下の ▲ ▲ ▲ を1本指で押している間はせり上げ。離すと止まる。ボタンの脇の余白では せり上がらない", async ({ page }) => {
+test("盤面の下のせり上げバーを1本指で押している間はせり上げ。離すと止まる。バーの脇の余白では せり上がらない", async ({ page }) => {
   await page.goto("/?mode=endless&seed=7&bgm=0&countdown=0");
   await page.waitForFunction(() => Boolean((window as any).__swaprise?.game));
   await page.waitForTimeout(200);
@@ -200,12 +200,12 @@ test("盤面の下の ▲ ▲ ▲ を1本指で押している間はせり上げ
   await page.waitForTimeout(100);
   expect(await raising()).toBe(false);
 
-  // ボタンの脇（盤面の下の左端）は余白なので、押してもせり上がらない
+  // バーの脇（盤面より左の余白）は、押してもせり上がらない
   const view = await page.evaluate(() => {
     const v = (window as any).__swaprise.scene.views[0];
     return { ox: v.ox };
   });
-  const beside = await toScreen(page, view.ox + 8, hint.y);
+  const beside = await toScreen(page, view.ox - 10, hint.y);
   const rowsBeside = await manualRows();
   await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x: beside.x, y: beside.y, id: 0 }] });
   await page.waitForTimeout(500);

@@ -34,7 +34,7 @@ interface Drag {
  *   入れ替え先の下が空なら、原作どおりそこで落ちる（ドラッグはそこで終わり、谷を越えては運べない）
  *   指を離しても認識済みの移動先まで進む。次に触れたら残りの予約は取り消す。
  * - 盤面を2本の指で押している間: 手動せり上げ
- * - 盤面の下の「▲ ▲ ▲」を押している間: 手動せり上げ（GameScene が holdRaise() で知らせる）。
+ * - 盤面の下のせり上げバーを押している間: 手動せり上げ（GameScene が holdRaise() で知らせる）。
  *   盤面の外の余白ならどこでもせり上がる操作は誤タップが多かったので外し、ボタンの範囲だけにした
  *
  * 操作はキューに積み、poll() が1フレームに1つずつ取り出す。
@@ -48,7 +48,7 @@ export class TouchInput {
     const d = this.drags.values().next().value as Drag | undefined;
     return d ? { x: d.cellX, y: d.cellY, targetX: d.cellX + d.pending } : null;
   }
-  /** せり上げている指（盤面を2本以上で押しているとき、または「▲ ▲ ▲」を押しているとき）。 */
+  /** せり上げている指（盤面を2本以上で押しているとき、またはせり上げバーを押しているとき）。 */
   private readonly raisePointers = new Set<number>();
 
   /** 盤面の左上の論理座標と拡大率。BoardView.place() と同じ値を渡す。 */

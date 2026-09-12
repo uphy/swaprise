@@ -20,7 +20,7 @@ async function cellCenter(page: Page, x: number, y: number): Promise<{ x: number
   );
 }
 
-/** 盤面のすぐ下の左端（盤面の外で、▲ ▲ ▲ のボタンからも外れた余白）の画面座標。ここを押してもせり上がらないことを確かめるのに使う。 */
+/** せり上げバーの左脇（盤面より左の余白）の画面座標。ここを押してもせり上がらないことを確かめるのに使う。 */
 async function belowBoard(page: Page): Promise<{ x: number; y: number }> {
   return page.evaluate(() => {
     const p = (window as any).__swaprise;
@@ -29,11 +29,11 @@ async function belowBoard(page: Page): Promise<{ x: number; y: number }> {
     const rect = canvas.getBoundingClientRect();
     const scaleX = rect.width / p.layout.width;
     const scaleY = rect.height / p.layout.height;
-    return { x: rect.left + (t.ox + 8) * scaleX, y: rect.top + (t.oy + 12 * 32 + 40) * scaleY };
+    return { x: rect.left + (t.ox - 10) * scaleX, y: rect.top + (t.oy + 12 * 32 + 50) * scaleY };
   });
 }
 
-/** 盤面の下の「▲ ▲ ▲」ボタンの画面座標。 */
+/** 盤面の下のせり上げバーの画面座標。 */
 async function raiseButton(page: Page): Promise<{ x: number; y: number }> {
   return page.evaluate(() => {
     const p = (window as any).__swaprise;
@@ -55,7 +55,7 @@ function kinds(page: Page, x1: number, x2: number, y: number): Promise<number[]>
   );
 }
 
-test("マウス: クリックで入れ替え、ドラッグで入れ替え。▲ ▲ ▲ を押している間はせり上がり、盤面の外の余白を押してもせり上がらない", async ({ page }) => {
+test("マウス: クリックで入れ替え、ドラッグで入れ替え。せり上げバーを押している間はせり上がり、盤面の外の余白を押してもせり上がらない", async ({ page }) => {
   await page.goto("/?mode=endless&seed=7&bgm=0&countdown=0");
   await page.waitForFunction(() => Boolean((window as any).__swaprise?.game));
   await page.waitForTimeout(200);
@@ -83,7 +83,7 @@ test("マウス: クリックで入れ替え、ドラッグで入れ替え。▲
   const after = await kinds(page, 3, 4, 0);
   expect(after).toEqual([before[1], before[0]]);
 
-  // 盤面の下の ▲ ▲ ▲ を押している間はせり上がり、離すと止まる
+  // 盤面の下の せり上げバーを押している間はせり上がり、離すと止まる
   await page.evaluate(() => {
     const b = (window as any).__swaprise.game.boards[0];
     b.setColumns([[0, 1], [2, 3], [4, 0], [1, 2], [3, 4], [0, 1]]);
