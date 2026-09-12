@@ -6,6 +6,7 @@
 
 - ゲームロジックは `src/core/` に閉じ込めた純粋な TypeScript。DOM・Phaser に依存しない
 - 描画・入力・音は `src/render/` で Phaser 4 を使う。盤面と効果音はコードで生成し、曲（メニュー・ゲーム中・ピンチ）は音声ファイル（`public/audio/`）を使う。キャラクターやストーリーは持たず、盤面・演出・音だけで成り立つパズルにする
+- 見た目は曲の明るさに合わせる。背景は画面ごとの色のある空（`index.html` の `body[data-sky]`。canvas は透明で、`src/render/Background.ts` が切り替え、光の玉を曲の拍に合わせて膨らませる）。見出し・ボタンは同梱の丸い書体 Fredoka（`public/fonts/`、OFL）、数字は等幅。揃った瞬間の閃きと破片、連鎖数で大きくなる吹き出し、大きな連鎖の揺れと閃光、勝利と新記録の紙吹雪で手応えを出す
 - スマホの高解像度画面でぼやけないよう、canvas は論理サイズ × devicePixelRatio で作り、カメラの zoom で論理座標を保つ（`src/render/hidpi.ts`）
 - 60fps の固定 tick で進む決定論的シミュレーション。同じ seed と入力列なら同じ結果になる
 

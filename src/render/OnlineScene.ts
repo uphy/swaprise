@@ -6,7 +6,8 @@ import { TouchInput } from "./touch";
 import { applyLayout } from "./hidpi";
 import { BOARD_H, BOARD_W, layoutFor, sameLayout, type Layout } from "./theme";
 import { haptics } from "./haptics";
-import { FONT, MENU_TYPE } from "./theme";
+import { FONT_UI, MENU_TYPE } from "./theme";
+import { Background } from "./Background";
 import { audio } from "./shared";
 import { musicDanger } from "./musicDanger";
 import { wakeLock } from "./wakelock";
@@ -39,6 +40,7 @@ export class OnlineScene extends Phaser.Scene {
   private status!: HTMLParagraphElement;
   private actions!: HTMLDivElement;
   private layout!: Layout;
+  private bg: Background | null = null;
   private gameId = "";
   private accumulator = 0;
   private queue: WebSocket | null = null;
@@ -81,9 +83,11 @@ export class OnlineScene extends Phaser.Scene {
     this.raise = false;
     this.layout = layoutFor("cpu");
     applyLayout(this, this.layout);
+    this.bg?.destroy();
+    this.bg = new Background(this, this.layout.width, this.layout.height, "cpu");
     this.root = document.createElement("div");
     this.root.className = "online-ui";
-    this.root.style.fontFamily = FONT;
+    this.root.style.fontFamily = FONT_UI;
     this.syncTypography();
     this.panel = document.createElement("div");
     this.panel.className = "online-panel";
@@ -117,6 +121,8 @@ export class OnlineScene extends Phaser.Scene {
       if (!sameLayout(this.layout, next)) {
         this.layout = next;
         applyLayout(this, next);
+        this.bg?.destroy();
+        this.bg = new Background(this, next.width, next.height, "cpu");
         this.place();
       }
     };
@@ -659,9 +665,9 @@ export class OnlineScene extends Phaser.Scene {
     this.playerInput.touch = this.touch;
     this.raiseHint = this.add
       .text(0, 0, "▲ ▲ ▲", {
-        fontFamily: FONT,
-        fontSize: "16px",
-        color: "#6a6a80",
+        fontFamily: FONT_UI,
+        fontSize: this.layout.touch ? "22px" : "16px",
+        color: "rgba(255,255,255,0.5)",
       })
       .setPadding(30, 14)
       .setOrigin(0.5)
@@ -765,6 +771,7 @@ export class OnlineScene extends Phaser.Scene {
     });
   }
   override update(_time: number, delta: number): void {
+    this.bg?.update(delta);
     const s = this.session;
     const l = s?.lockstep;
     if (!s || !l) return;

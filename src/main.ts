@@ -13,7 +13,14 @@ import { startScoreSync } from "./scores/client";
 
 // Service Worker。ビルド成果物を precache し、次回以降はオフラインでも開ける。
 // 新しい版があれば、メニューを触れるようになる前に切り替えを済ませる（遊んでいる最中に reload しない）
-waitForUpdate().then(() => {
+/** 同梱の丸い書体を読んでから Phaser を立ち上げる。読めないときも 1.5 秒で諦めて始める（Canvas の文字は後から差し替わらない） */
+function loadFonts(): Promise<unknown> {
+  if (typeof document === "undefined" || !("fonts" in document)) return Promise.resolve();
+  const wanted = ["400 16px Fredoka", "600 16px Fredoka", "700 16px Fredoka"].map((f) => document.fonts.load(f));
+  return Promise.race([Promise.all(wanted), new Promise((r) => setTimeout(r, 1500))]).catch(() => undefined);
+}
+
+Promise.all([waitForUpdate(), loadFonts()]).then(() => {
   setDocumentLanguage();
   startScoreSync();
   installHiDpiText();
@@ -24,6 +31,8 @@ waitForUpdate().then(() => {
     parent: "game",
     width: layout.width * DPR,
     height: layout.height * DPR,
+    // 背景の空は body の CSS。canvas は透明にして、毎フレーム全画面の絵を描かない
+    transparent: true,
     backgroundColor: BG_COLOR,
     pixelArt: false,
     antialias: true,

@@ -6,12 +6,22 @@
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="theme-color" content="#14141c" />
+    <meta name="theme-color" content="#2a2690" />
     <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
     <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png" />
     <title>SWAPRISE</title>
     <style>
-      html, body { margin: 0; padding: 0; background: #14141c; height: 100%; overflow: hidden; touch-action: none; overscroll-behavior: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+      /* 見出し・ボタン用の丸い書体。OFL の Fredoka を同梱し、オフラインでも同じ見た目にする */
+      @font-face { font-family: "Fredoka"; font-style: normal; font-weight: 400; font-display: swap; src: url(./fonts/fredoka-400.woff2) format("woff2"); }
+      @font-face { font-family: "Fredoka"; font-style: normal; font-weight: 600; font-display: swap; src: url(./fonts/fredoka-600.woff2) format("woff2"); }
+      @font-face { font-family: "Fredoka"; font-style: normal; font-weight: 700; font-display: swap; src: url(./fonts/fredoka-700.woff2) format("woff2"); }
+      /* 画面ごとの空。Phaser の canvas は透明で、この背景が透ける。data-sky は src/render/Background.ts が切り替える */
+      body { background: #2a2690 linear-gradient(180deg, #2a2690 0%, #7c3fbd 55%, #ff7ea6 100%) fixed; }
+      body[data-sky="endless"] { background: #1f2f8a linear-gradient(180deg, #1f2f8a 0%, #5548cc 55%, #c45fb0 100%) fixed; }
+      body[data-sky="timeattack"] { background: #6e2358 linear-gradient(180deg, #6e2358 0%, #d6463e 55%, #ff9f47 100%) fixed; }
+      body[data-sky="puzzle"] { background: #0e4f6a linear-gradient(180deg, #0e4f6a 0%, #1f8f80 55%, #5fc07a 100%) fixed; }
+      body[data-sky="versus"], body[data-sky="cpu"] { background: #3a1c7c linear-gradient(180deg, #3a1c7c 0%, #8b30a4 55%, #ff6f66 100%) fixed; }
+      html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; touch-action: none; overscroll-behavior: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
       /* ノッチ・ホームインジケータを避ける。#app が safe-area ぶんの余白を持ち、Phaser は内側の #game に収める */
       #app { box-sizing: border-box; width: 100vw; height: 100vh; height: 100dvh; padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
       /* 中央寄せは Phaser の autoCenter に任せる。CSS でも寄せると二重にずれる */

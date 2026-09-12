@@ -9,12 +9,13 @@ import { audio } from "./shared";
 import { musicDanger } from "./musicDanger";
 import { haptics } from "./haptics";
 import { TouchInput } from "./touch";
-import { applyLayout } from "./hidpi";
+import { DPR, applyLayout } from "./hidpi";
 import { Button } from "./ui";
 import { wakeLock } from "./wakelock";
 import { fullscreen } from "./fullscreen";
 import { canShare, shareText } from "./share";
-import { BOARD_H, BOARD_W, FONT, TEXT_COLOR, type Layout, layoutFor, sameLayout } from "./theme";
+import { BOARD_H, BOARD_W, FONT, FONT_UI, TEXT_COLOR, TEXT_DIM, KIND_COLORS, type Layout, layoutFor, sameLayout } from "./theme";
+import { Background } from "./Background";
 import { t } from "./i18n";
 import { backHintDuration } from "./backHint";
 import { eligibleRun } from "../scores/model";
@@ -62,6 +63,10 @@ export class GameScene extends Phaser.Scene {
   private wasDanger = false;
   /** ゲーム用に履歴を積んでいるか。メニューへ戻るときに1つ戻して消す。 */
   private historyPushed = false;
+  /** 背景の空と光の玉。レイアウトが変わったら作り直す */
+  private bg: Background | null = null;
+  /** 背景の赤み（0〜1）。危険状態へ滑らかに寄せる */
+  private dangerGlow = 0;
   private scoreRun: { id: string; seed: number } | null = null;
 
   constructor() {
@@ -92,6 +97,9 @@ export class GameScene extends Phaser.Scene {
 
     this.layout = layoutFor(this.mode);
     applyLayout(this, this.layout);
+    this.bg?.destroy();
+    this.bg = new Background(this, this.layout.width, this.layout.height, this.mode);
+    this.dangerGlow = 0;
 
     const boards = this.game_.boards;
     if (this.mode === "puzzle") {
@@ -108,7 +116,7 @@ export class GameScene extends Phaser.Scene {
       this.views.push(new BoardView(this, boards[1], isCpu ? `${t("VS CPU")} ${this.cpuLevel.toUpperCase()}` : "2P", false));
       this.inputs.push(new PlayerInput(this, P1_KEYS, 0));
       if (!isCpu) this.inputs.push(new PlayerInput(this, P2_KEYS, 1));
-      this.vsText = this.add.text(0, 0, "VS", { fontFamily: FONT, fontSize: "28px", color: "#9a9ab0" }).setOrigin(0.5);
+      this.vsText = this.add.text(0, 0, "VS", { fontFamily: FONT_UI, fontSize: "28px", fontStyle: "700", color: TEXT_DIM }).setOrigin(0.5);
     }
 
     // タッチは横ドラッグ、マウスはクリック・横ドラッグで入れ替え。CPU の盤面は触れない。
@@ -124,8 +132,8 @@ export class GameScene extends Phaser.Scene {
     // 誤タップが多かったので外してあり、押せるのはこのボタンの範囲だけ
     this.raiseHints = boards.map((_, i) => {
       const hint = this.add
-        .text(0, 0, "▲ ▲ ▲", { fontFamily: FONT, fontSize: "16px", color: "#3a3a4c" })
-        .setPadding(30, 14)
+        .text(0, 0, "▲ ▲ ▲", { fontFamily: FONT_UI, fontSize: this.layout.touch ? "22px" : "16px", color: "rgba(255,255,255,0.5)" })
+        .setPadding(this.layout.touch ? 44 : 30, this.layout.touch ? 18 : 14)
         .setOrigin(0.5)
         .setVisible(Boolean(this.inputs[i]) && this.mode !== "puzzle");
       hint.setInteractive({ useHandCursor: true });
@@ -140,8 +148,8 @@ export class GameScene extends Phaser.Scene {
     this.pauseButton = new Button(this, 0, 0, "❚❚", () => this.togglePause(), { minWidth: 44, minHeight: 30, fontSize: 13 }).setDepth(5);
 
     // ポーズ画面。暗幕をタップしても再開する。ボタンで やり直し・音・振動・メニュー
-    this.pauseDim = this.add.rectangle(0, 0, 10, 10, 0x000000, 0.7).setOrigin(0);
-    this.pauseTitle = this.add.text(0, 0, t("PAUSE"), { fontFamily: FONT, fontSize: "32px", color: TEXT_COLOR, fontStyle: "bold" }).setOrigin(0.5);
+    this.pauseDim = this.add.rectangle(0, 0, 10, 10, 0x1a1030, 0.78).setOrigin(0);
+    this.pauseTitle = this.add.text(0, 0, t("PAUSE"), { fontFamily: FONT_UI, fontSize: "36px", color: TEXT_COLOR, fontStyle: "700" }).setOrigin(0.5);
     const soundLabel = (): string => t("SOUND: {state}", { state: t(audio.muted ? "OFF" : "ON") });
     const vibLabel = (): string => t("VIBRATION: {state}", { state: t(haptics.enabled ? "ON" : "OFF") });
     this.pauseButtons.push(new Button(this, 0, 0, t("RESUME"), () => this.setPaused(false), { minWidth: 180, minHeight: 40 }));
@@ -211,12 +219,12 @@ export class GameScene extends Phaser.Scene {
     });
     // キーボード向けの案内。タッチ端末では出さない（ボタンがある）
     this.hintText = this.add
-      .text(0, 0, t("P: pause   R: restart   Esc: menu   M: mute"), { fontFamily: FONT, fontSize: "12px", color: "#6a6a80" })
+      .text(0, 0, t("P: pause   R: restart   Esc: menu   M: mute"), { fontFamily: FONT_UI, fontSize: "12px", color: "rgba(255,255,255,0.55)" })
       .setOrigin(0.5);
     // 戻る操作の案内。盤面の外（画面の下端、横持ちのスマホは上端）に数秒だけ出す
     this.backHintText = this.add
       .text(0, 0, t("Back does not leave the game. To quit, pause and choose MENU."), {
-        fontFamily: FONT, fontSize: "12px", color: TEXT_COLOR, backgroundColor: "#14141cdd", padding: { x: 8, y: 4 }, align: "center",
+        fontFamily: FONT_UI, fontSize: "12px", color: TEXT_COLOR, backgroundColor: "#2a2050dd", padding: { x: 8, y: 4 }, align: "center",
       })
       .setOrigin(0.5)
       .setDepth(6)
@@ -263,6 +271,8 @@ export class GameScene extends Phaser.Scene {
     if (sameLayout(next, this.layout)) return;
     this.layout = next;
     applyLayout(this, next);
+    this.bg?.destroy();
+    this.bg = new Background(this, next.width, next.height, this.mode);
     this.place();
     (window as unknown as { __swaprise: { layout: Layout } }).__swaprise.layout = next;
   }
@@ -314,7 +324,9 @@ export class GameScene extends Phaser.Scene {
       const ox2 = Math.floor(W / 2 + gap / 2);
       placeBoard(0, ox1, top, 1);
       placeBoard(1, ox2, top, 1);
-      this.vsText?.setPosition(W / 2, top + BOARD_H / 2).setFontSize(L.portrait ? 18 : 28).setVisible(true);
+      // 縦持ちでは盤面の隙間が狭いので、盤面の下（▲ ▲ ▲ の段）に置く
+      if (L.portrait) this.vsText?.setPosition(W / 2, top + BOARD_H + 44).setFontSize(18).setVisible(true);
+      else this.vsText?.setPosition(W / 2, top + BOARD_H / 2).setFontSize(28).setVisible(true);
     }
     // ポーズボタンは自分の盤面の右上（得点表示の右）。横持ちのスマホは上で決めた
     if (!L.phoneLandscape) this.pauseButton.setPosition(this.views[0].ox + BOARD_W - 22, top - 24);
@@ -342,7 +354,7 @@ export class GameScene extends Phaser.Scene {
     this.starting = true;
     const texts = this.views.map((v) =>
       this.add
-        .text(v.center.x, v.center.y, "", { fontFamily: FONT, fontSize: "64px", color: "#ffe066", fontStyle: "bold", stroke: "#1a1a2a", strokeThickness: 8 })
+        .text(v.center.x, v.center.y, "", { fontFamily: FONT_UI, fontSize: "64px", color: "#ffe066", fontStyle: "700", stroke: "#3a1a5a", strokeThickness: 8 })
         .setOrigin(0.5)
         .setScale(v.scale)
         .setDepth(40),
@@ -439,7 +451,46 @@ export class GameScene extends Phaser.Scene {
     }
     this.game_.boards.forEach((b, i) => {
       this.views[i].handleEvents(b.events, true, Boolean(this.inputs[i]));
+      // 自分の盤面の大きな連鎖は画面ごと揺らし、5 連鎖からは閃光も足す
+      if (!this.inputs[i]) return;
+      for (const e of b.events) {
+        if (e.type !== "match" || e.chain < 3) continue;
+        this.cameras.main.shake(120 + e.chain * 15, 0.0015 + Math.min(0.006, e.chain * 0.0006));
+        if (e.chain >= 5) this.flash(Math.min(0.5, 0.15 + e.chain * 0.04));
+      }
     });
+  }
+
+  /** 画面全体の白い閃き。大きな連鎖と勝利で使う */
+  private flash(alpha: number): void {
+    const L = this.layout;
+    const rect = this.add.rectangle(0, 0, L.width, L.height, 0xffffff, alpha).setOrigin(0).setDepth(25);
+    this.tweens.add({ targets: rect, alpha: 0, duration: 320, ease: "Quad.Out", onComplete: () => rect.destroy() });
+  }
+
+  /** 勝利・クリア・新記録の紙吹雪。盤面の上端から柄の破片を撒く */
+  private celebrate(view: BoardView): void {
+    const cx = view.center.x;
+    const topY = view.oy;
+    KIND_COLORS.forEach((_, kind) => {
+      const e = this.add
+        .particles(0, 0, `panel-${kind}`, {
+          speed: { min: 120, max: 320 },
+          angle: { min: 230, max: 310 },
+          gravityY: 500,
+          lifespan: { min: 900, max: 1500 },
+          scale: { start: 0.5 / DPR, end: 0.1 / DPR },
+          alpha: { start: 1, end: 0 },
+          rotate: { min: -360, max: 360 },
+          emitting: false,
+        })
+        .setDepth(35);
+      this.time.delayedCall(kind * 60, () => {
+        e.explode(10, cx + (kind - 2.5) * 12, topY + BOARD_H * view.scale * 0.35);
+        this.time.delayedCall(1800, () => e.destroy());
+      });
+    });
+    this.flash(0.3);
   }
 
   override update(_time: number, delta: number): void {
@@ -461,10 +512,17 @@ export class GameScene extends Phaser.Scene {
       }
       if (this.game_.finished) this.finish();
     }
+    // 背景。自分の盤面（2 人対戦はどちらか）が危険なら空を赤く染める
+    const humanDanger = !this.ended && this.game_.boards.some((b, i) => Boolean(this.inputs[i]) && musicDanger(b));
+    this.dangerGlow += ((humanDanger ? 1 : 0) - this.dangerGlow) * Math.min(1, delta / 400);
+    if (this.bg) {
+      this.bg.danger = this.dangerGlow;
+      this.bg.update(this.paused ? 0 : delta);
+    }
     this.views.forEach((v) => v.draw());
     this.raiseHints.forEach((h, i) => {
       const on = this.inputs[i]?.lastRaise ?? false;
-      h.setColor(on ? "#dcdcea" : "#3a3a4c");
+      h.setColor(on ? "#ffe066" : "rgba(255,255,255,0.5)");
     });
   }
 
@@ -502,6 +560,7 @@ export class GameScene extends Phaser.Scene {
     if (humanWon) {
       audio.win();
       haptics.win();
+      this.celebrate(this.views[0]);
     } else {
       audio.lose();
       haptics.gameOver();
@@ -539,6 +598,7 @@ export class GameScene extends Phaser.Scene {
       const rank = recordScore(this.mode, b.score, b.maxChain);
       if (this.scoreRun) enqueueScore({ ...this.scoreRun, mode: this.mode, score: b.score, maxChain: b.maxChain, frames: Math.min(b.frame, g.timeLimit ?? b.frame) });
       const rankLine = rank === 1 ? t("NEW RECORD!") : rank > 0 ? t("RANK {rank}", { rank }) : "";
+      if (rank === 1 && b.score > 0) this.time.delayedCall(300, () => this.celebrate(this.views[0]));
       this.views[0].showOverlay(g.timeUp ? t("TIME UP") : t("GAME OVER"), `${t("SCORE")} ${b.score}\n${t("MAX CHAIN")} x${b.maxChain}\n${t("COMBOS")} ${b.stats.combos}  ${t("CHAINS")} ${b.stats.chains}\n${rankLine}`);
       if (this.scoreRun && progress) showScoreResult(this, {
         mode: this.mode, title: g.timeUp ? t("TIME UP") : t("GAME OVER"), score: b.score, chain: b.maxChain,

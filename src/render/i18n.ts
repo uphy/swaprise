@@ -4,6 +4,7 @@ const locale: Locale = typeof navigator !== "undefined" && navigator.language.to
 
 const JA: Record<string, string> = {
   "SETTLING": "連鎖を集計中",
+  "Swap. Match. Chain!": "揃えて、積んで、つなげろ！",
   "Ranked per play · unverified scores": "プレイ単位・プレイ内容の検証なし",
   "RESULT": "結果", "POINTS": "点", "First record!": "初めての記録！", "New best! +{points}": "自己ベスト更新！ ＋{points}",
   "Matched your best!": "自己ベストと同点！", "{points} to your best": "自己ベストまであと{points}",
@@ -30,7 +31,6 @@ const JA: Record<string, string> = {
   "Standard rules · top 50 per mode · unverified scores": "標準ルール・モード別上位50件・プレイ内容の検証なし",
   "PENDING UPLOADS: {count}": "未送信の記録: {count}件", "Loading…": "読み込み中…",
   "Could not load rankings. Local records are still available.": "ランキングを取得できませんでした。端末内の記録は引き続き利用できます。",
-  "Swap & match action puzzle": "入れ替えて揃えるアクションパズル",
   "1 PLAYER": "1人プレイ", "VS CPU": "CPU対戦", "2 PLAYERS": "2人プレイ", ONLINE: "オンライン",
   "endless · time attack · puzzle": "エンドレス・タイムアタック・パズル",
   "easy · normal · hard": "EASY・NORMAL・HARD", "one screen, two players": "1画面で2人対戦",

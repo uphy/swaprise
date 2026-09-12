@@ -1,5 +1,6 @@
 import Phaser from "phaser";
-import { CELL, FONT, KIND_COLORS, TEXT_COLOR, layoutFor, menuTitle, sameLayout } from "./theme";
+import { CELL, FONT_UI, KIND_COLORS, TEXT_COLOR, TEXT_DIM, layoutFor, menuTitle, sameLayout } from "./theme";
+import { Background } from "./Background";
 import { createTextures } from "./textures";
 import { DPR, applyLayout } from "./hidpi";
 import { audio } from "./shared";
@@ -68,6 +69,7 @@ export class OpeningScene extends Phaser.Scene {
   /** 続き（柄が灯る → 入れ替え → 連鎖 → 題字）を始めたか。 */
   private started = false;
   private begin: (() => void) | null = null;
+  private bg: Background | null = null;
 
   constructor() {
     super("opening");
@@ -90,6 +92,8 @@ export class OpeningScene extends Phaser.Scene {
     this.makeGlow();
     const layout = layoutFor("menu");
     applyLayout(this, layout);
+    this.bg?.destroy();
+    this.bg = new Background(this, layout.width, layout.height, "menu");
     const g = window as unknown as { __swapriseScenes?: Record<string, Phaser.Scene> };
     g.__swapriseScenes = { ...g.__swapriseScenes, opening: this };
     const W = layout.width;
@@ -144,7 +148,7 @@ export class OpeningScene extends Phaser.Scene {
 
     // 2. wait。音を鳴らせない環境では、暗い題字の下で最初の操作を待つ
     const prompt = this.add
-      .text(cx, by + logo.rows * c + (title.compact ? 30 : 40), t(layout.touch ? "TAP TO START" : "PRESS ANY KEY"), { fontFamily: FONT, fontSize: "15px", color: "#ffe066", fontStyle: "bold" })
+      .text(cx, by + logo.rows * c + (title.compact ? 30 : 40), t(layout.touch ? "TAP TO START" : "PRESS ANY KEY"), { fontFamily: FONT_UI, fontSize: "16px", color: "#ffe066", fontStyle: "700" })
       .setOrigin(0.5)
       .setVisible(false)
       .setDepth(10)
@@ -157,13 +161,14 @@ export class OpeningScene extends Phaser.Scene {
       .setAlpha(0)
       .setDepth(4);
     const titleText = this.add
-      .text(cx, centerY, "SWAPRISE", { fontFamily: FONT, fontSize: `${title.size}px`, color: "#ffe066", fontStyle: "bold" })
+      .text(cx, centerY, "SWAPRISE", { fontFamily: FONT_UI, fontSize: `${title.size}px`, color: "#ffe066", fontStyle: "700" })
       .setOrigin(0.5)
+      .setShadow(0, 4, "#2a1a5a", 10, false, true)
       .setAlpha(0)
       .setDepth(10)
       .setName("title");
     const subtitle = this.add
-      .text(cx, centerY + (title.subtitleY - title.y), t("Swap & match action puzzle"), { fontFamily: FONT, fontSize: `${title.subtitleSize}px`, color: "#7a7a90" })
+      .text(cx, centerY + (title.subtitleY - title.y), t("Swap. Match. Chain!"), { fontFamily: FONT_UI, fontSize: `${title.subtitleSize + 2}px`, fontStyle: "600", color: TEXT_DIM })
       .setOrigin(0.5)
       .setAlpha(0)
       .setDepth(10);
@@ -276,6 +281,10 @@ export class OpeningScene extends Phaser.Scene {
       window.removeEventListener("resize", onResize);
       if (resizeTimer !== null) window.clearTimeout(resizeTimer);
     });
+  }
+
+  override update(_time: number, delta: number): void {
+    this.bg?.update(delta);
   }
 
   private onInput(): void {
