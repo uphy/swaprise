@@ -66,6 +66,11 @@ export class Fullscreen {
     return Boolean(doc.fullscreenElement || doc.webkitFullscreenElement);
   }
 
+  /** 望んでいるのにまだ入っていないか。オープニングはこのとき最初のタップを待ち、そのタップで入る。 */
+  get pending(): boolean {
+    return this.wanted_ && this.supported && !this.active;
+  }
+
   /** ユーザーが全画面を望んでいるか（localStorage に保存）。 */
   get wanted(): boolean {
     return this.wanted_;
@@ -93,7 +98,10 @@ export class Fullscreen {
    */
   watchGestures(): void {
     if (typeof window === "undefined") return;
-    window.addEventListener("pointerdown", () => this.sync(), { capture: true, passive: true });
+    // 指の pointerdown（touchstart）はブラウザの「ユーザー操作」に数えられず、要求が拒否される。指を離した pointerup では通る。
+    // マウスは pointerdown で通るので両方で呼ぶ。enter() は入りかけなら何もしない
+    window.addEventListener("pointerdown", (e) => { if (e.pointerType === "mouse") this.sync(); }, { capture: true, passive: true });
+    window.addEventListener("pointerup", () => this.sync(), { capture: true, passive: true });
   }
 
   /** 希望していて今は全画面でなければ取り直す。ゲーム開始・再開など、ユーザー操作の中で呼ぶ。 */
@@ -101,14 +109,19 @@ export class Fullscreen {
     if (this.wanted_ && this.supported && !this.active) void this.enter();
   }
 
+  private entering = false;
+
   async enter(): Promise<void> {
-    if (!this.supported || this.active) return;
+    if (!this.supported || this.active || this.entering) return;
+    this.entering = true;
     const el = document.documentElement as LegacyElement;
     try {
       if (typeof el.requestFullscreen === "function") await el.requestFullscreen({ navigationUI: "hide" });
       else await el.webkitRequestFullscreen?.();
     } catch {
-      // ユーザー操作の外から呼ばれたときなどは拒否される。次の開始・再開で取り直す
+      // ユーザー操作の外から呼ばれたときなどは拒否される。次の操作で取り直す
+    } finally {
+      this.entering = false;
     }
   }
 

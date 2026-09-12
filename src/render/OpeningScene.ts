@@ -4,6 +4,7 @@ import { Background } from "./Background";
 import { createTextures } from "./textures";
 import { DPR, applyLayout } from "./hidpi";
 import { audio } from "./shared";
+import { fullscreen } from "./fullscreen";
 import { t } from "./i18n";
 import { buildLogo, logoCellSize, logoLines, type LogoCell, type LogoLetter } from "./logo";
 import { SWITCH_GAP } from "./bgm";
@@ -242,10 +243,12 @@ export class OpeningScene extends Phaser.Scene {
     };
     this.begin = begin;
 
-    // せり上がりが収まったら、鳴らせる環境ではそのまま続け、鳴らせない環境では最初の操作を待つ
+    // せり上がりが収まったら、鳴らせる環境ではそのまま続け、鳴らせない環境では最初の操作を待つ。
+    // 全画面を望んでいてまだ入っていないとき（タッチ端末の既定）も待つ。全画面はタップの中でしか入れず、
+    // ゲームが始まってから入ると画面の大きさが変わって表示が組み直るので、始まる前のここで入る
     this.at(RISE_MS, () => {
       if (this.started) return;
-      if (audio.unlocked) {
+      if (audio.unlocked && !fullscreen.pending) {
         begin();
         return;
       }
@@ -254,18 +257,33 @@ export class OpeningScene extends Phaser.Scene {
       this.tweens.add({ targets: prompt, alpha: { from: 0.25, to: 1 }, duration: 650, yoyo: true, repeat: -1, ease: "Sine.InOut" });
     });
 
-    // 操作。続きが始まる前なら始め（この操作の中で AudioContext が動き出す）、始まっていれば飛ばす。キー・タップ・ゲームパッドのどれでも
+    // 操作。続きが始まる前なら始め（この操作の中で AudioContext が動き出す）、始まっていれば飛ばす。キー・タップ・ゲームパッドのどれでも。
+    // 全画面を待っているタップは、指を離したときに全画面に入り（fullscreen.watchGestures）、入って画面の大きさが決まってから始める。
+    // 大きさが変わればオープニングを出し直し、変わらなければそのまま続ける。拒否されたときも少し待って続ける
     this.input.keyboard?.on("keydown", () => this.onInput());
-    this.input.on("pointerdown", () => this.onInput());
+    this.input.on("pointerdown", () => {
+      if (!this.started && fullscreen.pending) return;
+      this.onInput();
+    });
+    this.input.on("pointerup", () => {
+      if (this.started || !fullscreen.pending) return;
+      const go = (): void => { if (!this.started && !this.finished) this.onInput(); };
+      const onChange = (): void => { this.time.delayedCall(250, go); };
+      document.addEventListener("fullscreenchange", onChange, { once: true });
+      this.time.delayedCall(800, () => { document.removeEventListener("fullscreenchange", onChange); go(); });
+    });
     this.input.gamepad?.on("down", () => this.onInput());
 
-    // 回転・ウィンドウサイズの変更でレイアウトが変わったら、オープニングは切り上げてメニューに任せる
+    // 回転・ウィンドウサイズの変更でレイアウトが変わったら、オープニングは切り上げてメニューに任せる。
+    // ただし最初の操作を待っている間（全画面に入った直後）はまだ何も始まっていないので、新しい大きさで出し直す
     let resizeTimer: number | null = null;
     const onResize = (): void => {
       if (resizeTimer !== null) window.clearTimeout(resizeTimer);
       resizeTimer = window.setTimeout(() => {
         resizeTimer = null;
-        if (!sameLayout(layoutFor("menu"), layout)) this.finish();
+        if (sameLayout(layoutFor("menu"), layout)) return;
+        if (this.started || this.finished) this.finish();
+        else this.scene.restart();
       }, 150);
     };
     window.addEventListener("resize", onResize);
