@@ -335,6 +335,7 @@ export class Board {
   receiveGarbage(specs: GarbageSpec[]): void {
     const readyAt = this.frame + TIMING.garbageTransit;
     for (const spec of specs) this.pendingGarbage.push({ ...spec, readyAt });
+    this.emit({ type: "garbageIncoming", rows: specs.reduce((sum, spec) => sum + spec.height, 0) });
   }
 
   // ----------------------------------------------------------------- input

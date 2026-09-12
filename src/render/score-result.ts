@@ -1,7 +1,8 @@
 import type Phaser from "phaser";
 import type { ScoreMode } from "../scores/model";
 import type { Progress } from "../scores/progress";
-import { flushScores, pendingScores, publication, ranking, standing } from "../scores/client";
+import { enqueueScore, flushScores, pendingScores, playerName, publication, ranking, savePlayerName, setPublication, standing } from "../scores/client";
+import type { Submission } from "../scores/model";
 import { t } from "./i18n";
 import "./score-dialog.css";
 
@@ -12,6 +13,8 @@ const node = <K extends keyof HTMLElementTagNameMap>(tag: K, text = "") => {
 export function showScoreResult(scene: Phaser.Scene, options: {
   mode: ScoreMode; title: string | null; score: number; chain: number; progress: Progress | null;
   id: string | null; combos: number; chains: number; retry: () => void; menu: () => void; share?: (button: HTMLButtonElement) => void;
+  /** 公開の可否が未決なら、この記録を公開するかを結果画面で聞く。決めるまで記録は端末に留まる */
+  submission?: Omit<Submission, "name" | "rules"> | null;
 }): void {
   const root = node("section"); root.className = "score-dialog score-result"; root.setAttribute("aria-label", t("RESULT"));
   const shell = node("div"); shell.className = "score-screen";
@@ -37,6 +40,29 @@ export function showScoreResult(scene: Phaser.Scene, options: {
     const stat = node("div"); stat.append(node("dt", t(label)), node("dd", String(value))); stats.append(stat);
   }
   body.append(stats);
+  // 初めての記録では、遊ぶ前ではなくここで公開の可否を聞く。決めるまで順位の欄は出さず、決めたら同じ場所が順位に変わる
+  const consent = node("section"); consent.className = "result-consent"; consent.hidden = true; summary.after(consent);
+  if (options.submission && publication() === null) {
+    const submission = options.submission;
+    consent.hidden = false;
+    consent.append(node("h3", t("Publish this score?")));
+    consent.append(node("p", t("Your name, score, chain and date will be public. You can change this in settings.")));
+    const label = node("label", t("Name (optional)"));
+    const input = node("input"); input.type = "text"; input.maxLength = 40; input.value = playerName(); input.placeholder = t("Guest");
+    label.append(input); consent.append(label);
+    // 名前を打つ間は Phaser のキー（R で再挑戦、ESC でメニュー）を止める
+    const keyboard = scene.input.keyboard;
+    input.addEventListener("focus", () => { if (keyboard) { keyboard.enabled = false; keyboard.disableGlobalCapture(); } });
+    input.addEventListener("blur", () => { if (keyboard) { keyboard.enabled = true; keyboard.enableGlobalCapture(); } });
+    const buttons = node("nav"); consent.append(buttons);
+    const decide = (publish: boolean): void => {
+      if (publish) { savePlayerName(input.value); setPublication(true); enqueueScore(submission); } else setPublication(false);
+      consent.hidden = true; void load();
+    };
+    const publish = node("button", t("PUBLISH")); publish.type = "button"; publish.className = "primary"; publish.onclick = () => decide(true);
+    const keep = node("button", t("KEEP PRIVATE")); keep.type = "button"; keep.onclick = () => decide(false);
+    buttons.append(publish, keep);
+  }
   const heading = node("h3", t("YOUR RANKING")); body.append(heading);
   const note = node("p", t("Ranked per play · unverified scores")); body.append(note);
   const status = node("p"); status.setAttribute("role", "status"); body.append(status);
@@ -62,9 +88,12 @@ export function showScoreResult(scene: Phaser.Scene, options: {
       heading.hidden = note.hidden = status.hidden = actions.hidden = true;
       return;
     }
+    if (!consent.hidden) { heading.hidden = note.hidden = status.hidden = actions.hidden = true; return; }
+    heading.hidden = status.hidden = false;
     if (publication() !== true) {
       status.textContent = t("Private record · only your progress is shown."); actions.hidden = true; note.hidden = true; return;
     }
+    note.hidden = false;
     actions.hidden = false; status.textContent = t("Loading…");
     try {
       const result = all ? { scores: (await ranking(options.mode, current.signal)).map((row, i) => ({ ...row, rank: i + 1 })), rank: 0, total: 0 }

@@ -1,6 +1,6 @@
 import Phaser from "phaser";
 import { playerName, savePlayerName } from "../scores/client";
-import { BoardView } from "./BoardView";
+import { BoardView, announceOpponentChains } from "./BoardView";
 import { PlayerInput, P1_KEYS } from "./input";
 import { TouchInput } from "./touch";
 import { applyLayout } from "./hidpi";
@@ -819,6 +819,7 @@ export class OnlineScene extends Phaser.Scene {
             false,
             false,
           );
+          announceOpponentChains(l.game.boards[remote].events, this.views[s.player]);
           s.checkHash();
         } else {
           this.stalledMs += 1000 / 60;
