@@ -45,7 +45,7 @@ pnpm puzzles          # パズル面の生成
   1. 実装が終わったら、typecheck・unit・触った spec（例: `pnpm e2e e2e/records.spec.ts`）だけ手元で回す。e2e・e2e-online の全件は CI に任せる
   2. push して PR を作る。CI がプレビュー URL をコメントする（PR ごとに別 Worker と別 D1。push から 1 分弱）
   3. `src/render/`・`index.html`・CSS に触れた変更は、プレビュー URL をスマホで開いて確かめる。メニュー左下のビルド識別子（日付と commit）で、開いている版を確認できる。これはユーザーが行うので、URL を伝えて確認を待つ
-  4. 確認できたら（3 が要らない変更なら PR 作成の直後に）`gh pr merge --auto --squash --delete-branch` を打つ。CI（`.github/workflows/ci.yml`）が緑になった時点で merge され、本番に出る。以後は待たずに次の作業へ進む。CI が落ちたときだけ戻る
+  4. 確認できたら（3 が要らない変更なら PR 作成の直後に）`gh pr merge --auto --squash --delete-branch` を打つ。CI（`.github/workflows/ci.yml`）が緑になった時点で merge され、本番に出る。以後は待たずに次の作業へ進む。CI が落ちたときだけ戻る。ユーザーが「CI が通ったら merge して」と言ったときも、CI を待って merge するのではなく auto-merge を有効にして終える
 - squash merge なので、main のコミットは1 PR につき1つになる。PR のコミットが1つならそのコミットメッセージがそのまま main に入り、2つ以上なら1行目が PR タイトル、本文が各コミットメッセージの箇条書きになる（リポジトリ設定の「コミットまたは PR のタイトル」）。だから PR タイトルにも「何をなぜ変えたか」を書く（例: 「おじゃまの送出と投下のタイミングを原作に合わせ、連鎖の途中に降らないようにする」）。PR 内の手直しは小さいコミットで積んでよく、force push で畳まなくてよい
 - **作業の依頼を受けたら、コードを変える前に必ず worktree を作り、その中で作業する**。`EnterWorktree` があればそれを使う。なければ `git worktree add ../swaprise-<topic> -b <topic> main` のあと `pnpm install`。main の checkout（このディレクトリ）では編集も commit もしない。理由: 複数のセッションが同時に走ることがあり、同じツリーで編集がぶつかった
 - 1 worktree に 1 セッション。e2e は `PREVIEW_PORT=4174 pnpm e2e` のようにポートをずらす（dev は `DEV_PORT`）。merge したら `git worktree remove ../swaprise-<topic>` で片付ける
