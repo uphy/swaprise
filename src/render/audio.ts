@@ -62,6 +62,12 @@ const st = (f: number, semis: number): number => f * Math.pow(2, semis / 12);
  */
 const MUTE_KEY = "swaprise.mute.v1";
 
+/**
+ * 曲の音量（効果音に対する比）。ゲーム中（ピンチも同じ）は効果音（入れ替え・消去・連鎖）が曲に埋もれて
+ * ほとんど聞こえなかったので、メニューの 7 割にする。メニューとオープニングはほぼ曲だけなので下げない。
+ */
+const BGM_LEVEL: Record<SongName, number> = { menu: 0.5, game: 0.35 };
+
 export class GameAudio {
   private ctx: AudioContext | null = null;
   private master: GainNode | null = null;
@@ -139,7 +145,7 @@ export class GameAudio {
     for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
 
     this.bgmGain = ctx.createGain();
-    this.bgmGain.gain.value = 0.5;
+    this.bgmGain.gain.value = BGM_LEVEL[this.pendingBgm ?? "menu"];
     this.bgmGain.connect(this.master);
     this.bgm = new BgmPlayer(ctx, this.bgmGain, this.bgmEnabled ? { menu: this.fetchSample("menu"), game: this.fetchSample("game"), danger: this.fetchSample("danger") } : undefined);
     this.bgm.setDanger(this.danger);
@@ -409,8 +415,16 @@ export class GameAudio {
   /** BGM を鳴らし始める。position は音声ファイルの曲（メニュー）を何秒から鳴らすか（省略で頭から）。 */
   startBgm(name: SongName, position = 0): void {
     if (!this.bgmEnabled) return;
-    if (this.bgm) this.bgm.start(name, position);
-    else this.pendingBgm = name;
+    if (this.bgm) {
+      // 曲の切り替えは止めてから鳴らすので、音量の段差がそのまま聞こえることはない
+      this.bgmGain!.gain.value = BGM_LEVEL[name];
+      this.bgm.start(name, position);
+    } else this.pendingBgm = name;
+  }
+
+  /** いまの曲の音量（効果音に対する比）。e2e 用 */
+  get bgmLevel(): number {
+    return this.bgmGain?.gain.value ?? BGM_LEVEL[this.pendingBgm ?? "menu"];
   }
 
   stopBgm(): void {
