@@ -178,7 +178,8 @@ export function showRecordsDialog(scene: Phaser.Scene): void {
   localButton.dataset.tab = "local";
   for (const mode of ["endless", "timeattack"] as const) {
     const b = element("button"); b.type = "button"; b.dataset.tab = mode;
-    b.append(element("small", t("ONLINE")), modeName(mode));
+    // 狭い画面では「タイム / アタック」で折り返せるよう、語の切れ目にゼロ幅スペースを入れる
+    b.append(element("small", t("ONLINE")), modeName(mode).replace("アタック", "\u200bアタック"));
     b.onclick = () => void load(mode);
     sources.append(b);
   }
