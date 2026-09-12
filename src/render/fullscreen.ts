@@ -66,6 +66,11 @@ export class Fullscreen {
     return Boolean(doc.fullscreenElement || doc.webkitFullscreenElement);
   }
 
+  /** 望んでいるのにまだ入っていないか。オープニングはこのとき最初のタップを待ち、そのタップで入る。 */
+  get pending(): boolean {
+    return this.wanted_ && this.supported && !this.active;
+  }
+
   /** ユーザーが全画面を望んでいるか（localStorage に保存）。 */
   get wanted(): boolean {
     return this.wanted_;

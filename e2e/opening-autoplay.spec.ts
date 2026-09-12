@@ -112,3 +112,32 @@ test("せり上がりの途中の操作は飛ばさずに続きを始め、続�
   expect(await activeScenes(page)).toEqual(["menu"]);
   expect(await page.evaluate(() => Boolean((window as any).__swaprise))).toBe(false);
 });
+
+test("タッチ端末は全画面に入るまで TAP TO START で待ち、そのタップで全画面に入ってから続く", async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 412, height: 915 }, isMobile: true, hasTouch: true });
+  const page = await ctx.newPage();
+  await page.goto("/?bgm=0");
+  await page.waitForFunction(() => Boolean((window as any).__swapriseScenes?.opening));
+  // 音は鳴らせるが、全画面を望んでいてまだ入っていないので待つ
+  await waitPhase(page, "wait");
+  expect(await unlocked(page)).toBe(true);
+  expect(await promptState(page)).toEqual({ text: "TAP TO START", visible: true });
+  expect(await page.evaluate(() => Boolean(document.fullscreenElement))).toBe(false);
+  await page.touchscreen.tap(206, 700);
+  await page.waitForFunction(() => Boolean(document.fullscreenElement));
+  // 全画面に入ったあとは自動で続き、メニューまで進む
+  await page.waitForFunction(() => Boolean((window as any).__swapriseScenes?.menu), null, { timeout: 8000 });
+  expect(await page.evaluate(() => Boolean(document.fullscreenElement))).toBe(true);
+  await ctx.close();
+});
+
+test("全画面を切ってあるタッチ端末は待たずに続く", async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 412, height: 915 }, isMobile: true, hasTouch: true });
+  await ctx.addInitScript(() => localStorage.setItem("swaprise.fullscreen.v1", "0"));
+  const page = await ctx.newPage();
+  await page.goto("/?bgm=0");
+  await page.waitForFunction(() => Boolean((window as any).__swapriseScenes?.opening));
+  await waitPhase(page, "swap");
+  expect((await promptState(page)).visible).toBe(false);
+  await ctx.close();
+});
