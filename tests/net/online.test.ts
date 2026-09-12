@@ -9,13 +9,13 @@ import {
   validInput,
   type ServerMessage,
 } from "../../src/net/protocol";
-function setup() {
+function setup(rtt = 20) {
   const messages: ServerMessage[][] = [[], []];
   const room = new RoomEngine("invite", (i, m) => messages[i].push(m));
   for (let i = 0; i < 2; i++) {
     room.join({ session: `s${i}`, token: `t${i}`, name: `n${i}` });
     room.connect(i, true, 0);
-    room.message(i, { type: "latency", rtt: 20 }, 0);
+    room.message(i, { type: "latency", rtt }, 0);
   }
   room.start("match", 42, 0);
   room.clock(3000);
@@ -53,6 +53,28 @@ describe("オンラインの入力同期", () => {
     expect(clients[0].frame).toBeGreaterThan(500);
     expect(clients[0].frame).toBe(clients[1].frame);
     expect(stateHash(clients[0].game)).toBe(stateHash(clients[1].game));
+  });
+  it("通信が遅く入力猶予が18フレームでも、正規の先行入力を拒否しない", () => {
+    const { room, messages } = setup(250);
+    expect(room.state.match!.delay).toBe(18);
+    const fast = new Lockstep(room.state.match!);
+    for (const message of messages[0])
+      if (message.type === "frames") fast.receive(message.startFrame, message.frames);
+    // 片側の入力が届く前に、もう片側が用意された猶予を使い切る。
+    for (let tick = 0; tick < 60; tick++) {
+      const batch = fast.capture(() => NO_INPUT);
+      if (batch) room.message(0, {
+        type: "input", matchId: "match", ...batch, ack: fast.frame,
+      }, 3000 + tick * 1000 / 60);
+      fast.step();
+    }
+    expect(fast.frame).toBe(18);
+    expect(fast.nextInput).toBe(39);
+    // 猶予を超えてさらに送るクライアントは引き続き拒否する。
+    expect(() => room.message(0, {
+      type: "input", matchId: "match", startFrame: fast.nextInput,
+      inputs: [NO_INPUT, NO_INPUT, NO_INPUT], ack: fast.frame,
+    }, 4000)).toThrow("Invalid input frame.");
   });
   it("入力欠番では進まず、先行入力の蓄積に上限がある", () => {
     const c = new Lockstep({ id: "x", seed: 1, delay: 6, version: "x" });
