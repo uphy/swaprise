@@ -83,7 +83,7 @@ export class BoardView {
   }
 
   /** 画面上の位置と大きさを決める。生成直後とレイアウト変更時に呼ぶ。 */
-  place(ox: number, oy: number, scale = 1, hud: HudSide = "top"): void {
+  place(ox: number, oy: number, scale = 1, hud: HudSide = "top", infoY = BOARD_H + 14): void {
     this.ox = ox;
     this.oy = oy;
     this.scale = scale;
@@ -91,7 +91,8 @@ export class BoardView {
     this.root.setPosition(ox, oy).setScale(scale);
     if (hud === "top") {
       this.scoreText.setPosition(0, -30).setOrigin(0, 0);
-      this.infoText.setPosition(BOARD_W, BOARD_H + 14).setOrigin(1, 0).setAlign("right");
+      // 時間・速度・最大連鎖の行。せり上げバーがある盤面では、バーの下（infoY）に置く
+      this.infoText.setPosition(BOARD_W, infoY).setOrigin(1, 0).setAlign("right");
     } else if (hud === "right") {
       this.scoreText.setPosition(BOARD_W + HUD_GAP, 0).setOrigin(0, 0);
       this.infoText.setPosition(BOARD_W + HUD_GAP, 28).setOrigin(0, 0).setAlign("left");
