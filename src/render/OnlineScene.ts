@@ -27,6 +27,7 @@ import { Prediction } from "../net/prediction";
 import { NO_INPUT } from "../core/types";
 import "./online.css";
 import { t } from "./i18n";
+import { RaiseBar } from "./RaiseBar";
 import { applyPendingUpdate } from "./update";
 import { backHintDuration } from "./backHint";
 /** ロビーとオンライン盤面。ローカル対戦のポーズ・再開始処理は呼ばない。 */
@@ -58,7 +59,9 @@ export class OnlineScene extends Phaser.Scene {
   private phase = "";
   private stalledMs = 0;
   private raise = false;
-  private raiseHint: Phaser.GameObjects.Text | null = null;
+  private raiseHint: RaiseBar | null = null;
+  /** 直近の tick で送ったせり上げ入力。バーの点灯に使う。 */
+  private lastRaise = false;
   /** 戻る操作を受け止めるために自分で積んだ履歴があるか。 */
   private historyPushed = false;
   /** 対戦中に戻る操作をした人への案内を出している期限（Date.now()）。0 なら出していない。 */
@@ -666,16 +669,7 @@ export class OnlineScene extends Phaser.Scene {
     this.touch = new TouchInput(this, this.prediction.game.boards[s.player]);
     this.views[s.player].touch = this.touch;
     this.playerInput.touch = this.touch;
-    this.raiseHint = this.add
-      .text(0, 0, "▲ ▲ ▲", {
-        fontFamily: FONT_UI,
-        fontSize: this.layout.touch ? "22px" : "16px",
-        color: "rgba(255,255,255,0.5)",
-      })
-      .setPadding(30, 14)
-      .setOrigin(0.5)
-      .setInteractive();
-    this.raiseHint.on("pointerdown", () => {
+    this.raiseHint = new RaiseBar(this, () => {
       if (this.session?.state?.phase === "playing" && !this.settings)
         this.raise = true;
     });
@@ -735,10 +729,12 @@ export class OnlineScene extends Phaser.Scene {
       this.touch?.place(ox, y, 1);
     }
     const view = this.views[me];
-    this.raiseHint?.setPosition(
-      L.phoneLandscape ? view.ox + BOARD_W + 55 : view.ox + BOARD_W / 2,
-      L.phoneLandscape ? view.oy + 180 : view.oy + BOARD_H + 44,
-    );
+    // せり上げバー。GameScene と同じく、残り時間の行の下に盤面と同じ幅で置く（横持ちは HUD の列）
+    if (L.phoneLandscape) this.raiseHint?.resize(100, 44, 48).setPosition(view.ox + BOARD_W + 55, view.oy + 180);
+    else {
+      const barH = L.touch ? 30 : 26;
+      this.raiseHint?.resize(BOARD_W, barH, 48).setPosition(view.ox + BOARD_W / 2, view.oy + BOARD_H + 34 + barH / 2);
+    }
   }
   /** 対戦中に戻る操作をした人へ、離れないことと退出の手順を数秒だけ知らせる。 */
   private showBackHint(): void {
@@ -776,6 +772,7 @@ export class OnlineScene extends Phaser.Scene {
   }
   override update(_time: number, delta: number): void {
     this.bg?.update(this.session?.state?.phase === "suspended" ? 0 : delta);
+    this.raiseHint?.setRaising(this.session?.state?.phase === "playing" && this.lastRaise, delta);
     const s = this.session;
     const l = s?.lockstep;
     if (!s || !l) return;
@@ -798,6 +795,7 @@ export class OnlineScene extends Phaser.Scene {
             ...polled,
             raise: !this.settings && (this.raise || polled.raise),
           };
+          this.lastRaise = local.raise;
           this.prediction!.advance(l.nextInput, local);
           const board = this.prediction!.game.boards[s.player];
           this.views[s.player].handleEvents(board.events, true, true);
