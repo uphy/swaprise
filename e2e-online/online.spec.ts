@@ -178,6 +178,8 @@ test("スマホで自分の盤面を大きく表示し、せり上げと回転�
     hasTouch: true,
     deviceScaleFactor: 3,
   });
+  // タッチ端末は最初のタップで全画面に入るが、全画面の窓は setViewportSize で回転できない。この試験では切っておく
+  await a.addInitScript(() => localStorage.setItem("swaprise.fullscreen.v1", "0"));
   const b = await browser.newContext();
   const p = await a.newPage();
   const q = await b.newPage();
