@@ -10,26 +10,33 @@ const node = <K extends keyof HTMLElementTagNameMap>(tag: K, text = "") => {
 };
 /** A result screen, not a modal. Keyboard retry/menu remain available. */
 export function showScoreResult(scene: Phaser.Scene, options: {
-  mode: ScoreMode; title: string; score: number; chain: number; progress: Progress;
-  id: string; retry: () => void; menu: () => void; share?: (button: HTMLButtonElement) => void;
+  mode: ScoreMode; title: string | null; score: number; chain: number; progress: Progress | null;
+  id: string | null; combos: number; chains: number; retry: () => void; menu: () => void; share?: (button: HTMLButtonElement) => void;
 }): void {
   const root = node("section"); root.className = "score-dialog score-result"; root.setAttribute("aria-label", t("RESULT"));
   const shell = node("div"); shell.className = "score-screen";
-  const header = node("header"); header.append(node("small", t(options.mode === "endless" ? "ENDLESS" : "TIME ATTACK")), node("h2", options.title));
+  const header = node("header"); header.append(node("small", t(options.mode === "endless" ? "ENDLESS" : "TIME ATTACK")));
+  if (options.title) header.append(node("h2", options.title));
   const summary = node("div"); summary.className = "result-summary";
   summary.append(node("strong", `${options.score.toLocaleString()} ${t("POINTS")}`));
-  const { best, average, count } = options.progress;
-  const bestLine = best === null ? t("First record!") : options.score > best ? t("New best! +{points}", { points: options.score - best })
-    : options.score === best ? t("Matched your best!") : t("{points} to your best", { points: best - options.score });
-  summary.append(node("p", bestLine));
-  if (average !== null) {
-    const difference = average === 0 ? `${options.score} ${t("POINTS")}` : `${Math.round((options.score - average) / average * 100)}%`;
-    summary.append(node("p", t("vs previous {count} average: {difference}", { count, difference: `${options.score >= average ? "+" : ""}${difference}` })));
-  } else summary.append(node("p", t("Recent trend appears from your next game.")));
+  if (options.progress) {
+    const { best, average, count } = options.progress;
+    const bestLine = best === null ? t("First record!") : options.score > best ? t("New best! +{points}", { points: options.score - best })
+      : options.score === best ? t("Matched your best!") : t("{points} to your best", { points: best - options.score });
+    summary.append(node("p", bestLine));
+    if (average !== null) {
+      const difference = average === 0 ? `${options.score} ${t("POINTS")}` : `${Math.round((options.score - average) / average * 100)}%`;
+      summary.append(node("p", t("vs previous {count} average: {difference}", { count, difference: `${options.score >= average ? "+" : ""}${difference}` })));
+    } else summary.append(node("p", t("Recent trend appears from your next game.")));
+  }
   const body = node("div"); body.className = "score-content";
   // 得点も本文と一緒にスクロールさせ、大きな文字でも再開ボタンを画面内に保つ。
   body.append(summary);
-  body.append(node("p", `${t("MAX CHAIN")} ×${options.chain}`));
+  const stats = node("dl"); stats.className = "result-stats";
+  for (const [label, value] of [["MAX CHAIN", `×${options.chain}`], ["COMBOS", options.combos], ["CHAINS", options.chains]] as const) {
+    const stat = node("div"); stat.append(node("dt", t(label)), node("dd", String(value))); stats.append(stat);
+  }
+  body.append(stats);
   const heading = node("h3", t("YOUR RANKING")); body.append(heading);
   const note = node("p", t("Ranked per play · unverified scores")); body.append(note);
   const status = node("p"); status.setAttribute("role", "status"); body.append(status);
@@ -50,6 +57,11 @@ export function showScoreResult(scene: Phaser.Scene, options: {
   const load = async (): Promise<void> => {
     controller?.abort(); const current = controller = new AbortController();
     list.replaceChildren();
+    // 制限時間やseedを変えたプレイも同じ結果画面を使うが、標準ルールのランキングへは接続しない。
+    if (options.id === null) {
+      heading.hidden = note.hidden = status.hidden = actions.hidden = true;
+      return;
+    }
     if (publication() !== true) {
       status.textContent = t("Private record · only your progress is shown."); actions.hidden = true; note.hidden = true; return;
     }

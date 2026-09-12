@@ -127,3 +127,51 @@ test("ピンチの赤い光が左右の上隅まで途切れずにつながる",
   expect(alpha!.right).toBe(alpha!.top);
   expect(alpha!.inside).toBe(0);
 });
+
+test("CPU戦の空色は自分の積み上がりに応じて変わり、復帰とポーズに追従する", async ({ page }) => {
+  await start(page, "cpu");
+  const result = await page.evaluate(() => {
+    const { game, scene } = (window as any).__swaprise;
+    const stack = (index: number, height: number) => game.boards[index].setColumns([
+      Array.from({ length: height }, (_, y) => y % 5), [1], [2], [3], [4], [0],
+    ]);
+    const sky = () => getComputedStyle(document.body).backgroundImage;
+    const settle = () => { for (let i = 0; i < 180; i++) scene.update(0, 1000 / 60); };
+    stack(0, 6); settle();
+    const low = sky();
+    stack(1, 11); settle();
+    const opponent = sky();
+    stack(0, 9); settle();
+    const middle = sky();
+    stack(0, 11); settle();
+    const high = sky();
+    scene.paused = true;
+    stack(0, 6); settle();
+    const paused = sky();
+    scene.paused = false;
+    scene.update(0, 1000 / 60);
+    const recovering = sky();
+    settle();
+    return { low, opponent, middle, high, paused, recovering, recovered: sky() };
+  });
+  expect(result.opponent).toBe(result.low);
+  expect(new Set([result.low, result.middle, result.high]).size).toBe(3);
+  expect(result.paused).toBe(result.high);
+  expect(result.recovering).not.toBe(result.low);
+  expect(result.recovered).toBe(result.low);
+});
+
+test.describe("日本語での対戦結果", () => {
+  test.use({ locale: "ja-JP" });
+  test("結果見出しは WIN / LOSE で表示する", async ({ page }) => {
+    await start(page, "cpu");
+    const titles = await page.evaluate(() => {
+      const { game, scene } = (window as any).__swaprise;
+      game.winner = 0;
+      game.finished = true;
+      scene.update(0, 1000 / 60);
+      return scene.views.map((view: any) => view.overlayTitle.text);
+    });
+    expect(titles).toEqual(["WIN", "LOSE"]);
+  });
+});

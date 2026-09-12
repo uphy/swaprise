@@ -272,6 +272,7 @@ export class GameScene extends Phaser.Scene {
     this.bg?.destroy();
     this.bg = new Background(this, next.width, next.height, this.mode);
     this.bg.setTimeRemaining(this.game_.framesLeft, !this.ended && !this.starting);
+    this.bg.setStack(this.game_.boards[0], 0, !this.ended && !this.starting);
     this.place();
     (window as unknown as { __swaprise: { layout: Layout } }).__swaprise.layout = next;
   }
@@ -511,9 +512,10 @@ export class GameScene extends Phaser.Scene {
       }
       if (this.game_.finished) this.finish();
     }
-    // 空色は残り時間、危険の赤みは各盤面の外周で表す。
+    // タイムアタックは残り時間、CPU戦は自分の高さで空色を変える。外周の警告は各盤面に出す。
     if (this.bg) {
       this.bg.setTimeRemaining(this.game_.framesLeft, !this.ended && !this.starting);
+      this.bg.setStack(this.game_.boards[0], this.paused || this.starting ? 0 : delta, !this.ended && !this.starting);
       this.bg.update(this.paused || this.starting ? 0 : delta);
     }
     this.views.forEach((v) => v.draw(this.paused || this.starting ? 0 : delta, !this.ended));
@@ -596,10 +598,12 @@ export class GameScene extends Phaser.Scene {
       if (this.scoreRun) enqueueScore({ ...this.scoreRun, mode: this.mode, score: b.score, maxChain: b.maxChain, frames: Math.min(b.frame, g.timeLimit ?? b.frame) });
       const rankLine = rank === 1 ? t("NEW RECORD!") : rank > 0 ? t("RANK {rank}", { rank }) : "";
       if (rank === 1 && b.score > 0) this.time.delayedCall(300, () => this.celebrate(this.views[0]));
-      this.views[0].showOverlay(g.timeUp ? t("TIME UP") : t("GAME OVER"), `${t("SCORE")} ${b.score}\n${t("MAX CHAIN")} x${b.maxChain}\n${t("COMBOS")} ${b.stats.combos}  ${t("CHAINS")} ${b.stats.chains}\n${rankLine}`);
-      if (this.scoreRun && progress) showScoreResult(this, {
-        mode: this.mode, title: g.timeUp ? t("TIME UP") : t("GAME OVER"), score: b.score, chain: b.maxChain,
-        progress, id: this.scoreRun.id, retry: () => this.restart(), menu: () => this.toMenu(),
+      // タイムアタックの完走は通常の終わり方なので、終了理由の見出しを出さず得点を主役にする。
+      const title = g.timeUp ? null : t("GAME OVER");
+      this.views[0].showOverlay(title ?? "", `${t("SCORE")} ${b.score}\n${t("MAX CHAIN")} x${b.maxChain}\n${t("COMBOS")} ${b.stats.combos}  ${t("CHAINS")} ${b.stats.chains}\n${rankLine}`);
+      if (this.mode === "timeattack" || this.scoreRun) showScoreResult(this, {
+        mode: this.mode, title, score: b.score, chain: b.maxChain, combos: b.stats.combos, chains: b.stats.chains,
+        progress, id: this.scoreRun?.id ?? null, retry: () => this.restart(), menu: () => this.toMenu(),
         share: canShare() ? (button) => { void this.share({ setText: (text) => { button.textContent = text; } }); } : undefined,
       });
     } else {

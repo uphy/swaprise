@@ -50,3 +50,19 @@ for (const mode of ["endless", "timeattack", "puzzle"]) {
     await expect(page.locator(".score-result")).toHaveCount(0);
   });
 }
+
+test("短いタイムアタックでも大きな戦績画面を出し、完走に時間切れとは書かない", async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem("swaprise.scores.publish.v1", "true"));
+  const requests: string[] = [];
+  page.on("request", (r) => { if (r.url().includes("/api/")) requests.push(r.url()); });
+  await page.goto("/?mode=timeattack&time=1&seed=7&bgm=0&countdown=0");
+  const result = page.locator(".score-result");
+  await expect(result).toBeVisible({ timeout: 10000 });
+  await expect(result).not.toContainText("時間切れ");
+  await expect(result.locator("h2")).toHaveCount(0);
+  expect(await result.locator(".result-summary strong").evaluate(el => parseFloat(getComputedStyle(el).fontSize))).toBeGreaterThanOrEqual(60);
+  await expect(result).toContainText("最大連鎖");
+  expect(requests).toEqual([]);
+  await page.getByRole("button", { name: "リトライ", exact: true }).click();
+  await expect(result).toHaveCount(0);
+});

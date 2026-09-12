@@ -2,7 +2,7 @@
 .score-dialog { position: fixed; inset: 0; margin: 0; width: 100%; max-width: none; max-height: none; padding: 0; border: 0; border-radius: 0; background: linear-gradient(180deg, #2a2690 0%, #7c3fbd 55%, #ff7ea6 100%); color: #f4f4f8; font: 22px/1.5 "Fredoka", "Hiragino Maru Gothic ProN", "BIZ UDPGothic", "Arial Rounded MT Bold", sans-serif; box-sizing: border-box; overflow: hidden; outline: none; touch-action: pan-y; }
 .score-dialog::backdrop { background: #2a2690; }
 .score-result { z-index: 10; height: 100dvh; }
-.result-summary strong { font-size: 48px; line-height: 1.2; color: #ffe066; overflow-wrap: anywhere; }
+.result-summary strong { font-size: clamp(48px, 16vw, 64px); line-height: 1.2; color: #ffe066; overflow-wrap: anywhere; }
 .result-summary p { margin: 4px 0 8px; }
 .score-result .result-you { background: rgba(255,255,255,.14); color: #ffe066; border-radius: 10px; }
 .score-result nav { flex-wrap: wrap; }
@@ -41,9 +41,13 @@
 .score-result header small { font-size: 14px; letter-spacing: .08em; }
 .score-result h2 { font-size: 36px; }
 .score-result h3 { font-size: 26px; }
-.score-result p, .score-result li span { font-size: 22px; line-height: 1.5; }
+.score-result p, .score-result li span { font-size: 24px; line-height: 1.5; }
 .score-result button { font-size: 22px; }
 .score-result .result-summary { margin-bottom: 20px; }
+.result-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 20px 0; }
+.result-stats div { padding: 12px 4px; border-radius: 12px; background: rgba(20,12,50,.3); text-align: center; }
+.result-stats dt { font-size: 18px; }
+.result-stats dd { font-size: 34px; font-weight: 600; margin: 6px 0 0; overflow-wrap: anywhere; }
 @media (min-height: 750px) { .score-screen { padding-top: max(40px, env(safe-area-inset-top)); } }
 @media (max-height: 480px) { .score-screen { padding-top: max(8px, env(safe-area-inset-top)); } .score-screen header { padding-bottom: 8px; } .score-screen header small { display: none; } .score-dialog h2 { margin: 0; } .score-footer { padding-top: 8px; } }
 @media (max-height: 480px) and (min-width: 700px) { .score-tools { display: flex; gap: 12px; } .score-tools nav { flex: 1; min-width: 0; } }
