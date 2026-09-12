@@ -42,7 +42,6 @@ test("メニューが表示され、キーボードでエンドレスを開始�
   await page.waitForTimeout(150);
   await page.keyboard.press("Enter");
   await waitForGame(page);
-  await page.getByRole("button", { name: "LATER", exact: true }).click();
   await page.waitForFunction(() => (window as any).__swaprise.game.boards[0].frame > 0);
   const s = await boardState(page);
   expect(s.frame).toBeGreaterThan(0);
