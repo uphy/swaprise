@@ -24,6 +24,9 @@ importers:
       '@types/ws':
         specifier: ^8.18.1
         version: 8.18.1
+      abcjs:
+        specifier: ^6.7.0
+        version: 6.7.0
       typescript:
         specifier: ^7.0.2
         version: 7.0.2
@@ -1391,6 +1394,9 @@ packages:
 
   '@vitest/spy@5.0.0':
     resolution: {integrity: sha512-uy+luWBAPw9XfthoHi5AkfHUnuPYEESjl0p/r+meoBnU8bxg5GDQ3Ey8MjcJ6sqahkL4PFyrvfMJJBw7LbU06g==}
+
+  abcjs@6.7.0:
+    resolution: {integrity: sha512-dSj1Iho8IvGZEbfRTcGS4uGt+DMrrXTqXXpfNXYMuUNfDMRadTqA1DlVvs3u0uUDJIej8UOAeDauEPnZ6RThmg==}
 
   acorn@8.18.0:
     resolution: {integrity: sha512-lGq+9yr1/GuAWaVYIHRjvvySG5/4VfKIvC8EWxStPdcDh/Ka7FG3twP6v4d5BkravUilhIAsG4Qj83t02LWUPQ==}
@@ -3801,6 +3807,8 @@ snapshots:
       vite: 8.2.2(@types/node@26.4.1)(esbuild@0.28.1)(terser@5.51.2)
 
   '@vitest/spy@5.0.0': {}
+
+  abcjs@6.7.0: {}
 
   acorn@8.18.0: {}
 

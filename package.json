@@ -7,7 +7,7 @@
     "dev": "pnpm assets:game && vite",
     "build": "pnpm assets:game && tsc --noEmit && vite build",
     "preview": "vite preview",
-    "test": "pnpm assets:game && pnpm test:assets && vitest run",
+    "test": "pnpm assets:game && pnpm test:assets && pnpm test:music && vitest run",
     "test:watch": "vitest",
     "test:balance": "vitest run -c vitest.balance.config.ts",
     "e2e": "playwright test",
@@ -20,13 +20,18 @@
     "assets": "node tools/character-assets.mjs",
     "assets:check": "node tools/character-assets.mjs --check",
     "assets:game": "node tools/character-assets.mjs --game",
-    "test:assets": "node --test tools/character-assets.test.mjs"
+    "test:assets": "node --test tools/character-assets.test.mjs",
+    "test:music": "node --test tools/music/notation.test.mjs",
+    "music:check": "node tools/music/check.mjs",
+    "music:render": "node tools/music/render.mjs",
+    "music:abc2seq": "node tools/music/abc2seq.mjs"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20260908.1",
     "@playwright/test": "^1.63.0",
     "@types/node": "^26.4.1",
     "@types/ws": "^8.18.1",
+    "abcjs": "^6.7.0",
     "typescript": "^7.0.2",
     "vite": "^8.2.2",
     "vite-plugin-pwa": "^1.3.0",

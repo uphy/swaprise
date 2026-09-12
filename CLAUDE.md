@@ -11,6 +11,9 @@ pnpm e2e              # Playwright。ビルドして preview を立てて回す�
 pnpm test:balance     # CPU に何分も遊ばせるバランスの回帰テスト（分単位）
 pnpm sim duel|endless|levels   # バランス調整用のシミュレーション（tools/sim/）
 pnpm puzzles          # パズル面の生成
+pnpm music:check      # 曲の候補（tools/bgm-candidates.html）の旋律を基準と比べて印を付ける
+pnpm music:render --candidate 10   # 楽譜とピアノロールを PNG に（test-results/music/）
+pnpm music:abc2seq file.abc        # ABC 記譜を音符列にする
 ```
 
 初回の e2e には `pnpm exec playwright install chromium` が必要。worktree を並べるときは `DEV_PORT` / `PREVIEW_PORT` でポートを変える。

@@ -125,6 +125,8 @@ const SONGS = [];
     desc: '明るく跳ねる王道パズルゲーム風。原作の妖精っぽさ寄り。',
     spec: 'ベース: 三角波の跳ねるライン / アルペジオ: 25%パルス / メロディ: 矩形波+ビブラート',
     tempo: 132, beat: 16, swing: 0, echoSteps: 3,
+    // 小節ごとの和音。tools/music/ の検査と楽譜が使う
+    chords: prog,
     tracks: [
       { inst:'bassTri', seq: prog.map((k) => bounce(B[k])).join(' ') },
       { inst:'arpPulse', seq: arpSeq(prog.map((k) => C[k]), [0,1,2,3,2,1], 16) },
@@ -156,6 +158,7 @@ const SONGS = [];
     desc: '16分刻みのオクターブベースで疾走感。緊張感が欲しい対戦向き。',
     spec: 'ベース: ノコギリ波 16分オクターブ / アルペジオ: 12.5%パルス / メロディ: 2オシレータのデチューンパルス',
     tempo: 150, beat: 16, swing: 0, echoSteps: 3,
+    chords: prog,
     tracks: [
       { inst:'bassSaw', seq: prog.map((k) => octBass(R[k])).join(' ') },
       { inst:'arpThin', seq: arpSeq(prog.map((k) => C[k]), [0,1,2,3], 16) },
@@ -187,6 +190,7 @@ const SONGS = [];
     desc: '3拍子でメルヘン。ハープの分散和音とフルート風の旋律。落ち着いて長時間遊べる方向。',
     spec: 'ベース: 三角波 1拍目のみ / 2・3拍目にコードの刻み / ハープ: 三角波+正弦波 / 旋律: 正弦波+三角波にビブラート',
     tempo: 168, beat: 12, swing: 0, echoSteps: 4, drumGain: 0.5,
+    chords: prog,
     tracks: [
       { inst:'bassSoft', seq: prog.map((k) => `${R[k]}:4 r:8`).join(' ') },
       { inst:'stab', seq: prog.map((k) => `r:4 ${chordTok(S[k])}:3 r:1 ${chordTok(S[k])}:3 r:1`).join(' ') },
@@ -224,6 +228,7 @@ const SONGS = [];
     desc: 'シンコペーションのベースとカッティング風の刻み。跳ねたリズムでノリ重視。',
     spec: 'ベース: 三角波+ノコギリ波 / 刻み: 25%パルスのコードスタブ / 旋律: クラビ風の短い減衰パルス / 16分をスウィング',
     tempo: 112, beat: 16, swing: 0.7, echoSteps: 2,
+    chords: prog,
     tracks: [
       { inst:'bassFunk', seq: prog.map((k) => bass[k]).join(' ') },
       { inst:'stab', seq: prog.map(stab).join(' ') },
@@ -259,6 +264,7 @@ const SONGS = [];
     desc: 'メジャーセブンスのパッドとエコー多めのリード。ゆったりした幻想系。',
     spec: 'パッド: パルス+ノコギリ波のデチューン、遅いアタック / ベース: 三角波 / 旋律: 正弦波 / エコー深め',
     tempo: 96, beat: 16, swing: 0, echoSteps: 3, echoFeedback: 0.45, drumGain: 0.6,
+    chords: prog.flatMap((k) => [k, k]),
     tracks: [
       { inst:'pad', seq: prog.map((k) => `${chordTok(P[k])}:32`).join(' ') },
       { inst:'bassSoft', seq: prog.map((k) => bass[k]).join(' ') },
@@ -308,6 +314,7 @@ SONGS.push({
     desc: '今の曲と同じ明るさ・テンポのまま、主題を「下から上へ昇る分散和音」（オープニングの一撃と同じ c-e-g-c）にし、後半 8 小節は刻みを止めてハープとフルートで息継ぎ。29 秒で 1 周。',
     spec: '前半: 三角波の跳ねるベース / 25%パルスの16分アルペジオ / 矩形波の旋律。後半: 柔らかいベース / ハープの8分 / パッド / フルート。ドラムも後半は間引く',
     tempo: 132, beat: 16, swing: 0, echoSteps: 3,
+    chords: [...progA, ...progB],
     tracks: [
       { inst:'bassTri', seq: progA.map((k) => bounce(B[k])).join(' ') + ' ' + rest8 },
       { inst:'bassSoft', seq: rest8 + ' ' + progB.slice(0, 7).map((k) => soft(B[k])).join(' ') + ' g2:4 a2:4 b2:4 d3:4' },
@@ -354,6 +361,7 @@ SONGS.push({
     desc: '段々の街の朝。6/8 の揺れにハープの分散和音と、フルートの素朴な節。市場や工房の「手仕事」の温度で、長く居ても疲れない方向。',
     spec: 'ベース: 三角波 根音と5度 / 刻み: 25%パルスの和音を 2・3 拍目 / ハープ: 三角波+正弦波の8分 / 旋律: 正弦波+三角波にビブラート / キックとリムだけ',
     tempo: 138, beat: 12, swing: 0, echoSteps: 4, drumGain: 0.5,
+    chords: prog,
     tracks: [
       { inst:'bassSoft', seq: prog.map((k) => `${R[k][0]}:6 ${R[k][1]}:6`).join(' ') },
       { inst:'stab', seq: prog.map((k) => { const X = chordTok(S[k]); return `r:2 ${X}:2 ${X}:2 r:2 ${X}:2 ${X}:2`; }).join(' ') },
@@ -395,6 +403,7 @@ SONGS.push({
     desc: 'ノリで押す案。16分をスウィングさせた跳ねるベースとカッティング風の刻みに、クラビ風の短い旋律。後半はデチューンのパルスで歌わせて戻る。',
     spec: 'ベース: 三角波+ノコギリ波のシンコペーション / 刻み: 25%パルスの和音スタブ / 前半: クラビ風パルス / 後半: 2オシレータのデチューンパルス / スウィング 0.6',
     tempo: 124, beat: 16, swing: 0.6, echoSteps: 2,
+    chords: prog,
     tracks: [
       { inst:'bassFunk', seq: prog.map((k) => bass(B[k])).join(' ') },
       { inst:'stab', seq: prog.map(stab).join(' ') },
@@ -467,6 +476,7 @@ SONGS.push({
     desc: '1 をそのまま前半に置き、後半 8 小節で旋律を言い換えて 16 小節にした案。8・16 小節目にベースの駆け上がりとスネアのフィル。後半はオクターブ下の細いパルスで旋律を厚くし、アルペジオの並びとハイハットを少し変える。29 秒で 1 周。',
     spec: '音色・テンポ・進行は 1 と同じ。追加: 後半の旋律の重ね（12.5%パルス、1 オクターブ下）、フィル、駆け上がり',
     tempo: 132, beat: 16, swing: 0, echoSteps: 3,
+    chords: [...prog, ...prog],
     tracks: [
       { inst:'bassTri', seq: bass8 + ' ' + bass8 },
       { inst:'arpPulse', seq: arpSeq(prog.map((k) => C[k]), [0,1,2,3,2,1], 16) + ' ' + arpSeq(prog.map((k) => C[k]), [0,2,1,3,2,1], 16) },
