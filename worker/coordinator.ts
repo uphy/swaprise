@@ -379,6 +379,13 @@ export class Coordinator extends DurableObject<Env> {
       await this.ctx.storage.put("budget:" + today, b);
       for (const ws of this.ctx.getWebSockets()) {
         const a: Waiting = ws.deserializeAttachment();
+        // 待機中にゲーム版が上がった接続は Hibernation で生き残るが、match() は同じ版としか組まないので
+        // 永久に待ち続ける。閉じて再読み込みを促す（閉じられた側は queue/status で同じ理由を受け取る）
+        if (a.version !== GAME_VERSION) {
+          ws.send(JSON.stringify({ type: "error", message: "Please reload to update the game." }));
+          ws.close(1000, "update");
+          continue;
+        }
         if (
           Date.now() - a.last > 45000 ||
           !reserve(structuredClone(b), "check", "random")
