@@ -39,7 +39,7 @@ const JA: Record<string, string> = {
   ENDLESS: "エンドレス", "TIME ATTACK": "タイムアタック", PUZZLE: "パズル", "◂ BACK": "◂ 戻る",
   EASY: "EASY", NORMAL: "NORMAL", HARD: "HARD", RECORDS: "記録", SETTINGS: "設定", "HOW TO PLAY": "遊び方",
   "BEST {score}   MAX CHAIN x{chain}": "最高 {score}   最大連鎖 x{chain}", "no record yet": "記録なし",
-  "{count} / {total} CLEARED": "{count} / {total} クリア", "{wins}W {losses}L": "{wins}勝 {losses}敗",
+  "{count} / {total} CLEARED": "{count} / {total} クリア", "{wins}W {losses}L": "{wins}勝 {losses}敗", "{draws}D": "{draws}分", TOTAL: "通算",
   PLAY: "プレイ", BACK: "戻る",
   "some motions pending": "一部の動作は準備中", "artwork pending": "画像は準備中", CLOSE: "閉じる",
   "TOP 5": "上位 5 件", "TOP 50": "上位 50 件",

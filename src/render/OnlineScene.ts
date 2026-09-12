@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { onlineRecordLine, recordOnlineResult } from "./highscore";
 import { playerName, savePlayerName } from "../scores/client";
 import { BoardView, announceOpponentChains } from "./BoardView";
 import { PlayerInput, P1_KEYS } from "./input";
@@ -699,11 +700,18 @@ export class OnlineScene extends Phaser.Scene {
     const r = this.session?.state?.result;
     if (!r || this.session?.state?.phase !== "result") return;
     const invalid = r.reason === "desync" || r.reason === "server";
+    const me = this.session?.player ?? 0;
+    const matchId = this.session?.state?.match?.id;
+    // 無効試合は数えない。降参・切断負けは部屋が裁定した勝敗なので通常どおり数える
+    const record = !invalid && matchId
+      ? recordOnlineResult(matchId, r.winner < 0 ? "draw" : r.winner === me ? "win" : "lose")
+      : null;
     this.views.forEach((view, i) => {
       const b = view.board;
       const title = invalid ? t("NO CONTEST") : r.winner < 0 ? t("DRAW") : r.winner === i ? t("WIN") : t("LOSE");
       if (!invalid && r.winner >= 0) view.playResult(r.winner === i ? "win" : "lose");
-      view.showOverlay(title, `${t("MAX CHAIN")} x${b.maxChain}\n${t("COMBOS")} ${b.stats.combos}  ${t("CHAINS")} ${b.stats.chains}`);
+      const recordLine = record && i === me ? `\n${t("ONLINE")}  ${onlineRecordLine(record)}` : "";
+      view.showOverlay(title, `${t("MAX CHAIN")} x${b.maxChain}\n${t("COMBOS")} ${b.stats.combos}  ${t("CHAINS")} ${b.stats.chains}${recordLine}`);
     });
   }
   private boardName(name: string): string {

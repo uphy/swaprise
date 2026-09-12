@@ -5,7 +5,7 @@ import { Background } from "./Background";
 import { createTextures } from "./textures";
 import { PUZZLES, PUZZLES_PER_STAGE, PUZZLE_STAGES, puzzleName, type CpuLevel, type GameMode } from "../core";
 import { audio } from "./shared";
-import { loadHighScores, type HighScores } from "./highscore";
+import { loadHighScores, onlineRecordLine, type HighScores } from "./highscore";
 import { haptics } from "./haptics";
 import { DPR, applyLayout } from "./hidpi";
 import { Button } from "./ui";
@@ -70,7 +70,13 @@ function itemsFor(level: Level, hs: HighScores): MenuItem[] {
     { label: t("1 PLAYER"), caption: t("endless · time attack · puzzle"), group: "1p", name: "group-1p" },
     { label: t("VS CPU"), caption: t("easy · normal · hard"), group: "cpu", name: "group-cpu" },
     { label: t("2 PLAYERS"), caption: t("one screen, two players"), start: { mode: "versus" }, name: "group-2p" },
-    { label: t("ONLINE"), caption: t("invite a friend · find an opponent"), online: true, name: "group-online" },
+    {
+      label: t("ONLINE"),
+      // 一度でも対戦したら通算の勝敗を出す。それまでは何ができるかの説明
+      caption: hs.online.wins + hs.online.losses + hs.online.draws > 0 ? onlineRecordLine(hs.online) : t("invite a friend · find an opponent"),
+      online: true,
+      name: "group-online",
+    },
   ];
 }
 
