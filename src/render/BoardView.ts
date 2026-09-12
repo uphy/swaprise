@@ -10,6 +10,20 @@ import { DangerGlow } from "./DangerGlow";
 import { ResultEffect, type ResultOutcome } from "./ResultEffect";
 
 export type HudSide = "top" | "left" | "right";
+/** この連鎖数から、相手の連鎖を自分の盤面に知らせる。 */
+export const OPPONENT_CHAIN_ALERT = 4;
+
+/**
+ * 相手の盤面のイベントから大きな連鎖を拾い、自分の盤面に知らせる。
+ * 相手の盤面は小さく描かれることがあり（縦持ちの CPU 戦・オンライン）、吹き出しだけでは相手が連鎖を組んだと分からない
+ */
+export function announceOpponentChains(events: BoardEvent[], mine: BoardView): void {
+  for (const e of events) {
+    if (e.type !== "match" || e.chain < OPPONENT_CHAIN_ALERT) continue;
+    mine.announce(t("OPPONENT x{chain}!", { chain: e.chain }), chainColor(e.chain));
+    audio.opponentChain();
+  }
+}
 /** 盤面と横置きの HUD の間隔。 */
 const HUD_GAP = 12;
 
@@ -37,6 +51,12 @@ export class BoardView {
   private readonly scoreText: Phaser.GameObjects.Text;
   private readonly infoText: Phaser.GameObjects.Text;
   private readonly pendingGfx: Phaser.GameObjects.Graphics;
+  /** 予告おじゃまの段数。バーの脇に数字で出す */
+  private readonly pendingText: Phaser.GameObjects.Text;
+  /** 予告の板が降りられる状態（transit を過ぎて静止待ち）だったか。false→true の瞬間に警告音を鳴らす */
+  private pendingReady = false;
+  /** 危険・天井・着地前の警告音を鳴らすか。handleEvents で受けた値を draw でも使う */
+  private warnOn = true;
   private readonly overlay: Phaser.GameObjects.Container;
   private resultEffect: ResultEffect | null = null;
   private readonly overlayTitle: Phaser.GameObjects.Text;
@@ -140,8 +160,9 @@ export class BoardView {
     // 空が暖色に変わっても、残り時間の赤い数字を読み取れるようにする。
     if (timeLimit !== null) this.infoText.setBackgroundColor("#211d35dd").setPadding(3, 2);
     this.pendingGfx = scene.add.graphics();
+    this.pendingText = scene.add.text(0, 0, "", { fontFamily: FONT, fontSize: "15px", color: TEXT_DIM, fontStyle: "bold" }).setVisible(false);
     this.stopBar = scene.add.rectangle(0, BOARD_H + 6, 0, 4, 0x66ccff).setOrigin(0);
-    this.root.add([this.scoreText, this.infoText, this.pendingGfx, this.stopBar]);
+    this.root.add([this.scoreText, this.infoText, this.pendingGfx, this.pendingText, this.stopBar]);
 
     this.overlay = scene.add.container(BOARD_W / 2, BOARD_H / 2).setVisible(false);
     const dim = scene.add.rectangle(0, 0, BOARD_W, BOARD_H, 0x1a1030, 0.72);
@@ -169,6 +190,7 @@ export class BoardView {
    * warnOn を false にすると、危険・天井の警告音を鳴らさない（オンラインの相手の盤面。相手のピンチはこの端末で知らせない）。
    */
   handleEvents(events: BoardEvent[], soundOn: boolean, hapticOn = false, warnOn = soundOn): void {
+    this.warnOn = warnOn;
     if (hapticOn && this.board.panic && !this.board.gameOver) haptics.panic(this.scene.time.now);
     for (const e of events) {
       switch (e.type) {
@@ -204,6 +226,9 @@ export class BoardView {
           break;
         case "attack":
           if (soundOn) audio.attack();
+          break;
+        case "garbageIncoming":
+          this.incomingPopup(e.rows);
           break;
         case "levelUp":
           if (soundOn) audio.levelUp();
@@ -266,7 +291,7 @@ export class BoardView {
     const py = (ROWS - 1 - y) * CELL;
     const items: { text: string; color: string; size: number }[] = [];
     if (panels >= 4) items.push({ text: String(panels), color: "#ff5c6c", size: 20 + Math.min(12, (panels - 4) * 2) });
-    if (chain >= 2) items.push({ text: chain >= 14 ? "x?" : `x${chain}`, color: chainColor(chain), size: 22 + Math.min(20, (chain - 2) * 3) });
+    if (chain >= 2) items.push({ text: `x${chain}`, color: chainColor(chain), size: 22 + Math.min(20, (chain - 2) * 3) });
     items.forEach((it, i) => {
       const t = this.scene.add
         .text(px, py + i * 26, it.text, {
@@ -294,6 +319,39 @@ export class BoardView {
     });
     // 連鎖が伸びたら得点の文字も弾む
     if (chain >= 2) this.scoreBump = 1;
+  }
+
+  /** 予告おじゃまのバーの左端と上端（局所座標）。盤面の中の上端に置く。HUD やポーズのボタンと重ならず、どの向きでも同じ場所に出る */
+  private static readonly PENDING_X = 4;
+  private static readonly PENDING_Y = 6;
+  /** 直近の draw でバーが占めた幅。「+N」を出す位置に使う */
+  private pendingWidth = 0;
+
+  /**
+   * 「+N」の吹き出し。相手の板がこの盤面の予告に入った段数。
+   * 自分の盤面なら「これから降る量」、相手の盤面なら「自分が送った量」として見える
+   */
+  private incomingPopup(rows: number): void {
+    const text = this.scene.add
+      .text(BoardView.PENDING_X + this.pendingWidth + 40, BoardView.PENDING_Y + 12, `+${rows}`, { fontFamily: FONT_UI, fontSize: "24px", fontStyle: "700", color: "#ff8a94", stroke: "#2a1040", strokeThickness: 5 })
+      .setOrigin(0.5)
+      .setScale(1.8)
+      .setAlpha(0);
+    this.root.add(text);
+    this.scene.tweens.add({ targets: text, scale: 1, alpha: 1, duration: 160, ease: "Back.Out", easeParams: [2] });
+    this.scene.tweens.add({ targets: text, y: text.y - 26, alpha: 0, delay: 600, duration: 420, ease: "Quad.In", onComplete: () => text.destroy() });
+  }
+
+  /** 盤面の上のほうに短い知らせを出す。相手の大きな連鎖など、自分の盤面から目を離せない場面向け */
+  announce(message: string, color: string): void {
+    const text = this.scene.add
+      .text(BOARD_W / 2, CELL * 2, message, { fontFamily: FONT_UI, fontSize: "20px", fontStyle: "700", color, stroke: "#2a1040", strokeThickness: 5, align: "center" })
+      .setOrigin(0.5)
+      .setScale(1.6)
+      .setAlpha(0);
+    this.root.add(text);
+    this.scene.tweens.add({ targets: text, scale: 1, alpha: 1, duration: 180, ease: "Back.Out", easeParams: [2] });
+    this.scene.tweens.add({ targets: text, alpha: 0, delay: 1100, duration: 400, ease: "Quad.In", onComplete: () => text.destroy() });
   }
 
   /** 毎描画フレーム呼ぶ。Board の現在状態をそのまま画面に反映する。 */
@@ -389,6 +447,7 @@ export class BoardView {
       this.infoText.setText(`MOVES ${left}`);
       this.stopBar.setVisible(false);
       this.pendingGfx.clear();
+      this.pendingText.setVisible(false);
       return;
     }
     // 得点は数字が回って追いつく。差の 15% ずつ（最低 1）詰め、連鎖の直後は文字を弾ませる
@@ -422,17 +481,28 @@ export class BoardView {
     this.stopBar.setSize(stopW, 4);
     this.stopBar.setVisible(stopW > 0);
 
-    // 予告おじゃま。HUD が上なら盤面の上に、横なら HUD の下に並べる
+    // 予告おじゃま。盤面の中の上端に、板を高さぶんのバーで並べ、右に段数の合計を出す。
+    // transit を過ぎて降りられる板があれば、橙に点滅させて「盤面が静止した瞬間に降る」ことを知らせ、その瞬間に一度だけ警告音を鳴らす
     this.pendingGfx.clear();
+    const rows = b.pendingGarbage.reduce((sum, g) => sum + g.height, 0);
+    const ready = !b.gameOver && b.pendingGarbage.some((g) => g.readyAt === undefined || g.readyAt <= b.frame);
+    if (ready && !this.pendingReady && this.warnOn && active) audio.garbageWarn();
+    this.pendingReady = ready;
+    const pulse = ready ? 0.55 + 0.45 * Math.abs(Math.sin(b.frame * 0.25)) : 1;
     let px = 0;
     for (const spec of b.pendingGarbage) {
-      const w = spec.width * 5;
-      const h = Math.max(4, spec.height * 4);
-      this.pendingGfx.fillStyle(spec.type === "shock" ? 0x5c5c66 : 0x8a8a96, 1);
-      if (this.hud === "top") this.pendingGfx.fillRect(px, -12 - h, w, h);
-      else if (this.hud === "right") this.pendingGfx.fillRect(BOARD_W + HUD_GAP + px, 96, w, h);
-      else this.pendingGfx.fillRect(-HUD_GAP - px - w, 96, w, h);
+      const w = spec.width * 6;
+      const h = Math.max(5, spec.height * 5);
+      const armed = spec.readyAt === undefined || spec.readyAt <= b.frame;
+      this.pendingGfx.fillStyle(armed ? 0xff9a3c : spec.type === "shock" ? 0x8c8c9a : 0xb4b4c2, armed ? pulse : 0.9);
+      this.pendingGfx.fillRect(BoardView.PENDING_X + px, BoardView.PENDING_Y, w, h);
       px += w + 4;
+    }
+    this.pendingWidth = px;
+    this.pendingText.setVisible(rows > 0);
+    if (rows > 0) {
+      this.pendingText.setText(String(rows)).setColor(ready ? "#ffb060" : TEXT_COLOR).setAlpha(ready ? pulse : 1);
+      this.pendingText.setPosition(BoardView.PENDING_X + px + 2, BoardView.PENDING_Y - 3).setOrigin(0, 0);
     }
   }
 

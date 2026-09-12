@@ -3,7 +3,7 @@ import { Game, PUZZLES, puzzleName, type CpuLevel, type GameMode, type Input, NO
 import { loadHighScores, recordCpuResult, recordPuzzleClear, recordScore } from "./highscore";
 import { recordProgress } from "../scores/progress";
 import { showScoreResult } from "./score-result";
-import { BoardView, type HudSide } from "./BoardView";
+import { BoardView, announceOpponentChains, type HudSide } from "./BoardView";
 import { P1_KEYS, P2_KEYS, PlayerInput } from "./input";
 import { audio } from "./shared";
 import { musicDanger } from "./musicDanger";
@@ -451,6 +451,8 @@ export class GameScene extends Phaser.Scene {
       this.touches.forEach((touch) => touch.destroy());
       this.raiseHints.forEach((hint) => hint.setVisible(false));
     }
+    // CPU 戦は相手の盤面が小さいので、相手の大きな連鎖を自分の盤面に知らせる。2 人対戦は同じ画面で両方見えている
+    if (this.mode === "cpu") announceOpponentChains(this.game_.boards[1].events, this.views[0]);
     this.game_.boards.forEach((b, i) => {
       this.views[i].handleEvents(b.events, true, Boolean(this.inputs[i]));
       // 自分の盤面の大きな連鎖は画面ごと揺らし、5 連鎖からは閃光も足す。
