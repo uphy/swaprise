@@ -537,24 +537,15 @@ export class MenuScene extends Phaser.Scene {
         },
       });
     }
-    // 全画面（Android Chrome など）。standalone の PWA では不要なので出さない。要求はボタンの押下（ユーザー操作）の中で通る
+    // 全画面（Android Chrome など）。standalone の PWA では不要なので出さない。要求はボタンの押下（ユーザー操作）の中で通る。
+    // 表示は「望んでいるか」。ブラウザの戻る操作で一時的に解除されても希望は変わらず次のタップで入り直すので、
+    // 今全画面かどうかを出すと表示と挙動が食い違う
     const withFullscreen = fullscreen.supported && layout.touch;
-    const fsLabel = (): string => t("FULL SCREEN: {state}", { state: t(fullscreen.active ? "ON" : "OFF") });
+    const fsLabel = (): string => t("FULL SCREEN: {state}", { state: t(fullscreen.wanted ? "ON" : "OFF") });
     if (withFullscreen) buttons.push({ label: fsLabel(), name: "fullscreen", onPress: () => fullscreen.toggle() });
     const overlay = this.openOverlay("settings-panel", t("SETTINGS"), "", buttons);
-    if (!withFullscreen) return;
     const fsBtn = overlay.buttons.find((b) => b.name === "fullscreen");
-    const onChange = (): void => {
-      fsBtn?.setText(fsLabel());
-    };
-    document.addEventListener("fullscreenchange", onChange);
-    document.addEventListener("webkitfullscreenchange", onChange);
-    const off = (): void => {
-      document.removeEventListener("fullscreenchange", onChange);
-      document.removeEventListener("webkitfullscreenchange", onChange);
-    };
-    overlay.panel.once("destroy", off);
-    this.events.once("shutdown", off);
+    fsBtn?.on("pointerdown", () => fsBtn.setText(fsLabel()));
   }
 
   /** 操作の説明。端末に合わせてタッチかキーボードの説明を出す。 */

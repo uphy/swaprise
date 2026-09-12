@@ -335,6 +335,19 @@ test("タッチ端末は最初のタップで全画面に入り、SETTINGS の F
   await page.touchscreen.tap(at.x, at.y);
   await page.waitForFunction(() => localStorage.getItem("swaprise.fullscreen.v1") === "0" && !document.fullscreenElement);
   expect((await toScreen("fullscreen", true))!.text).toBe("FULL SCREEN: OFF");
+  // 戻る操作などで全画面が解けても、表示は「望んでいるか」を出し続ける（次のタップで入り直すので、今の状態を出すと食い違う）
+  await page.evaluate(() => (window as any).__swapriseScenes.menu.closeOverlay());
+  await page.evaluate(() => localStorage.setItem("swaprise.fullscreen.v1", "1"));
+  await page.reload();
+  await page.waitForFunction(() => Boolean((window as any).__swapriseScenes?.menu));
+  await page.waitForTimeout(300);
+  const settingsOn = (await toScreen("settings"))!;
+  await page.touchscreen.tap(settingsOn.x, settingsOn.y);
+  await page.waitForFunction(() => Boolean(document.fullscreenElement));
+  await page.evaluate(() => document.exitFullscreen());
+  await page.waitForFunction(() => !document.fullscreenElement);
+  expect((await toScreen("fullscreen", true))!.text).toBe("FULL SCREEN: ON");
+  await page.evaluate(() => localStorage.setItem("swaprise.fullscreen.v1", "0"));
   // 切った状態は次の読み込みでも守られ、タップしても入らない
   await page.reload();
   await page.waitForFunction(() => Boolean((window as any).__swapriseScenes?.menu));
