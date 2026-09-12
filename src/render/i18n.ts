@@ -22,7 +22,7 @@ const JA: Record<string, string> = {
   "Endless / time attack. Your name and records will be visible to everyone.": "エンドレス・タイムアタックが対象です。名前と記録は誰でも閲覧できます。",
   "About publishing scores": "公開・保存について詳しく",
   "Share your scores?": "スコアをオンライン公開しますか？",
-  "PLAYER SETTINGS": "プレイヤー設定", "ONLINE RECORDS": "オンライン記録", "THIS DEVICE": "この端末の記録",
+  "PLAYER SETTINGS": "プレイヤー設定", "ONLINE RECORDS": "オンライン記録", "THIS DEVICE": "この端末",
   "Your name is shared with online play. No account is required.": "名前はオンライン対戦と共通です。アカウント登録は不要です。",
   "Automatically publish standard endless and time attack scores": "標準のエンドレス・タイムアタックのスコアを自動公開する",
   "Your name, score, chain and date will be public. Each play is a separate record. Past names and published records remain when you change this setting.": "名前・スコア・最大連鎖・日付が公開されます。プレイごとに記録します。名前の変更や公開オフのあとも、公開済みの記録と当時の名前は残ります。",
