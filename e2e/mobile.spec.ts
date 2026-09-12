@@ -187,6 +187,16 @@ test("盤面の下のせり上げバーを1本指で押している間はせり�
   // 当たり判定は指で押せる大きさ（44dp 以上）
   expect(hint.w).toBeGreaterThanOrEqual(44);
   expect(hint.h).toBeGreaterThanOrEqual(44);
+  // せり上げバーは盤面の直下にあり、時間などの行はバーの下に隙間を空けて置く（行とバーが接して詰まって見えていた）
+  const rows = await page.evaluate(() => {
+    const s = (window as any).__swaprise.scene;
+    const v = s.views[0];
+    const info = v.infoText.getBounds();
+    const bar = s.raiseHints[0];
+    return { boardBottom: v.oy + 12 * 32 * v.scale, barTop: bar.y - bar.barH / 2, barBottom: bar.y + bar.barH / 2, infoTop: info.y };
+  });
+  expect(rows.barTop - rows.boardBottom).toBeLessThanOrEqual(16);
+  expect(rows.infoTop - rows.barBottom).toBeGreaterThanOrEqual(6);
   const manualRows = () => page.evaluate(() => (window as any).__swaprise.game.boards[0].stats.manualRows as number);
   const raising = () => page.evaluate(() => (window as any).__swaprise.scene.touches[0].raising as boolean);
   const cdp = await page.context().newCDPSession(page);
