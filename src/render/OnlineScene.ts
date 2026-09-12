@@ -26,6 +26,7 @@ import { Prediction } from "../net/prediction";
 import { NO_INPUT } from "../core/types";
 import "./online.css";
 import { t } from "./i18n";
+import { backHintDuration } from "./backHint";
 /** ロビーとオンライン盤面。ローカル対戦のポーズ・再開始処理は呼ばない。 */
 export class OnlineScene extends Phaser.Scene {
   session: OnlineSession | null = null;
@@ -55,6 +56,13 @@ export class OnlineScene extends Phaser.Scene {
   private stalledMs = 0;
   private raise = false;
   private raiseHint: Phaser.GameObjects.Text | null = null;
+  /** 戻る操作を受け止めるために自分で積んだ履歴があるか。 */
+  private historyPushed = false;
+  /** 対戦中に戻る操作をした人への案内を出している期限（Date.now()）。0 なら出していない。 */
+  private backHintUntil = 0;
+  private backHintTimer: ReturnType<typeof setTimeout> | null = null;
+  /** 退出の要求を送って結果を待っている間。戻る操作を重ねて送らないための印。 */
+  private leaving = false;
   constructor() {
     super("online");
   }
@@ -68,6 +76,7 @@ export class OnlineScene extends Phaser.Scene {
     this.settings = false;
     this.actionKey = "";
     this.closing = false;
+    this.leaving = false;
     this.phase = "";
     this.raise = false;
     this.layout = layoutFor("cpu");
@@ -112,13 +121,32 @@ export class OnlineScene extends Phaser.Scene {
       }
     };
     window.addEventListener("resize", this.resizeHandler);
-    const back = () => {
+    const openSettings = () => {
       this.settings = true;
       this.actionKey = "";
       this.refresh();
     };
-    window.addEventListener("popstate", back);
-    this.input.keyboard!.on("keydown-ESC", back);
+    this.input.keyboard!.on("keydown-ESC", openSettings);
+    // Android の戻るジェスチャ（画面端からの横スワイプ）は盤面のドラッグと重なりやすく、履歴を積んでいないと
+    // ページを離れて（PWA なら終了して）切断負けになる。履歴を1つ積んで popstate で受け止める。
+    // 対戦が始まってからは何もせず、対戦中は案内だけ出す（相手がいるので止められず、設定を開くと自分の盤面が放置される）。
+    // 部屋に入る前・待機中はメニューへ戻る。元の履歴は ?room= を消しておき、戻った先で再入室しないようにする。
+    const entered = location.href;
+    history.replaceState(null, "", location.pathname);
+    history.pushState({ swaprise: "online" }, "", entered);
+    this.historyPushed = true;
+    const onPop = () => {
+      if (!this.historyPushed) return;
+      history.pushState({ swaprise: "online" }, "", location.href);
+      const phase = this.session?.state?.phase;
+      if (phase === "playing" || phase === "suspended" || phase === "countdown") {
+        this.showBackHint();
+        return;
+      }
+      if (phase === "result" || phase === "closed") return;
+      if (!this.leaving) this.menu();
+    };
+    window.addEventListener("popstate", onPop);
     this.events.once("shutdown", () => {
       this.closing = true;
       this.epoch++;
@@ -129,9 +157,17 @@ export class OnlineScene extends Phaser.Scene {
       this.playerInput?.destroy();
       document.removeEventListener("visibilitychange", this.visibleHandler);
       window.removeEventListener("resize", this.resizeHandler);
-      window.removeEventListener("popstate", back);
+      window.removeEventListener("popstate", onPop);
+      if (this.backHintTimer !== null) clearTimeout(this.backHintTimer);
+      this.backHintTimer = null;
+      this.backHintUntil = 0;
       wakeLock.release();
       audio.stopBgm();
+      if (this.historyPushed) {
+        // 自分で積んだ履歴を消す。popstate は外したリスナーには届かない。
+        this.historyPushed = false;
+        history.back();
+      }
     });
     (window as any).__swapriseOnline = this;
     void this.initialize();
@@ -478,7 +514,9 @@ export class OnlineScene extends Phaser.Scene {
     else if (state.phase === "playing")
       this.status.textContent = this.settings
         ? t("The match continues while settings are open.")
-        : `${other?.name ?? t("Opponent")} · ${t("playing")}${state.remaining <= 60000 ? ` · ${Math.ceil(state.remaining / 1000)}s` : ""}`;
+        : Date.now() < this.backHintUntil
+          ? t("Back does not leave the game. Use SETTINGS to leave.")
+          : `${other?.name ?? t("Opponent")} · ${t("playing")}${state.remaining <= 60000 ? ` · ${Math.ceil(state.remaining / 1000)}s` : ""}`;
     else if (state.phase === "closed")
       this.status.textContent = t("The opponent left or the room closed.");
     else if (state.result) {
@@ -692,6 +730,18 @@ export class OnlineScene extends Phaser.Scene {
       L.phoneLandscape ? view.oy + 180 : view.oy + BOARD_H + 44,
     );
   }
+  /** 対戦中に戻る操作をした人へ、離れないことと退出の手順を数秒だけ知らせる。 */
+  private showBackHint(): void {
+    const DURATION = backHintDuration();
+    this.backHintUntil = Date.now() + DURATION;
+    if (this.backHintTimer !== null) clearTimeout(this.backHintTimer);
+    this.backHintTimer = setTimeout(() => {
+      this.backHintTimer = null;
+      this.backHintUntil = 0;
+      if (!this.closing) this.refresh();
+    }, DURATION);
+    this.refresh();
+  }
   private menu(): void {
     const epoch = this.epoch;
     const finish = () => {
@@ -702,8 +752,10 @@ export class OnlineScene extends Phaser.Scene {
     if (!this.session) { finish(); return; }
     this.actions.replaceChildren();
     this.status.textContent = t("Leaving room…");
+    this.leaving = true;
     void this.session.leaveAndWait().then((left) => {
       if (this.closing || this.epoch !== epoch) return;
+      this.leaving = false;
       if (left) finish();
       else {
         this.status.textContent = t("Could not leave yet. Check your connection and retry.");
