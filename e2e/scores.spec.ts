@@ -56,7 +56,7 @@ test("settings share online name and rankings handle network failures safely", a
   await page.waitForTimeout(250);
   await page.evaluate(() => { const s = (window as any).__swapriseScenes.menu; s.closeOverlay(); s.showRecords(); });
   await page.route("**/api/scores?*", (r) => r.fulfill({ status: 503, json: {} }));
-  await page.getByRole("button", { name: "ONLINE", exact: true }).click();
+  await page.getByRole("button", { name: "ONLINE ENDLESS", exact: true }).click();
   await expect(page.getByRole("status")).toContainText("Could not load rankings");
   await page.unroute("**/api/scores?*");
   await page.route("**/api/scores?*", (r) => r.fulfill({ json: { scores: [{ id: "one", name: "<img src=x onerror=alert(1)>", score: 321, maxChain: 2, createdAt: Date.now() }] } }));
@@ -64,8 +64,8 @@ test("settings share online name and rankings handle network failures safely", a
   await expect(page.getByRole("listitem")).toContainText("<img src=x onerror=alert(1)>");
   expect(await page.getByRole("listitem").evaluate((el) => parseFloat(getComputedStyle(el).fontSize))).toBeGreaterThanOrEqual(22);
   await expect(page.locator("dialog img")).toHaveCount(0);
-  await page.getByRole("button", { name: "TIME ATTACK", exact: true }).click();
-  await expect(page.getByRole("button", { name: "TIME ATTACK", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await page.getByRole("button", { name: "ONLINE TIME ATTACK", exact: true }).click();
+  await expect(page.getByRole("button", { name: "ONLINE TIME ATTACK", exact: true })).toHaveAttribute("aria-pressed", "true");
   await page.getByRole("button", { name: "THIS DEVICE" }).click();
   await expect(page.getByRole("heading", { name: "ENDLESS TOP 5" })).toBeVisible();
   await page.getByRole("button", { name: "CLOSE", exact: true }).click();
@@ -125,7 +125,7 @@ for (const viewport of [{ width: 360, height: 640 }, { width: 844, height: 390 }
     await page.goto("/?bgm=0&opening=0");
     await page.waitForFunction(() => Boolean((window as any).__swapriseScenes?.menu));
     await page.evaluate(() => (window as any).__swapriseScenes.menu.showRecords());
-    await page.getByRole("button", { name: "ONLINE", exact: true }).click();
+    await page.getByRole("button", { name: "ONLINE ENDLESS", exact: true }).click();
     await expect(page.getByRole("listitem")).toHaveCount(50);
     const close = page.getByRole("button", { name: "CLOSE", exact: true });
     const before = await close.boundingBox();
@@ -133,7 +133,7 @@ for (const viewport of [{ width: 360, height: 640 }, { width: 844, height: 390 }
     await expect(page.getByText("Player 50", { exact: true })).toBeInViewport();
     await expect(close).toBeInViewport();
     await expect(page.getByRole("button", { name: "THIS DEVICE" })).toBeInViewport();
-    await expect(page.getByRole("button", { name: "TIME ATTACK", exact: true })).toBeInViewport();
+    await expect(page.getByRole("button", { name: "ONLINE TIME ATTACK", exact: true })).toBeInViewport();
     expect(await close.boundingBox()).toEqual(before);
     expect(await page.getByRole("dialog").evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
     await close.click();

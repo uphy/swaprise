@@ -139,8 +139,8 @@ export function showRecordsDialog(scene: Phaser.Scene): void {
   prow.append(bar);
   puzzle.append(prow);
 
+  // 切り替えは一段。この端末 / オンライン エンドレス / オンライン タイムアタック の 3 つで、スクロールしても上に残る
   const online = element("section"); body.append(online); online.hidden = true;
-  const tabs = element("nav"); tabs.className = "rec-tabs rec-tabs-sub"; tools.append(tabs); tabs.hidden = true;
   const onlineCard = card(online, "");
   const onlineTitle = onlineCard.querySelector("h3")!;
   onlineCard.append(element("p", t("Standard rules · top 50 per mode · unverified scores")));
@@ -149,14 +149,20 @@ export function showRecordsDialog(scene: Phaser.Scene): void {
   const list = element("ol"); list.className = "rec-table"; onlineCard.append(list);
   let request: AbortController | undefined;
   let current: ScoreMode = "endless";
+  const modeName = (mode: ScoreMode): string => (mode === "endless" ? t("ENDLESS") : t("TIME ATTACK"));
+  const select = (which: "local" | ScoreMode): void => {
+    for (const b of sources.querySelectorAll("button")) b.setAttribute("aria-pressed", String(b.dataset.tab === which));
+    body.scrollTop = 0;
+  };
   const load = async (mode: ScoreMode): Promise<void> => {
     current = mode; request?.abort(); request = new AbortController();
     const signal = request.signal;
-    onlineTitle.textContent = mode === "endless" ? t("ENDLESS") : t("TIME ATTACK");
+    select(mode);
+    local.hidden = true; online.hidden = false;
+    onlineTitle.textContent = modeName(mode);
     onlineTitle.append(" ", element("small", t("TOP 50")));
     const count = pendingScores().length;
     pending.textContent = count ? t("PENDING UPLOADS: {count}", { count }) : "";
-    for (const b of tabs.querySelectorAll("button")) b.setAttribute("aria-pressed", String(b.dataset.mode === mode));
     status.textContent = t("Loading…"); list.replaceChildren();
     try {
       const scores = await ranking(mode, signal);
@@ -165,20 +171,18 @@ export function showRecordsDialog(scene: Phaser.Scene): void {
       scores.forEach((entry, i) => scoreRow(list, String(i + 1), entry.name, entry.score, entry.maxChain, new Date(entry.createdAt).toISOString().slice(0, 10)));
     } catch { if (!signal.aborted) status.textContent = t("Could not load rankings. Local records are still available."); }
   };
-  for (const [mode, title] of [["endless", "ENDLESS"], ["timeattack", "TIME ATTACK"]] as const) {
-    button(tabs, title, () => void load(mode)).dataset.mode = mode;
-  }
   button(onlineCard, "RETRY", () => { void flushScores(); void load(current); });
   const localButton = button(sources, "THIS DEVICE", () => {
-    request?.abort(); online.hidden = true; tabs.hidden = true; local.hidden = false; body.scrollTop = 0;
-    localButton.setAttribute("aria-pressed", "true"); onlineButton.setAttribute("aria-pressed", "false");
+    request?.abort(); online.hidden = true; local.hidden = false; select("local");
   });
-  const onlineButton = button(sources, "ONLINE", () => {
-    local.hidden = true; online.hidden = false; tabs.hidden = false; body.scrollTop = 0;
-    onlineButton.setAttribute("aria-pressed", "true"); localButton.setAttribute("aria-pressed", "false");
-    void load(current);
-  });
-  localButton.setAttribute("aria-pressed", "true"); onlineButton.setAttribute("aria-pressed", "false");
+  localButton.dataset.tab = "local";
+  for (const mode of ["endless", "timeattack"] as const) {
+    const b = element("button"); b.type = "button"; b.dataset.tab = mode;
+    b.append(element("small", t("ONLINE")), modeName(mode));
+    b.onclick = () => void load(mode);
+    sources.append(b);
+  }
+  select("local");
   button(footer, "CLOSE", close);
   root.addEventListener("close", () => request?.abort(), { once: true });
 }
