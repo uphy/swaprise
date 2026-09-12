@@ -1,1 +1,0 @@
-Crop from nika-portrait-pixel-v2.png: (250, 40, 735, 460). Fit in 256x256 with nearest-neighbor resize. No separate generation.

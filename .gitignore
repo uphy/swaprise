@@ -10,12 +10,3 @@ test-results-online/
 
 .wrangler-preview.json
 .wrangler-deploy.json
-
-# 制作素材から再生成する配信用データと、登録前の一時出力
-public/characters/
-src/generated/characters.ts
-output/imagegen/
-
-# sprite-genのローカル排他制御ファイル
-.sprite-gen.lock
-.*.sg-rwlock

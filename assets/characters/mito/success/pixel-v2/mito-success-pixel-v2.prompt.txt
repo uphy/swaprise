@@ -1,4 +1,0 @@
-Create a WIDE LANDSCAPE 1536x1024 transparent-background pixel art sprite sheet of this exact courier girl. EIGHT full-body frames in a 4-column 2-row grid of equal cells, read left to right then top to bottom. Each whole figure centered within its own cell with ample empty margins, no neighboring overlap. SUCCESS reaction: notices success, gives an asymmetric smile, briefly raises brass delivery-tag ring with tags fanning out, lowers it and returns to her relaxed initial stance. Feet planted, no jumping. Identical face, teal coat, low ponytail, satchel and accessories, fixed size and floor baseline, crisp dark pixel outlines. Only characters and empty transparent space.
-
-生成: 内蔵 gpt-image。参照: ../../portrait/pixel-v2/mito-portrait-pixel-v2.png
-画像の後処理なし。生成されたアルファチャンネルを保持。

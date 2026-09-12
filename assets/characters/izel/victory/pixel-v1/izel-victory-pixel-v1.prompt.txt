@@ -1,5 +1,0 @@
-Pixel-art animation SPRITE SHEET of the exact adult woman in this reference. A restrained victory: deeply exhale, shoulders relax, then look ahead with quiet resolve. No jumping or cheering and no drawn breath symbols. Choose enough frames for smooth acting. Same adult face, low bun, charcoal coat, copper clasp, clothes and operations board throughout. Fixed camera and identical body proportions and pixel scale. Arrange all full-body frames in a regular grid read left to right then top to bottom, with margin around each figure. Uniform solid magenta #FF00FF background only, no glow, gradients, shadows, checkerboard, grid lines, text or symbols.
-
-Reference: izel-portrait-pixel-v1-magenta.png
-
-Background correction: None

@@ -1,4 +1,0 @@
-Create a WIDE LANDSCAPE 1536x1024 transparent-background pixel art sprite sheet of this exact female technical trainee Sena. EIGHT full-body frames in a 4-column 2-row equal-cell grid, read left-to-right then top-to-bottom. Center each figure with clear margins inside her cell. IMPACT reaction: unseen heavy landing briefly startles her, bends knees and steadies the record board at her right hip, plants feet firmly, straightens jacket and recovers upright posture. Controlled but noticeable reaction. No blocks, debris or effects. Preserve exact face, bob, pale high-collar jacket with two brass clasps, navy wide trousers and shoes. Fixed body scale, camera and ground baseline, clean dark pixel outlines. Only characters and transparent empty space.
-
-生成: 内蔵gpt-image。画像加工なし。
-参照: ../../portrait/pixel-v1/sena-portrait-pixel-v1.png

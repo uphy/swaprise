@@ -18,8 +18,8 @@ pnpm puzzles          # パズル面の生成
 ## 構造
 
 - `src/core/` はゲームロジック。DOM・Phaser に依存しない純粋な TypeScript で、60fps の固定 tick の決定論的シミュレーション。同じ seed と入力列なら同じ結果になる。ここは Node だけで動くので、単体テストもシミュレーションもブラウザなしで回せる
-- `src/render/` は Phaser 4 の描画・入力・音。盤面と音はコードで生成する。キャラクター画像は `assets/characters/` で全版を管理し、採用版だけを自動生成して配信する。登録は `docs/characters/asset-management.md` に従う
-- `src/characters/` は人物の一覧・選択の保存・反応の優先順位。DOM・Phaser に依存しない。表示は `src/render/CharacterView.ts`
+- `src/render/` は Phaser 4 の描画・入力・音。盤面と効果音はコードで生成し、曲は `public/audio/` の mp3 を区間ループする
+- **キャラクターとストーリーは持たない**。盤面・演出・音だけで成り立つパズルにする。連鎖の気持ちよさやピンチの緊張は、人物の反応ではなく画面効果と音で出す
 - `tests/core/` が単体テスト、`e2e/` が Playwright。`e2e` からは `window.__swaprise`（game / scene / tick）と `window.__swapriseAudio` で内部を触れる
 - タイミングは `src/core/constants.ts` の `TIMING` にフレーム数でまとまっている
 

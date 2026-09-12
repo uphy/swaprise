@@ -1,4 +1,0 @@
-Create a WIDE LANDSCAPE 1536x1024 transparent-background pixel art sprite sheet of this exact female technical trainee Sena. EIGHT full-body frames in a 4-column 2-row equal-cell grid, read left-to-right then top-to-bottom. Center each figure within her cell with clear margins. SUCCESS reaction: eyes briefly follow an expected result, a small satisfied nod and restrained smile, gently close a hand near waist, then return to neutral upright stance. No jump or exaggerated celebration. Preserve exact face, bob, pale high-collar jacket with two brass clasps, navy wide trousers, shoes and right-hip record board. Fixed scale, camera and foot baseline, clean dark pixel outlines. Only characters and transparent empty space.
-
-生成: 内蔵gpt-image。画像加工なし。
-参照: ../../portrait/pixel-v1/sena-portrait-pixel-v1.png

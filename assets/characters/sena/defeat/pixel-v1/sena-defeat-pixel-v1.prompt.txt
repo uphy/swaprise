@@ -1,4 +1,0 @@
-Create a WIDE LANDSCAPE 1536x1024 transparent-background pixel art sprite sheet of this exact female technical trainee Sena. TWELVE full-body frames in a 4-column 3-row equal-cell grid, chronological reading order, whole figures centered with clear margins. DEFEAT: first stands silently frozen, then eyes lower, eyebrows tighten and lips press together as delayed frustration appears; shoulders sink subtly and hands tense at sides. Finish quietly downcast, no recovery, no crying or smile. The right-hip record board stays in place. Preserve exact face, bob, pale high-collar jacket with two brass clasps, navy wide trousers and low shoes. Fixed body scale, camera and ground baseline, crisp dark pixel outlines. Only characters and transparent empty space.
-
-生成: 内蔵gpt-image。画像加工なし。
-参照: ../../portrait/pixel-v1/sena-portrait-pixel-v1.png

@@ -15,8 +15,6 @@ import { wakeLock } from "./wakelock";
 import { fullscreen } from "./fullscreen";
 import { canShare, shareText } from "./share";
 import { BOARD_H, BOARD_W, FONT, TEXT_COLOR, type Layout, layoutFor, sameLayout } from "./theme";
-import { CharacterView } from "./CharacterView";
-import { characterById, isCharacterId, loadSelection } from "../characters/catalog";
 import { t } from "./i18n";
 import { backHintDuration } from "./backHint";
 import { eligibleRun } from "../scores/model";
@@ -31,11 +29,7 @@ export interface GameStart {
   mode: GameMode;
   cpuLevel?: CpuLevel;
   stage?: number;
-  /** 対戦（CPU・2 PLAYERS）で表示する人物。1P と 2P（CPU）の順。 */
-  characters?: [string, string];
 }
-
-const clamp = (v: number, lo: number, hi: number): number => Math.max(lo, Math.min(hi, v));
 
 export class GameScene extends Phaser.Scene {
   private game_!: Game;
@@ -68,9 +62,6 @@ export class GameScene extends Phaser.Scene {
   private wasDanger = false;
   /** ゲーム用に履歴を積んでいるか。メニューへ戻るときに1つ戻して消す。 */
   private historyPushed = false;
-  /** 対戦で表示する人物。盤面と同じ順。1人用のモードでは空。 */
-  characters: CharacterView[] = [];
-  private characterIds: [string, string] | null = null;
   private scoreRun: { id: string; seed: number } | null = null;
 
   constructor() {
@@ -81,16 +72,6 @@ export class GameScene extends Phaser.Scene {
     this.mode = data.mode ?? "endless";
     this.cpuLevel = data.cpuLevel ?? "normal";
     this.stage = Math.max(0, Math.min(PUZZLES.length - 1, data.stage ?? 0));
-    this.characters.forEach((c) => c.destroy());
-    this.characters = [];
-    // 人物は対戦（CPU・2 PLAYERS）だけ。指定がなければ前回の選択
-    if (this.mode === "cpu" || this.mode === "versus") {
-      const saved = loadSelection();
-      const ids = data.characters ?? [saved.p1, saved.p2];
-      this.characterIds = [isCharacterId(ids[0]) ? ids[0] : saved.p1, isCharacterId(ids[1]) ? ids[1] : saved.p2];
-      // 相手側（2P・CPU）は左右を反転して、自分側と向かい合わせる
-      this.characters = this.characterIds.map((id, i) => new CharacterView(this, characterById(id), { flip: i === 1 }));
-    } else this.characterIds = null;
     const params = new URLSearchParams(location.search);
     const seed = Number(params.get("seed")) || (Date.now() & 0xffffff);
     this.scoreRun = eligibleRun(this.mode, params) ? { id: crypto.randomUUID(), seed } : null;
@@ -316,10 +297,6 @@ export class GameScene extends Phaser.Scene {
         this.vsText?.setPosition(W / 2, H / 2 - 40).setFontSize(22).setVisible(true);
         // ポーズボタンは画面の中央下。2P でもどちらからも届く
         this.pauseButton.setPosition(W / 2, H - 26);
-        // 人物は中央の下段、ポーズボタンの上に2人並べる。左右の HUD（得点・予告）は上段なので重ならない
-        const h = clamp((W - 2 * (edge + BOARD_W) - 20) / 2, 70, 120);
-        this.characters[0]?.place(W / 2 - h * 0.45, H - 50, h);
-        this.characters[1]?.place(W / 2 + h * 0.45, H - 50, h);
       }
     } else if (boards.length === 1) {
       placeBoard(0, Math.floor((W - BOARD_W) / 2), top, 1);
@@ -331,14 +308,6 @@ export class GameScene extends Phaser.Scene {
       placeBoard(0, ox1, top, 1);
       placeBoard(1, ox1 + BOARD_W + gap, top, CPU_BOARD_SCALE);
       this.vsText?.setVisible(false);
-      // 人物は CPU の盤面の下の列に、上が CPU・下が自分。盤面と ▲ ▲ ▲ を狭めない
-      const colX = ox1 + BOARD_W + gap + cpuW / 2;
-      const colTop = top + BOARD_H * CPU_BOARD_SCALE + 26;
-      const avail = H - 8 - colTop;
-      const cpuH = clamp(avail * 0.36, 56, 110);
-      const meH = clamp(avail * 0.5, 64, 150);
-      this.characters[1]?.place(colX, colTop + cpuH, cpuH, cpuW);
-      this.characters[0]?.place(colX, Math.min(H - 14, colTop + cpuH + 16 + meH), meH, cpuW);
     } else {
       const gap = L.portrait ? 20 : 120;
       const ox1 = Math.floor(W / 2 - gap / 2 - BOARD_W);
@@ -346,17 +315,6 @@ export class GameScene extends Phaser.Scene {
       placeBoard(0, ox1, top, 1);
       placeBoard(1, ox2, top, 1);
       this.vsText?.setPosition(W / 2, top + BOARD_H / 2).setFontSize(L.portrait ? 18 : 28).setVisible(true);
-      if (L.portrait) {
-        // 縦持ちの 2P 対戦。盤面の横に余白がないので、▲ ▲ ▲ の下の段に2人を小さく並べる
-        const h = clamp(H - top - BOARD_H - 76 - 10, 44, 150);
-        this.characters[0]?.place(W / 2 - 60, H - 10, h);
-        this.characters[1]?.place(W / 2 + 60, H - 10, h);
-      } else {
-        // PC。盤面の左右の余白に、床を盤面の下端に揃えて置く
-        const h = clamp(ox1 - 8, 100, 220);
-        this.characters[0]?.place(ox1 / 2, top + BOARD_H, h);
-        this.characters[1]?.place(ox2 + BOARD_W + (W - ox2 - BOARD_W) / 2, top + BOARD_H, h);
-      }
     }
     // ポーズボタンは自分の盤面の右上（得点表示の右）。横持ちのスマホは上で決めた
     if (!L.phoneLandscape) this.pauseButton.setPosition(this.views[0].ox + BOARD_W - 22, top - 24);
@@ -415,10 +373,10 @@ export class GameScene extends Phaser.Scene {
     audio.startBgm("game");
   }
 
-  /** やり直し。対戦の人物はそのまま引き継ぐ。 */
+  /** やり直し。 */
   private restart(): void {
     fullscreen.sync();
-    this.scene.restart({ mode: this.mode, cpuLevel: this.cpuLevel, stage: this.stage, characters: this.characterIds ?? undefined } satisfies GameStart);
+    this.scene.restart({ mode: this.mode, cpuLevel: this.cpuLevel, stage: this.stage } satisfies GameStart);
   }
 
   /** パズルの次の面へ。 */
@@ -481,13 +439,6 @@ export class GameScene extends Phaser.Scene {
     }
     this.game_.boards.forEach((b, i) => {
       this.views[i].handleEvents(b.events, true, Boolean(this.inputs[i]));
-      // 人物の反応。連鎖・大きな同時消しで成功、自分の盤面へのおじゃま着地で着地。相手の連鎖には反応しない
-      const c = this.characters[i];
-      if (!c) return;
-      for (const e of b.events) {
-        if (e.type === "match" && (e.chain >= 2 || e.panels >= 4)) c.react("success");
-        else if (e.type === "garbageLand") c.react("garbage-land");
-      }
     });
   }
 
@@ -508,11 +459,8 @@ export class GameScene extends Phaser.Scene {
         this.wasDanger = danger;
         audio.setDanger(danger);
       }
-      // 人物のピンチは盤面ごと。曲の判定（自分だけ・どちらか）とは別に、それぞれの盤面を見る
-      this.characters.forEach((c, i) => c.setDanger(musicDanger(this.game_.boards[i])));
       if (this.game_.finished) this.finish();
     }
-    if (!this.paused) this.characters.forEach((c) => c.update(delta));
     this.views.forEach((v) => v.draw());
     this.raiseHints.forEach((h, i) => {
       const on = this.inputs[i]?.lastRaise ?? false;
@@ -608,8 +556,6 @@ export class GameScene extends Phaser.Scene {
       g.boards.forEach((b, i) => {
         const won = g.winner === i;
         this.views[i].showOverlay(draw ? t("DRAW") : won ? t("WIN") : t("LOSE"), `${t("MAX CHAIN")} x${b.maxChain}\n${t("COMBOS")} ${b.stats.combos}  ${t("CHAINS")} ${b.stats.chains}${i === 0 ? recordLine : ""}`);
-        // 結果の動作は途中の反応より優先し、最後の姿勢を保つ。再戦の操作は待たない
-        this.characters[i]?.setResult(draw ? "finish" : won ? "victory" : "defeat");
       });
     }
   }

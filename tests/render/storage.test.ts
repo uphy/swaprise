@@ -37,4 +37,10 @@ describe("migrateLegacyStorage", () => {
     migrateLegacyStorage(s);
     expect([...s.m.entries()]).toEqual([["swaprise.mute.v1", "off"]]);
   });
+
+  it("外した機能（人物選択）のキーを消す", () => {
+    const s = fakeStorage({ "swaprise.characters.v1": '{"p1":"a","p2":"b"}', "swaprise.mute.v1": "on" });
+    migrateLegacyStorage(s);
+    expect([...s.m.keys()]).toEqual(["swaprise.mute.v1"]);
+  });
 });

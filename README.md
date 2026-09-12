@@ -5,7 +5,7 @@
 消去中も手動せり上げは可能。自動せり上がりは消去・停止時間中には進まず、天井接触中・着地の揺れ中・パズル・タイムアタックの時間切れ後は手動でも上げられない。
 
 - ゲームロジックは `src/core/` に閉じ込めた純粋な TypeScript。DOM・Phaser に依存しない
-- 描画・入力・音は `src/render/` で Phaser 4 を使う。盤面と効果音はコードで生成し、曲（メニュー・ゲーム中・ピンチ）は音声ファイル（`public/audio/`）を使う。キャラクター画像は `assets/characters/` で全版を管理し、ビルド前に採用版だけを書き出し、CPU 対戦・2人対戦で選んだ人物を盤面の脇に表示する
+- 描画・入力・音は `src/render/` で Phaser 4 を使う。盤面と効果音はコードで生成し、曲（メニュー・ゲーム中・ピンチ）は音声ファイル（`public/audio/`）を使う。キャラクターやストーリーは持たず、盤面・演出・音だけで成り立つパズルにする
 - スマホの高解像度画面でぼやけないよう、canvas は論理サイズ × devicePixelRatio で作り、カメラの zoom で論理座標を保つ（`src/render/hidpi.ts`）
 - 60fps の固定 tick で進む決定論的シミュレーション。同じ seed と入力列なら同じ結果になる
 
@@ -176,9 +176,3 @@ main への push で GitHub Actions が Cloudflare Workers の `swaprise` にデ
 おじゃまの解凍は下から上、各段は右から左に進む。通常パネルになる最下段の色を先に見せ、上段はおじゃまの姿を保つ。全マスのめくり演出後も45フレーム（0.75秒、レベル50以上は24フレーム）待ち、変換完了までは板をその場に留める。この間に周囲を入れ替えて連鎖を仕込める。
 
 オンライン対戦のローカル確認は`pnpm build && pnpm dev:online`でポート8788を開く。`pnpm e2e:online`で複数ブラウザの通信テストを実行する。構成と無料枠の予算は[オンライン対戦の設計](docs/online-multiplayer.md)を参照。
-
-## キャラクター素材とストーリーの設計
-
-[設定資料](docs/characters/README.md)、[画廊](docs/characters/gallery/index.html)、[素材管理](docs/characters/asset-management.md)を参照。`pnpm assets` で画廊を更新し、`pnpm assets:check` で検証する。`pnpm dev` / `pnpm build` は採用素材を自動生成する。
-
-[導入設計](docs/story-character-design.md)と[実装計画](docs/story-character-implementation-plan.md)に本編・人物表示の方針をまとめている。
