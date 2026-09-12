@@ -10,6 +10,7 @@ import { DPR, installHiDpiText } from "./render/hidpi";
 import { waitForUpdate } from "./render/update";
 import { setDocumentLanguage } from "./render/i18n";
 import { startScoreSync } from "./scores/client";
+import { fullscreen } from "./render/fullscreen";
 
 // Service Worker。ビルド成果物を precache し、次回以降はオフラインでも開ける。
 // 新しい版があれば、メニューを触れるようになる前に切り替えを済ませる（遊んでいる最中に reload しない）
@@ -26,6 +27,8 @@ Promise.all([waitForUpdate(), loadFonts()]).then(() => {
   installHiDpiText();
   const layout = layoutFor("menu");
 
+  // タッチ端末の既定は全画面。最初のタップで入り、戻る操作などで抜けても次のタップで取り直す
+  fullscreen.watchGestures();
   new Phaser.Game({
     type: Phaser.AUTO,
     parent: "game",

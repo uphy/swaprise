@@ -3,10 +3,13 @@
  *
  * - 要求はユーザー操作（タップ・クリック）の中でしか通らない。Phaser のポインタ処理は DOM イベントと同期なので、
  *   Button の押下から呼べば通る（キー入力は次のフレームに回されるので通らないことがある）
- * - 戻る操作や回転で解除されるので、希望（localStorage）を覚えておき、ゲーム開始・再開のたびに sync() で取り直す
+ * - 戻る操作や回転で解除されるので、希望（localStorage）を覚えておき、メニューのタップ・ゲーム開始・再開のたびに sync() で取り直す
+ * - 希望の既定はタッチ端末で ON、PC で OFF。SETTINGS で切り替えると保存される
  * - ホーム画面に追加した PWA（standalone）は最初から全画面なので何もしない
  * - iPhone の Safari は動画以外に Fullscreen API を使えないので supported が false。案内文でホーム画面への追加を勧める
  */
+import { isTouchDevice } from "./theme";
+
 const KEY = "swaprise.fullscreen.v1";
 
 interface LegacyDocument extends Document {
@@ -23,13 +26,15 @@ export class Fullscreen {
   private wanted_: boolean;
 
   constructor() {
-    let stored = false;
+    // 何も選んでいなければ、タッチ端末では全画面を望んでいるものとする（スマホは URL バーのぶん盤面が狭い）。
+    // PC は選ばれるまで入らない
+    let stored: string | null = null;
     try {
-      stored = localStorage.getItem(KEY) === "1";
+      stored = localStorage.getItem(KEY);
     } catch {
-      stored = false;
+      stored = null;
     }
-    this.wanted_ = stored;
+    this.wanted_ = stored === null ? isTouchDevice() : stored === "1";
   }
 
   /** ホーム画面に追加した PWA として開いているか。 */
@@ -80,6 +85,15 @@ export class Fullscreen {
     }
     if (on) void this.enter();
     else void this.exit();
+  }
+
+  /**
+   * どの画面でも、指が触れた瞬間に望んでいれば入る。Phaser のボタンは pointerdown を stopPropagation するので
+   * シーンの入力では拾えず、DOM の capture で受ける。ユーザー操作の中なので要求が通る
+   */
+  watchGestures(): void {
+    if (typeof window === "undefined") return;
+    window.addEventListener("pointerdown", () => this.sync(), { capture: true, passive: true });
   }
 
   /** 希望していて今は全画面でなければ取り直す。ゲーム開始・再開など、ユーザー操作の中で呼ぶ。 */

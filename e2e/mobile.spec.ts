@@ -308,41 +308,60 @@ test("横持ちの 2P 対戦は盤面を左右の端に寄せ、HUD を内側に
   expect(info.pauseX).toBe(info.w / 2);
 });
 
-test("SETTINGS の FULL SCREEN ボタンで全画面の希望が保存され、もう一度押すと戻る", async ({ page }) => {
+test("タッチ端末は最初のタップで全画面に入り、SETTINGS の FULL SCREEN で切ると保存され、もう一度押すと戻る", async ({ page }) => {
   await page.goto("/?bgm=0&opening=0");
   await page.waitForFunction(() => Boolean((window as any).__swapriseScenes?.menu));
   await page.waitForTimeout(300);
-  await page.evaluate(() => (window as any).__swapriseScenes.menu.children.getByName("settings").emit("pointerdown"));
-  await page.waitForTimeout(200);
-  const btn = await page.evaluate(() => {
-    const scene = (window as any).__swapriseScenes.menu;
-    const b = scene.children.getByName("settings-panel")?.list.find((o: any) => o.name === "fullscreen");
-    if (!b) return null;
-    const rect = document.querySelector("canvas")!.getBoundingClientRect();
-    const s = (rect.width / scene.scale.width) * scene.cameras.main.zoom;
-    return { x: rect.left + b.x * s, y: rect.top + b.y * s, text: b.text };
-  });
+  expect(await page.evaluate(() => Boolean(document.fullscreenElement))).toBe(false);
+  const toScreen = (name: string, panel = false) =>
+    page.evaluate(([name, panel]) => {
+      const scene = (window as any).__swapriseScenes.menu;
+      const b = panel ? scene.children.getByName("settings-panel")?.list.find((o: any) => o.name === name) : scene.children.getByName(name);
+      if (!b) return null;
+      const rect = document.querySelector("canvas")!.getBoundingClientRect();
+      const s = (rect.width / scene.scale.width) * scene.cameras.main.zoom;
+      return { x: rect.left + b.x * s, y: rect.top + b.y * s, text: b.text };
+    }, [name, panel] as const);
+  // 何も選んでいない状態の最初のタップ（SETTINGS を開く）で全画面に入る。保存はまだしない
+  const settings = (await toScreen("settings"))!;
+  await page.touchscreen.tap(settings.x, settings.y);
+  await page.waitForFunction(() => Boolean(document.fullscreenElement));
+  expect(await page.evaluate(() => localStorage.getItem("swaprise.fullscreen.v1"))).toBeNull();
+  const btn = await toScreen("fullscreen", true);
   expect(btn).not.toBeNull();
-  expect(btn!.text).toBe("FULL SCREEN: OFF");
+  expect(btn!.text).toBe("FULL SCREEN: ON");
   const at = { x: btn!.x, y: btn!.y };
+  // 切ると保存され、全画面から出る
   await page.touchscreen.tap(at.x, at.y);
-  // Fullscreen API の完了と表示の更新は別なので、両方が揃うまで待つ。
+  await page.waitForFunction(() => localStorage.getItem("swaprise.fullscreen.v1") === "0" && !document.fullscreenElement);
+  expect((await toScreen("fullscreen", true))!.text).toBe("FULL SCREEN: OFF");
+  // 戻る操作などで全画面が解けても、表示は「望んでいるか」を出し続ける（次のタップで入り直すので、今の状態を出すと食い違う）
+  await page.evaluate(() => (window as any).__swapriseScenes.menu.closeOverlay());
+  await page.evaluate(() => localStorage.setItem("swaprise.fullscreen.v1", "1"));
+  await page.reload();
+  await page.waitForFunction(() => Boolean((window as any).__swapriseScenes?.menu));
+  await page.waitForTimeout(300);
+  const settingsOn = (await toScreen("settings"))!;
+  await page.touchscreen.tap(settingsOn.x, settingsOn.y);
+  await page.waitForFunction(() => Boolean(document.fullscreenElement));
+  await page.evaluate(() => document.exitFullscreen());
+  await page.waitForFunction(() => !document.fullscreenElement);
+  expect((await toScreen("fullscreen", true))!.text).toBe("FULL SCREEN: ON");
+  await page.evaluate(() => localStorage.setItem("swaprise.fullscreen.v1", "0"));
+  // 切った状態は次の読み込みでも守られ、タップしても入らない
+  await page.reload();
+  await page.waitForFunction(() => Boolean((window as any).__swapriseScenes?.menu));
+  await page.waitForTimeout(300);
+  const settings2 = (await toScreen("settings"))!;
+  await page.touchscreen.tap(settings2.x, settings2.y);
+  await page.waitForTimeout(300);
+  expect(await page.evaluate(() => Boolean(document.fullscreenElement))).toBe(false);
+  // もう一度押すと入り、保存される
+  const btn2 = (await toScreen("fullscreen", true))!;
+  await page.touchscreen.tap(btn2.x, btn2.y);
   await page.waitForFunction(() => {
     const scene = (window as any).__swapriseScenes.menu;
     const button = scene.children.getByName("settings-panel").list.find((o: any) => o.name === "fullscreen");
-    return localStorage.getItem("swaprise.fullscreen.v1") === "1" &&
-      Boolean(document.fullscreenElement) && button.text === "FULL SCREEN: ON";
+    return localStorage.getItem("swaprise.fullscreen.v1") === "1" && Boolean(document.fullscreenElement) && button.text === "FULL SCREEN: ON";
   });
-  const on = await page.evaluate(() => ({
-    stored: localStorage.getItem("swaprise.fullscreen.v1"),
-    active: Boolean(document.fullscreenElement),
-    text: (window as any).__swapriseScenes.menu.children.getByName("settings-panel").list.find((o: any) => o.name === "fullscreen").text,
-  }));
-  expect(on.stored).toBe("1");
-  // headless でも Fullscreen API は通る。通ったならボタンの表示が ON に変わる
-  if (on.active) expect(on.text).toBe("FULL SCREEN: ON");
-  await page.touchscreen.tap(at.x, at.y);
-  await page.waitForFunction(() => localStorage.getItem("swaprise.fullscreen.v1") === "0" && !document.fullscreenElement);
-  const off = await page.evaluate(() => ({ stored: localStorage.getItem("swaprise.fullscreen.v1"), active: Boolean(document.fullscreenElement) }));
-  expect(off).toEqual({ stored: "0", active: false });
 });
