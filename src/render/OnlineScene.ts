@@ -27,6 +27,7 @@ import { Prediction } from "../net/prediction";
 import { NO_INPUT } from "../core/types";
 import "./online.css";
 import { t } from "./i18n";
+import { applyPendingUpdate } from "./update";
 import { backHintDuration } from "./backHint";
 /** ロビーとオンライン盤面。ローカル対戦のポーズ・再開始処理は呼ばない。 */
 export class OnlineScene extends Phaser.Scene {
@@ -351,6 +352,8 @@ export class OnlineScene extends Phaser.Scene {
   }
   private queueFailure(error: unknown): void {
     if (error instanceof ApiError && error.code === "UPDATE_REQUIRED") {
+      // 新版の Service Worker が待機済みなら、押させずにそのまま切り替える（まもなく reload される）
+      if (applyPendingUpdate()) return;
       this.status.textContent = error.message;
       this.actions.replaceChildren();
       this.button(t("RELOAD"), () => location.reload());

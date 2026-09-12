@@ -271,3 +271,28 @@ it("日次上限によるランダム対戦の拒否と通常の受付を区別�
   expect(response.status).toBe(429);
   expect((await response.json()).code).toBe("DAILY_LIMIT");
 });
+
+it("待機中にゲーム版が上がった接続は、掃除処理で閉じて再読み込みを促す", async () => {
+  const values = new Map<string, any>();
+  const fakeSocket = (version: string) => {
+    const a = { queueId: "q-" + version, session: "s-" + version, name: "Guest", visible: true, since: Date.now(), last: Date.now(), version };
+    return { readyState: 1, deserializeAttachment: () => a, serializeAttachment: () => {}, send: vi.fn(), close: vi.fn() };
+  };
+  const stale = fakeSocket("online-v0");
+  const fresh = fakeSocket(GAME_VERSION);
+  const coordinator = new Coordinator({
+    storage: {
+      get: async (key: string) => values.get(key),
+      put: async (key: string, value: any) => { values.set(key, value); },
+      delete: async (key: string) => values.delete(key),
+      list: async () => new Map(),
+      setAlarm: async () => {},
+    },
+    getWebSockets: () => [stale, fresh],
+  } as any, {} as any);
+  await coordinator.alarm();
+  expect(stale.send).toHaveBeenCalledWith(expect.stringContaining("reload"));
+  expect(stale.close).toHaveBeenCalled();
+  expect(fresh.send).not.toHaveBeenCalled();
+  expect(fresh.close).not.toHaveBeenCalled();
+});
