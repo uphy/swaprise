@@ -7,6 +7,7 @@ import { haptics } from "./haptics";
 import { DPR } from "./hidpi";
 import type { TouchInput } from "./touch";
 import { DangerGlow } from "./DangerGlow";
+import { ResultEffect, type ResultOutcome } from "./ResultEffect";
 
 export type HudSide = "top" | "left" | "right";
 /** 盤面と横置きの HUD の間隔。 */
@@ -37,6 +38,7 @@ export class BoardView {
   private readonly infoText: Phaser.GameObjects.Text;
   private readonly pendingGfx: Phaser.GameObjects.Graphics;
   private readonly overlay: Phaser.GameObjects.Container;
+  private resultEffect: ResultEffect | null = null;
   private readonly overlayTitle: Phaser.GameObjects.Text;
   private readonly overlayBody: Phaser.GameObjects.Text;
   private stopBar: Phaser.GameObjects.Rectangle;
@@ -373,6 +375,12 @@ export class BoardView {
     }
 
     this.dangerGlow.update(b, delta, active);
+    if (this.resultEffect) {
+      for (const image of [...this.cells.flat(), ...this.nextCells]) image.setVisible(false);
+      this.cursor.setVisible(false);
+      this.touchGfx.clear();
+      this.resultEffect.update(delta);
+    }
 
     if (this.puzzle) {
       this.scoreText.setText(this.label);
@@ -438,16 +446,28 @@ export class BoardView {
     return true;
   }
 
+  /** 結果の再通知では繰り返さない。演出は見出し・ボタンの後ろに置く。 */
+  playResult(outcome: ResultOutcome): void {
+    if (this.resultEffect) return;
+    this.draw(0, false);
+    this.resultEffect = new ResultEffect(this.scene, [...this.cells.flat(), ...this.nextCells], outcome);
+    this.overlay.addAt(this.resultEffect.root, 1);
+  }
+
   /** 結果を出す。見出しは大きく出て弾みながら収まり、本文は少し遅れて浮かぶ */
   showOverlay(title: string, body: string): void {
     this.overlay.setVisible(true);
+    this.overlayTitle.setColor(this.resultEffect?.outcome === "lose" ? "#d6c9f2" : "#ffe066");
     this.overlayTitle.setText(title).setScale(2.2).setAlpha(0);
     this.overlayBody.setText(body).setAlpha(0);
+    if (this.resultEffect) this.overlayBody.setBackgroundColor("#1a1030dd").setPadding(4);
     this.scene.tweens.add({ targets: this.overlayTitle, scale: 1, alpha: 1, duration: 360, ease: "Back.Out", easeParams: [1.6] });
     this.scene.tweens.add({ targets: this.overlayBody, alpha: 1, delay: 220, duration: 260 });
   }
 
   hideOverlay(): void {
     this.overlay.setVisible(false);
+    this.resultEffect?.destroy();
+    this.resultEffect = null;
   }
 }

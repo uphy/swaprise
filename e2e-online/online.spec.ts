@@ -73,16 +73,17 @@ test("招待URLから2人で対戦し、降参して再戦する", async ({ brow
     page.evaluate(() =>
       (window as any).__swapriseOnline.views.map((v: any) => ({
         title: v.overlayTitle.text,
+        outcome: v.resultEffect?.outcome,
         visible: v.overlay.visible,
       })),
     );
   expect(await overlays(p)).toEqual([
-    { title: "LOSE", visible: true },
-    { title: "WIN", visible: true },
+    { title: "LOSE", outcome: "lose", visible: true },
+    { title: "WIN", outcome: "win", visible: true },
   ]);
   expect(await overlays(q)).toEqual([
-    { title: "LOSE", visible: true },
-    { title: "WIN", visible: true },
+    { title: "LOSE", outcome: "lose", visible: true },
+    { title: "WIN", outcome: "win", visible: true },
   ]);
   const old = await p.evaluate(
     () => (window as any).__swapriseOnline.session.state.match.id,
@@ -95,6 +96,12 @@ test("招待URLから2人で対戦し、降参して再戦する", async ({ brow
       (window as any).__swapriseOnline.session.lockstep.frame > 60,
     old,
   );
+  for (const page of [p, q]) {
+    await page.waitForFunction(() => (window as any).__swapriseOnline?.session?.state?.phase === "playing");
+    expect(await page.evaluate(() => (window as any).__swapriseOnline.views.every(
+      (view: any) => !view.resultEffect && !view.overlay.visible,
+    ))).toBe(true);
+  }
   expect(errors).toEqual([]);
   await a.close();
   await b.close();

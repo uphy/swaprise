@@ -559,7 +559,7 @@ export class GameScene extends Phaser.Scene {
     if (humanWon) {
       audio.win();
       haptics.win();
-      this.celebrate(this.views[0]);
+      if (this.mode !== "cpu" && this.mode !== "versus") this.celebrate(this.views[0]);
     } else {
       audio.lose();
       haptics.gameOver();
@@ -616,6 +616,7 @@ export class GameScene extends Phaser.Scene {
       const draw = g.winner < 0;
       g.boards.forEach((b, i) => {
         const won = g.winner === i;
+        if (!draw) this.views[i].playResult(won ? "win" : "lose");
         this.views[i].showOverlay(draw ? t("DRAW") : won ? t("WIN") : t("LOSE"), `${t("MAX CHAIN")} x${b.maxChain}\n${t("COMBOS")} ${b.stats.combos}  ${t("CHAINS")} ${b.stats.chains}${i === 0 ? recordLine : ""}`);
       });
     }
