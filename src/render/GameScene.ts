@@ -25,8 +25,7 @@ import { eligibleRun } from "../scores/model";
 const RAISE_BAR_H = 30;
 const RAISE_BAR_H_MOUSE = 22;
 const RAISE_BAR_GAP = 34;
-import { enqueueScore, publication } from "../scores/client";
-import { showPlayerSettings } from "./score-dialog";
+import { enqueueScore } from "../scores/client";
 
 const STEP_MS = 1000 / 60;
 /** 縦持ちの CPU 対戦で、CPU の盤面を描く大きさ。 */
@@ -256,10 +255,7 @@ export class GameScene extends Phaser.Scene {
       if (params.get("countdown") === "0") this.beginPlay();
       else this.runCountdown();
     };
-    if (this.scoreRun && publication() === null) {
-      this.starting = true;
-      showPlayerSettings(this, true, start);
-    } else start();
+    start();
   }
 
   /** 画面の向きやサイズが変わったとき。レイアウトが変わるなら置き直す。ゲームの進行はそのまま。 */
@@ -598,7 +594,9 @@ export class GameScene extends Phaser.Scene {
       const b = g.boards[0];
       const progress = this.scoreRun ? recordProgress(this.mode, b.score, loadHighScores()[this.mode][0]?.score ?? null) : null;
       const rank = recordScore(this.mode, b.score, b.maxChain);
-      if (this.scoreRun) enqueueScore({ ...this.scoreRun, mode: this.mode, score: b.score, maxChain: b.maxChain, frames: Math.min(b.frame, g.timeLimit ?? b.frame) });
+      // 公開の可否をまだ決めていなければ結果画面で聞く。enqueueScore は公開オンのときだけ積む
+      const submission = this.scoreRun ? { ...this.scoreRun, mode: this.mode, score: b.score, maxChain: b.maxChain, frames: Math.min(b.frame, g.timeLimit ?? b.frame) } : null;
+      if (submission) enqueueScore(submission);
       const rankLine = rank === 1 ? t("NEW RECORD!") : rank > 0 ? t("RANK {rank}", { rank }) : "";
       if (rank === 1 && b.score > 0) this.time.delayedCall(300, () => this.celebrate(this.views[0]));
       // タイムアタックの完走は通常の終わり方なので、終了理由の見出しを出さず得点を主役にする。
@@ -606,7 +604,7 @@ export class GameScene extends Phaser.Scene {
       this.views[0].showOverlay(title ?? "", `${t("SCORE")} ${b.score}\n${t("MAX CHAIN")} x${b.maxChain}\n${t("COMBOS")} ${b.stats.combos}  ${t("CHAINS")} ${b.stats.chains}\n${rankLine}`);
       if (this.mode === "timeattack" || this.scoreRun) showScoreResult(this, {
         mode: this.mode, title, score: b.score, chain: b.maxChain, combos: b.stats.combos, chains: b.stats.chains,
-        progress, id: this.scoreRun?.id ?? null, retry: () => this.restart(), menu: () => this.toMenu(),
+        progress, id: this.scoreRun?.id ?? null, submission, retry: () => this.restart(), menu: () => this.toMenu(),
         share: canShare() ? (button) => { void this.share({ setText: (text) => { button.textContent = text; } }); } : undefined,
       });
     } else {
