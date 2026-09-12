@@ -123,7 +123,13 @@ test("タッチ端末は全画面に入るまで TAP TO START で待ち、その
   expect(await unlocked(page)).toBe(true);
   expect(await promptState(page)).toEqual({ text: "TAP TO START", visible: true });
   expect(await page.evaluate(() => Boolean(document.fullscreenElement))).toBe(false);
-  await page.touchscreen.tap(206, 700);
+  // 指が触れただけ（touchstart）では始めず、全画面の要求もしない。実機ではブラウザが touchstart を操作と数えず拒否するので、離したときに要求する
+  const cdp = await page.context().newCDPSession(page);
+  await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x: 206, y: 700, id: 0 }] });
+  await page.waitForTimeout(300);
+  expect(await phase(page)).toBe("wait");
+  expect(await page.evaluate(() => Boolean(document.fullscreenElement))).toBe(false);
+  await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
   await page.waitForFunction(() => Boolean(document.fullscreenElement));
   // 全画面に入ったあとは自動で続き、メニューまで進む
   await page.waitForFunction(() => Boolean((window as any).__swapriseScenes?.menu), null, { timeout: 8000 });

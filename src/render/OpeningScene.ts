@@ -265,9 +265,21 @@ export class OpeningScene extends Phaser.Scene {
       this.tweens.add({ targets: prompt, alpha: { from: 0.25, to: 1 }, duration: 650, yoyo: true, repeat: -1, ease: "Sine.InOut" });
     });
 
-    // 操作。続きが始まる前なら始め（この操作の中で AudioContext が動き出す）、始まっていれば飛ばす。キー・タップ・ゲームパッドのどれでも
+    // 操作。続きが始まる前なら始め（この操作の中で AudioContext が動き出す）、始まっていれば飛ばす。キー・タップ・ゲームパッドのどれでも。
+    // 全画面を待っているタップは、指を離したときに全画面に入り（fullscreen.watchGestures）、入って画面の大きさが決まってから始める。
+    // 大きさが変わればオープニングを出し直し、変わらなければそのまま続ける。拒否されたときも少し待って続ける
     this.input.keyboard?.on("keydown", () => this.onInput());
-    this.input.on("pointerdown", () => this.onInput());
+    this.input.on("pointerdown", () => {
+      if (!this.started && fullscreen.pending) return;
+      this.onInput();
+    });
+    this.input.on("pointerup", () => {
+      if (this.started || !fullscreen.pending) return;
+      const go = (): void => { if (!this.started && !this.finished) this.onInput(); };
+      const onChange = (): void => { this.time.delayedCall(250, go); };
+      document.addEventListener("fullscreenchange", onChange, { once: true });
+      this.time.delayedCall(800, () => { document.removeEventListener("fullscreenchange", onChange); go(); });
+    });
     this.input.gamepad?.on("down", () => this.onInput());
 
     // 回転・ウィンドウサイズの変更でレイアウトが変わったら、オープニングは切り上げてメニューに任せる。
