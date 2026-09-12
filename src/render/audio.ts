@@ -1,4 +1,4 @@
-import { BgmPlayer, type SongName, makePulseWave } from "./bgm";
+import { BgmPlayer, SAMPLED, type SongName, type TuneName, makePulseWave } from "./bgm";
 
 /** 1音の指定。f から f2 へスライドできる。curve は "exp" が減衰、"hold" が dur の間保ってから短く切る。 */
 interface VoiceSpec {
@@ -55,7 +55,7 @@ function n(name: string): number {
 const st = (f: number, semis: number): number => f * Math.pow(2, semis / 12);
 
 /**
- * Web Audio だけで鳴らす効果音とBGM。音声ファイルは使わない。
+ * 効果音と BGM。効果音は Web Audio で合成し、曲（メニュー・ゲーム中・ピンチ）は音声ファイル（bgm.ts の SAMPLED）。
  * AudioContext はユーザー操作のあとに resume する必要があるので、start() を入力時に呼ぶ。
  * BGM は AudioContext ができる前に startBgm() されても覚えておき、start() 時に鳴らし始める。
  * 効果音の設計は tools/sfx-candidates.html で選んだ案を移したもの。
@@ -72,6 +72,7 @@ export class GameAudio {
   private bgmGain: GainNode | null = null;
   private bgm: BgmPlayer | null = null;
   private pendingBgm: SongName | null = null;
+  private readonly sampleBytes: Partial<Record<TuneName, Promise<ArrayBuffer>>> = {};
   private danger = false;
   muted = false;
   /** false のとき startBgm() を無視する。e2e で ?bgm=0 を付けるときに使う。 */
@@ -140,12 +141,32 @@ export class GameAudio {
     this.bgmGain = ctx.createGain();
     this.bgmGain.gain.value = 0.5;
     this.bgmGain.connect(this.master);
-    this.bgm = new BgmPlayer(ctx, this.bgmGain);
+    this.bgm = new BgmPlayer(ctx, this.bgmGain, this.bgmEnabled ? { menu: this.fetchSample("menu"), game: this.fetchSample("game"), danger: this.fetchSample("danger") } : undefined);
     this.bgm.setDanger(this.danger);
     if (this.pendingBgm) {
       this.bgm.start(this.pendingBgm);
       this.pendingBgm = null;
     }
+  }
+
+  /**
+   * 曲の音声ファイル。AudioContext を作る最初の start() で取りに行き、オープニングの閃光までに間に合わせる。
+   * 2 回目以降は Service Worker の precache とブラウザのキャッシュから。
+   * 古い応答（ファイルを置く前の 404 など）がキャッシュに残っていても拾わないよう、失敗したらキャッシュを飛ばして取り直す。
+   */
+  private fetchSample(name: TuneName): Promise<ArrayBuffer> {
+    let bytes = this.sampleBytes[name];
+    if (!bytes) {
+      const url = new URL(SAMPLED[name].url, location.href).href;
+      bytes = fetch(url)
+        .then((r) => (r.ok ? r : fetch(url, { cache: "reload" })))
+        .then((r) => {
+          if (!r.ok) throw new Error(`曲を読み込めない: ${SAMPLED[name].url} ${r.status}`);
+          return r.arrayBuffer();
+        });
+      this.sampleBytes[name] = bytes;
+    }
+    return bytes;
   }
 
   setMuted(m: boolean): void {
@@ -348,7 +369,7 @@ export class GameAudio {
 
   /**
    * オープニングで題字が現れる瞬間。キックと C のハープの駆け上がり、高い和音。
-   * メニューの曲（C major）の 1 拍目と同時に鳴らすので、曲は止めない（win() は止める）。
+   * メニューの曲（G major。頭は C の和音）の 1 拍目と同時に鳴らすので、曲は止めない（win() は止める）。
    */
   titleSting(): void {
     this.kick(0);
@@ -385,9 +406,10 @@ export class GameAudio {
 
   // ---------------------------------------------------------------- BGM
 
-  startBgm(name: SongName): void {
+  /** BGM を鳴らし始める。position は音声ファイルの曲（メニュー）を何秒から鳴らすか（省略で頭から）。 */
+  startBgm(name: SongName, position = 0): void {
     if (!this.bgmEnabled) return;
-    if (this.bgm) this.bgm.start(name);
+    if (this.bgm) this.bgm.start(name, position);
     else this.pendingBgm = name;
   }
 
@@ -397,6 +419,8 @@ export class GameAudio {
   }
 
   private bgmBeforeSuspend: SongName | null = null;
+  /** 止めたときの音声ファイルの曲の位置（秒）。戻ったときにそこから続ける */
+  private bgmPositionBeforeSuspend = 0;
   private suspendTimer: number | null = null;
 
   /**
@@ -405,6 +429,7 @@ export class GameAudio {
    */
   suspend(): void {
     this.bgmBeforeSuspend = this.bgm?.playing ?? this.pendingBgm;
+    this.bgmPositionBeforeSuspend = this.bgm?.position ?? 0;
     this.stopBgm();
     if (this.suspendTimer !== null) window.clearTimeout(this.suspendTimer);
     this.suspendTimer = window.setTimeout(() => {
@@ -413,14 +438,14 @@ export class GameAudio {
     }, 250);
   }
 
-  /** 画面に戻って再開するときに呼ぶ。止める前に BGM が鳴っていたら同じ曲を鳴らし直す。 */
+  /** 画面に戻って再開するときに呼ぶ。止める前に BGM が鳴っていたら同じ曲を、メニュー曲なら止めた位置から、鳴らし直す。 */
   resume(): void {
     if (this.suspendTimer !== null) {
       window.clearTimeout(this.suspendTimer);
       this.suspendTimer = null;
     }
     if (this.ctx && this.ctx.state === "suspended") void this.ctx.resume();
-    if (this.bgmBeforeSuspend) this.startBgm(this.bgmBeforeSuspend);
+    if (this.bgmBeforeSuspend) this.startBgm(this.bgmBeforeSuspend, this.bgmPositionBeforeSuspend);
     this.bgmBeforeSuspend = null;
   }
 

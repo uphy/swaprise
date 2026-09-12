@@ -24,7 +24,7 @@ export default defineConfig({
   server: { port: DEV_PORT, strictPort: true },
   preview: { port: PREVIEW_PORT, strictPort: true },
   plugins: [
-    // 起動に必要なファイルだけprecache。キャラ画像は必要時に取得する。
+    // 起動に必要なファイルだけprecache（メニュー曲の mp3 を含む）。キャラ画像は必要時に取得する。
     // autoUpdate だと新版の precache が終わった瞬間に reload され、試合の途中でメニューへ戻される。
     // prompt にして、切り替えのタイミングは src/render/update.ts が決める
     VitePWA({
@@ -47,7 +47,7 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ["**/*.{js,css,html,png,webmanifest}"],
+        globPatterns: ["**/*.{js,css,html,png,webmanifest,mp3}"],
         globIgnores: ["characters/**/*.png", "characters/**/*.webp"],
         runtimeCaching: [{
           urlPattern: ({ url, sameOrigin }) => sameOrigin && /\/characters\/[a-z0-9-]+\/[a-f0-9]+\.(png|webp)$/.test(url.pathname),

@@ -20,8 +20,8 @@ test("cold startup caches only the app shell, not character images", async ({ pa
   });
   expect(images).toEqual([]);
   expect(cached.urls.some((url) => /\/characters\/.*\.png/.test(url))).toBe(false);
-  // Uncompressed app shell, including Phaser. Guard against restoring 88MB precache.
-  expect(cached.bytes).toBeLessThan(2_000_000);
+  // Uncompressed app shell, including Phaser and the three music files (1.3MB each). Guard against restoring 88MB precache.
+  expect(cached.bytes).toBeLessThan(8_000_000);
   await page.reload();
   await page.waitForFunction(() => Boolean((window as any).__swapriseScenes?.menu));
   expect(images).toEqual([]);
