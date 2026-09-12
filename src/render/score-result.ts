@@ -41,12 +41,12 @@ export function showScoreResult(scene: Phaser.Scene, options: {
   }
   body.append(stats);
   // 初めての記録では、遊ぶ前ではなくここで公開の可否を聞く。決めるまで順位の欄は出さず、決めたら同じ場所が順位に変わる
-  const consent = node("section"); consent.className = "result-consent"; consent.hidden = true; body.append(consent);
+  const consent = node("section"); consent.className = "result-consent"; consent.hidden = true; summary.after(consent);
   if (options.submission && publication() === null) {
     const submission = options.submission;
     consent.hidden = false;
     consent.append(node("h3", t("Publish this score?")));
-    consent.append(node("p", t("Your name, score, chain and date will be public. Endless / time attack only. You can change this in settings.")));
+    consent.append(node("p", t("Your name, score, chain and date will be public. You can change this in settings.")));
     const label = node("label", t("Name (optional)"));
     const input = node("input"); input.type = "text"; input.maxLength = 40; input.value = playerName(); input.placeholder = t("Guest");
     label.append(input); consent.append(label);
