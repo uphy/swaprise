@@ -587,19 +587,19 @@ export class MenuScene extends Phaser.Scene {
    * 戻り値は使った高さ
    */
   private drawHowToDiagram(panel: Phaser.GameObjects.Container, cx: number, y: number): number {
-    // 幅 300 の縦持ちでもはみ出さないよう、横幅に合わせて縮める
-    const fit = Math.min(1, (layoutFor("menu").width - 24) / 284);
+    // 全体は 4 枚 + 矢印 + 4 枚で幅 304（パネルは 32 角、中心で置く）。縦持ちの幅 300 でも切れないよう、横幅に合わせて縮める
+    const fit = Math.min(1, (layoutFor("menu").width - 24) / 304);
     const s = fit / DPR;
     const step = 34 * fit;
     const row = y + 22;
-    const left = cx - 140 * fit;
+    const left = cx - 136 * fit;
     [0, 1, 0].forEach((k, i) => panel.add(this.add.image(left + i * step, row, `panel-${k}`).setScale(s)));
-    panel.add(this.add.image(left + step * 3 + 4, row, "panel-1").setScale(s));
+    panel.add(this.add.image(left + step * 3, row, "panel-1").setScale(s));
     panel.add(this.add.image(left + step * 1.5, row, "cursor").setScale(s).setOrigin(0.5).setAlpha(0.9));
-    panel.add(this.add.text(cx - 14 * fit, row, "▶", { fontFamily: FONT_UI, fontSize: "20px", color: ACCENT }).setOrigin(0.5));
-    const right = cx + 18 * fit;
+    panel.add(this.add.text(cx, row, "▶", { fontFamily: FONT_UI, fontSize: `${Math.round(20 * fit)}px`, color: ACCENT }).setOrigin(0.5));
+    const right = cx + 34 * fit;
     [0, 0, 0].forEach((k, i) => panel.add(this.add.image(right + i * step, row, `panel-${k}-bright`).setScale(s)));
-    panel.add(this.add.image(right + step * 3 + 4, row, "panel-1").setScale(s));
+    panel.add(this.add.image(right + step * 3, row, "panel-1").setScale(s));
     panel.add(this.add.text(right + step, row + 26, "x3!", { fontFamily: FONT_UI, fontSize: "14px", fontStyle: "700", color: "#7cf57a" }).setOrigin(0.5));
     return 66;
   }
