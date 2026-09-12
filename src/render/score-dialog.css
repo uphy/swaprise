@@ -7,7 +7,7 @@
 .score-result .result-you { background: rgba(255,255,255,.14); color: #ffe066; border-radius: 10px; }
 .score-result nav { flex-wrap: wrap; }
 .score-result nav button:first-child { flex: 2; }
-.score-dialog.score-result ol { padding-left: 0; list-style-position: inside; }
+.score-dialog.score-result ol { padding-left: 0; margin-bottom: 16px; list-style-position: inside; }
 .score-dialog.score-result li { padding: 8px 10px; }
 .score-screen { box-sizing: border-box; width: min(100%, 680px); height: 100%; margin: auto; display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto; padding: max(20px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left)); }
 .player-screen .score-screen { max-width: 480px; }
