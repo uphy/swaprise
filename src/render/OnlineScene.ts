@@ -498,7 +498,10 @@ export class OnlineScene extends Phaser.Scene {
         if (state.result.winner === s.player) {
           audio.win();
           haptics.win();
-        } else if (state.result.winner >= 0) audio.lose();
+        } else if (state.result.winner >= 0) {
+          audio.lose();
+          haptics.gameOver();
+        }
       }
     }
     if (!state.match && this.gameId) {
@@ -511,6 +514,8 @@ export class OnlineScene extends Phaser.Scene {
     }
     const playing = state.phase === "playing" && !this.settings;
     this.root.classList.toggle("playing", playing);
+    // 決着の間は盤面の WIN / LOSE と演出を見せる。操作パネルは覆わずに、理由とボタンだけを下に置く
+    this.root.classList.toggle("result", state.phase === "result" && this.views.length > 0);
     this.touch?.setEnabled(playing);
     const me = state.seats[s.player];
     const other = state.seats[1 - s.player];

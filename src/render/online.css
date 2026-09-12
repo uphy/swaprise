@@ -134,48 +134,48 @@
 
 /* ゲームの論理画面と同様に、短辺に合わせて文字と操作部を一緒に拡大する。 */
 @media (pointer: coarse), (max-width: 600px) {
-  .online-ui:not(.playing) {
+  .online-ui:not(.playing):not(.result) {
     font-size: clamp(24px, 6vmin, 64px);
     background: linear-gradient(180deg, #3a1c7c 0%, #8b30a4 55%, #ff6f66 100%);
     align-items: safe center;
   }
-  .online-ui:not(.playing) .online-panel {
+  .online-ui:not(.playing):not(.result) .online-panel {
     width: min(100%, 16em);
     padding: 0;
     text-align: center;
   }
-  .online-ui:not(.playing) h1 {
+  .online-ui:not(.playing):not(.result) h1 {
     font-size: 1.65em;
     margin: 0 0 .65em;
     line-height: 1.2;
   }
-  .online-ui:not(.playing) p {
+  .online-ui:not(.playing):not(.result) p {
     font-size: 1.2em;
     line-height: 1.45;
     margin: 0 0 1em;
   }
-  .online-ui:not(.playing) label {
+  .online-ui:not(.playing):not(.result) label {
     font-size: .8em;
     color: #aaaabd;
     text-align: left;
     order: 1;
     margin-top: .5em;
   }
-  .online-ui:not(.playing) input {
+  .online-ui:not(.playing):not(.result) input {
     font-size: 1em;
     padding: .6em;
   }
-  .online-ui:not(.playing) button {
+  .online-ui:not(.playing):not(.result) button {
     min-height: 2.6em;
     padding: .45em .6em;
     font-size: 1.25em;
     font-weight: bold;
     line-height: 1.3;
   }
-  .online-ui:not(.playing) .online-actions {
+  .online-ui:not(.playing):not(.result) .online-actions {
     gap: .5em;
   }
-  .online-ui:not(.playing) .online-back {
+  .online-ui:not(.playing):not(.result) .online-back {
     order: 2;
     background: transparent;
     border-color: transparent;
@@ -186,32 +186,80 @@
   }
 }
 @media (pointer: coarse) and (orientation: landscape) and (max-height: 560px) {
-  .online-ui:not(.playing) .online-panel {
+  .online-ui:not(.playing):not(.result) .online-panel {
     width: min(100%, 34em);
     display: grid;
     grid-template: "title actions" 1fr "status actions" 1fr / 1fr 1fr;
     column-gap: 2em;
     padding-block: 8px;
   }
-  .online-ui:not(.playing) h1 {
+  .online-ui:not(.playing):not(.result) h1 {
     grid-area: title;
     align-self: end;
   }
-  .online-ui:not(.playing) p {
+  .online-ui:not(.playing):not(.result) p {
     grid-area: status;
     align-self: start;
   }
-  .online-ui:not(.playing) .online-actions {
+  .online-ui:not(.playing):not(.result) .online-actions {
     grid-area: actions;
     min-width: 0;
   }
 }
 
 /* メニューと同じフォント寸法を、同じ論理画面の倍率で描画する。 */
-.online-ui:not(.playing) h1 { font-size: var(--online-title); }
-.online-ui:not(.playing) p { font-size: var(--online-item); }
-.online-ui:not(.playing) button { font-size: var(--online-item); font-weight: normal; min-height: 64px; }
-.online-ui:not(.playing) label,
-.online-ui:not(.playing) .online-back { font-size: var(--online-caption); }
-.online-ui:not(.playing) input { font-size: max(16px, var(--online-caption)); }
-.online-ui:not(.playing) .online-back { min-height: 44px; }
+.online-ui:not(.playing):not(.result) h1 { font-size: var(--online-title); }
+.online-ui:not(.playing):not(.result) p { font-size: var(--online-item); }
+.online-ui:not(.playing):not(.result) button { font-size: var(--online-item); font-weight: normal; min-height: 64px; }
+.online-ui:not(.playing):not(.result) label,
+.online-ui:not(.playing):not(.result) .online-back { font-size: var(--online-caption); }
+.online-ui:not(.playing):not(.result) input { font-size: max(16px, var(--online-caption)); }
+.online-ui:not(.playing):not(.result) .online-back { min-height: 44px; }
+
+/* 決着。盤面の WIN / LOSE と演出を見せたいので覆わず、理由と再戦のボタンだけを画面の下に置く。
+   以前は待機画面と同じ不透明な板が canvas を覆い、スマホでは決着の表示が一切見えなかった */
+.online-ui.result {
+  background: transparent;
+  display: flex;
+  align-items: end;
+  justify-content: center;
+  pointer-events: none;
+  padding-bottom: max(12px, env(safe-area-inset-bottom));
+}
+.online-ui.result .online-panel {
+  width: min(100%, 420px);
+  padding: 0;
+  text-align: center;
+}
+.online-ui.result h1 {
+  display: none;
+}
+.online-ui.result p {
+  font-size: 16px;
+  margin: 0 0 10px;
+  padding: 4px 10px;
+  border-radius: 10px;
+  background: #2a2050bb;
+}
+.online-ui.result .online-actions {
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 8px;
+}
+.online-ui.result button {
+  pointer-events: auto;
+  min-height: 48px;
+  padding: 8px 10px;
+  font-size: 16px;
+}
+@media (orientation: landscape) and (max-height: 560px) {
+  .online-ui.result {
+    align-items: center;
+  }
+  .online-ui.result .online-panel {
+    width: 40%;
+  }
+  .online-ui.result .online-actions {
+    grid-auto-flow: row;
+  }
+}

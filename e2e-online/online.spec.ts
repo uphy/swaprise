@@ -21,6 +21,20 @@ async function enter(page: Page) {
   ).toBeVisible();
   return typography;
 }
+/** 決着の表示が見えるか。操作パネルが透明で、自分の盤面の中央を指しているのが canvas なら true。 */
+function resultUncovered(page: Page): Promise<boolean> {
+  return page.evaluate(() => {
+    const s = (window as any).__swapriseOnline;
+    const ui = document.querySelector(".online-ui")!;
+    const view = s.views[s.session.player];
+    const rect = document.querySelector("canvas")!.getBoundingClientRect();
+    const k = rect.width / s.layout.width;
+    const x = rect.left + view.center.x * k;
+    const y = rect.top + view.center.y * k;
+    return ui.classList.contains("result") && getComputedStyle(ui).backgroundColor === "rgba(0, 0, 0, 0)" &&
+      document.elementFromPoint(x, y)?.tagName === "CANVAS";
+  });
+}
 test("招待URLから2人で対戦し、降参して再戦する", async ({ browser }) => {
   const a = await browser.newContext();
   const b = await browser.newContext();
@@ -81,6 +95,8 @@ test("招待URLから2人で対戦し、降参して再戦する", async ({ brow
     { title: "LOSE", outcome: "lose", visible: true },
     { title: "WIN", outcome: "win", visible: true },
   ]);
+  expect(await resultUncovered(p)).toBe(true);
+  expect(await resultUncovered(q)).toBe(true);
   expect(await overlays(q)).toEqual([
     { title: "LOSE", outcome: "lose", visible: true },
     { title: "WIN", outcome: "win", visible: true },
@@ -229,11 +245,8 @@ test("スマホで自分の盤面を大きく表示し、せり上げと回転�
     (window as any).__swapriseOnline.session.send({ type: "surrender" }),
   );
   await expect(p.getByRole("status")).toContainText(/YOU WIN|YOU LOSE/);
-  expect(
-    await p
-      .getByRole("status")
-      .evaluate((el) => parseFloat(getComputedStyle(el).fontSize)),
-  ).toBeGreaterThanOrEqual(20);
+  // 決着の間、操作パネルは盤面を覆わない。盤面の中央を指しているのは canvas で、WIN / LOSE と演出が見える
+  expect(await resultUncovered(p)).toBe(true);
   await p.screenshot({ path: "/tmp/swaprise-online-result-large.png" });
   await a.close();
   await b.close();
