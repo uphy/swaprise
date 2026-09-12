@@ -16,7 +16,7 @@ export function showScoreResult(scene: Phaser.Scene, options: {
   const root = node("section"); root.className = "score-dialog score-result"; root.setAttribute("aria-label", t("RESULT"));
   const shell = node("div"); shell.className = "score-screen";
   const header = node("header"); header.append(node("small", t(options.mode === "endless" ? "ENDLESS" : "TIME ATTACK")), node("h2", options.title));
-  const summary = node("div"); summary.className = "score-tools result-summary";
+  const summary = node("div"); summary.className = "result-summary";
   summary.append(node("strong", `${options.score.toLocaleString()} ${t("POINTS")}`));
   const { best, average, count } = options.progress;
   const bestLine = best === null ? t("First record!") : options.score > best ? t("New best! +{points}", { points: options.score - best })
@@ -27,6 +27,8 @@ export function showScoreResult(scene: Phaser.Scene, options: {
     summary.append(node("p", t("vs previous {count} average: {difference}", { count, difference: `${options.score >= average ? "+" : ""}${difference}` })));
   } else summary.append(node("p", t("Recent trend appears from your next game.")));
   const body = node("div"); body.className = "score-content";
+  // 得点も本文と一緒にスクロールさせ、大きな文字でも再開ボタンを画面内に保つ。
+  body.append(summary);
   body.append(node("p", `${t("MAX CHAIN")} ×${options.chain}`));
   const heading = node("h3", t("YOUR RANKING")); body.append(heading);
   const note = node("p", t("Ranked per play · unverified scores")); body.append(note);
@@ -40,7 +42,7 @@ export function showScoreResult(scene: Phaser.Scene, options: {
   addButton(footer, "RETRY", options.retry).className = "primary";
   addButton(footer, "MENU", options.menu);
   if (options.share) { const share = addButton(body, "SHARE", () => options.share!(share)); }
-  shell.append(header, summary, body, footer); root.append(shell); document.body.append(root);
+  shell.append(header, body, footer); root.append(shell); document.body.append(root);
   // DOM input never leaks through to the board's tap-to-retry handler.
   root.addEventListener("pointerdown", (event) => event.stopPropagation());
   let controller: AbortController | undefined;

@@ -109,3 +109,21 @@ test("落下中のおじゃまが天井を通過しただけでは外周の警�
   });
   expect(visible).toEqual([false]);
 });
+
+test("ピンチの赤い光が左右の上隅まで途切れずにつながる", async ({ page }) => {
+  await start(page, "endless");
+  const alpha = await page.evaluate(() => {
+    const scene = (window as any).__swaprise.scene;
+    const texture = scene.textures.get("danger-outline").getSourceImage();
+    if (!(texture instanceof HTMLCanvasElement)) return null;
+    const context = texture.getContext("2d")!;
+    const at = (x: number, y: number) => context.getImageData(x, y, 1, 1).data[3];
+    // 上辺・左右の上隅を、枠から同じ距離で比較する。
+    return { top: at(128, 24), left: at(24, 24), right: at(texture.width - 25, 24), inside: at(128, 80) };
+  });
+  expect(alpha).not.toBeNull();
+  expect(alpha!.top).toBeGreaterThan(100);
+  expect(alpha!.left).toBe(alpha!.top);
+  expect(alpha!.right).toBe(alpha!.top);
+  expect(alpha!.inside).toBe(0);
+});

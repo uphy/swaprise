@@ -147,7 +147,7 @@ export class BoardView {
       .text(0, -34, "", { fontFamily: FONT_UI, fontSize: "34px", color: "#ffe066", fontStyle: "700", stroke: "#3a1a5a", strokeThickness: 6 })
       .setOrigin(0.5);
     this.overlayBody = scene.add
-      .text(0, 24, "", { fontFamily: FONT_UI, fontSize: "14px", color: TEXT_COLOR, align: "center", lineSpacing: 2 })
+      .text(0, 24, "", { fontFamily: FONT_UI, fontSize: puzzle ? "20px" : "14px", color: TEXT_COLOR, align: "center", lineSpacing: 2 })
       .setOrigin(0.5);
     this.overlay.add([dim, this.overlayTitle, this.overlayBody]);
     this.root.add(this.overlay);
