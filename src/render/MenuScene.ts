@@ -191,7 +191,7 @@ export class MenuScene extends Phaser.Scene {
     // 下段の小ボタン。項目は最大 4 つなので、4 つ目の説明文（項目の下 16〜19px、高さ約 14px）から隙間を空けて置く。
     // 以前は項目の間隔だけで決めていて、横長の画面では説明文とボタンの間が 6px しかなく詰まって見えた
     const captionBottom = this.itemTop + 3 * this.itemGap + (compact ? 16 : 19) + 9;
-    const toolY = captionBottom + (compact ? 10 : 18) + 17;
+    const toolY = captionBottom + (compact ? 12 : 22) + 17;
     const toolW = layout.portrait ? 92 : 112;
     TOOLS.forEach((tool, i) => {
       const b = new Button(this, cx + (i - 1) * (toolW + 8), toolY, TOOL_LABEL[tool], () => this.openTool(tool), { fontSize: 11, minWidth: toolW, minHeight: 34 }).setName(tool);
