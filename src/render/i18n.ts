@@ -40,7 +40,7 @@ const JA: Record<string, string> = {
   "{count} / {total} CLEARED": "{count} / {total} クリア", "{wins}W {losses}L": "{wins}勝 {losses}敗",
   PLAY: "プレイ", BACK: "戻る",
   "some motions pending": "一部の動作は準備中", "artwork pending": "画像は準備中", CLOSE: "閉じる",
-  "ENDLESS  TOP 5": "エンドレス  上位5件", "TIME ATTACK 2:00  TOP 5": "タイムアタック 2:00  上位5件",
+  "TOP 5": "上位 5 件", "TOP 50": "上位 50 件",
   "no records yet": "記録なし", "PUZZLE  {count} / {total} cleared": "パズル  {count} / {total} クリア",
   "SOUND: {state}": "サウンド: {state}", "VIBRATION: {state}": "振動: {state}", "FULL SCREEN: {state}": "全画面: {state}",
   ON: "オン", OFF: "オフ", "Line up 3 or more of the same panel to clear them.": "同じパネルを3つ以上揃えると消えます。",

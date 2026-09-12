@@ -78,53 +78,97 @@ export function showPlayerSettings(scene: Phaser.Scene, first = false, done: () 
   button(footer, first ? "SAVE AND PLAY" : "SAVE", () => { savePlayerName(input.value); setPublication(checkbox.checked); close(); }).className = "primary";
   button(footer, first ? "LATER" : "CANCEL", close);
 }
+/**
+ * 記録。上の切り替え（この端末 / オンライン）で中身を替える。
+ * この端末はモードごとの札（エンドレス・タイムアタックの上位 5 件、CPU 戦の勝敗、パズルの進み）。
+ * 行は 順位・得点・最大連鎖・日付 を列で揃え、得点を大きく出す。一覧は ol / li のまま（読み上げと e2e が listitem を見る）
+ */
 export function showRecordsDialog(scene: Phaser.Scene): void {
   const { root, body, tools, footer, close } = dialog(scene, t("RECORDS"));
-  const sources = element("nav"); tools.append(sources);
+  root.classList.add("records-screen");
+  const sources = element("nav"); sources.className = "rec-tabs"; tools.append(sources);
   const local = element("section"); body.append(local);
   const hs = loadHighScores();
-  for (const [title, entries] of [["ENDLESS  TOP 5", hs.endless], ["TIME ATTACK 2:00  TOP 5", hs.timeattack]] as const) {
-    local.append(element("h3", t(title)));
-    if (!entries.length) local.append(element("p", t("no records yet")));
-    const list = element("ol");
-    for (const entry of entries) list.append(element("li", `${entry.score} · x${entry.maxChain} · ${entry.date}`));
-    local.append(list);
+  const card = (parent: HTMLElement, title: string, note = ""): HTMLElement => {
+    const c = element("section"); c.className = "rec-card";
+    const h = element("h3", title); c.append(h);
+    if (note) h.append(" ", element("small", note));
+    parent.append(c); return c;
+  };
+  const scoreRow = (parent: HTMLElement, rank: string, name: string | null, score: number, chain: number, date: string): void => {
+    const row = element("li"); row.className = "rec-row";
+    row.append(element("b", rank));
+    const main = element("div"); main.className = "rec-main";
+    if (name) main.append(element("strong", name));
+    const num = element("span", score.toLocaleString()); num.className = "rec-score"; main.append(num);
+    row.append(main);
+    const meta = element("div"); meta.className = "rec-meta";
+    meta.append(element("span", `${t("MAX CHAIN")} ×${chain}`), element("span", date));
+    row.append(meta);
+    parent.append(row);
+  };
+  for (const [title, entries] of [[t("ENDLESS"), hs.endless], [t("TIME ATTACK"), hs.timeattack]] as const) {
+    const c = card(local, title, t("TOP 5"));
+    if (!entries.length) c.append(element("p", t("no records yet")));
+    const ol = element("ol"); ol.className = "rec-table"; c.append(ol);
+    entries.forEach((entry, i) => scoreRow(ol, String(i + 1), null, entry.score, entry.maxChain, entry.date));
   }
-  local.append(element("h3", t("VS CPU")));
+  const cpu = card(local, t("VS CPU"));
+  const table = element("ol"); table.className = "rec-table"; cpu.append(table);
   for (const level of ["easy", "normal", "hard"] as CpuLevel[]) {
     const r = hs.cpu[level];
-    local.append(element("p", `${level.toUpperCase()}  ${t("{wins}W {losses}L", { wins: r.wins, losses: r.losses })}`));
+    const row = element("li"); row.className = "rec-row";
+    row.append(element("b", t(level.toUpperCase())));
+    const main = element("div"); main.className = "rec-main";
+    const num = element("span", t("{wins}W {losses}L", { wins: r.wins, losses: r.losses })); num.className = "rec-score"; main.append(num);
+    row.append(main);
+    const meta = element("div"); meta.className = "rec-meta";
+    const total = r.wins + r.losses;
+    meta.append(element("span", total ? `${Math.round((r.wins / total) * 100)}%` : "–"));
+    row.append(meta);
+    table.append(row);
   }
-  local.append(element("p", t("PUZZLE  {count} / {total} cleared", { count: hs.puzzle.length, total: PUZZLES.length })));
+  const puzzle = card(local, t("PUZZLE"));
+  const prow = element("div"); prow.className = "rec-row";
+  prow.append(element("b", "✓"));
+  const pmain = element("div"); pmain.className = "rec-main";
+  const pnum = element("span", `${hs.puzzle.length} / ${PUZZLES.length}`); pnum.className = "rec-score"; pmain.append(pnum);
+  prow.append(pmain);
+  const bar = element("div"); bar.className = "rec-bar";
+  const fill = element("div"); fill.style.width = `${(hs.puzzle.length / PUZZLES.length) * 100}%`; bar.append(fill);
+  prow.append(bar);
+  puzzle.append(prow);
+
   const online = element("section"); body.append(online); online.hidden = true;
-  online.append(element("p", t("Standard rules · top 50 per mode · unverified scores")));
-  const pending = element("p"); online.append(pending);
-  const tabs = element("nav"); tools.append(tabs); tabs.hidden = true;
-  const status = element("p"); status.setAttribute("role", "status"); online.append(status);
-  const list = element("ol"); online.append(list);
+  const tabs = element("nav"); tabs.className = "rec-tabs rec-tabs-sub"; tools.append(tabs); tabs.hidden = true;
+  const onlineCard = card(online, "");
+  const onlineTitle = onlineCard.querySelector("h3")!;
+  onlineCard.append(element("p", t("Standard rules · top 50 per mode · unverified scores")));
+  const pending = element("p"); onlineCard.append(pending);
+  const status = element("p"); status.setAttribute("role", "status"); onlineCard.append(status);
+  const list = element("ol"); list.className = "rec-table"; onlineCard.append(list);
   let request: AbortController | undefined;
   let current: ScoreMode = "endless";
   const load = async (mode: ScoreMode): Promise<void> => {
     current = mode; request?.abort(); request = new AbortController();
     const signal = request.signal;
-    pending.textContent = t("PENDING UPLOADS: {count}", { count: pendingScores().length });
+    onlineTitle.textContent = mode === "endless" ? t("ENDLESS") : t("TIME ATTACK");
+    onlineTitle.append(" ", element("small", t("TOP 50")));
+    const count = pendingScores().length;
+    pending.textContent = count ? t("PENDING UPLOADS: {count}", { count }) : "";
     for (const b of tabs.querySelectorAll("button")) b.setAttribute("aria-pressed", String(b.dataset.mode === mode));
     status.textContent = t("Loading…"); list.replaceChildren();
     try {
       const scores = await ranking(mode, signal);
       if (signal.aborted) return;
       status.textContent = scores.length ? "" : t("no records yet");
-      for (const entry of scores) {
-        const li = element("li");
-        li.append(element("strong", entry.name), element("span", `${t("SCORE")} ${entry.score} · ${t("MAX CHAIN")} x${entry.maxChain} · ${new Date(entry.createdAt).toISOString().slice(0, 10)}`));
-        list.append(li);
-      }
+      scores.forEach((entry, i) => scoreRow(list, String(i + 1), entry.name, entry.score, entry.maxChain, new Date(entry.createdAt).toISOString().slice(0, 10)));
     } catch { if (!signal.aborted) status.textContent = t("Could not load rankings. Local records are still available."); }
   };
   for (const [mode, title] of [["endless", "ENDLESS"], ["timeattack", "TIME ATTACK"]] as const) {
     button(tabs, title, () => void load(mode)).dataset.mode = mode;
   }
-  button(online, "RETRY", () => { void flushScores(); void load(current); });
+  button(onlineCard, "RETRY", () => { void flushScores(); void load(current); });
   const localButton = button(sources, "THIS DEVICE", () => {
     request?.abort(); online.hidden = true; tabs.hidden = true; local.hidden = false; body.scrollTop = 0;
     localButton.setAttribute("aria-pressed", "true"); onlineButton.setAttribute("aria-pressed", "false");
