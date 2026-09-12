@@ -29,6 +29,10 @@ export class BoardView {
   private readonly showSwapCursor = !isTouchDevice();
   private readonly touchGfx: Phaser.GameObjects.Graphics;
   touch: TouchInput | null = null;
+  /** Optional read-only preview, rendered with exactly the same panel renderer. */
+  preview: Board | null = null;
+  hintPair: { x: number; y: number } | null = null;
+  private popups = new Set<Phaser.GameObjects.Text>();
   private readonly bg: Phaser.GameObjects.Rectangle;
   private readonly frame: Phaser.GameObjects.Rectangle;
   private readonly scoreText: Phaser.GameObjects.Text;
@@ -207,20 +211,26 @@ export class BoardView {
         })
         .setOrigin(0.5);
       this.root.add(t);
+      this.popups.add(t);
       this.scene.tweens.add({
         targets: t,
         y: t.y - 28,
         alpha: 0,
         delay: 350,
         duration: 500,
-        onComplete: () => t.destroy(),
+        onComplete: () => { this.popups.delete(t); t.destroy(); },
       });
     });
   }
 
+  clearEffects(): void {
+    for (const popup of this.popups) { this.scene.tweens.killTweensOf(popup); popup.destroy(); }
+    this.popups.clear(); this.popIndex = 0;
+  }
+
   /** 毎描画フレーム呼ぶ。Board の現在状態をそのまま画面に反映する。 */
   draw(): void {
-    const b = this.board;
+    const b = this.preview ?? this.board;
     const rise = b.riseProgress * CELL;
     let shake = 0;
     if (b.shakeTimer > 0) shake = Math.sin(b.frame * 1.7) * Math.min(6, b.shakeTimer * 0.5);
@@ -278,9 +288,9 @@ export class BoardView {
     }
     this.cursor.setPosition(b.cursor.x * CELL - 3, (ROWS - 1 - b.cursor.y) * CELL - rise - 3 + shake);
     // タッチ端末は直接触れたパネルと移動先の枠を使う。
-    this.cursor.setVisible(!b.gameOver && this.showSwapCursor);
+    this.cursor.setVisible(!this.preview && !b.gameOver && this.showSwapCursor);
     this.touchGfx.clear();
-    const selection = this.touch?.feedback;
+    const selection = this.preview ? null : this.touch?.feedback;
     if (selection && !b.gameOver) {
       const py = (ROWS - 1 - selection.y) * CELL - rise + shake;
       const top = Math.max(1, py + 2);
@@ -296,6 +306,22 @@ export class BoardView {
       }
     }
 
+    if (this.preview) {
+      this.touchGfx.lineStyle(2, 0x63e6ef, 1);
+      for (let y = 0; y < ROWS; y++) for (let x = 0; x < COLS; x++) {
+        const cell = b.cell(x, y), image = this.cells[y][x];
+        if (image.visible && isPanel(cell) && cell.state !== "idle") this.touchGfx.strokeRect(image.x + 2, image.y + 2, CELL - 4, CELL - 4);
+      }
+      if (this.hintPair) {
+        const x = this.hintPair.x * CELL, y = (ROWS - 1 - this.hintPair.y) * CELL - rise + shake;
+        this.touchGfx.lineStyle(3, 0xffe066, 1);
+        this.touchGfx.strokeRect(x + 2, y + 2, CELL * 2 - 4, CELL - 4);
+        const mid = y + CELL / 2;
+        this.touchGfx.lineBetween(x + CELL - 8, mid, x + CELL + 8, mid);
+        this.touchGfx.lineBetween(x + CELL - 8, mid, x + CELL - 4, mid - 4);
+        this.touchGfx.lineBetween(x + CELL + 8, mid, x + CELL + 4, mid + 4);
+      }
+    }
     this.bg.setFillStyle(b.panic ? 0x3a1e26 : b.danger ? 0x2c1e2a : BOARD_BG);
     this.frame.setFillStyle(b.panic && blink ? 0xaa3344 : 0x3a3a4c);
 
@@ -310,17 +336,19 @@ export class BoardView {
     }
     this.scoreText.setText(`${this.label}  ${String(b.score).padStart(6, "0")}`);
     let seconds: number;
+    // Preview animation advances its copy, not the live run's clock.
+    const clockFrame = this.preview ? this.board.frame : b.frame;
     if (this.timeLimit !== null) {
       // 残り時間。ゲームのフレームで数えるので、ポーズ中は減らない
-      seconds = Math.ceil(Math.max(0, this.timeLimit - b.frame) / 60);
+      seconds = Math.ceil(Math.max(0, this.timeLimit - clockFrame) / 60);
     } else {
       // 経過時間。ゲームのフレームで数えるので、決着後は frame が止まって表示も止まる
-      seconds = Math.floor(b.frame / 60);
+      seconds = Math.floor(clockFrame / 60);
     }
     const mm = String(Math.floor(seconds / 60)).padStart(2, "0");
     const ss = String(seconds % 60).padStart(2, "0");
     const parts = [`${mm}:${ss}`];
-    if (this.timeLimit !== null && b.frame >= this.timeLimit && !b.isSettled()) parts.push(t("SETTLING"));
+    if (this.timeLimit !== null && clockFrame >= this.timeLimit && !b.isSettled()) parts.push(t("SETTLING"));
     // 残り10秒を切ったら赤く
     this.infoText.setColor(this.timeLimit !== null && seconds <= 10 ? "#ff5c6c" : "#9a9ab0");
     if (this.showLevel) parts.push(`SPEED ${b.level}`);

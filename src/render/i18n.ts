@@ -3,6 +3,10 @@ export type Locale = "en" | "ja";
 const locale: Locale = typeof navigator !== "undefined" && navigator.language.toLowerCase().startsWith("ja") ? "ja" : "en";
 
 const JA: Record<string, string> = {
+  "PREVIOUS STEP": "前へ", "NEXT STEP": "次へ",
+  "PREV": "前へ", "NEXT": "次へ",
+  "HINT · UNRANKED": "ヒント利用・記録対象外",
+  "HINT": "ヒント",
   "SETTLING": "連鎖を集計中",
   "Ranked per play · unverified scores": "プレイ単位・プレイ内容の検証なし",
   "RESULT": "結果", "POINTS": "点", "First record!": "初めての記録！", "New best! +{points}": "自己ベスト更新！ ＋{points}",

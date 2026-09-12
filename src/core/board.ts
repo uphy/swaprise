@@ -105,7 +105,7 @@ export class Board {
   readonly kinds: number;
   private readonly startLevel: number;
   private readonly speedUp: boolean;
-  private readonly noRise: boolean;
+  private noRise: boolean;
   /** パズルモードの残り手数。他のモードは null。 */
   movesLeft: number | null = null;
   private readonly shockMax: number;
@@ -120,6 +120,14 @@ export class Board {
     const { rng, ...state } = source;
     Object.assign(this, structuredClone(state));
     this.rng.copyFrom(rng);
+  }
+
+  /** Coach simulations freeze rising, preserving current panel/timing state. */
+  practiceCopy(): Board {
+    const copy = new Board({ seed: 1, initialHeight: 0 });
+    copy.copyFrom(this);
+    copy.noRise = true;
+    return copy;
   }
 
   /** 同期検査用。将来のtickへ影響する状態をすべて含める。 */
