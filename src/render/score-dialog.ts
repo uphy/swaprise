@@ -2,7 +2,7 @@ import type Phaser from "phaser";
 import { playerName, savePlayerName, publication, setPublication, pendingScores, ranking, flushScores } from "../scores/client";
 import type { ScoreMode } from "../scores/model";
 import { t } from "./i18n";
-import { loadHighScores } from "./highscore";
+import { loadHighScores, onlineRecordLine } from "./highscore";
 import { PUZZLES, type CpuLevel } from "../core";
 import "./score-dialog.css";
 
@@ -128,6 +128,17 @@ export function showRecordsDialog(scene: Phaser.Scene): void {
     row.append(meta);
     table.append(row);
   }
+  const versus = card(local, t("ONLINE"));
+  const orow = element("li"); orow.className = "rec-row";
+  orow.append(element("b", t("TOTAL")));
+  const omain = element("div"); omain.className = "rec-main";
+  const onum = element("span", onlineRecordLine(hs.online)); onum.className = "rec-score"; omain.append(onum);
+  orow.append(omain);
+  const ometa = element("div"); ometa.className = "rec-meta";
+  const decided = hs.online.wins + hs.online.losses;
+  ometa.append(element("span", decided ? `${Math.round((hs.online.wins / decided) * 100)}%` : "–"));
+  orow.append(ometa);
+  const otable = element("ol"); otable.className = "rec-table"; otable.append(orow); versus.append(otable);
   const puzzle = card(local, t("PUZZLE"));
   const prow = element("div"); prow.className = "rec-row";
   prow.append(element("b", "✓"));

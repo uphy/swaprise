@@ -1,4 +1,5 @@
 import type { CpuLevel } from "../core";
+import { t } from "./i18n";
 
 export interface ScoreEntry {
   score: number;
@@ -12,6 +13,17 @@ export interface CpuRecord {
   losses: number;
 }
 
+/** オンライン対戦の通算。ログインがないので端末（ブラウザ）単位の記録になる。 */
+export interface OnlineRecord {
+  wins: number;
+  losses: number;
+  draws: number;
+  /** 最後に数えた試合の id。結果画面へ再接続したときに同じ試合を二度数えない。 */
+  lastMatch: string;
+}
+
+export type OnlineOutcome = "win" | "lose" | "draw";
+
 /** 得点を競う1人用モード。上位5件を別々に持つ。 */
 export type ScoreMode = "endless" | "timeattack";
 
@@ -19,6 +31,7 @@ export interface HighScores {
   endless: ScoreEntry[];
   timeattack: ScoreEntry[];
   cpu: Record<CpuLevel, CpuRecord>;
+  online: OnlineRecord;
   /** クリアしたパズルの面（0 始まりの通し番号）。 */
   puzzle: number[];
 }
@@ -35,6 +48,7 @@ function empty(): HighScores {
       normal: { wins: 0, losses: 0 },
       hard: { wins: 0, losses: 0 },
     },
+    online: { wins: 0, losses: 0, draws: 0, lastMatch: "" },
     puzzle: [],
   };
 }
@@ -69,6 +83,8 @@ export function loadHighScores(): HighScores {
         if (r) base.cpu[level] = { wins: r.wins ?? 0, losses: r.losses ?? 0 };
       }
     }
+    const o = parsed.online;
+    if (o) base.online = { wins: o.wins ?? 0, losses: o.losses ?? 0, draws: o.draws ?? 0, lastMatch: typeof o.lastMatch === "string" ? o.lastMatch : "" };
     if (Array.isArray(parsed.puzzle)) {
       base.puzzle = [...new Set(parsed.puzzle.filter((n) => Number.isInteger(n) && n >= 0))].sort((a, b) => a - b);
     }
@@ -114,6 +130,29 @@ export function recordCpuResult(level: CpuLevel, won: boolean): CpuRecord {
   else r.losses++;
   save(h);
   return { ...r };
+}
+
+/**
+ * オンライン対戦の勝敗を記録する。同じ試合を二度は数えない（結果画面へ再接続したときも一度だけ）。
+ * 無効試合（同期ずれ・サーバー障害）は呼ばない。
+ */
+export function recordOnlineResult(matchId: string, outcome: OnlineOutcome): OnlineRecord {
+  const h = loadHighScores();
+  const r = h.online;
+  if (r.lastMatch !== matchId) {
+    if (outcome === "win") r.wins++;
+    else if (outcome === "lose") r.losses++;
+    else r.draws++;
+    r.lastMatch = matchId;
+    save(h);
+  }
+  return { ...r };
+}
+
+/** 「12W 8L」の形。引き分けがあれば「12W 8L 1D」。 */
+export function onlineRecordLine(r: OnlineRecord): string {
+  const base = t("{wins}W {losses}L", { wins: r.wins, losses: r.losses });
+  return r.draws > 0 ? `${base} ${t("{draws}D", { draws: r.draws })}` : base;
 }
 
 /** パズルの面をクリアしたと記録する。 */

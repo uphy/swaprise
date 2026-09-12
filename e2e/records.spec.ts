@@ -19,6 +19,7 @@ test("メニューの RECORDS をタップすると上位5件の一覧が開き�
           { score: 1000, maxChain: 2, date: "2026-09-02" },
         ],
         cpu: { easy: { wins: 1, losses: 0 }, normal: { wins: 0, losses: 2 }, hard: { wins: 0, losses: 0 } },
+        online: { wins: 3, losses: 1, draws: 1, lastMatch: "m" },
       }),
     );
   });
@@ -41,6 +42,10 @@ test("メニューの RECORDS をタップすると上位5件の一覧が開き�
   await expect(rows.nth(1)).toContainText("1,000");
   await expect(rows.nth(1)).toContainText("2026-09-02");
   await expect(page.getByRole("listitem").filter({ hasText: "NORMAL" })).toContainText("0W 2L");
+  // オンラインの通算は 1 行。引き分けは D、勝率は引き分けを除いて出す
+  const online = page.getByRole("listitem").filter({ hasText: "TOTAL" });
+  await expect(online).toContainText("3W 1L 1D");
+  await expect(online).toContainText("75%");
   await page.getByRole("button", { name: "CLOSE", exact: true }).tap();
   await expect(page.getByRole("dialog")).toHaveCount(0);
 });

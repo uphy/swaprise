@@ -101,6 +101,18 @@ test("招待URLから2人で対戦し、降参して再戦する", async ({ brow
     { title: "LOSE", outcome: "lose", visible: true },
     { title: "WIN", outcome: "win", visible: true },
   ]);
+  // 勝敗は端末（localStorage）に通算し、自分の盤面の下にだけ出す
+  const record = (page: Page) =>
+    page.evaluate(() => {
+      const h = JSON.parse(localStorage.getItem("swaprise.highscores.v1") ?? "{}");
+      return { wins: h.online?.wins, losses: h.online?.losses, draws: h.online?.draws };
+    });
+  const bodies = (page: Page) =>
+    page.evaluate(() => (window as any).__swapriseOnline.views.map((v: any) => v.overlayBody.text));
+  expect(await record(p)).toEqual({ wins: 0, losses: 1, draws: 0 });
+  expect(await record(q)).toEqual({ wins: 1, losses: 0, draws: 0 });
+  expect((await bodies(p)).map((b: string) => b.includes("ONLINE  0W 1L"))).toEqual([true, false]);
+  expect((await bodies(q)).map((b: string) => b.includes("ONLINE  1W 0L"))).toEqual([false, true]);
   const old = await p.evaluate(
     () => (window as any).__swapriseOnline.session.state.match.id,
   );
@@ -118,6 +130,8 @@ test("招待URLから2人で対戦し、降参して再戦する", async ({ brow
       (view: any) => !view.resultEffect && !view.overlay.visible,
     ))).toBe(true);
   }
+  // 再戦で盤面を組み直しても、前の試合を二度数えない
+  expect(await record(p)).toEqual({ wins: 0, losses: 1, draws: 0 });
   expect(errors).toEqual([]);
   await a.close();
   await b.close();
