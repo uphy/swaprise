@@ -4,11 +4,22 @@ import { DPR } from "./hidpi";
 
 export type ResultOutcome = "win" | "lose";
 
+/** 論理px/秒²。上向きの初速から、頂点を経て自然に落下させる。 */
+const WIN_GRAVITY = 760;
+
 /** 確定した盤面の見た目だけを動かす。勝敗や同期に使う Board は変更しない。 */
 export class ResultEffect {
   readonly root: Phaser.GameObjects.Container;
   private readonly light: Phaser.GameObjects.Graphics;
-  private readonly panels: { image: Phaser.GameObjects.Image; x: number; y: number; delay: number; drift: number }[] = [];
+  private readonly panels: {
+    image: Phaser.GameObjects.Image;
+    x: number;
+    y: number;
+    delay: number;
+    drift: number;
+    velocityX: number;
+    velocityY: number;
+  }[] = [];
   private elapsed = 0;
   private complete = false;
 
@@ -27,9 +38,14 @@ export class ResultEffect {
       if (top > 0 || bottom > 0) image.setCrop(0, top * DPR, CELL * DPR, (CELL - top - bottom) * DPR);
       if (outcome === "lose") image.setTint(0xc6a6cc);
       this.root.add(image);
+      // 位置ごとに初速を変え、列や段が一斉に同じ高さへ飛ぶのを避ける。
+      const variation = (Math.floor(x / CELL) * 7 + Math.floor(y / CELL) * 11) % 5;
+      const drift = (x - BOARD_W / 2) / BOARD_W;
       this.panels.push({ image, x, y,
         delay: outcome === "win" ? (BOARD_H - y) * 0.45 : (BOARD_H - y) * 0.7 + (x / CELL % 3) * 28,
-        drift: (x - BOARD_W / 2) / BOARD_W,
+        drift,
+        velocityX: drift * (140 + variation * 10),
+        velocityY: -(360 + variation * 22),
       });
     }
     this.update(0);
@@ -66,9 +82,13 @@ export class ResultEffect {
       const seconds = Math.max(0, this.elapsed - panel.delay) / 1000;
       const { image, x, y, drift } = panel;
       if (this.outcome === "win") {
-        image.setPosition(x + drift * 140 * seconds, y - 180 * seconds - 100 * seconds * seconds);
-        image.setScale((1 - Math.min(0.65, seconds * 0.45)) / DPR);
-        image.setAlpha(Math.max(0, 1 - Math.max(0, seconds - 0.25) / 0.9));
+        image.setPosition(
+          x + panel.velocityX * seconds,
+          y + panel.velocityY * seconds + 0.5 * WIN_GRAVITY * seconds * seconds,
+        );
+        image.setScale((1 - Math.min(0.25, seconds * 0.16)) / DPR);
+        // 頂点を過ぎたあとの落下も見せてから消す。
+        image.setAlpha(Math.max(0, 1 - Math.max(0, seconds - 0.85) / 0.65));
       } else {
         image.setPosition(x + drift * 45 * seconds, y + 620 * seconds * seconds);
         image.setScale((1 - Math.min(0.3, seconds * 0.15)) / DPR);

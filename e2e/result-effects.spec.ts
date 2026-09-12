@@ -64,3 +64,42 @@ test("引き分けでは勝敗の演出を出さない", async ({ page }) => {
     return scene.views.every((v: any) => !v.resultEffect && v.overlayTitle.text === "DRAW");
   })).toBe(true);
 });
+
+test("勝利のパネルは上昇から下降へ転じ、落ち始めても見える", async ({ page }) => {
+  await page.goto("/?mode=cpu&seed=7&bgm=0&countdown=0");
+  await page.waitForFunction(() => Boolean((window as any).__swaprise?.game));
+  const samples = await page.evaluate(() => {
+    const { game, scene } = (window as any).__swaprise;
+    scene.scene.pause();
+    game.boards.forEach((board: any) => {
+      board.setColumns([[0, 1], [2, 3], [4, 0], [1, 2], [3, 4], [0, 1]]);
+      board.noRise = true;
+      board.riseProgress = 0;
+    });
+    game.winner = 0;
+    game.finished = true;
+    scene.update(0, 0);
+    const effect = scene.views[0].resultEffect;
+    const snapshot = () => effect.panels.map(({ image }: any) => ({ x: image.x, y: image.y, alpha: image.alpha }));
+    const values = [snapshot()];
+    for (let step = 0; step < 6; step++) {
+      scene.update(0, 200);
+      values.push(snapshot());
+    }
+    return values;
+  });
+  expect(samples[0]).toHaveLength(12);
+  samples[0].forEach((initial: any, i: number) => {
+    expect(samples[1][i].y).toBeLessThan(initial.y);
+    // 等間隔の測定で、鉛直速度が上向きから下向きへ滑らかに変わる。
+    const rising = samples[2][i].y - samples[1][i].y;
+    const slowing = samples[3][i].y - samples[2][i].y;
+    const falling = samples[6][i].y - samples[5][i].y;
+    expect(rising).toBeLessThan(0);
+    expect(slowing).toBeGreaterThan(rising);
+    expect(falling).toBeGreaterThan(0);
+    expect(samples[6][i].alpha).toBeGreaterThan(0.3);
+    // 水平方向は一定の勢いを保ち、重力で鉛直方向だけが加速する。
+    expect(samples[6][i].x - samples[5][i].x).toBeCloseTo(samples[2][i].x - samples[1][i].x, 5);
+  });
+});
