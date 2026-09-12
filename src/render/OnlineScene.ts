@@ -1,6 +1,6 @@
 import Phaser from "phaser";
 import { playerName, savePlayerName } from "../scores/client";
-import { BoardView } from "./BoardView";
+import { BoardView, announceOpponentChains } from "./BoardView";
 import { PlayerInput, P1_KEYS } from "./input";
 import { TouchInput } from "./touch";
 import { applyLayout } from "./hidpi";
@@ -729,11 +729,12 @@ export class OnlineScene extends Phaser.Scene {
       this.touch?.place(ox, y, 1);
     }
     const view = this.views[me];
-    // せり上げバー。GameScene と同じく、残り時間の行の下に盤面と同じ幅で置く（横持ちは HUD の列）
+    // せり上げバー。GameScene と同じく、盤面の直下に盤面と同じ幅で置き、時間の行をその下へ下げる（横持ちは HUD の列）
     if (L.phoneLandscape) this.raiseHint?.resize(100, 44, 48).setPosition(view.ox + BOARD_W + 55, view.oy + 180);
     else {
       const barH = L.touch ? 30 : 26;
-      this.raiseHint?.resize(BOARD_W, barH, 48).setPosition(view.ox + BOARD_W / 2, view.oy + BOARD_H + 34 + barH / 2);
+      this.raiseHint?.resize(BOARD_W, barH, 48).setPosition(view.ox + BOARD_W / 2, view.oy + BOARD_H + 12 + barH / 2);
+      view.place(view.ox, view.oy, view.scale, view.hud, BOARD_H + 12 + barH + 8);
     }
   }
   /** 対戦中に戻る操作をした人へ、離れないことと退出の手順を数秒だけ知らせる。 */
@@ -818,6 +819,7 @@ export class OnlineScene extends Phaser.Scene {
             false,
             false,
           );
+          announceOpponentChains(l.game.boards[remote].events, this.views[s.player]);
           s.checkHash();
         } else {
           this.stalledMs += 1000 / 60;

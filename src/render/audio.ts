@@ -409,6 +409,17 @@ export class GameAudio {
     this.voice({ wave: "sine", f: notes[3] * 2, dur: 0.3, gain: 0.08, t: 0.2, echo: 0.4 });
   }
 
+  /** 予告の板が降りられる状態になった。低めの 2 音で「止めなければ次の静止で落ちる」と知らせる。 */
+  garbageWarn(): void {
+    this.voice({ wave: "square", f: n("d4"), dur: 0.09, gain: 0.1, cutoff: 1200 });
+    this.voice({ wave: "square", f: n("a3"), dur: 0.16, gain: 0.1, t: 0.1, cutoff: 1200, echo: 0.3 });
+  }
+
+  /** 相手が大きな連鎖を組んだ。短い上昇の 3 音。自分の連鎖の音と混ざらないよう軽く。 */
+  opponentChain(): void {
+    this.arp(["e5", "g5", "b5"].map(n), { step: 0.06, dur: 0.1, wave: "triangle", gain: 0.1, echo: 0.3 });
+  }
+
   /** 危険状態に入った。高いパルスの速い下降モチーフ。 */
   dangerWarn(): void {
     this.arp(["a6", "g6", "e6", "d6"].map(n), { step: 0.045, dur: 0.1, wave: "pulse12", gain: 0.09, echo: 0.45 });

@@ -16,30 +16,49 @@ for (const mode of ["endless", "timeattack"]) {
     await page.route("**/api/session", (r) => r.fulfill({ json: { ok: true } }));
     await page.route("**/api/scores", (r) => { posts.push(r.request().postDataJSON()); return r.fulfill({ json: { ok: true } }); });
     await page.goto(`/?mode=${mode}&bgm=0&countdown=0`);
-    await expect(page.getByRole("dialog")).toBeVisible();
-    await expect(page.getByRole("textbox")).toHaveValue("Existing");
-    await expect(page.getByRole("checkbox")).not.toBeChecked();
-    expect(await page.evaluate(() => (window as any).__swaprise.game.boards[0].frame)).toBe(0);
-    await page.getByRole("textbox").fill("New name");
-    await page.getByRole("checkbox").check();
-    await page.getByRole("button", { name: "SAVE AND PLAY" }).click();
+    // 遊ぶ前には何も聞かない。初めての記録の結果画面で公開の可否を聞く
+    await expect(page.getByRole("dialog")).toHaveCount(0);
     await finish(page);
+    const result = page.getByRole("region", { name: "RESULT", exact: true });
+    await expect(result.getByRole("heading", { name: "Publish this score?" })).toBeVisible();
+    await expect(result.getByRole("heading", { name: "YOUR RANKING" })).toBeHidden();
+    await expect(result.getByRole("textbox")).toHaveValue("Existing");
+    expect(posts.length).toBe(0);
+    await result.getByRole("textbox").fill("New name");
+    await result.getByRole("button", { name: "PUBLISH", exact: true }).click();
+    await expect(result.getByRole("heading", { name: "Publish this score?" })).toBeHidden();
+    await expect(result.getByRole("heading", { name: "YOUR RANKING" })).toBeVisible();
     await expect.poll(() => posts.length).toBe(1);
     expect(posts[0]).toMatchObject({ mode, name: "New name", score: 777, maxChain: 3 });
     expect(await page.evaluate((m) => JSON.parse(localStorage.getItem("swaprise.highscores.v1")!)[m][0].score, mode)).toBe(777);
     await page.goto(`/?mode=${mode}&bgm=0&countdown=0`);
-    await page.waitForFunction(() => (window as any).__swaprise?.game.boards[0].frame > 0);
-    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await finish(page);
+    await expect(page.getByRole("region", { name: "RESULT", exact: true }).getByRole("heading", { name: "YOUR RANKING" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Publish this score?" })).toHaveCount(0);
   });
 }
-test("later keeps scores local, no session or upload requests", async ({ page }) => {
+test("keep private stores scores locally, no session or upload requests", async ({ page }) => {
   const requests: string[] = []; page.on("request", (r) => { if (r.url().includes("/api/")) requests.push(r.url()); });
   await page.goto("/?mode=endless&countdown=0&bgm=0");
-  await page.getByRole("button", { name: "LATER", exact: true }).click();
   await finish(page);
+  await page.getByRole("button", { name: "KEEP PRIVATE", exact: true }).click();
+  await expect(page.getByRole("status")).toContainText("Private record");
   await expect.poll(() => page.evaluate(() => localStorage.getItem("swaprise.highscores.v1"))).not.toBeNull();
   expect(requests).toEqual([]);
   expect(await page.evaluate(() => localStorage.getItem("swaprise.scores.publish.v1"))).toBe("false");
+});
+test("undecided publication is asked again on the next result, and R while typing does not restart", async ({ page }) => {
+  await page.goto("/?mode=endless&countdown=0&bgm=0");
+  await finish(page);
+  const input = page.getByRole("region", { name: "RESULT", exact: true }).getByRole("textbox");
+  await input.click();
+  await input.pressSequentially("Rr");
+  await expect(input).toHaveValue("Rr");
+  expect(await page.evaluate(() => (window as any).__swaprise.game.finished)).toBe(true);
+  await page.getByRole("button", { name: "RETRY", exact: true }).click();
+  await finish(page);
+  await expect(page.getByRole("heading", { name: "Publish this score?" })).toBeVisible();
+  expect(await page.evaluate(() => localStorage.getItem("swaprise.scores.publish.v1"))).toBeNull();
 });
 test("settings share online name and rankings handle network failures safely", async ({ page }) => {
   await page.goto("/?bgm=0&opening=0");
@@ -142,10 +161,13 @@ for (const viewport of [{ width: 360, height: 640 }, { width: 844, height: 390 }
 }
 
 test("player screen is concise and follows the keyboard's visual viewport", async ({ page }) => {
-  await page.goto("/?mode=endless&bgm=0&countdown=0");
+  await page.goto("/?bgm=0&opening=0");
+  await page.waitForFunction(() => Boolean((window as any).__swapriseScenes?.menu));
+  await page.evaluate(() => (window as any).__swapriseScenes.menu.showSettings());
+  await page.evaluate(() => (window as any).__swapriseScenes.menu.overlay.buttons.find((b: any) => b.name === "player-settings").emit("pointerdown"));
   await expect(page.getByRole("dialog")).toBeVisible();
   expect(await page.getByRole("textbox").evaluate((el) => parseFloat(getComputedStyle(el).fontSize))).toBeGreaterThanOrEqual(22);
-  const primary = page.getByRole("button", { name: "SAVE AND PLAY" });
+  const primary = page.getByRole("button", { name: "SAVE", exact: true });
   expect(await primary.evaluate((el) => parseFloat(getComputedStyle(el).fontSize))).toBeGreaterThanOrEqual(20);
   expect((await primary.boundingBox())!.height).toBeGreaterThanOrEqual(56);
   await expect(page.getByRole("checkbox")).not.toBeChecked();
@@ -155,7 +177,7 @@ test("player screen is concise and follows the keyboard's visual viewport", asyn
     Object.defineProperty(window.visualViewport!, "height", { configurable: true, value: 320 });
     window.visualViewport!.dispatchEvent(new Event("resize"));
   });
-  const save = page.getByRole("button", { name: "SAVE AND PLAY" });
+  const save = page.getByRole("button", { name: "SAVE", exact: true });
   const bounds = (await save.boundingBox())!;
   expect(bounds.y + bounds.height).toBeLessThanOrEqual(320);
   await page.getByRole("textbox").fill("Mobile player");

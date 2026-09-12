@@ -42,7 +42,6 @@ test("メニューが表示され、キーボードでエンドレスを開始�
   await page.waitForTimeout(150);
   await page.keyboard.press("Enter");
   await waitForGame(page);
-  await page.getByRole("button", { name: "LATER", exact: true }).click();
   await page.waitForFunction(() => (window as any).__swaprise.game.boards[0].frame > 0);
   const s = await boardState(page);
   expect(s.frame).toBeGreaterThan(0);
@@ -156,11 +155,25 @@ test("対戦: 2つの盤面が出て、攻撃が相手に届く", async ({ page 
   }
   const early = await p2State();
   expect(early.pending + early.garbage).toBe(0);
-  for (let i = 0; i < 140; i++) {
+  const texts = () =>
+    page.evaluate(() => {
+      const v = (window as any).__swaprise.scene.views[1];
+      v.draw();
+      return v.root.list.filter((o: any) => o.type === "Text" && o.visible).map((o: any) => o.text);
+    });
+  // 届いてから降りる（52 フレーム後）までは、予告の脇に段数「1」が見えている
+  let waited = 0;
+  while ((await p2State()).pending === 0 && waited++ < 140) {
+    await tick([{ moveX: 0, moveY: 0, swap: false, raise: false }, { moveX: 0, moveY: 0, swap: false, raise: false }]);
+  }
+  expect(await p2State()).toEqual({ pending: 1, garbage: 0 });
+  expect(await texts()).toContain("1");
+  for (let i = waited; i < 140; i++) {
     await tick([{ moveX: 0, moveY: 0, swap: false, raise: false }, { moveX: 0, moveY: 0, swap: false, raise: false }]);
   }
   const p2 = await p2State();
   expect(p2.pending + p2.garbage).toBeGreaterThanOrEqual(1);
+  const popups = await texts();
   // おじゃまが落ちて着地するまで進める
   for (let i = 0; i < 120; i++) {
     await tick([{ moveX: 0, moveY: 0, swap: false, raise: false }, { moveX: 0, moveY: 0, swap: false, raise: false }]);
@@ -172,6 +185,8 @@ test("対戦: 2つの盤面が出て、攻撃が相手に届く", async ({ page 
   expect(g.length).toBe(1);
   expect(g[0].w).toBe(3);
   expect(g[0].state).toBe("idle");
+  // 届いた瞬間に相手の盤面へ「+1」が出る（シーンを止めているので消えずに残る）
+  expect(popups).toContain("+1");
   await page.evaluate(() => (window as any).__swaprise.scene.scene.resume());
   await page.waitForTimeout(100);
   await page.screenshot({ path: `${SHOT}/versus.png` });
@@ -241,4 +256,43 @@ test("エンドレス: ゲームオーバー後は経過時間の表示が止ま
   await page.waitForTimeout(1500);
   const after = await readInfoText();
   expect(after).toBe(before);
+});
+
+test("CPU 戦: 相手が 4 連鎖を組むと自分の盤面に知らせが出る", async ({ page }) => {
+  await page.goto("/?mode=cpu&seed=7&bgm=0&countdown=0&speed=1");
+  await waitForGame(page);
+  await page.evaluate(() => {
+    const p = (window as any).__swaprise;
+    p.scene.scene.pause();
+    // CPU の手を止め、CPU の盤面に 4 連鎖の形を仕込む（列 0 の 4 を右へ出すと 0,0,0 → 1,1,1 → 3,3,3 → 2,2,2）
+    p.game.cpu = null;
+    const b = p.game.boards[1];
+    b.noRise = true;
+    b.setColumns([[2, 2, 1, 0, 0, 4, 0, 1, 1, 3, 2], [4, 3, 3], [4, 3, 3], [0, 2, 1], [3, 0, 2], [1, 4, 0]]);
+    b.cursor.x = 0;
+    b.cursor.y = 5;
+  });
+  const NO = { moveX: 0, moveY: 0, swap: false, raise: false };
+  const step = (input: any) =>
+    page.evaluate((ins) => {
+      const p = (window as any).__swaprise;
+      p.tick(ins);
+      return p.scene.views[0].root.list.filter((o: any) => o.type === "Text" && o.text.startsWith("OPPONENT")).map((o: any) => o.text);
+    }, [NO, input]);
+  const seen: string[] = [];
+  seen.push(...(await step({ moveX: 0, moveY: 0, swap: true, raise: false })));
+  for (let i = 0; i < 600; i++) seen.push(...(await step(NO)));
+  expect(seen).toContain("OPPONENT x4!");
+  expect(seen).not.toContain("OPPONENT x3!");
+});
+
+test("エンドレス: 14 連鎖以上の吹き出しも数字で出す", async ({ page }) => {
+  await page.goto("/?mode=endless&seed=7&bgm=0&countdown=0");
+  await waitForGame(page);
+  const texts = await page.evaluate(() => {
+    const v = (window as any).__swaprise.scene.views[0];
+    v.popup(2, 3, 3, 14);
+    return v.root.list.filter((o: any) => o.type === "Text").map((o: any) => o.text);
+  });
+  expect(texts).toContain("x14");
 });
