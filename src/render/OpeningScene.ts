@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { CELL, FONT_UI, KIND_COLORS, TEXT_COLOR, TEXT_DIM, layoutFor, menuTitle, sameLayout } from "./theme";
+import { CELL, FONT_UI, KIND_COLORS, TEXT_COLOR, layoutFor, menuTitle, sameLayout } from "./theme";
 import { Background } from "./Background";
 import { createTextures } from "./textures";
 import { DPR, applyLayout } from "./hidpi";
@@ -40,7 +40,6 @@ const T = {
   swap: 700,
   chain: 820,
   reveal: 2320,
-  subtitle: 2560,
   settle: 2700,
   icons: 2960,
   menu: 3200,
@@ -167,11 +166,6 @@ export class OpeningScene extends Phaser.Scene {
       .setAlpha(0)
       .setDepth(10)
       .setName("title");
-    const subtitle = this.add
-      .text(cx, centerY + (title.subtitleY - title.y), t("Swap. Match. Chain!"), { fontFamily: FONT_UI, fontSize: `${title.subtitleSize + 2}px`, fontStyle: "600", color: TEXT_DIM })
-      .setOrigin(0.5)
-      .setAlpha(0)
-      .setDepth(10);
     const glow = this.add.image(cx, centerY, "glow").setScale(0.2).setAlpha(0).setDepth(8).setBlendMode(Phaser.BlendModes.ADD);
 
     /** 続きを始める。ここからの時刻は T で数える。 */
@@ -232,10 +226,8 @@ export class OpeningScene extends Phaser.Scene {
           onComplete: () => titleText.setColor(TEXT_COLOR),
         });
       });
-      this.at(T.subtitle, () => this.tweens.add({ targets: subtitle, alpha: 1, duration: 260, ease: "Quad.Out" }));
       this.at(T.settle, () => {
         this.tweens.add({ targets: titleText, y: title.y, duration: 440, ease: "Cubic.InOut" });
-        this.tweens.add({ targets: subtitle, y: title.subtitleY, duration: 440, ease: "Cubic.InOut" });
       });
       // 柄の飾り（メニューと同じ 6 枚）が上から降りてくる。背の低い画面ではメニューにも無いので出さない
       if (!title.compact) {
