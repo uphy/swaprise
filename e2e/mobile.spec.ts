@@ -308,6 +308,30 @@ test("横持ちの 2P 対戦は盤面を左右の端に寄せ、HUD を内側に
   expect(info.pauseX).toBe(info.w / 2);
 });
 
+test("メニューの下段のボタンは、4 つ目の項目の説明文と隙間を空けて置く", async ({ page }) => {
+  await page.goto("/?bgm=0&opening=0");
+  await page.waitForFunction(() => Boolean((window as any).__swapriseScenes?.menu));
+  await page.waitForTimeout(300);
+  const gaps = await page.evaluate(() => {
+    const scene = (window as any).__swapriseScenes.menu;
+    const caption = scene.children.getByName("group-online-caption").getBounds();
+    const tool = scene.children.getByName("records");
+    return tool.y - tool.height / 2 - (caption.y + caption.height);
+  });
+  expect(gaps).toBeGreaterThanOrEqual(12);
+  // 横持ちの PC の並び（以前は 6px しかなく詰まって見えた）
+  await page.setViewportSize({ width: 1000, height: 720 });
+  await page.waitForFunction(() => (window as any).__swapriseScenes.menu.scale.width > (window as any).__swapriseScenes.menu.scale.height);
+  await page.waitForTimeout(400);
+  const landscape = await page.evaluate(() => {
+    const scene = (window as any).__swapriseScenes.menu;
+    const caption = scene.children.getByName("group-online-caption").getBounds();
+    const tool = scene.children.getByName("records");
+    return tool.y - tool.height / 2 - (caption.y + caption.height);
+  });
+  expect(landscape).toBeGreaterThanOrEqual(12);
+});
+
 test("タッチ端末は最初のタップで全画面に入り、SETTINGS の FULL SCREEN で切ると保存され、もう一度押すと戻る", async ({ page }) => {
   await page.goto("/?bgm=0&opening=0");
   await page.waitForFunction(() => Boolean((window as any).__swapriseScenes?.menu));

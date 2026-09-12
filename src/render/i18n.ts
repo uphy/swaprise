@@ -4,7 +4,6 @@ const locale: Locale = typeof navigator !== "undefined" && navigator.language.to
 
 const JA: Record<string, string> = {
   "SETTLING": "連鎖を集計中",
-  "Swap. Match. Chain!": "揃えて、積んで、つなげろ！",
   "Ranked per play · unverified scores": "プレイ単位・プレイ内容の検証なし",
   "RESULT": "結果", "POINTS": "点", "First record!": "初めての記録！", "New best! +{points}": "自己ベスト更新！ ＋{points}",
   "Matched your best!": "自己ベストと同点！", "{points} to your best": "自己ベストまであと{points}",

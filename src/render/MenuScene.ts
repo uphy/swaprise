@@ -1,6 +1,6 @@
 import Phaser from "phaser";
 import { showRecordsDialog, showPlayerSettings } from "./score-dialog";
-import { ACCENT, FONT, FONT_UI, MENU_TYPE, KIND_COLORS, TEXT_COLOR, TEXT_DIM, TEXT_MUTE, layoutFor, menuTitle, sameLayout } from "./theme";
+import { ACCENT, FONT, FONT_UI, MENU_TYPE, KIND_COLORS, TEXT_COLOR, TEXT_MUTE, layoutFor, menuTitle, sameLayout } from "./theme";
 import { Background } from "./Background";
 import { createTextures } from "./textures";
 import { PUZZLES, PUZZLES_PER_STAGE, PUZZLE_STAGES, puzzleName, type CpuLevel, type GameMode } from "../core";
@@ -176,9 +176,6 @@ export class MenuScene extends Phaser.Scene {
       .setOrigin(0.5)
       .setShadow(0, 4, "#2a1a5a", 10, false, true)
       .setName("title");
-    this.add
-      .text(cx, title.subtitleY, t("Swap. Match. Chain!"), { fontFamily: FONT_UI, fontSize: `${title.subtitleSize + 2}px`, fontStyle: "600", color: TEXT_DIM })
-      .setOrigin(0.5);
     // 柄の飾り。背の低い画面では省いて項目の場所を空ける。曲の拍で順に弾む
     if (!compact) {
       KIND_COLORS.forEach((_, k) => {
@@ -187,12 +184,14 @@ export class MenuScene extends Phaser.Scene {
     }
 
     // 現在地（下位メニューのとき「1 PLAYER ▸」）
-    this.itemTop = titleY + (compact ? 92 : layout.portrait ? 150 : 140);
+    this.itemTop = titleY + (compact ? 80 : layout.portrait ? 140 : 124);
     this.itemGap = compact ? 46 : layout.portrait ? 60 : 52;
     this.crumb = this.add.text(cx, this.itemTop - (compact ? 26 : 34), "", { fontFamily: FONT_UI, fontSize: "13px", fontStyle: "600", color: ACCENT }).setOrigin(0.5).setName("crumb");
 
-    // 下段の小ボタン。項目は最大 4 つなので、その下に置く
-    const toolY = this.itemTop + 4 * this.itemGap - (compact ? 6 : 4);
+    // 下段の小ボタン。項目は最大 4 つなので、4 つ目の説明文（項目の下 16〜19px、高さ約 14px）から隙間を空けて置く。
+    // 以前は項目の間隔だけで決めていて、横長の画面では説明文とボタンの間が 6px しかなく詰まって見えた
+    const captionBottom = this.itemTop + 3 * this.itemGap + (compact ? 16 : 19) + 9;
+    const toolY = captionBottom + (compact ? 10 : 18) + 17;
     const toolW = layout.portrait ? 92 : 112;
     TOOLS.forEach((tool, i) => {
       const b = new Button(this, cx + (i - 1) * (toolW + 8), toolY, TOOL_LABEL[tool], () => this.openTool(tool), { fontSize: 11, minWidth: toolW, minHeight: 34 }).setName(tool);
