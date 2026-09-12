@@ -29,6 +29,8 @@ const JA: Record<string, string> = {
   "Custom games stay on this device. Failed uploads retry later (up to 50). Turning this off discards pending uploads; an upload already received cannot be recalled.": "カスタム設定は端末内のみの記録です。通信失敗時は最大50件を保存し、あとで再送します。公開オフで未送信分を破棄しますが、サーバーに到着済みの送信は取り消せません。",
   "SAVE AND PLAY": "保存して遊ぶ", SAVE: "保存", LATER: "あとで",
   "OPPONENT x{chain}!": "相手が {chain} 連鎖！",
+  "Publish this score?": "この記録を公開しますか？", PUBLISH: "公開する", "KEEP PRIVATE": "公開しない",
+  "Your name, score, chain and date will be public. You can change this in settings.": "名前・得点・連鎖・日付が誰でも見られるようになります。設定からいつでも変えられます。",
   "Standard rules · top 50 per mode · unverified scores": "標準ルール・モード別上位50件・プレイ内容の検証なし",
   "PENDING UPLOADS: {count}": "未送信の記録: {count}件", "Loading…": "読み込み中…",
   "Could not load rankings. Local records are still available.": "ランキングを取得できませんでした。端末内の記録は引き続き利用できます。",
