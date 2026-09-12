@@ -76,6 +76,8 @@ export type BoardEvent =
   | { type: "garbageLand"; height: number }
   | { type: "garbageTransform"; id: number }
   | { type: "attack"; garbage: GarbageSpec[] }
+  /** 相手の板が予告に入った。rows は今回届いた段数の合計。描画側が「+N」を出し、送った側にも量が見える */
+  | { type: "garbageIncoming"; rows: number }
   | { type: "danger"; on: boolean }
   | { type: "panic"; on: boolean }
   | { type: "gameOver" }

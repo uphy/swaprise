@@ -157,6 +157,16 @@ describe("おじゃまの送出と投下のタイミング", () => {
     expect(b.garbage.size).toBe(1);
   });
 
+  it("板を受け取った tick の events に garbageIncoming が段数の合計つきで残り、描画側が「+N」を出せる", () => {
+    const b = new Board({ seed: 1, kinds: 6, initialHeight: 0, noRise: true });
+    b.setColumns([[0], [1], [0], [1], [0], [1]]);
+    run(b, 10);
+    b.receiveGarbage([{ width: 6, height: 3, type: "normal" }, { width: 4, height: 1, type: "normal" }]);
+    expect(b.events).toContainEqual({ type: "garbageIncoming", rows: 4 });
+    run(b, 1);
+    expect(b.events.some((e) => e.type === "garbageIncoming")).toBe(false);
+  });
+
   it("送られた板は52フレーム後に降れるようになる。それまでは静止した盤面でも予告に留まる", () => {
     const b = new Board({ seed: 1, kinds: 6, initialHeight: 0, noRise: true });
     b.setColumns([[0], [1], [0], [1], [0], [1]]);
