@@ -37,16 +37,19 @@ pnpm puzzles          # パズル面の生成
 - e2e の待ちは `waitForTimeout` より `waitForFunction` を使う。表示待ちの固定時間は flaky の元
 - メニューを開く e2e は `?opening=0` を付けて、起動時のオープニングを飛ばす。オープニング自体は `e2e/opening.spec.ts`（音を鳴らせない環境）と `e2e/opening-autoplay.spec.ts`（鳴らせる環境）で確かめる
 - 盤面は `board.setColumns([[列0の下から], [列1], ...])` で組む。揃いのない静かな盤面が要るときは `[[0, 1], [2, 3], [4, 0], [1, 2], [3, 4], [0, 1]]`
-- 挙動を直したときは、修正前のコードで新しいテストが落ちることを確認してからコミットする
+- バグを直したときは、修正前のコードで新しいテストが落ちることを確認してからコミットする。新機能では要らない（新しい表示や記録を確かめるテストは、古いコードで落ちるのが明らか）
 
 ## git と PR
 
-- main は保護されていて直接 push できない。ブランチを切り、PR を作り、CI（`.github/workflows/ci.yml`）が通ったら `gh pr merge --squash --delete-branch` で merge する。merge で main に入ると Cloudflare Workers にデプロイされる（`deploy.yml`）
+- main は保護されていて直接 push できない。main に入ると即 Cloudflare Workers の本番にデプロイされ（`deploy.yml`）、利用者がいる。だから本番に出す前の確認は PR のプレビューで済ませ、CI の完了は待たない。順序は次のとおり
+  1. 実装が終わったら、typecheck・unit・触った spec（例: `pnpm e2e e2e/records.spec.ts`）だけ手元で回す。e2e・e2e-online の全件は CI に任せる
+  2. push して PR を作る。CI がプレビュー URL をコメントする（PR ごとに別 Worker と別 D1。push から 1 分弱）
+  3. `src/render/`・`index.html`・CSS に触れた変更は、プレビュー URL をスマホで開いて確かめる。メニュー左下のビルド識別子（日付と commit）で、開いている版を確認できる。これはユーザーが行うので、URL を伝えて確認を待つ
+  4. 確認できたら（3 が要らない変更なら PR 作成の直後に）`gh pr merge --auto --squash --delete-branch` を打つ。CI（`.github/workflows/ci.yml`）が緑になった時点で merge され、本番に出る。以後は待たずに次の作業へ進む。CI が落ちたときだけ戻る
 - squash merge なので、main のコミットは1 PR につき1つになる。PR のコミットが1つならそのコミットメッセージがそのまま main に入り、2つ以上なら1行目が PR タイトル、本文が各コミットメッセージの箇条書きになる（リポジトリ設定の「コミットまたは PR のタイトル」）。だから PR タイトルにも「何をなぜ変えたか」を書く（例: 「おじゃまの送出と投下のタイミングを原作に合わせ、連鎖の途中に降らないようにする」）。PR 内の手直しは小さいコミットで積んでよく、force push で畳まなくてよい
 - **作業の依頼を受けたら、コードを変える前に必ず worktree を作り、その中で作業する**。`EnterWorktree` があればそれを使う。なければ `git worktree add ../swaprise-<topic> -b <topic> main` のあと `pnpm install`。main の checkout（このディレクトリ）では編集も commit もしない。理由: 複数のセッションが同時に走ることがあり、同じツリーで編集がぶつかった
 - 1 worktree に 1 セッション。e2e は `PREVIEW_PORT=4174 pnpm e2e` のようにポートをずらす（dev は `DEV_PORT`）。merge したら `git worktree remove ../swaprise-<topic>` で片付ける
 - 調べるだけ・答えるだけの依頼（コードを変えない）は worktree を作らなくてよい
-- PR には CI がプレビュー URL をコメントする（Cloudflare の versions upload）。タッチの手触りやレイアウトを変えたときは、merge 前にその URL をスマホで開いて確かめる。メニュー左下のビルド識別子（日付と commit）で、開いている版を確認できる
 - コミットメッセージは日本語で、何をなぜ変えたかを1つの文にまとめる（既存のログに合わせる）。squash で main に入ったときに本文になるので、手直しのコミットにも理由を書く。PR の本文は、何をなぜ変えたか・確認したことを書く
 - 同じ作業ツリーを別のエージェントや人が触っていることがある。コミットは `git add -A` ではなく、自分が変えたファイルを名指しで add する。`git status` に自分の知らない変更があれば、それは含めずにユーザーへ伝える
 - 旧 URL の転送用 Worker（`redirect/`）は `pnpm deploy:redirect` で手動デプロイ。Worker の削除とリポジトリ名の変更はしない
