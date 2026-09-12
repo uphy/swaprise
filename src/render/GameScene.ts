@@ -457,11 +457,12 @@ export class GameScene extends Phaser.Scene {
     }
     this.game_.boards.forEach((b, i) => {
       this.views[i].handleEvents(b.events, true, Boolean(this.inputs[i]));
-      // 自分の盤面の大きな連鎖は画面ごと揺らし、5 連鎖からは閃光も足す
+      // 自分の盤面の大きな連鎖は画面ごと揺らし、5 連鎖からは閃光も足す。
+      // 振幅は画面幅に対する比。盤面の大きさが分かる程度にとどめ、揺れで盤面が読めなくならないようにする
       if (!this.inputs[i]) return;
       for (const e of b.events) {
         if (e.type !== "match" || e.chain < 3) continue;
-        this.cameras.main.shake(120 + e.chain * 15, 0.0015 + Math.min(0.006, e.chain * 0.0006));
+        this.cameras.main.shake(90 + e.chain * 10, 0.0009 + Math.min(0.0025, e.chain * 0.0003));
         if (e.chain >= 5) this.flash(Math.min(0.5, 0.15 + e.chain * 0.04));
       }
     });
