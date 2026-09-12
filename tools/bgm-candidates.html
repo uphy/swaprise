@@ -427,6 +427,58 @@ SONGS.push({
   });
 }
 
+// ---- 10. ポップ・フェアリー（作り込み）
+// 1 の 8 小節はそのまま A として残し、後半 8 小節（A'）を足して 16 小節にする。音色・テンポ・進行は 1 と同じ。
+// 足したもの: 8 小節目と 16 小節目のベースの駆け上がりとスネアのフィル、A' の旋律の言い換え（同じリズムで高い所へ）、
+// A' でオクターブ下に旋律を重ねる細いパルス、A' のアルペジオの並びと開いたハイハットの位置替え。
+{
+  const C = { C:['c4','e4','g4','c5'], G:['g3','b3','d4','g4'], Am:['a3','c4','e4','a4'], F:['f3','a3','c4','f4'] };
+  const B = { C:['c2','c3','g2'], G:['g2','g3','d3'], Am:['a2','a3','e3'], F:['f2','f3','c3'] };
+  const prog = ['C','G','Am','F','C','G','F','G'];
+  const bounce = ([lo, hi, fi]) => `${lo}:2 r:2 ${lo}:2 ${hi}:2 ${lo}:2 r:2 ${fi}:2 ${hi}:2`;
+  // 8 小節目: 根音から g-a-b と駆け上がって次の c へ
+  const walkUp = 'g2:2 r:2 g2:2 g3:2 a2:2 a2:2 b2:2 b2:2';
+  const bass8 = prog.slice(0, 7).map((k) => bounce(B[k])).join(' ') + ' ' + walkUp;
+  const melodyA = [
+    'e5:2 g5:2 e5:2 c5:2 d5:4 e5:4',
+    'd5:2 g5:2 d5:2 b4:2 c5:4 d5:4',
+    'e5:2 a5:2 e5:2 c5:2 b4:2 c5:2 d5:4',
+    'c5:4 a4:2 f4:2 g4:8',
+    'e5:2 g5:2 e5:2 c5:2 d5:4 e5:4',
+    'd5:2 g5:2 b5:2 g5:2 d5:2 b4:2 d5:4',
+    'f5:4 e5:2 d5:2 c5:2 d5:2 e5:4',
+    'g5:4 f5:2 d5:2 b4:4 d5:4',
+  ];
+  // A': 同じリズムの言い換え。1 オクターブ上へは行かず、5 度上あたりで答える
+  const melodyA2 = [
+    'g5:2 c6:2 g5:2 e5:2 g5:4 a5:4',
+    'd5:2 g5:2 b5:2 g5:2 d5:4 e5:4',
+    'c6:2 a5:2 e5:2 c5:2 e5:4 a5:4',
+    'a5:4 g5:2 f5:2 c5:8',
+    'e5:2 g5:2 c6:2 g5:2 e5:4 g5:4',
+    'd6:2 b5:2 g5:2 d5:2 g5:4 b5:4',
+    'a5:4 c6:2 a5:2 f5:4 e5:4',
+    'd5:2 e5:2 f5:2 g5:2 b5:2 g5:2 d5:2 b4:2',
+  ];
+  const octaveDown = (seq) => seq.replace(/([a-g][#b]?)(\d)/g, (_, n, o) => `${n}${Number(o) - 1}`);
+  const rest8 = rep('r:16', 8);
+  SONGS.push({
+    name: '10. ポップ・フェアリー（作り込み）', key: 'C major / 132 BPM / 16小節',
+    desc: '1 をそのまま前半に置き、後半 8 小節で旋律を言い換えて 16 小節にした案。8・16 小節目にベースの駆け上がりとスネアのフィル。後半はオクターブ下の細いパルスで旋律を厚くし、アルペジオの並びとハイハットを少し変える。29 秒で 1 周。',
+    spec: '音色・テンポ・進行は 1 と同じ。追加: 後半の旋律の重ね（12.5%パルス、1 オクターブ下）、フィル、駆け上がり',
+    tempo: 132, beat: 16, swing: 0, echoSteps: 3,
+    tracks: [
+      { inst:'bassTri', seq: bass8 + ' ' + bass8 },
+      { inst:'arpPulse', seq: arpSeq(prog.map((k) => C[k]), [0,1,2,3,2,1], 16) + ' ' + arpSeq(prog.map((k) => C[k]), [0,2,1,3,2,1], 16) },
+      { inst:'leadSq', seq: melodyA.join(' ') + ' ' + melodyA2.join(' ') },
+      { inst:'arpThin', seq: rest8 + ' ' + octaveDown(melodyA2.join(' ')) },
+      { drum:'kick',  pat: rep('x.....x.x.....x.', 16) },
+      { drum:'snare', pat: rep('....x.......x...', 7) + '....x.......x.xx' + rep('....x.......x...', 7) + '....x.....xxxxxx' },
+      { drum:'hat',   pat: rep('x.x.x.x.x.x.x.xo', 8) + rep('x.xox.x.x.xox.xo', 8) },
+    ],
+  });
+}
+
 // ============================================================ 検証
 function buildSong(song) {
   const tracks = song.tracks.map((t) => {
