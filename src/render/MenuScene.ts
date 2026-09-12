@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import { showRecordsDialog, showPlayerSettings } from "./score-dialog";
-import { FONT, MENU_TYPE, KIND_COLORS, TEXT_COLOR, layoutFor, menuTitle, sameLayout } from "./theme";
+import { ACCENT, FONT, FONT_UI, MENU_TYPE, KIND_COLORS, TEXT_COLOR, TEXT_DIM, TEXT_MUTE, layoutFor, menuTitle, sameLayout } from "./theme";
+import { Background } from "./Background";
 import { createTextures } from "./textures";
 import { PUZZLES, PUZZLES_PER_STAGE, PUZZLE_STAGES, puzzleName, type CpuLevel, type GameMode } from "../core";
 import { audio } from "./shared";
@@ -108,6 +109,9 @@ export class MenuScene extends Phaser.Scene {
   private cx = 0;
   private compact = false;
   private overlay: Overlay | null = null;
+  private bgView: Background | null = null;
+  private titleText: Phaser.GameObjects.Text | null = null;
+  private icons: Phaser.GameObjects.Image[] = [];
   /** パズルの面選び。開いている間はメニューのキー操作をこちらへ回す。 */
   private picker: { panel: Phaser.GameObjects.Container; state: { stage: number; face: number }; refresh: () => void } | null = null;
 
@@ -157,6 +161,9 @@ export class MenuScene extends Phaser.Scene {
     const H = layout.height;
     const cx = W / 2;
     this.cx = cx;
+    this.bgView?.destroy();
+    this.bgView = new Background(this, W, H, "menu");
+    this.icons = [];
 
     // 背の低い画面（Safari のツールバーがある iPhone、横持ちのスマホ）では、縦の間隔を詰める。
     // 題字の位置はオープニングの最後の位置と同じ（menuTitle）
@@ -164,21 +171,25 @@ export class MenuScene extends Phaser.Scene {
     const compact = title.compact;
     this.compact = compact;
     const titleY = title.y;
-    this.add.text(cx, titleY, "SWAPRISE", { fontFamily: FONT, fontSize: `${title.size}px`, color: TEXT_COLOR, fontStyle: "bold" }).setOrigin(0.5).setName("title");
+    this.titleText = this.add
+      .text(cx, titleY, "SWAPRISE", { fontFamily: FONT_UI, fontSize: `${title.size}px`, color: TEXT_COLOR, fontStyle: "700" })
+      .setOrigin(0.5)
+      .setShadow(0, 4, "#2a1a5a", 10, false, true)
+      .setName("title");
     this.add
-      .text(cx, title.subtitleY, t("Swap & match action puzzle"), { fontFamily: FONT, fontSize: `${title.subtitleSize}px`, color: "#7a7a90" })
+      .text(cx, title.subtitleY, t("Swap. Match. Chain!"), { fontFamily: FONT_UI, fontSize: `${title.subtitleSize + 2}px`, fontStyle: "600", color: TEXT_DIM })
       .setOrigin(0.5);
-    // 柄の飾り。背の低い画面では省いて項目の場所を空ける
+    // 柄の飾り。背の低い画面では省いて項目の場所を空ける。曲の拍で順に弾む
     if (!compact) {
       KIND_COLORS.forEach((_, k) => {
-        this.add.image(cx - 100 + k * 40, title.iconsY, `panel-${k}`).setScale(1 / DPR);
+        this.icons.push(this.add.image(cx - 100 + k * 40, title.iconsY, `panel-${k}`).setScale(1 / DPR));
       });
     }
 
     // 現在地（下位メニューのとき「1 PLAYER ▸」）
     this.itemTop = titleY + (compact ? 92 : layout.portrait ? 150 : 140);
     this.itemGap = compact ? 46 : layout.portrait ? 60 : 52;
-    this.crumb = this.add.text(cx, this.itemTop - (compact ? 26 : 34), "", { fontFamily: FONT, fontSize: "12px", color: "#ffe066" }).setOrigin(0.5).setName("crumb");
+    this.crumb = this.add.text(cx, this.itemTop - (compact ? 26 : 34), "", { fontFamily: FONT_UI, fontSize: "13px", fontStyle: "600", color: ACCENT }).setOrigin(0.5).setName("crumb");
 
     // 下段の小ボタン。項目は最大 4 つなので、その下に置く
     const toolY = this.itemTop + 4 * this.itemGap - (compact ? 6 : 4);
@@ -189,9 +200,9 @@ export class MenuScene extends Phaser.Scene {
     });
 
     // ビルド識別子（日付と commit）。スマホで今どの版が動いているかを確かめるため、左下に小さく出す
-    const buildText = this.add.text(6, H - 4, __BUILD_ID__, { fontFamily: FONT, fontSize: "9px", color: "#4a4a60" }).setOrigin(0, 1).setName("build");
+    const buildText = this.add.text(6, H - 4, __BUILD_ID__, { fontFamily: FONT, fontSize: "9px", color: "rgba(255,255,255,0.4)" }).setOrigin(0, 1).setName("build");
     const githubLink = this.add
-      .text(6 + buildText.width + 8, H - 4, "GitHub", { fontFamily: FONT, fontSize: "9px", color: "#6a6a90" })
+      .text(6 + buildText.width + 8, H - 4, "GitHub", { fontFamily: FONT, fontSize: "9px", color: "rgba(255,255,255,0.7)" })
       .setOrigin(0, 1)
       .setInteractive({ useHandCursor: true })
       .setName("github-link")
@@ -255,6 +266,20 @@ export class MenuScene extends Phaser.Scene {
     for (const key of ["ESC", "BACKSPACE", "X"]) kb.on(`keydown-${key}`, () => this.onKey("back"));
   }
 
+  override update(_time: number, delta: number): void {
+    this.bgView?.update(delta);
+    const beat = audio.beat;
+    if (!beat) return;
+    // 題字は拍の頭でわずかに膨らみ、柄の飾りは小節の中で順に弾む
+    const swell = Math.pow(1 - beat.phase, 3);
+    this.titleText?.setScale(1 + swell * 0.03);
+    this.icons.forEach((icon, i) => {
+      const local = (beat.bar * 6 - i + 6) % 6;
+      const hop = local < 1 ? Math.sin(local * Math.PI) : 0;
+      icon.setScale((1 + hop * 0.2) / DPR);
+    });
+  }
+
   /** 現在の階層の項目を並べ直す。ラベルの下に小文字の説明・記録を添える。 */
   private buildList(): void {
     // 浮かび上がりの途中で階層が変わることがある。破棄した Text を tween が触り続けないよう先に止める
@@ -271,7 +296,8 @@ export class MenuScene extends Phaser.Scene {
       const y = this.itemTop + i * this.itemGap;
       // 指で押す前提で、文字の上下に余白を取って当たり判定を高さ 32 論理px 以上にする
       const t = this.add
-        .text(cx, y, item.label, { fontFamily: FONT, fontSize: `${this.compact ? MENU_TYPE.itemCompact : MENU_TYPE.item}px`, color: TEXT_COLOR })
+        .text(cx, y, item.label, { fontFamily: FONT_UI, fontSize: `${this.compact ? MENU_TYPE.itemCompact : MENU_TYPE.item}px`, fontStyle: "700", color: TEXT_COLOR })
+        .setShadow(0, 2, "#2a1a5a", 6, false, true)
         .setOrigin(0.5)
         .setPadding(16, pad, 16, pad)
         .setInteractive({ useHandCursor: true })
@@ -288,7 +314,7 @@ export class MenuScene extends Phaser.Scene {
       });
       this.texts.push(t);
       const c = this.add
-        .text(cx, y + (this.compact ? 16 : 19), item.caption, { fontFamily: FONT, fontSize: "11px", color: "#7a7a90" })
+        .text(cx, y + (this.compact ? 16 : 19), item.caption, { fontFamily: FONT_UI, fontSize: "12px", color: TEXT_MUTE })
         .setOrigin(0.5)
         .setName(`${item.name}-caption`);
       this.captions.push(c);
@@ -300,7 +326,7 @@ export class MenuScene extends Phaser.Scene {
   private refresh(): void {
     this.texts.forEach((t, i) => {
       const on = this.toolIndex < 0 && i === this.index;
-      t.setColor(on ? "#ffe066" : TEXT_COLOR);
+      t.setColor(on ? ACCENT : TEXT_COLOR);
       t.setText((on ? "> " : "  ") + this.items[i].label + (on ? " <" : "  "));
     });
     this.tools.forEach((b, i) => b.setSelected(i === this.toolIndex));
@@ -434,24 +460,29 @@ export class MenuScene extends Phaser.Scene {
    * 暗幕・見出し・本文・縦に並ぶボタン・CLOSE からなるオーバーレイ。記録・設定・遊び方で共通。
    * 暗幕のタップと Esc で閉じる。↑↓ でボタンを選び、Enter で押す。
    */
-  private openOverlay(name: string, title: string, body: string, buttons: OverlayButton[]): Overlay {
+  private openOverlay(name: string, title: string, body: string, buttons: OverlayButton[], decorate?: (panel: Phaser.GameObjects.Container, cx: number, y: number) => number): Overlay {
     const layout = layoutFor("menu");
     const W = layout.width;
     const H = layout.height;
     const cx = W / 2;
-    const dim = this.add.rectangle(0, 0, W, H, 0x000000, 0.94).setOrigin(0).setInteractive();
+    const dim = this.add.rectangle(0, 0, W, H, 0x1a1030, 0.9).setOrigin(0).setInteractive();
     const panel = this.add.container(0, 0, [dim]).setDepth(50).setName(name);
     const btnH = 46;
     const bodyText = body
-      ? this.add.text(cx, 0, body, { fontFamily: FONT, fontSize: "12px", color: TEXT_COLOR, align: "left", lineSpacing: 3, wordWrap: { width: W - 40 } }).setOrigin(0.5, 0)
+      ? this.add.text(cx, 0, body, { fontFamily: FONT_UI, fontSize: "14px", color: TEXT_COLOR, align: "left", lineSpacing: 4, wordWrap: { width: W - 40 } }).setOrigin(0.5, 0)
       : null;
-    const bodyH = bodyText ? bodyText.height + 16 : 0;
+    // 見出しと本文の間に絵（遊び方の図）を入れるときは、その高さぶん本文を下げる
+    const deco = this.add.container(0, 0);
+    const decoH = decorate ? decorate(deco, cx, 0) : 0;
+    const bodyH = (bodyText ? bodyText.height + 16 : 0) + decoH;
     const all: OverlayButton[] = [...buttons, { label: t("CLOSE"), onPress: () => this.closeOverlay() }];
     const total = 44 + bodyH + all.length * btnH;
     const top = Math.max(this.compact ? 10 : 30, (H - total) / 2);
-    panel.add(this.add.text(cx, top + 14, title, { fontFamily: FONT, fontSize: "24px", color: TEXT_COLOR, fontStyle: "bold" }).setOrigin(0.5));
+    panel.add(this.add.text(cx, top + 14, title, { fontFamily: FONT_UI, fontSize: "26px", color: TEXT_COLOR, fontStyle: "700" }).setOrigin(0.5));
+    deco.setY(top + 44);
+    panel.add(deco);
     if (bodyText) {
-      bodyText.setY(top + 44);
+      bodyText.setY(top + 44 + decoH);
       panel.add(bodyText);
     }
     const list: Button[] = [];
@@ -548,7 +579,29 @@ export class MenuScene extends Phaser.Scene {
       lines.push("");
       lines.push(t("P pause   R restart   Esc menu   M mute   V vibration"));
     }
-    this.openOverlay("howto-panel", t("HOW TO PLAY"), lines.join("\n"), []);
+    this.openOverlay("howto-panel", t("HOW TO PLAY"), lines.join("\n"), [], (panel, cx, y) => this.drawHowToDiagram(panel, cx, y));
+  }
+
+  /**
+   * 遊び方の図。左の 3 枚（赤・緑・赤）の真ん中を右へ入れ替えると、右の 3 枚が揃って光る。
+   * 戻り値は使った高さ
+   */
+  private drawHowToDiagram(panel: Phaser.GameObjects.Container, cx: number, y: number): number {
+    // 幅 300 の縦持ちでもはみ出さないよう、横幅に合わせて縮める
+    const fit = Math.min(1, (layoutFor("menu").width - 24) / 284);
+    const s = fit / DPR;
+    const step = 34 * fit;
+    const row = y + 22;
+    const left = cx - 140 * fit;
+    [0, 1, 0].forEach((k, i) => panel.add(this.add.image(left + i * step, row, `panel-${k}`).setScale(s)));
+    panel.add(this.add.image(left + step * 3 + 4, row, "panel-1").setScale(s));
+    panel.add(this.add.image(left + step * 1.5, row, "cursor").setScale(s).setOrigin(0.5).setAlpha(0.9));
+    panel.add(this.add.text(cx - 14 * fit, row, "▶", { fontFamily: FONT_UI, fontSize: "20px", color: ACCENT }).setOrigin(0.5));
+    const right = cx + 18 * fit;
+    [0, 0, 0].forEach((k, i) => panel.add(this.add.image(right + i * step, row, `panel-${k}-bright`).setScale(s)));
+    panel.add(this.add.image(right + step * 3 + 4, row, "panel-1").setScale(s));
+    panel.add(this.add.text(right + step, row + 26, "x3!", { fontFamily: FONT_UI, fontSize: "14px", fontStyle: "700", color: "#7cf57a" }).setOrigin(0.5));
+    return 66;
   }
 
   /**
@@ -564,15 +617,15 @@ export class MenuScene extends Phaser.Scene {
     let first = 0;
     while (first < PUZZLES.length - 1 && cleared.has(first)) first++;
     const state = { stage: Math.floor(first / PUZZLES_PER_STAGE), face: first % PUZZLES_PER_STAGE };
-    const dim = this.add.rectangle(0, 0, W, H, 0x000000, 0.94).setOrigin(0).setInteractive();
+    const dim = this.add.rectangle(0, 0, W, H, 0x1a1030, 0.9).setOrigin(0).setInteractive();
     const panel = this.add.container(0, 0, [dim]).setDepth(50).setName("puzzle-picker");
     const compact = H < 560;
     const cx = W / 2;
     const top = compact ? 22 : layout.portrait ? 64 : 52;
-    panel.add(this.add.text(cx, top, t("PUZZLE"), { fontFamily: FONT, fontSize: "28px", color: TEXT_COLOR, fontStyle: "bold" }).setOrigin(0.5));
+    panel.add(this.add.text(cx, top, t("PUZZLE"), { fontFamily: FONT_UI, fontSize: "30px", color: TEXT_COLOR, fontStyle: "700" }).setOrigin(0.5));
     panel.add(
       this.add
-        .text(cx, top + 24, t("{stages} STAGES  x  {puzzles} PUZZLES", { stages: PUZZLE_STAGES, puzzles: PUZZLES_PER_STAGE }), { fontFamily: FONT, fontSize: "11px", color: "#7a7a90" })
+        .text(cx, top + 24, t("{stages} STAGES  x  {puzzles} PUZZLES", { stages: PUZZLE_STAGES, puzzles: PUZZLES_PER_STAGE }), { fontFamily: FONT_UI, fontSize: "12px", color: TEXT_MUTE })
         .setOrigin(0.5),
     );
 
@@ -607,10 +660,10 @@ export class MenuScene extends Phaser.Scene {
     const boxTop = stageTop + stageRows * (stageH + gap) - stageH / 2 + 22;
     const boxW = faceCols * (faceW + gap) + 16;
     const boxH = 2 * (faceH + gap) + 22;
-    const box = this.add.rectangle(cx, boxTop + boxH / 2, boxW, boxH, 0x1a1a26).setStrokeStyle(2, 0xffe066);
+    const box = this.add.rectangle(cx, boxTop + boxH / 2, boxW, boxH, 0xffffff, 0.08).setStrokeStyle(2, 0xffe066);
     panel.add(box);
     const heading = this.add
-      .text(cx, boxTop, "", { fontFamily: FONT, fontSize: "13px", color: "#ffe066", fontStyle: "bold", backgroundColor: "#000000", padding: { x: 8, y: 2 } })
+      .text(cx, boxTop, "", { fontFamily: FONT_UI, fontSize: "13px", color: "#ffe066", fontStyle: "700", backgroundColor: "#2a2050", padding: { x: 8, y: 2 } })
       .setOrigin(0.5);
     panel.add(heading);
     const faceBtns: Button[] = [];

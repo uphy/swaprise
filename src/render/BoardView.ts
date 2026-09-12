@@ -1,7 +1,7 @@
 import Phaser from "phaser";
 import { t } from "./i18n";
 import { Board, COLS, EMPTY, ROWS, TIMING, TOTAL_ROWS, isPanel, type BoardEvent } from "../core";
-import { BOARD_BG, BOARD_H, BOARD_W, CELL, FONT, TEXT_COLOR, isTouchDevice } from "./theme";
+import { BOARD_BG, BOARD_H, BOARD_W, CELL, FONT, FONT_UI, KIND_COLORS, TEXT_COLOR, TEXT_DIM, chainColor, isTouchDevice } from "./theme";
 import { audio } from "./shared";
 import { haptics } from "./haptics";
 import { DPR } from "./hidpi";
@@ -38,6 +38,14 @@ export class BoardView {
   private readonly overlayTitle: Phaser.GameObjects.Text;
   private readonly overlayBody: Phaser.GameObjects.Text;
   private stopBar: Phaser.GameObjects.Rectangle;
+  /** 消えたパネルの破片。柄ごとに 1 つ */
+  private readonly emitters: Phaser.GameObjects.Particles.ParticleEmitter[] = [];
+  /** 揃った瞬間の白い閃き。使い回す */
+  private readonly flashes: Phaser.GameObjects.Image[] = [];
+  /** 表示中の得点。実際の得点へ数字が回って追いつく */
+  private shownScore = 0;
+  /** 得点の文字を弾ませる残り時間 */
+  private scoreBump = 0;
   /** 盤面の左上の画面座標（論理 px）と拡大率。place() で更新する。 */
   ox = 0;
   oy = 0;
@@ -82,7 +90,7 @@ export class BoardView {
     private readonly puzzle = false,
   ) {
     this.root = scene.add.container(0, 0);
-    this.frame = scene.add.rectangle(-4, -4, BOARD_W + 8, BOARD_H + 8, 0x3a3a4c).setOrigin(0);
+    this.frame = scene.add.rectangle(-4, -4, BOARD_W + 8, BOARD_H + 8, 0xffffff, 0.45).setOrigin(0);
     this.bg = scene.add.rectangle(0, 0, BOARD_W, BOARD_H, BOARD_BG).setOrigin(0);
     this.root.add([this.frame, this.bg]);
 
@@ -104,22 +112,37 @@ export class BoardView {
     this.root.add(this.cursor);
     this.touchGfx = scene.add.graphics();
     this.root.add(this.touchGfx);
+    // 消えたパネルの破片。柄の絵を小さく回しながら飛ばす（オープニングと同じ）
+    KIND_COLORS.forEach((_, kind) => {
+      const e = scene.add.particles(0, 0, `panel-${kind}`, {
+        speed: { min: 60, max: 200 },
+        angle: { min: 0, max: 360 },
+        gravityY: 600,
+        lifespan: { min: 280, max: 560 },
+        scale: { start: 0.45 / DPR, end: 0 },
+        alpha: { start: 1, end: 0 },
+        rotate: { min: -180, max: 180 },
+        emitting: false,
+      });
+      this.root.add(e);
+      this.emitters.push(e);
+    });
 
-    this.scoreText = scene.add.text(0, -30, "", { fontFamily: FONT, fontSize: "18px", color: TEXT_COLOR }).setOrigin(0, 0);
+    this.scoreText = scene.add.text(0, -30, "", { fontFamily: FONT, fontSize: "18px", color: TEXT_COLOR, fontStyle: "bold" }).setOrigin(0, 0);
     this.infoText = scene.add
-      .text(BOARD_W, BOARD_H + 14, "", { fontFamily: FONT, fontSize: "13px", color: "#9a9ab0", align: "right" })
+      .text(BOARD_W, BOARD_H + 14, "", { fontFamily: FONT, fontSize: "13px", color: TEXT_DIM, align: "right" })
       .setOrigin(1, 0);
     this.pendingGfx = scene.add.graphics();
     this.stopBar = scene.add.rectangle(0, BOARD_H + 6, 0, 4, 0x66ccff).setOrigin(0);
     this.root.add([this.scoreText, this.infoText, this.pendingGfx, this.stopBar]);
 
     this.overlay = scene.add.container(BOARD_W / 2, BOARD_H / 2).setVisible(false);
-    const dim = scene.add.rectangle(0, 0, BOARD_W, BOARD_H, 0x000000, 0.6);
+    const dim = scene.add.rectangle(0, 0, BOARD_W, BOARD_H, 0x1a1030, 0.72);
     this.overlayTitle = scene.add
-      .text(0, -30, "", { fontFamily: FONT, fontSize: "30px", color: "#ffe066", fontStyle: "bold" })
+      .text(0, -34, "", { fontFamily: FONT_UI, fontSize: "34px", color: "#ffe066", fontStyle: "700", stroke: "#3a1a5a", strokeThickness: 6 })
       .setOrigin(0.5);
     this.overlayBody = scene.add
-      .text(0, 24, "", { fontFamily: FONT, fontSize: "13px", color: TEXT_COLOR, align: "center" })
+      .text(0, 24, "", { fontFamily: FONT_UI, fontSize: "14px", color: TEXT_COLOR, align: "center", lineSpacing: 2 })
       .setOrigin(0.5);
     this.overlay.add([dim, this.overlayTitle, this.overlayBody]);
     this.root.add(this.overlay);
@@ -152,10 +175,12 @@ export class BoardView {
           this.popIndex = 0;
           if (soundOn) audio.match(e.panels, e.chain);
           if (hapticOn) haptics.match(e.panels, e.chain);
+          this.flashMatched();
           this.popup(e.x, e.y, e.panels, e.chain);
           break;
         case "pop":
           if (soundOn) audio.pop(this.popIndex++);
+          this.burst(e.x, e.y);
           break;
         case "chainEnd":
           if (soundOn && e.chain >= 2) audio.chainEnd(e.chain);
@@ -188,34 +213,80 @@ export class BoardView {
     }
   }
 
-  /** 「4」「x2」の吹き出し。同時消しは赤枠、連鎖は緑枠。 */
+  /** 揃った瞬間、揃ったパネルの上で白が閃いて広がる。 */
+  private flashMatched(): void {
+    const b = this.board;
+    for (let r = 0; r < DRAW_ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        const cell = b.cells[r][c];
+        if (!isPanel(cell) || cell.state !== "matched" || cell.flashTimer <= 0) continue;
+        // 今回揃った分だけ（点滅の残りが最大に近いもの）
+        const img = this.cells[r][c];
+        if (!img.visible) continue;
+        const f = this.flashes.pop() ?? this.scene.add.image(0, 0, "white").setOrigin(0.5).setScale(1 / DPR).setBlendMode(Phaser.BlendModes.ADD);
+        this.root.add(f);
+        f.setPosition(img.x + CELL / 2, img.y + CELL / 2).setAlpha(0.9).setScale(1 / DPR).setVisible(true);
+        this.scene.tweens.add({
+          targets: f,
+          alpha: 0,
+          scale: 1.5 / DPR,
+          duration: 220,
+          ease: "Quad.Out",
+          onComplete: () => {
+            f.setVisible(false);
+            this.flashes.push(f);
+          },
+        });
+      }
+    }
+  }
+
+  /** 1 枚消えるごとに、その柄の破片を飛ばす。 */
+  private burst(x: number, y: number): void {
+    const cell = this.board.cell(x, y);
+    const kind = isPanel(cell) ? cell.kind : -1;
+    const e = this.emitters[kind >= 0 && kind < this.emitters.length ? kind : 0];
+    const rise = this.board.riseProgress * CELL;
+    e.explode(6, x * CELL + CELL / 2, (ROWS - 1 - y) * CELL - rise + CELL / 2);
+  }
+
+  /**
+   * 「4」「x2」の吹き出し。同時消しは赤、連鎖は連鎖数で色が上がり、数が増えるほど大きく出る。
+   * 出た瞬間に大きく弾んでから、少し浮いて消える
+   */
   private popup(x: number, y: number, panels: number, chain: number): void {
-    const px = x * CELL + CELL / 2;
+    const px = Math.min(BOARD_W - 24, Math.max(24, x * CELL + CELL / 2));
     const py = (ROWS - 1 - y) * CELL;
-    const items: { text: string; color: string }[] = [];
-    if (panels >= 4) items.push({ text: String(panels), color: "#ff5c6c" });
-    if (chain >= 2) items.push({ text: chain >= 14 ? "x?" : `x${chain}`, color: "#6cff7a" });
+    const items: { text: string; color: string; size: number }[] = [];
+    if (panels >= 4) items.push({ text: String(panels), color: "#ff5c6c", size: 20 + Math.min(12, (panels - 4) * 2) });
+    if (chain >= 2) items.push({ text: chain >= 14 ? "x?" : `x${chain}`, color: chainColor(chain), size: 22 + Math.min(20, (chain - 2) * 3) });
     items.forEach((it, i) => {
       const t = this.scene.add
-        .text(px, py + i * 22, it.text, {
-          fontFamily: FONT,
-          fontSize: "18px",
-          fontStyle: "bold",
-          color: "#ffffff",
-          backgroundColor: it.color,
-          padding: { x: 5, y: 1 },
+        .text(px, py + i * 26, it.text, {
+          fontFamily: FONT_UI,
+          fontSize: `${it.size}px`,
+          fontStyle: "700",
+          color: it.color,
+          stroke: "#2a1040",
+          strokeThickness: 5,
         })
-        .setOrigin(0.5);
+        .setOrigin(0.5)
+        .setScale(1.8)
+        .setAlpha(0);
       this.root.add(t);
+      this.scene.tweens.add({ targets: t, scale: 1, alpha: 1, duration: 160, ease: "Back.Out", easeParams: [2] });
       this.scene.tweens.add({
         targets: t,
-        y: t.y - 28,
+        y: t.y - 34,
         alpha: 0,
-        delay: 350,
-        duration: 500,
+        delay: 420 + Math.min(400, chain * 40),
+        duration: 420,
+        ease: "Quad.In",
         onComplete: () => t.destroy(),
       });
     });
+    // 連鎖が伸びたら得点の文字も弾む
+    if (chain >= 2) this.scoreBump = 1;
   }
 
   /** 毎描画フレーム呼ぶ。Board の現在状態をそのまま画面に反映する。 */
@@ -296,19 +367,26 @@ export class BoardView {
       }
     }
 
-    this.bg.setFillStyle(b.panic ? 0x3a1e26 : b.danger ? 0x2c1e2a : BOARD_BG);
-    this.frame.setFillStyle(b.panic && blink ? 0xaa3344 : 0x3a3a4c);
+    this.bg.setFillStyle(b.panic ? 0x3a1420 : b.danger ? 0x2c1626 : BOARD_BG);
+    this.frame.setFillStyle(b.panic && blink ? 0xff4a5a : b.danger ? 0xff7a8a : 0xffffff, b.panic ? 0.9 : b.danger ? 0.7 : 0.45);
 
     if (this.puzzle) {
       this.scoreText.setText(this.label);
       const left = b.movesLeft ?? 0;
-      this.infoText.setColor(left <= 1 ? "#ff5c6c" : "#9a9ab0");
+      this.infoText.setColor(left <= 1 ? "#ff8a94" : TEXT_DIM);
       this.infoText.setText(`MOVES ${left}`);
       this.stopBar.setVisible(false);
       this.pendingGfx.clear();
       return;
     }
-    this.scoreText.setText(`${this.label}  ${String(b.score).padStart(6, "0")}`);
+    // 得点は数字が回って追いつく。差の 15% ずつ（最低 1）詰め、連鎖の直後は文字を弾ませる
+    if (this.shownScore < b.score) this.shownScore = Math.min(b.score, this.shownScore + Math.max(1, Math.ceil((b.score - this.shownScore) * 0.15)));
+    else if (this.shownScore > b.score) this.shownScore = b.score;
+    if (this.scoreBump > 0) {
+      this.scoreBump = Math.max(0, this.scoreBump - 0.08);
+      this.scoreText.setScale(1 + this.scoreBump * 0.25);
+    } else this.scoreText.setScale(1);
+    this.scoreText.setText(`${this.label}  ${String(this.shownScore).padStart(6, "0")}`);
     let seconds: number;
     if (this.timeLimit !== null) {
       // 残り時間。ゲームのフレームで数えるので、ポーズ中は減らない
@@ -322,7 +400,7 @@ export class BoardView {
     const parts = [`${mm}:${ss}`];
     if (this.timeLimit !== null && b.frame >= this.timeLimit && !b.isSettled()) parts.push(t("SETTLING"));
     // 残り10秒を切ったら赤く
-    this.infoText.setColor(this.timeLimit !== null && seconds <= 10 ? "#ff5c6c" : "#9a9ab0");
+    this.infoText.setColor(this.timeLimit !== null && seconds <= 10 ? "#ff8a94" : TEXT_DIM);
     if (this.showLevel) parts.push(`SPEED ${b.level}`);
     parts.push(`MAX x${b.maxChain}`);
     // 横置きの HUD は幅が狭いので1行ずつ
@@ -356,10 +434,13 @@ export class BoardView {
     return true;
   }
 
+  /** 結果を出す。見出しは大きく出て弾みながら収まり、本文は少し遅れて浮かぶ */
   showOverlay(title: string, body: string): void {
     this.overlay.setVisible(true);
-    this.overlayTitle.setText(title);
-    this.overlayBody.setText(body);
+    this.overlayTitle.setText(title).setScale(2.2).setAlpha(0);
+    this.overlayBody.setText(body).setAlpha(0);
+    this.scene.tweens.add({ targets: this.overlayTitle, scale: 1, alpha: 1, duration: 360, ease: "Back.Out", easeParams: [1.6] });
+    this.scene.tweens.add({ targets: this.overlayBody, alpha: 1, delay: 220, duration: 260 });
   }
 
   hideOverlay(): void {

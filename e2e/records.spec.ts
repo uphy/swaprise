@@ -33,9 +33,14 @@ test("メニューの RECORDS をタップすると上位5件の一覧が開き�
     return { x: rect.left + t.x * s, y: rect.top + t.y * s };
   });
   await page.touchscreen.tap(pos.x, pos.y);
-  await expect(page.getByRole("dialog")).toContainText("4321 · x4 · 2026-09-01");
-  await expect(page.getByRole("dialog")).toContainText("1000 · x2 · 2026-09-02");
-  await expect(page.getByRole("dialog")).toContainText("NORMAL 0W 2L");
+  // 行は 順位・得点・最大連鎖・日付 の列。得点は桁区切り
+  const rows = page.getByRole("listitem");
+  await expect(rows.nth(0)).toContainText("4,321");
+  await expect(rows.nth(0)).toContainText("MAX CHAIN ×4");
+  await expect(rows.nth(0)).toContainText("2026-09-01");
+  await expect(rows.nth(1)).toContainText("1,000");
+  await expect(rows.nth(1)).toContainText("2026-09-02");
+  await expect(page.getByRole("listitem").filter({ hasText: "NORMAL" })).toContainText("0W 2L");
   await page.getByRole("button", { name: "CLOSE", exact: true }).tap();
   await expect(page.getByRole("dialog")).toHaveCount(0);
 });

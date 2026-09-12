@@ -475,6 +475,11 @@ export class GameAudio {
     this.bgmBeforeSuspend = null;
   }
 
+  /** 鳴っている曲の拍の位相。止まっていれば null。背景の脈打ちに使う */
+  get beat(): { phase: number; bar: number } | null {
+    return this.bgm?.beat ?? null;
+  }
+
   /** 危険状態ではゲーム曲をピンチの曲に切り替える。 */
   setDanger(on: boolean): void {
     this.danger = on;

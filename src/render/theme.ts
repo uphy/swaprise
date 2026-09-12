@@ -14,7 +14,30 @@ export const GARBAGE_DARK = 0x5c5c68;
 export const BG_COLOR = 0x14141c;
 export const BOARD_BG = 0x1e1e2a;
 export const TEXT_COLOR = "#f4f4f8";
+/** 副題・説明・記録などの控えめな文字。背景が明るい紫系なので、灰色ではなく薄い藤色にする */
+export const TEXT_DIM = "#d9d4f2";
+export const TEXT_MUTE = "#b9b2dc";
+/** 選択中・見出しの強調色 */
+export const ACCENT = "#ffe066";
+/** 数字（得点・時間）用の等幅。桁が揃う */
 export const FONT = '"Menlo", "Consolas", monospace';
+/** 見出し・ボタン・案内用の丸い書体。Fredoka（OFL）を public/fonts に同梱し、日本語は端末の丸ゴシックに任せる */
+export const FONT_UI = '"Fredoka", "Hiragino Maru Gothic ProN", "BIZ UDPGothic", "Arial Rounded MT Bold", "Nunito", sans-serif';
+
+/**
+ * 画面ごとの背景の空。実際の色は index.html の CSS（body[data-sky]）にあり、Background が data-sky を切り替える。
+ * 曲の明るさに合わせ、黒ではなく色のある空にする。盤面の中は暗いままなので、パネルは背景に埋もれない
+ */
+export type SkyName = "menu" | "endless" | "timeattack" | "puzzle" | "versus" | "cpu";
+
+/** 連鎖数ごとの吹き出しの色。数が増えるほど熱い色へ */
+export function chainColor(chain: number): string {
+  if (chain >= 8) return "#ff5cf0";
+  if (chain >= 6) return "#ff5c6c";
+  if (chain >= 4) return "#ff9a3c";
+  if (chain >= 3) return "#ffd23c";
+  return "#7cf57a";
+}
 
 export interface Layout {
   width: number;

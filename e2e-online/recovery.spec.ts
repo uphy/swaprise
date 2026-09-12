@@ -1,4 +1,8 @@
 import { test, expect, type Page } from "@playwright/test";
+
+// page.route は Service Worker を通った要求を捕まえられない（Chromium）。起動が遅いと Service Worker が
+// FIND MATCH の前に制御を取り、API の差し替えが効かなくなるので、この系のテストでは Service Worker を止める
+test.use({ serviceWorkers: "block" });
 async function online(page: Page) {
   await page.goto("/?opening=0");
   await page.waitForFunction(() => !!(window as any).__swapriseScenes?.menu || !!document.querySelector(".online-ui"));

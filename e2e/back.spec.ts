@@ -38,11 +38,8 @@ test("戻る操作: ゲーム中は何も起きず、ページも離れない", 
     );
   const frameAt = await page.evaluate(() => (window as any).__swaprise.game.boards[0].frame);
   await page.goBack();
-  await page.waitForFunction((f) => (window as any).__swaprise.game.boards[0].frame > f + 30, frameAt);
-  expect(await page.evaluate(() => (window as any).__swaprise?.scene.paused)).toBe(false);
-  expect(await activeScenes()).toEqual(["game"]);
-  expect(page.url()).toContain("seed=7");
-  // 離れないこととやめる手順の案内を、盤面の外に数秒だけ出す
+  // 離れないこととやめる手順の案内を、盤面の外に数秒だけ出す。案内は数秒で消えるので、フレームの進みより先に確かめる
+  await page.waitForFunction(() => (window as any).__swaprise?.scene.backHintText.visible);
   const shown = await page.evaluate(() => {
     const s = (window as any).__swaprise.scene;
     const bottom = Math.max(...s.views.map((v: any) => v.oy + 384 * v.scale));
@@ -51,6 +48,10 @@ test("戻る操作: ゲーム中は何も起きず、ページも離れない", 
   expect(shown.visible).toBe(true);
   expect(shown.text).toContain("Back does not leave the game");
   expect(shown.top).toBeGreaterThan(shown.boardBottom);
+  await page.waitForFunction((f) => (window as any).__swaprise.game.boards[0].frame > f + 30, frameAt);
+  expect(await page.evaluate(() => (window as any).__swaprise?.scene.paused)).toBe(false);
+  expect(await activeScenes()).toEqual(["game"]);
+  expect(page.url()).toContain("seed=7");
   await page.waitForFunction(() => !(window as any).__swaprise.scene.backHintText.visible, null, { timeout: 8000 });
 
   // 何度戻っても同じ。ポーズ中・終了後も同じ

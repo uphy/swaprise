@@ -4,10 +4,10 @@
   z-index: 10;
   display: grid;
   place-items: center;
-  background: #14141ce8;
+  background: linear-gradient(180deg, #3a1c7cee 0%, #8b30a4ee 55%, #ff6f66ee 100%);
   color: #eeeef8;
   font:
-    20px "Menlo", "Consolas", monospace;
+    20px "Fredoka", "Hiragino Maru Gothic ProN", "BIZ UDPGothic", "Arial Rounded MT Bold", sans-serif;
   padding: max(16px, env(safe-area-inset-top))
     max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom))
     max(16px, env(safe-area-inset-left));
@@ -47,9 +47,9 @@
   margin-top: 8px;
   padding: 12px;
   color: #fff;
-  background: #14141c;
-  border: 1px solid #66667d;
-  border-radius: 2px;
+  background: rgba(20,12,50,.55);
+  border: 2px solid rgba(255,255,255,.5);
+  border-radius: 12px;
   font: inherit;
   user-select: text;
   -webkit-user-select: text;
@@ -60,16 +60,17 @@
   padding: 10px 14px;
   font: inherit;
   color: #fff;
-  background: #2e2e40;
-  border: 1px solid #5a5a72;
-  border-radius: 2px;
+  font-weight: 600;
+  background: rgba(255,255,255,.16);
+  border: 2px solid rgba(255,255,255,.5);
+  border-radius: 14px;
   cursor: pointer;
   touch-action: manipulation;
 }
 .online-actions button:first-of-type {
-  color: #ffe066;
-  background: #46466a;
-  border-color: #ffe066;
+  color: #2a2050;
+  background: #ffe066;
+  border-color: #fff4bf;
 }
 .online-actions button:disabled {
   opacity: 0.5;
@@ -101,7 +102,7 @@
 .online-ui.playing p {
   font-size: 12px;
   margin: 0;
-  background: #14141cbb;
+  background: #2a2050bb;
 }
 .online-ui.playing button {
   pointer-events: auto;
@@ -135,7 +136,7 @@
 @media (pointer: coarse), (max-width: 600px) {
   .online-ui:not(.playing) {
     font-size: clamp(24px, 6vmin, 64px);
-    background: #14141c;
+    background: linear-gradient(180deg, #3a1c7c 0%, #8b30a4 55%, #ff6f66 100%);
     align-items: safe center;
   }
   .online-ui:not(.playing) .online-panel {

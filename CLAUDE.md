@@ -20,6 +20,7 @@ pnpm puzzles          # パズル面の生成
 - `src/core/` はゲームロジック。DOM・Phaser に依存しない純粋な TypeScript で、60fps の固定 tick の決定論的シミュレーション。同じ seed と入力列なら同じ結果になる。ここは Node だけで動くので、単体テストもシミュレーションもブラウザなしで回せる
 - `src/render/` は Phaser 4 の描画・入力・音。盤面と効果音はコードで生成し、曲は `public/audio/` の mp3 を区間ループする
 - **キャラクターとストーリーは持たない**。盤面・演出・音だけで成り立つパズルにする。連鎖の気持ちよさやピンチの緊張は、人物の反応ではなく画面効果と音で出す
+- 見た目の決まりは `src/render/theme.ts`（色・書体・連鎖の色）。背景の空は `index.html` の CSS（`body[data-sky]`）で、canvas は透明。全画面の絵を canvas に毎フレーム描くと headless の e2e が遅くなって落ちるので、背景は CSS に任せる。曲の拍は `audio.beat` で取れる
 - `tests/core/` が単体テスト、`e2e/` が Playwright。`e2e` からは `window.__swaprise`（game / scene / tick）と `window.__swapriseAudio` で内部を触れる
 - タイミングは `src/core/constants.ts` の `TIMING` にフレーム数でまとまっている
 

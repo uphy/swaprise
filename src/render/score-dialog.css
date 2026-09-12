@@ -1,10 +1,10 @@
 /* Focus containment is native; presentation is a full game menu, not a card. */
-.score-dialog { position: fixed; inset: 0; margin: 0; width: 100%; max-width: none; max-height: none; padding: 0; border: 0; border-radius: 0; background: #14141c; color: #f4f4f8; font: 22px/1.5 "Menlo", "Consolas", monospace; box-sizing: border-box; overflow: hidden; outline: none; touch-action: pan-y; }
-.score-dialog::backdrop { background: #14141c; }
+.score-dialog { position: fixed; inset: 0; margin: 0; width: 100%; max-width: none; max-height: none; padding: 0; border: 0; border-radius: 0; background: linear-gradient(180deg, #2a2690 0%, #7c3fbd 55%, #ff7ea6 100%); color: #f4f4f8; font: 22px/1.5 "Fredoka", "Hiragino Maru Gothic ProN", "BIZ UDPGothic", "Arial Rounded MT Bold", sans-serif; box-sizing: border-box; overflow: hidden; outline: none; touch-action: pan-y; }
+.score-dialog::backdrop { background: #2a2690; }
 .score-result { z-index: 10; height: 100dvh; }
 .result-summary strong { font-size: 36px; color: #ffe066; }
 .result-summary p { margin: 4px 0 8px; }
-.score-result .result-you { background: #303044; color: #ffe066; }
+.score-result .result-you { background: rgba(255,255,255,.14); color: #ffe066; border-radius: 10px; }
 .score-result nav { flex-wrap: wrap; }
 .score-result nav button:first-child { flex: 2; }
 .score-dialog.score-result ol { padding-left: 0; list-style-position: inside; }
@@ -12,30 +12,53 @@
 .score-screen { box-sizing: border-box; width: min(100%, 680px); height: 100%; margin: auto; display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto; padding: max(20px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left)); }
 .player-screen .score-screen { max-width: 480px; }
 .score-screen header { padding-bottom: 16px; }
-.score-screen header small { color: #7a7a90; font-size: 11px; letter-spacing: .2em; }
+.score-screen header small { color: #d9d4f2; font-size: 11px; letter-spacing: .2em; }
 .score-dialog h2 { font-size: 32px; margin: 4px 0 0; }
 .score-dialog h3 { font-size: 22px; color: #ffe066; margin: 22px 0 8px; }
 .score-content { overflow-y: auto; min-height: 0; overscroll-behavior: contain; padding: 0 2px 16px; }
-.score-dialog p { color: #c0c0d0; font-size: 18px; margin: 12px 0; overflow-wrap: anywhere; }
+.score-dialog p { color: #e6e2f7; font-size: 18px; margin: 12px 0; overflow-wrap: anywhere; }
 .score-dialog label { display: block; margin: 18px 0 8px; font-size: 20px; }
-.score-dialog input[type=text] { box-sizing: border-box; display: block; width: 100%; min-height: 58px; margin-top: 8px; background: #1e1e2a; color: #fff; padding: 12px; border: 1px solid #66667d; border-radius: 2px; font: inherit; font-size: 22px; user-select: text; -webkit-user-select: text; touch-action: manipulation; }
+.score-dialog input[type=text] { box-sizing: border-box; display: block; width: 100%; min-height: 58px; margin-top: 8px; background: rgba(20,12,50,.55); color: #fff; padding: 12px; border: 2px solid rgba(255,255,255,.5); border-radius: 12px; font: inherit; font-size: 22px; user-select: text; -webkit-user-select: text; touch-action: manipulation; }
 .score-dialog .score-consent { display: flex; gap: 12px; align-items: center; min-height: 48px; margin-top: 22px; cursor: pointer; }
 .score-dialog input[type=checkbox] { flex: 0 0 28px; width: 28px; height: 28px; margin: 0; accent-color: #ffe066; }
-.score-dialog details { margin-top: 18px; border-top: 1px solid #343444; }
-.score-dialog summary { cursor: pointer; padding: 14px 0; min-height: 28px; font-size: 18px; color: #c0c0d6; }
-.score-dialog button { min-height: 56px; padding: 10px 12px; border: 1px solid #5a5a72; border-radius: 2px; background: #2e2e40; color: #f4f4f8; font: inherit; font-size: 20px; cursor: pointer; touch-action: manipulation; }
-.score-dialog button[aria-pressed=true], .score-dialog button.primary { color: #ffe066; background: #46466a; border-color: #ffe066; }
+.score-dialog details { margin-top: 18px; border-top: 1px solid rgba(255,255,255,.25); }
+.score-dialog summary { cursor: pointer; padding: 14px 0; min-height: 28px; font-size: 18px; color: #e6e2f7; }
+.score-dialog button { min-height: 56px; padding: 10px 12px; border: 2px solid rgba(255,255,255,.5); border-radius: 14px; background: rgba(255,255,255,.16); color: #f4f4f8; font: inherit; font-weight: 600; font-size: 20px; cursor: pointer; touch-action: manipulation; }
+.score-dialog button[aria-pressed=true], .score-dialog button.primary { color: #2a2050; background: #ffe066; border-color: #fff4bf; }
 .score-dialog :focus-visible { outline: 2px solid #ffe066; outline-offset: 2px; }
 .score-dialog nav { display: flex; gap: 8px; margin-bottom: 10px; }
 .score-dialog nav button { flex: 1; }
 .score-dialog [hidden] { display: none !important; }
-.score-footer { display: flex; gap: 10px; padding-top: 12px; border-top: 1px solid #343444; background: #14141c; }
+.score-footer { display: flex; gap: 10px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,.25); }
 .score-footer button { flex: 1; }
 .player-screen .score-footer button.primary { flex: 1.6; }
 .score-dialog ol { margin: 0; padding-left: 44px; font-variant-numeric: tabular-nums; }
-.score-dialog li { padding: 10px 4px; border-bottom: 1px solid #2e2e40; overflow-wrap: anywhere; }
+.score-dialog li { padding: 10px 4px; border-bottom: 1px solid rgba(255,255,255,.18); overflow-wrap: anywhere; }
 .score-dialog li::marker { color: #ffe066; }
-.score-dialog li span { display: block; font-size: 18px; color: #c0c0d0; margin-top: 4px; }
+.score-dialog li span { display: block; font-size: 18px; color: #e6e2f7; margin-top: 4px; }
 @media (min-height: 750px) { .score-screen { padding-top: max(40px, env(safe-area-inset-top)); } }
 @media (max-height: 480px) { .score-screen { padding-top: max(8px, env(safe-area-inset-top)); } .score-screen header { padding-bottom: 8px; } .score-screen header small { display: none; } .score-dialog h2 { margin: 0; } .score-footer { padding-top: 8px; } }
 @media (max-height: 480px) and (min-width: 700px) { .score-tools { display: flex; gap: 12px; } .score-tools nav { flex: 1; min-width: 0; } }
+
+/* 記録。切り替えは段組みのタブ、中身はモードごとの札。得点を大きく、順位・連鎖・日付を列で揃える */
+.rec-tabs { display: flex; gap: 6px; padding: 4px; margin-bottom: 8px; border-radius: 16px; background: rgba(20,12,50,.35); }
+.score-dialog .rec-tabs button { flex: 1; min-height: 44px; padding: 6px 8px; border: 0; border-radius: 12px; background: transparent; font-size: 18px; color: #e6e2f7; }
+.score-dialog .rec-tabs button[aria-pressed=true] { background: #ffe066; color: #2a2050; }
+.score-dialog .rec-tabs button { display: grid; gap: 0; line-height: 1.15; min-height: 52px; }
+.score-dialog .rec-tabs button small { font-size: 11px; letter-spacing: .12em; opacity: .8; }
+.rec-card { margin: 0 0 14px; padding: 14px 16px 10px; border-radius: 18px; background: rgba(20,12,50,.32); }
+.score-dialog .rec-card h3 { margin: 0 0 8px; font-size: 24px; color: #ffe066; }
+.score-dialog .rec-card h3 small { font-size: 13px; color: #d9d4f2; letter-spacing: .12em; font-weight: 600; margin-left: 8px; }
+.score-dialog .rec-card p { margin: 6px 0; font-size: 17px; }
+.score-dialog .rec-card button { min-height: 44px; margin-top: 8px; font-size: 18px; }
+.score-dialog .rec-table { margin: 0; padding: 0; list-style: none; }
+.score-dialog .rec-row { display: grid; grid-template-columns: minmax(2.2em, auto) minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 8px 0; border-top: 1px solid rgba(255,255,255,.14); border-bottom: 0; }
+.score-dialog .rec-row:first-child { border-top: 0; }
+.score-dialog .rec-row b { font-size: 18px; color: #ffe066; text-align: right; font-variant-numeric: tabular-nums; }
+.rec-main { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; min-width: 0; }
+.rec-main strong { font-size: 19px; overflow-wrap: anywhere; }
+.rec-score { font-size: 28px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.rec-meta { display: grid; justify-items: end; gap: 2px; font-size: 14px; color: #d9d4f2; white-space: nowrap; }
+.rec-bar { width: 96px; height: 10px; border-radius: 5px; background: rgba(255,255,255,.18); overflow: hidden; }
+.rec-bar div { height: 100%; background: #ffe066; border-radius: 5px; }
+@media (max-width: 420px) { .rec-score { font-size: 24px; } .rec-card { padding: 12px 12px 8px; } .rec-meta { font-size: 13px; } }

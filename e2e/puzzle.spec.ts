@@ -49,7 +49,8 @@ test("パズル: 面の名前と残り手数を出し、解どおりに入れ替
 
   await playSolution(page);
   await page.waitForFunction(() => (window as any).__swaprise.game.finished, null, { timeout: 15_000 });
-  await page.waitForTimeout(1000);
+  // 結果のボタンは 0.8 秒後に出る。固定時間で待つと CI の負荷で揺れるので、NEXT が出るまで待つ
+  await page.waitForFunction(() => (window as any).__swaprise.scene.views[0].overlay.list.some((o: any) => o.name === "next"));
   const result = await page.evaluate(() => {
     const p = (window as any).__swaprise;
     const v = p.scene.views[0];

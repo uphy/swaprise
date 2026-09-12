@@ -516,6 +516,25 @@ export class BgmPlayer {
     if (this.sampleTune) this.playSample(this.sampleTune, seconds);
   }
 
+  /**
+   * 拍の位相。phase は拍の中の進み（0 で拍の頭、1 に近づくと次の拍）、bar は小節の中の進み。
+   * 音声ファイルの曲は位置と tempo から、合成の予備は歩数から出す。止まっていれば null。画面の脈打ちに使う
+   */
+  get beat(): { phase: number; bar: number } | null {
+    if (!this.tune_) return null;
+    const pos = this.position;
+    if (pos !== null && this.sampleTune) {
+      const song = SAMPLED[this.sampleTune];
+      const beatDur = 60 / song.tempo;
+      const t = Math.max(0, pos - song.downbeat);
+      const beats = t / beatDur;
+      const bars = t / song.bar;
+      return { phase: beats - Math.floor(beats), bar: bars - Math.floor(bars) };
+    }
+    const step = this.seqStep;
+    return { phase: (step % 4) / 4, bar: (step % 16) / 16 };
+  }
+
   /** 今の位置（16 分音符の数）。合成の曲はシーケンサの歩数、音声ファイルの曲は位置から換算する。 */
   get step(): number {
     const pos = this.position;

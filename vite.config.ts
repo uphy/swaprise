@@ -47,7 +47,7 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ["**/*.{js,css,html,png,webmanifest,mp3}"],
+        globPatterns: ["**/*.{js,css,html,png,webmanifest,mp3,woff2}"],
         // SKIP_WAITING のあと、開いているページをすぐ新版の管理下に置く。これで workbox-window の controlling が発火して reload できる
         clientsClaim: true,
         navigateFallbackDenylist: [/^\/api\//],
