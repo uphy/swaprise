@@ -176,7 +176,8 @@ export class BoardView {
       .text(0, -34, "", { fontFamily: FONT_UI, fontSize: "34px", color: "#ffe066", fontStyle: "700", stroke: "#3a1a5a", strokeThickness: 6 })
       .setOrigin(0.5);
     this.overlayBody = scene.add
-      .text(0, 24, "", { fontFamily: FONT_UI, fontSize: style ? "20px" : "14px", color: TEXT_COLOR, align: "center", lineSpacing: 2 })
+      // レッスンの達成の一言は文なので、盤面の幅で文字単位に折り返す（日本語は空白で折り返せない）
+      .text(0, 24, "", { fontFamily: FONT_UI, fontSize: style === "puzzle" ? "20px" : "14px", color: TEXT_COLOR, align: "center", lineSpacing: 2, wordWrap: { width: BOARD_W - 12, useAdvancedWrap: true } })
       .setOrigin(0.5);
     this.overlay.add([dim, this.overlayTitle, this.overlayBody]);
     this.root.add(this.overlay);

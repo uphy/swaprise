@@ -168,5 +168,18 @@ test.describe("スマホ・日本語", () => {
     expect(info.left).toBeGreaterThanOrEqual(0);
     expect(info.right).toBeLessThanOrEqual(info.width);
     await page.screenshot({ path: `${SHOT}/lesson-3-phone-ja.png` });
+    // 達成の一言も盤面の幅に収まる
+    await page.evaluate(() => (window as any).__swaprise.scene.scene.pause());
+    await swapAt(page, 0, 1);
+    await tickUntilFinished(page);
+    await page.evaluate(() => (window as any).__swaprise.scene.scene.resume());
+    await page.waitForFunction(() => (window as any).__swaprise.scene.views[0].overlay.visible);
+    const body = await page.evaluate(() => {
+      const v = (window as any).__swaprise.scene.views[0];
+      return { text: v.overlayBody.text, width: v.overlayBody.width, board: 6 * 32 };
+    });
+    expect(body.text).toContain("2連鎖");
+    expect(body.width).toBeLessThanOrEqual(body.board);
+    await page.screenshot({ path: `${SHOT}/lesson-3-phone-ja-done.png` });
   });
 });
