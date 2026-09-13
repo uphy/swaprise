@@ -179,6 +179,8 @@ export class BoardView {
       // レッスンの達成の一言は文なので、盤面の幅で文字単位に折り返す（日本語は空白で折り返せない）
       .text(0, 24, "", { fontFamily: FONT_UI, fontSize: style === "puzzle" ? "20px" : "14px", color: TEXT_COLOR, align: "center", lineSpacing: 2, wordWrap: { width: BOARD_W - 12, useAdvancedWrap: true } })
       .setOrigin(0.5);
+    // レッスンの達成の一言は行数が変わるので、上端を固定して下へ伸ばす（中央揃えだと 3 行以上でボタンに重なる）
+    if (style === "lesson") this.overlayBody.setOrigin(0.5, 0).setY(-8);
     this.overlay.add([dim, this.overlayTitle, this.overlayBody]);
     this.root.add(this.overlay);
   }

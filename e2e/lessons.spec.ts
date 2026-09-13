@@ -245,6 +245,15 @@ test.describe("スマホ・日本語", () => {
     });
     expect(body.text).toContain("2連鎖");
     expect(body.width).toBeLessThanOrEqual(body.board);
+    // 一言（3 行）の下端が NEXT の上端より上にあり、SHARE は出ない
+    await page.waitForFunction(() => (window as any).__swaprise.scene.views[0].overlay.list.some((o: any) => o.name === "next"));
+    const layout = await page.evaluate(() => {
+      const v = (window as any).__swaprise.scene.views[0];
+      const next = v.overlay.list.find((o: any) => o.name === "next");
+      return { bodyBottom: v.overlayBody.y + v.overlayBody.height, nextTop: next.y - 18, share: v.overlay.list.some((o: any) => o.txt?.text === "SHARE") };
+    });
+    expect(layout.bodyBottom).toBeLessThan(layout.nextTop);
+    expect(layout.share).toBe(false);
     await page.screenshot({ path: `${SHOT}/lesson-3-phone-ja-done.png` });
   });
 

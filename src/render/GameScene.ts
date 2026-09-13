@@ -708,7 +708,8 @@ export class GameScene extends Phaser.Scene {
         : new Button(this, 46, BOARD_H / 2 - 40, t("MENU"), () => this.toMenu(), { minWidth: 84, minHeight: 36 });
       this.views[0].addToOverlay(retry);
       this.views[0].addToOverlay(menu);
-      if (canShare()) {
+      // レッスンの結果は共有しない（練習なので）。空いた場所に達成の一言と NEXT を置く
+      if (canShare() && this.mode !== "lesson") {
         const share = new Button(this, 0, BOARD_H / 2 - 84, t("SHARE"), () => void this.share(share), { minWidth: 176, minHeight: 36 });
         this.views[0].addToOverlay(share);
       }
@@ -720,7 +721,8 @@ export class GameScene extends Phaser.Scene {
       // レッスンを終えたら次の課へ。最後の課ならエンドレスへ誘う
       if (this.mode === "lesson" && g.lessonDone) {
         const last = this.lesson + 1 >= LESSONS.length;
-        const next = new Button(this, 0, BOARD_H / 2 - 128, last ? t("PLAY ENDLESS") : t("NEXT LESSON"), () => {
+        // 達成の一言は最大 4 行（見出しの下 -8 から約 70px）なので、NEXT はその下の 100 に置く
+        const next = new Button(this, 0, BOARD_H / 2 - 92, last ? t("PLAY ENDLESS") : t("NEXT LESSON"), () => {
           fullscreen.sync();
           if (last) this.scene.restart({ mode: "endless" } satisfies GameStart);
           else this.scene.restart({ mode: "lesson", lesson: this.lesson + 1 } satisfies GameStart);
