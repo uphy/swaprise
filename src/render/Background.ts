@@ -3,9 +3,7 @@ import { type SkyName } from "./theme";
 import { audio } from "./shared";
 import type { Board } from "../core";
 import { stackHeight } from "./musicDanger";
-
-/** 漂う光の玉の数。多いと盤面の邪魔になる */
-const ORB_COUNT = 10;
+import { orbField } from "./orbs";
 
 /** 残り秒数の節目。赤は盤面の危険に使い、時間の終盤は桃色から琥珀色へ寄せる。 */
 const TIME_SKIES = [
@@ -29,16 +27,13 @@ function blendColors(from: readonly number[], to: readonly number[], mix: number
 /**
  * 画面の背景。縦のグラデーションの空に、ゆっくり昇る光の玉を浮かべる。
  * 玉は曲の拍に合わせてわずかに膨らみ、タイムアタックでは残り時間で空色が変わる。
- * どのシーンも最初に作り、他の表示物より下（depth -10）に置く。
+ * どのシーンも最初に作り、update を毎フレーム呼ぶ。
  *
- * 空そのものは canvas に描かず、body の CSS グラデーション（index.html の data-sky）に任せる。
+ * 空も玉も canvas に描かず、body の CSS グラデーション（index.html の data-sky）と DOM の玉（orbs.ts）に任せる。
  * canvas は透明にしてあり（main.ts の transparent）、全画面の絵を毎フレーム描く負担がなく、
- * 画面の比率が合わないときの余白にも同じ空が続く
+ * 画面の比率が合わないときの余白にも同じ空と玉が続く
  */
 export class Background {
-  private readonly orbs: { img: Phaser.GameObjects.Image; speed: number; size: number; phase: number }[] = [];
-  private readonly width: number;
-  private readonly height: number;
   /** 同じ色のままなら CSS を書き直さず、背景の再描画を抑える。 */
   private timeValues: string[] = [];
   private stackValues: string[] = [];
@@ -46,42 +41,16 @@ export class Background {
   /** 拍で膨らむ強さ（0 で止める） */
   pulse = 1;
 
-  constructor(private readonly scene: Phaser.Scene, width: number, height: number, private readonly name: SkyName) {
-    this.width = width;
-    this.height = height;
+  constructor(_scene: Phaser.Scene, _width: number, _height: number, private readonly name: SkyName) {
     if (typeof document !== "undefined") {
       [...TIME_PROPERTIES, ...STACK_PROPERTIES].forEach((property) => document.body.style.removeProperty(property));
       document.body.dataset.sky = name;
     }
-    if (!scene.textures.exists("orb")) {
-      const size = 128;
-      const tex = scene.textures.createCanvas("orb", size, size);
-      if (tex) {
-        const ctx = tex.context;
-        const grad = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
-        grad.addColorStop(0, "rgba(255, 255, 255, 0.55)");
-        grad.addColorStop(0.5, "rgba(255, 255, 255, 0.18)");
-        grad.addColorStop(1, "rgba(255, 255, 255, 0)");
-        ctx.fillStyle = grad;
-        ctx.fillRect(0, 0, size, size);
-        tex.refresh();
-      }
-    }
-    // 玉の初期位置は決め打ちの擬似乱数で散らす（毎回同じ配置なら、e2e のスクリーンショットが揺れない）
-    let seed = 7;
-    const rnd = (): number => {
-      seed = (seed * 1103515245 + 12345) & 0x7fffffff;
-      return seed / 0x7fffffff;
-    };
-    for (let i = 0; i < ORB_COUNT; i++) {
-      const size = 24 + rnd() * 70;
-      const img = scene.add
-        .image(rnd() * width, rnd() * height, "orb")
-        .setDisplaySize(size, size)
-        .setAlpha(0.25 + rnd() * 0.3)
-        .setDepth(-9);
-      this.orbs.push({ img, speed: 4 + rnd() * 10, size, phase: rnd() * Math.PI * 2 });
-    }
+  }
+
+  /** e2e 用。玉の位置と大きさ */
+  get orbs(): readonly { x: number; y: number; scale: number }[] {
+    return orbField.list;
   }
 
   /** ゲームの残りフレームを使うので、ポーズ中も無音でも時計とずれない。 */
@@ -125,17 +94,7 @@ export class Background {
     const beat = audio.beat;
     // 拍の頭で膨らみ、拍の間に戻る
     const swell = beat ? Math.pow(1 - beat.phase, 3) : 0;
-    const t = this.scene.time.now / 1000;
-    for (const o of this.orbs) {
-      o.img.y -= (o.speed * delta) / 1000;
-      o.img.x += Math.sin(t * 0.6 + o.phase) * 0.009 * delta;
-      if (o.img.y < -o.size) {
-        o.img.y = this.height + o.size;
-        o.img.x = Math.random() * this.width;
-      }
-      const s = o.size * (1 + swell * 0.18 * this.pulse);
-      o.img.setDisplaySize(s, s);
-    }
+    orbField.update(delta, swell * this.pulse);
   }
 
   destroy(): void {
@@ -145,6 +104,5 @@ export class Background {
     if (this.name === "cpu" && typeof document !== "undefined") {
       STACK_PROPERTIES.forEach((property) => document.body.style.removeProperty(property));
     }
-    this.orbs.forEach((o) => o.img.destroy());
   }
 }
