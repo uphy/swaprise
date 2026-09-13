@@ -1,6 +1,7 @@
 /// <reference types="@cloudflare/workers-types" />
 import type { Env } from "./types";
 import { scores } from "./scores";
+import { track } from "./track";
 export { Room } from "./room";
 export { Coordinator } from "./coordinator";
 export const json = (data: unknown, status = 200): Response =>
@@ -9,8 +10,6 @@ export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
     if (!url.pathname.startsWith("/api/")) return env.ASSETS.fetch(request);
-    if (env.ONLINE_ENABLED !== "true")
-      return json({ error: "Online play is currently unavailable." }, 503);
     const origin = request.headers.get("Origin");
     if (origin && origin !== url.origin)
       return json({ error: "Connection origin mismatch." }, 403);
@@ -18,6 +17,10 @@ export default {
       return json({ error: "Connection origin mismatch." }, 403);
     if (request.method === "POST" && !origin)
       return json({ error: "Could not verify connection origin." }, 403);
+    // 計測はオンライン対戦を止めているときも受ける。対戦のセッション cookie は要らない
+    if (url.pathname === "/api/track") return track(request, env);
+    if (env.ONLINE_ENABLED !== "true")
+      return json({ error: "Online play is currently unavailable." }, 503);
     const session = /(?:^|;\s*)swaprise_session=([a-f0-9-]{73})/.exec(
       request.headers.get("Cookie") ?? "",
     )?.[1];

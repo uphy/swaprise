@@ -46,6 +46,12 @@
       ]
     }
   ],
+  "analytics_engine_datasets": [
+    {
+      "binding": "EVENTS",
+      "dataset": "swaprise_events"
+    }
+  ],
   "vars": {
     "ONLINE_ENABLED": "true"
   }

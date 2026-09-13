@@ -30,6 +30,7 @@ const RAISE_BAR_GAP = 12;
 /** せり上げバーの下端から時間などの行までの隙間 */
 const INFO_GAP = 8;
 import { enqueueScore } from "../scores/client";
+import { track } from "./analytics";
 
 const STEP_MS = 1000 / 60;
 /** 縦持ちの CPU 対戦で、CPU の盤面を描く大きさ。 */
@@ -59,6 +60,8 @@ export class GameScene extends Phaser.Scene {
   private mode: GameMode = "endless";
   private cpuLevel: CpuLevel = "normal";
   private fromOnline = false;
+  /** 計測用。始めた時刻（ms）で、終わったときに試合時間を出す。 */
+  private startedAt = 0;
   /** パズルの面（0 始まり）。 */
   private stage = 0;
   /** レッスンの課（0 始まり）。 */
@@ -104,6 +107,8 @@ export class GameScene extends Phaser.Scene {
     this.fromOnline = !!data.fromOnline;
     this.stage = Math.max(0, Math.min(PUZZLES.length - 1, data.stage ?? 0));
     this.lesson = Math.max(0, Math.min(LESSONS.length - 1, data.lesson ?? 0));
+    this.startedAt = Date.now();
+    track("start", { mode: this.mode, detail: this.trackDetail() });
     const params = new URLSearchParams(location.search);
     const seed = Number(params.get("seed")) || (Date.now() & 0xffffff);
     this.scoreRun = eligibleRun(this.mode, params) ? { id: crypto.randomUUID(), seed } : null;
@@ -657,7 +662,27 @@ export class GameScene extends Phaser.Scene {
   }
 
   /** 結果を共有する。共有シートがなければクリップボードへコピーし、ボタンの文字で伝える。 */
+  /** 計測に付ける細目。CPU の強さ（待機中の CPU 戦は /online 付き）、パズルの面、課の番号。 */
+  private trackDetail(): string {
+    if (this.mode === "cpu") return this.fromOnline ? `${this.cpuLevel}/online` : this.cpuLevel;
+    if (this.mode === "puzzle") return String(this.stage + 1);
+    if (this.mode === "lesson") return String(this.lesson + 1);
+    return "";
+  }
+
+  /** 計測に付ける結果。 */
+  private trackOutcome(): string {
+    const g = this.game_;
+    if (this.mode === "cpu") return g.winner < 0 ? "draw" : g.winner === 0 ? "win" : "lose";
+    if (this.mode === "versus") return g.winner < 0 ? "draw" : `p${g.winner + 1}`;
+    if (this.mode === "puzzle") return g.puzzleResult === "clear" ? "clear" : "failed";
+    if (this.mode === "lesson") return g.lessonDone ? "clear" : "quit";
+    if (this.mode === "timeattack") return g.timeUp ? "timeup" : "over";
+    return "over";
+  }
+
   private async share(button: { setText: (text: string) => unknown }): Promise<void> {
+    track("share", { mode: this.mode, detail: "result" });
     const g = this.game_;
     const b = g.boards[0];
     let text: string;
@@ -689,6 +714,7 @@ export class GameScene extends Phaser.Scene {
     // エンドレスと CPU に負けたときは負けの音、対戦は誰かが勝つので勝ちの音。タイムアタックは時間切れなら完走の音
     const humanWon =
       this.mode === "versus" ? g.winner >= 0 : this.mode === "cpu" ? g.winner === 0 : this.mode === "puzzle" ? g.puzzleResult === "clear" : this.mode === "lesson" ? g.lessonDone : g.timeUp;
+    track("end", { mode: this.mode, detail: this.trackDetail(), outcome: this.trackOutcome(), seconds: Math.round((Date.now() - this.startedAt) / 1000) });
     if (humanWon) {
       audio.win();
       haptics.win();
