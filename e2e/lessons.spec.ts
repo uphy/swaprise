@@ -140,6 +140,23 @@ test("レッスン 6: せり上がる盤面でバーが出て、達成すると 
   await page.waitForFunction(() => (window as any).__swaprise?.game?.mode === "endless");
 });
 
+test("レッスン 6: せり上げ続けて天井に届くと GAME OVER で、記録されず NEXT も出ない", async ({ page }) => {
+  await openLesson(page, 6);
+  await page.evaluate(() => (window as any).__swaprise.scene.scene.pause());
+  await page.evaluate(() => {
+    const p = (window as any).__swaprise;
+    for (let i = 0; i < 60 * 60 && !p.game.finished; i++) p.tick([{ moveX: 0, moveY: 0, swap: false, raise: true }]);
+  });
+  await page.evaluate(() => (window as any).__swaprise.scene.scene.resume());
+  await page.waitForFunction(() => (window as any).__swaprise.scene.views[0].overlay.visible);
+  await page.waitForTimeout(1000);
+  const result = await page.evaluate(() => {
+    const v = (window as any).__swaprise.scene.views[0];
+    return { title: v.overlayTitle.text, next: v.overlay.list.some((o: any) => o.name === "next"), lessons: JSON.parse(localStorage.getItem("swaprise.highscores.v1") ?? "{}").lessons ?? [] };
+  });
+  expect(result).toEqual({ title: "GAME OVER", next: false, lessons: [] });
+});
+
 test("メニューの 1 PLAYER に LEARN があり、まだ終えていない最初の課から始まる", async ({ page }) => {
   await page.addInitScript(() => {
     localStorage.setItem("swaprise.highscores.v1", JSON.stringify({ lessons: [0, 1] }));

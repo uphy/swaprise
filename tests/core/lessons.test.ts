@@ -128,6 +128,14 @@ describe("レッスン", () => {
     expect(g.lessonDone).toBe(false);
   });
 
+  it("rise: せり上げ続けて天井に届くと終わるが、達成にはならない", () => {
+    const g = lessonGame("rise");
+    for (let i = 0; i < 60 * 60 && !g.finished; i++) g.tick([{ ...NO_INPUT, raise: true }]);
+    expect(g.finished).toBe(true);
+    expect(g.boards[0].gameOver).toBe(true);
+    expect(g.lessonDone).toBe(false);
+  });
+
   it("課の番号は範囲に収める", () => {
     expect(new Game({ mode: "lesson", seed: 1, lesson: 99 }).lessonIndex).toBe(LESSONS.length - 1);
     expect(new Game({ mode: "lesson", seed: 1, lesson: -1 }).lessonIndex).toBe(0);

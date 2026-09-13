@@ -724,10 +724,14 @@ export class GameScene extends Phaser.Scene {
       }
     });
     if (this.mode === "lesson") {
-      // 目標に届いたときだけ終わる（天井には届かないので、届いたら必ず達成）
-      recordLessonDone(this.lesson);
       this.views[0].setHint(null);
-      this.views[0].showOverlay(t("NICE!"), lessonText(g.lesson!.id, this.layout.touch).done);
+      if (g.lessonDone) {
+        recordLessonDone(this.lesson);
+        this.views[0].showOverlay(t("NICE!"), lessonText(g.lesson!.id, this.layout.touch).done);
+      } else {
+        // せり上がる課で天井に届いた。達成ではないので記録せず、RETRY でやり直す
+        this.views[0].showOverlay(t("GAME OVER"), t("The board reached the top. Try again and make a 2-chain."));
+      }
     } else if (this.mode === "puzzle") {
       const b = g.boards[0];
       if (g.puzzleResult === "clear") {
