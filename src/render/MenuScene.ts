@@ -201,9 +201,12 @@ export class MenuScene extends Phaser.Scene {
     this.itemGap = compact ? 46 : layout.portrait ? 60 : 52;
     this.crumb = this.add.text(cx, this.itemTop - (compact ? 26 : 34), "", { fontFamily: FONT_UI, fontSize: "13px", fontStyle: "600", color: ACCENT }).setOrigin(0.5).setName("crumb");
 
-    // 下段の小ボタン。項目は最大 4 つなので、4 つ目の説明文（項目の下 16〜19px、高さ約 14px）から隙間を空けて置く。
+    // 下段の小ボタン。いちばん項目の多い階層（1 PLAYER は 5 つ）の最後の説明文（項目の下 16〜19px、高さ約 14px）から
+    // 隙間を空けて置く。階層ごとに動かすと画面が跳ねるので、どの階層でも同じ位置にする。
     // 以前は項目の間隔だけで決めていて、横長の画面では説明文とボタンの間が 6px しかなく詰まって見えた
-    const captionBottom = this.itemTop + 3 * this.itemGap + (compact ? 16 : 19) + 9;
+    const hsForCount = loadHighScores();
+    const maxItems = Math.max(...(["top", "1p", "cpu"] as Level[]).map((l) => itemsFor(l, hsForCount).length));
+    const captionBottom = this.itemTop + (maxItems - 1) * this.itemGap + (compact ? 16 : 19) + 9;
     const toolY = captionBottom + (compact ? 12 : 22) + 17;
     const toolW = layout.portrait ? 92 : 112;
     TOOLS.forEach((tool, i) => {

@@ -197,6 +197,28 @@ test.describe("スマホ", () => {
   });
 });
 
+test.describe("スマホ・メニュー", () => {
+  const pixel = devices["Pixel 7"];
+  test.use({ viewport: pixel.viewport, deviceScaleFactor: pixel.deviceScaleFactor, isMobile: pixel.isMobile, hasTouch: pixel.hasTouch, userAgent: pixel.userAgent });
+  test("1 PLAYER の 5 つ目（BACK）が下段の RECORDS / SETTINGS と重ならない", async ({ page }) => {
+    await page.goto("/?bgm=0&opening=0");
+    await page.waitForFunction(() => !!(window as any).__swapriseScenes?.menu);
+    await page.waitForTimeout(300);
+    const pos = await page.evaluate(() => {
+      const m = (window as any).__swapriseScenes.menu;
+      m.index = 0;
+      m.select();
+      const back = m.texts[4];
+      const tool = m.tools[1];
+      return { items: m.texts.length, backBottom: back.y + back.height / 2, toolTop: tool.y - 17, screen: m.cameras.main.height / m.cameras.main.zoom };
+    });
+    expect(pos.items).toBe(5);
+    expect(pos.backBottom).toBeLessThan(pos.toolTop);
+    expect(pos.toolTop + 34).toBeLessThan(pos.screen);
+    await page.screenshot({ path: `${SHOT}/menu-1p-phone.png` });
+  });
+});
+
 test.describe("スマホ・日本語", () => {
   const pixel = devices["Pixel 7"];
   test.use({ viewport: pixel.viewport, deviceScaleFactor: pixel.deviceScaleFactor, isMobile: pixel.isMobile, hasTouch: pixel.hasTouch, userAgent: pixel.userAgent, locale: "ja-JP" });
