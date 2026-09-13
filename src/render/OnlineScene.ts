@@ -31,6 +31,7 @@ import { t } from "./i18n";
 import { RaiseBar } from "./RaiseBar";
 import { applyPendingUpdate } from "./update";
 import { backHintDuration } from "./backHint";
+import type { GameStart } from "./GameScene";
 /** ロビーとオンライン盤面。ローカル対戦のポーズ・再開始処理は呼ばない。 */
 export class OnlineScene extends Phaser.Scene {
   session: OnlineSession | null = null;
@@ -70,10 +71,14 @@ export class OnlineScene extends Phaser.Scene {
   private backHintTimer: ReturnType<typeof setTimeout> | null = null;
   /** 退出の要求を送って結果を待っている間。戻る操作を重ねて送らないための印。 */
   private leaving = false;
+  /** 待機してこの時間が経っても相手が来なければ、CPU 戦を提案する。e2e が短くする。 */
+  cpuOfferMs = 15000;
+  /** 待機中に CPU 戦を提案するボタン。出したら null でなくなる。 */
+  private cpuOffer: HTMLButtonElement | null = null;
   constructor() {
     super("online");
   }
-  create(): void {
+  create(data?: { findMatch?: boolean; historyPushed?: boolean }): void {
     this.epoch++;
     this.session = null;
     this.prediction = null;
@@ -142,9 +147,11 @@ export class OnlineScene extends Phaser.Scene {
     // ページを離れて（PWA なら終了して）切断負けになる。履歴を1つ積んで popstate で受け止める。
     // 対戦が始まってからは何もせず、対戦中は案内だけ出す（相手がいるので止められず、設定を開くと自分の盤面が放置される）。
     // 部屋に入る前・待機中はメニューへ戻る。元の履歴は ?room= を消しておき、戻った先で再入室しないようにする。
-    const entered = location.href;
-    history.replaceState(null, "", location.pathname);
-    history.pushState({ swaprise: "online" }, "", entered);
+    if (!data?.historyPushed) {
+      const entered = location.href;
+      history.replaceState(null, "", location.pathname);
+      history.pushState({ swaprise: "online" }, "", entered);
+    }
     this.historyPushed = true;
     const onPop = () => {
       if (!this.historyPushed) return;
@@ -181,7 +188,7 @@ export class OnlineScene extends Phaser.Scene {
       }
     });
     (window as any).__swapriseOnline = this;
-    void this.initialize();
+    void this.initialize(!!data?.findMatch);
   }
   private syncTypography(): void {
     const layout = layoutFor("menu");
@@ -203,7 +210,8 @@ export class OnlineScene extends Phaser.Scene {
     this.actions.append(button);
     return button;
   }
-  private async initialize(): Promise<void> {
+  /** @param findMatch 参加中の部屋も待機もなければ、選択画面を出さずにすぐ相手を探す（CPU 戦のあとの戻り） */
+  private async initialize(findMatch = false): Promise<void> {
     const epoch = this.epoch;
     try {
       await api("session");
@@ -222,6 +230,7 @@ export class OnlineScene extends Phaser.Scene {
         return;
       }
       sessionStorage.removeItem("swaprise.connection.v1");
+      if (findMatch && !roomId) { this.startQueue(displayName(playerName())); return; }
       const status = roomId ? await api(`rooms/${roomId}/status`) : null;
       if (this.closing || this.epoch !== epoch) return;
       if (roomId && status?.expired) {
@@ -424,8 +433,16 @@ export class OnlineScene extends Phaser.Scene {
       }
     };
     let lastPing = 0;
+    this.cpuOffer = null;
     this.queueTimer = setInterval(() => {
-      this.status.textContent = `${t("Finding an opponent…")} ${Math.floor((Date.now() - this.waitingSince) / 1000)}s`;
+      const waited = Date.now() - this.waitingSince;
+      // 待っても相手が来なければ CPU 戦を提案する。CPU を人に見せかけず、押したら待機列から抜ける
+      if (!this.cpuOffer && waited >= this.cpuOfferMs) {
+        this.cpuOffer = this.button(t("PLAY VS CPU"), () => this.playCpu());
+        this.cpuOffer.setAttribute("name", "play-cpu");
+        this.actions.prepend(this.cpuOffer);
+      }
+      this.status.textContent = `${this.cpuOffer ? t("No one is waiting right now.") : t("Finding an opponent…")} ${Math.floor(waited / 1000)}s`;
       if (
         Date.now() - lastPing >= 15000 &&
         this.queue?.readyState === WebSocket.OPEN
@@ -434,6 +451,15 @@ export class OnlineScene extends Phaser.Scene {
         this.queue.send(JSON.stringify({ type: "ping", at: Date.now() }));
       }
     }, 1000);
+  }
+  /** 待機列から抜けて、その端末だけで CPU（NORMAL）と対戦する。結果の FIND MATCH でここへ戻る。 */
+  private playCpu(): void {
+    const queueId = this.queueId;
+    this.cancelQueue();
+    if (queueId) void leaveParticipation({ queueId }).catch(() => { /* 次に ONLINE を開いたときに再試行する */ });
+    const historyPushed = this.historyPushed;
+    this.historyPushed = false;
+    this.scene.start("game", { mode: "cpu", cpuLevel: "normal", fromOnline: true, historyPushed } satisfies GameStart);
   }
   private cancelQueue(): void {
     this.queueAttempt++;

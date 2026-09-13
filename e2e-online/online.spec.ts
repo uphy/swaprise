@@ -589,6 +589,50 @@ test("自分の交換は通信の確定を待たず次のtickで描画する", a
   await Promise.all(contexts.map((c) => c.close()));
 });
 
+test("待っても相手が来なければ CPU 戦を提案し、待機列から抜けて遊び、結果の FIND MATCH で待機に戻る", async ({ browser }) => {
+  const a = await browser.newContext();
+  const p = await a.newPage();
+  const errors: string[] = [];
+  p.on("pageerror", (e) => errors.push(e.message));
+  await enter(p);
+  // 提案までの待ち時間を短くする（既定は 15 秒）
+  await p.evaluate(() => { (window as any).__swapriseOnline.cpuOfferMs = 1000; });
+  await p.getByRole("button", { name: "FIND MATCH", exact: true }).click();
+  await p.waitForFunction(() => (window as any).__swapriseOnline?.queue?.readyState === WebSocket.OPEN);
+  const before = await p.evaluate(() => JSON.parse(localStorage.getItem("swaprise.highscores.v1") ?? "{}").cpu?.normal ?? { wins: 0, losses: 0 });
+  const offer = p.getByRole("button", { name: "PLAY VS CPU", exact: true });
+  await expect(offer).toBeVisible({ timeout: 10000 });
+  await expect(p.getByRole("status")).toContainText("No one is waiting right now.");
+  // CANCEL は残る
+  await expect(p.getByRole("button", { name: "CANCEL", exact: true })).toBeVisible();
+  await offer.click();
+  await p.waitForFunction(() => Boolean((window as any).__swaprise?.game?.cpu));
+  expect(await p.evaluate(() => (window as any).__swaprise.game.cpu.level)).toBe("normal");
+  // 待機列からは抜けている（参加照会に待機が残らない）
+  await expect.poll(async () => p.evaluate(async () => {
+    const r = await fetch("/api/online/recovery", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
+    return (await r.json()).queueId ?? null;
+  })).toBeNull();
+  // 放置して負ける
+  await p.evaluate(() => (window as any).__swaprise.scene.scene.pause());
+  await p.evaluate(() => {
+    const s = (window as any).__swaprise;
+    for (let i = 0; i < 60 * 60 * 4 && !s.game.finished; i++) s.tick([{ moveX: 0, moveY: 0, swap: false, raise: false }]);
+  });
+  await p.evaluate(() => (window as any).__swaprise.scene.scene.resume());
+  // VS CPU の記録には混ぜない。結果には MENU の代わりに FIND MATCH が出る
+  await p.waitForFunction(() => (window as any).__swaprise.scene.views[0].overlay.list.some((o: any) => o.name === "find-match"));
+  const after = await p.evaluate(() => JSON.parse(localStorage.getItem("swaprise.highscores.v1") ?? "{}").cpu?.normal ?? { wins: 0, losses: 0 });
+  expect(after).toEqual(before);
+  // シーンは同じインスタンスなので、提案までの時間を既定に戻してから待機へ戻る
+  await p.evaluate(() => { (window as any).__swapriseOnline.cpuOfferMs = 15000; });
+  await p.evaluate(() => (window as any).__swaprise.scene.views[0].overlay.list.find((o: any) => o.name === "find-match").emit("pointerdown"));
+  // 選択画面を挟まず、そのまま待機に入る
+  await p.waitForFunction(() => (window as any).__swapriseOnline?.queue?.readyState === WebSocket.OPEN);
+  await expect(p.getByRole("status")).toContainText("Finding an opponent");
+  expect(errors).toEqual([]);
+  await a.close();
+});
 test("招待部屋は退出後も同じURLで再参加でき、両者がFIND MATCHへ移れる", async ({ browser }) => {
   const a = await browser.newContext();
   const b = await browser.newContext();
