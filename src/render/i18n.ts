@@ -64,7 +64,7 @@ const JA: Record<string, string> = {
   CLEAR: "クリア", FAILED: "失敗", "MOVES LEFT {count}": "残り手数 {count}", "{count} PANELS LEFT": "残りパネル {count}",
   LEARN: "レッスン", "endless · time attack · puzzle · learn": "エンドレス・タイムアタック・パズル・レッスン",
   "{count} / {total} LESSONS": "{count} / {total} 課", "all {total} lessons done": "全 {total} 課を終えました",
-  "LESSON {n} / {total}": "レッスン {n} / {total}", RESET: "リセット", "NICE!": "できた！", "NEXT LESSON": "次の課へ", "PLAY ENDLESS": "エンドレスで遊ぶ",
+  "LESSON {n} / {total}": "レッスン {n} / {total}", "The board changed. RESET puts it back.": "盤面が変わりました。RESET で最初の形に戻します。", RESET: "リセット", "NICE!": "できた！", "NEXT LESSON": "次の課へ", "PLAY ENDLESS": "エンドレスで遊ぶ",
   "Drag a panel sideways to swap it.": "パネルを横にドラッグすると入れ替わります。",
   "Arrow keys move the cursor. Z swaps.": "矢印キーでカーソルを動かし、Z で入れ替えます。",
   "CLEAR 3": "3枚そろえる",

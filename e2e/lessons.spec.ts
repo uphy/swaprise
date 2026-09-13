@@ -41,6 +41,8 @@ test("レッスン 1: 説明と課の名前を出し、せり上がりもバー�
     };
   });
   expect(info).toMatchObject({ mode: "lesson", lesson: 0, nextRow: 0, movesLeft: null, label: "LESSON 1 / 6", info: "", bar: false, reset: true });
+  // 目印は最初から出る
+  expect(await page.evaluate(() => (window as any).__swaprise.scene.views[0].hintCells)).toEqual([{ x: 3, y: 1 }, { x: 4, y: 1 }]);
   expect(info.text).toContain("CLEAR 3");
   expect(info.text).toContain("Line up 3 of the same panel");
   await page.screenshot({ path: `${SHOT}/lesson-1.png` });
@@ -69,10 +71,34 @@ test("レッスン 1: 説明と課の名前を出し、せり上がりもバー�
   expect(await page.evaluate(() => (window as any).__swaprise.scene.children.getByName("lesson-text").text)).toContain("DROP");
 });
 
+test("レッスン 1: 届かない手で盤面が静止すると RESET の案内が出て、RESET で最初の形に戻る", async ({ page }) => {
+  await openLesson(page, 1);
+  await page.evaluate(() => (window as any).__swaprise.scene.scene.pause());
+  // 下の段の無関係な 2 枚を入れ替える
+  await swapAt(page, 0, 0);
+  await page.evaluate(() => {
+    const p = (window as any).__swaprise;
+    for (let i = 0; i < 60; i++) p.tick([{ moveX: 0, moveY: 0, swap: false, raise: false }]);
+  });
+  const stuck = await page.evaluate(() => {
+    const p = (window as any).__swaprise;
+    return { visible: p.scene.children.getByName("lesson-stuck").visible, text: p.scene.children.getByName("lesson-stuck").text, hint: p.scene.views[0].hintCells, done: p.game.lessonDone };
+  });
+  expect(stuck).toEqual({ visible: true, text: "The board changed. RESET puts it back.", hint: [], done: false });
+  await page.evaluate(() => (window as any).__swaprise.scene.scene.resume());
+  await page.screenshot({ path: `${SHOT}/lesson-1-stuck.png` });
+  await page.evaluate(() => (window as any).__swaprise.scene.children.getByName("lesson-reset").emit("pointerdown"));
+  await page.waitForFunction(() => {
+    const p = (window as any).__swaprise;
+    return p.game.boards[0].frame < 30 && !p.scene.children.getByName("lesson-stuck").visible;
+  });
+  expect(await page.evaluate(() => (window as any).__swaprise.scene.views[0].hintCells)).toEqual([{ x: 3, y: 1 }, { x: 4, y: 1 }]);
+});
+
 test("レッスン 5: 最初の消去が始まった瞬間に右の 2 枚に目印が出て、点滅中に入れ替えるとアクティブ連鎖で達成", async ({ page }) => {
   await openLesson(page, 5);
   await page.evaluate(() => (window as any).__swaprise.scene.scene.pause());
-  expect(await page.evaluate(() => (window as any).__swaprise.scene.views[0].hintCells)).toEqual([]);
+  expect(await page.evaluate(() => (window as any).__swaprise.scene.views[0].hintCells)).toEqual([{ x: 0, y: 0 }, { x: 1, y: 0 }]);
   await swapAt(page, 0, 0);
   await page.evaluate(() => {
     const p = (window as any).__swaprise;

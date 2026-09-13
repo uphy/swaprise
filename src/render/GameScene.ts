@@ -34,8 +34,6 @@ import { enqueueScore } from "../scores/client";
 const STEP_MS = 1000 / 60;
 /** 縦持ちの CPU 対戦で、CPU の盤面を描く大きさ。 */
 const CPU_BOARD_SCALE = 0.5;
-/** レッスンで、この時間動きがなければ目印を出す */
-const LESSON_HINT_MS = 10000;
 
 export interface GameStart {
   mode: GameMode;
@@ -68,8 +66,12 @@ export class GameScene extends Phaser.Scene {
   /** レッスンの説明文と RESET。課の目印は、この時刻（scene.time.now）から動きがなければ出す */
   private lessonText: Phaser.GameObjects.Text | null = null;
   private lessonReset: Button | null = null;
-  private lessonIdleSince = 0;
   private lessonMatched = false;
+  /** 目標に届かない入れ替えをして盤面が静止した。RESET の案内を出している */
+  private lessonStuck = false;
+  private lessonSwapped = false;
+  private lessonSettledFrames = 0;
+  private lessonStuckText: Phaser.GameObjects.Text | null = null;
   layout!: Layout;
   private vsText: Phaser.GameObjects.Text | null = null;
   private pauseButton!: Button;
@@ -111,6 +113,9 @@ export class GameScene extends Phaser.Scene {
     const timeLimitFrames = Number(params.get("time")) > 0 ? Math.round(Number(params.get("time")) * 60) : undefined;
     this.game_ = new Game({ mode: this.mode, seed, speedLevel, cpuLevel: this.cpuLevel, shockMax, timeLimitFrames, stage: this.stage, lesson: this.lesson });
     this.lessonMatched = false;
+    this.lessonStuck = false;
+    this.lessonSwapped = false;
+    this.lessonSettledFrames = 0;
     this.accumulator = 0;
     this.paused = false;
     this.ended = false;
@@ -180,7 +185,17 @@ export class GameScene extends Phaser.Scene {
         .setDepth(5)
         .setName("lesson-text");
       if (this.game_.lesson.rows) this.lessonReset = new Button(this, 0, 0, t("RESET"), () => this.restart(), { minWidth: 96, minHeight: 32, fontSize: 13 }).setDepth(5).setName("lesson-reset");
-      this.lessonIdleSince = this.time.now;
+      this.lessonStuckText?.destroy();
+      this.lessonStuckText = this.add
+        .text(0, 0, t("The board changed. RESET puts it back."), { fontFamily: FONT_UI, fontSize: "13px", color: "#ffe066", align: "center", wordWrap: { width: BOARD_W + 60, useAdvancedWrap: true } })
+        .setOrigin(0.5, 0)
+        .setDepth(5)
+        .setVisible(false)
+        .setName("lesson-stuck");
+      // 目印は最初から出す。手を自分で見つけるのは PUZZLE の役目で、ここは仕組みを体で覚える場。
+      // 1 手目を間違えると解けなくなる面が多く、隠すと初心者が止まる
+      const h = this.game_.lesson.hint;
+      if (h) this.views[0].setHint([h, { x: h.x + 1, y: h.y }]);
     }
 
     // 画面上のポーズボタン
@@ -389,13 +404,15 @@ export class GameScene extends Phaser.Scene {
       if (L.portrait) {
         // 縦持ちは盤面の下
         this.lessonText.setOrigin(0.5, 0).setAlign("center").setWordWrapWidth(Math.min(W - 16, BOARD_W + 60), true).setPosition(v.ox + BOARD_W / 2, top + BOARD_H + barH + 18);
-        this.lessonReset?.setPosition(v.ox + BOARD_W / 2, this.lessonText.y + this.lessonText.height + 22);
+        this.lessonStuckText?.setOrigin(0.5, 0).setAlign("center").setWordWrapWidth(Math.min(W - 16, BOARD_W + 60), true).setPosition(v.ox + BOARD_W / 2, this.lessonText.y + this.lessonText.height + 6);
+        this.lessonReset?.setPosition(v.ox + BOARD_W / 2, this.lessonText.y + this.lessonText.height + 22 + (this.lessonStuck ? 22 : 0));
       } else {
         // 横長（PC・横持ちのスマホ）は盤面の右。横持ちのスマホは HUD の列（幅 100）の右に置く
         const left = v.ox + BOARD_W + (L.phoneLandscape ? 124 : 28);
         const sideW = Math.min(300, Math.max(160, W - left - 16));
         this.lessonText.setOrigin(0, 0).setAlign("left").setWordWrapWidth(sideW, true).setPosition(left, top + (L.phoneLandscape ? 4 : 0));
-        this.lessonReset?.setPosition(left + 52, this.lessonText.y + this.lessonText.height + 26);
+        this.lessonStuckText?.setOrigin(0, 0).setAlign("left").setWordWrapWidth(sideW, true).setPosition(left, this.lessonText.y + this.lessonText.height + 8);
+        this.lessonReset?.setPosition(left + 52, this.lessonText.y + this.lessonText.height + 26 + (this.lessonStuck ? 24 : 0));
       }
     }
 
@@ -546,16 +563,15 @@ export class GameScene extends Phaser.Scene {
   }
 
   /**
-   * レッスンの目印。動かす 2 マスを、しばらく動きがなければ光らせる（最初から光らせると考えずに済んでしまう）。
-   * アクティブ連鎖の課は、最初の消去が始まった瞬間に次の目印を出す（時間が要）。入れ替えたら消す
+   * レッスンの目印は最初から出し、入れ替えたら消す（動かしたあとの盤面では元の目印が正しい手とは限らない）。
+   * アクティブ連鎖の課は、最初の消去が始まった瞬間に次の目印を出す（時間が要）。
+   * 目標に届かない入れ替えをして盤面が静止したら、RESET で戻す案内を出す。
    */
   private updateLessonHint(events: readonly { type: string }[]): void {
     const lesson = this.game_.lesson!;
     const view = this.views[0];
-    if (events.some((e) => e.type === "swap")) {
-      this.lessonIdleSince = this.time.now;
-      view.setHint(null);
-    }
+    const g = this.game_;
+    if (events.some((e) => e.type === "swap")) view.setHint(null);
     if (!this.lessonMatched && events.some((e) => e.type === "match")) {
       this.lessonMatched = true;
       if (lesson.hintAfterMatch) {
@@ -563,9 +579,14 @@ export class GameScene extends Phaser.Scene {
         view.setHint([h, { x: h.x + 1, y: h.y }]);
       }
     }
-    if (!this.lessonMatched && lesson.hint && !this.game_.lessonDone && this.time.now - this.lessonIdleSince > LESSON_HINT_MS) {
-      const h = lesson.hint;
-      view.setHint([h, { x: h.x + 1, y: h.y }]);
+    if (events.some((e) => e.type === "swap")) this.lessonSwapped = true;
+    // 入れ替えたあと静止が 20 フレーム続いたら（着地後の連鎖フラグの 12 フレームも過ぎている）、この手では届かなかった
+    this.lessonSettledFrames = g.boards[0].isSettled() ? this.lessonSettledFrames + 1 : 0;
+    if (lesson.rows && !this.lessonStuck && !g.lessonDone && this.lessonSwapped && this.lessonSettledFrames >= 20) {
+      this.lessonStuck = true;
+      this.lessonStuckText?.setVisible(true);
+      this.lessonReset?.setSelected(true);
+      this.place();
     }
   }
 
