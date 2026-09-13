@@ -2,7 +2,7 @@ import { CpuPlayer, type CpuLevel } from "./ai";
 import { Board } from "./board";
 import { DEFAULT_SHOCK_MAX, TIME_ATTACK_FRAMES } from "./constants";
 import { boardForLesson, lessonGoalMet, LESSONS, type Lesson } from "./lessons";
-import { boardForStage, type PuzzleStage } from "./puzzle";
+import { analyzeMove, boardForStage, gridFromBoard, parseSolution, settle, solve, type PuzzleMove, type PuzzleStage, type Technique } from "./puzzle";
 import { PUZZLES } from "./puzzles";
 import type { BoardOptions, Input } from "./types";
 import { NO_INPUT } from "./types";
@@ -53,6 +53,11 @@ export class Game {
   readonly puzzle: PuzzleStage | null;
   /** パズルの結果。clear は全消し、fail は手数を使い切ってパネルが残った。 */
   puzzleResult: "clear" | "fail" | null = null;
+  /** パズルでこれまでに打った手（入れ替えたマス）。戻す・進めるに使う。他のモードは空のまま。 */
+  readonly puzzleMoves: PuzzleMove[] = [];
+  /** 戻した手。進めるで再び打つ。新しい手を打つと捨てる。 */
+  private puzzleRedo: PuzzleMove[] = [];
+  private readonly seed: number;
   /** レッスンの課（0 始まり）。他のモードは -1。 */
   readonly lessonIndex: number;
   readonly lesson: Lesson | null;
@@ -61,6 +66,7 @@ export class Game {
 
   constructor(opts: GameOptions) {
     this.mode = opts.mode;
+    this.seed = opts.seed;
     this.timeLimit = opts.mode === "timeattack" ? (opts.timeLimitFrames ?? TIME_ATTACK_FRAMES) : null;
     this.stage = opts.mode === "puzzle" ? Math.max(0, Math.min(PUZZLES.length - 1, opts.stage ?? 0)) : -1;
     this.puzzle = opts.mode === "puzzle" ? (opts.puzzle ?? PUZZLES[this.stage]) : null;
@@ -122,7 +128,14 @@ export class Game {
     const resolved = this.boards.map((_, i) => inputs[i] ?? NO_INPUT);
     if (this.cpu) resolved[1] = this.cpu.next();
     const risenBefore = this.boards[0].risenRows;
+    const movesBefore = this.boards[0].movesLeft;
     this.boards.forEach((b, i) => b.tick(resolved[i]));
+    if (this.puzzle && movesBefore !== null && this.boards[0].movesLeft !== movesBefore) {
+      // 手と数えられた入れ替えを履歴に積む。入れ替えはカーソルの位置で起きる（この tick でカーソルを動かしていれば動かした先）
+      const { x, y } = this.boards[0].cursor;
+      this.puzzleMoves.push({ x, y });
+      this.puzzleRedo = [];
+    }
     if (this.boards.length === 2) {
       const [a, b] = this.boards;
       // 対戦では2つの盤面のスピードを同じにする。多く消した側に合わせて両方が速くなる
@@ -155,6 +168,68 @@ export class Game {
       // A row raised on the final tick is matched on the next tick.
       this.finished = this.boards[0].isSettled() && this.boards[0].risenRows === risenBefore;
     }
+  }
+
+  /** 進められる手があるか（パズルで戻した手が残っている）。 */
+  get puzzleCanRedo(): boolean {
+    return this.puzzleRedo.length > 0;
+  }
+
+  /**
+   * パズルで最後の手を戻す。面の初期盤面から残りの手を打ち直して盤面を作り直す（決定論なので同じ盤面になる）。
+   * 盤面が静止しているときだけ受け付け、手数を使い切った失敗からも戻せる。戻したら true。
+   */
+  puzzleUndo(): boolean {
+    if (!this.puzzle || this.puzzleResult === "clear") return false;
+    const board = this.boards[0];
+    if (!board.isSettled() || this.puzzleMoves.length === 0) return false;
+    const last = this.puzzleMoves.pop()!;
+    this.puzzleRedo.push(last);
+    const fresh = boardForStage(this.puzzle, this.seed);
+    for (const m of this.puzzleMoves) {
+      settle(fresh);
+      fresh.tick({ ...NO_INPUT, cursorTo: m, swap: true });
+    }
+    settle(fresh);
+    fresh.cursor.x = last.x;
+    fresh.cursor.y = last.y;
+    board.copyFrom(fresh);
+    this.finished = false;
+    this.puzzleResult = null;
+    return true;
+  }
+
+  /** パズルで戻した手をもう一度打つ。盤面が静止しているときだけ。打ったら true。 */
+  puzzleRedoMove(): boolean {
+    if (!this.puzzle || this.finished || !this.boards[0].isSettled()) return false;
+    const m = this.puzzleRedo.pop();
+    if (!m) return false;
+    const redo = this.puzzleRedo;
+    this.tick([{ ...NO_INPUT, cursorTo: m, swap: true }]);
+    // tick は新しい手として redo を捨てるので、残りを戻す
+    this.puzzleRedo = redo;
+    return true;
+  }
+
+  /**
+   * パズルのヒント。今の盤面を残りの手数で全消しする次の 1 手と、その手で起きること（技法）。
+   * 記録された解の途中なら解の次の手、外れていればソルバーで探し直す。残りの手数では解けなければ null。
+   */
+  puzzleHint(): { move: PuzzleMove; techniques: Set<Technique> } | null {
+    if (!this.puzzle) return null;
+    const board = this.boards[0];
+    if (!board.isSettled() || board.panelCount() === 0) return null;
+    const left = board.movesLeft ?? 0;
+    if (left === 0) return null;
+    const grid = gridFromBoard(board);
+    const recorded = this.puzzle.solution ? parseSolution(this.puzzle.solution) : [];
+    const onTrack = this.puzzleMoves.length < recorded.length && this.puzzleMoves.every((m, i) => m.x === recorded[i].x && m.y === recorded[i].y);
+    const path = onTrack ? recorded.slice(this.puzzleMoves.length) : solve(grid, left, { maxStates: 200_000 });
+    if (!path || path.length === 0) return null;
+    const move = path[0];
+    const r = analyzeMove(grid, move);
+    if (!r) return null;
+    return { move, techniques: r.techniques };
   }
 
   /** タイムアタックの残りフレーム。他のモードは null。 */

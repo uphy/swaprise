@@ -160,3 +160,90 @@ test("メニュー: 1P PUZZLE で面選びが開き、クリア済みの次の�
   });
   expect(started).toEqual({ mode: "puzzle", stage: 3 });
 });
+
+test("パズル: カウントダウンなしで始まり、UNDO で 1 手戻り、REDO で打ち直せる。手を打つとヒントは消える", async ({ page }) => {
+  // countdown=0 を付けなくても待たずに始まる
+  await page.goto("/?mode=puzzle&stage=6&bgm=0");
+  await page.waitForFunction(() => Boolean((window as any).__swaprise?.game));
+  expect(await page.evaluate(() => (window as any).__swaprise.scene.starting)).toBe(false);
+  await page.waitForFunction(() => (window as any).__swaprise.game.boards[0].frame > 0);
+
+  // 1-6 は 2 手。解の 1 手目を打つ
+  const first = await page.evaluate(() => {
+    const p = (window as any).__swaprise;
+    const [x, y] = String(p.game.puzzle.solution).split(" ")[0].split(",").map(Number);
+    p.tick([{ moveX: 0, moveY: 0, swap: true, raise: false, cursorTo: { x, y } }]);
+    return { x, y, movesLeft: p.game.boards[0].movesLeft, moves: p.game.puzzleMoves };
+  });
+  expect(first.movesLeft).toBe(1);
+  expect(first.moves).toEqual([{ x: first.x, y: first.y }]);
+  await page.waitForFunction(() => (window as any).__swaprise.game.boards[0].isSettled());
+
+  // ヒントを 2 回押すと、文が出てから盤面に目印が出る。UNDO で消える
+  await page.evaluate(() => (window as any).__swaprise.scene.children.getByName("hint").emit("pointerdown"));
+  const hint1 = await page.evaluate(() => {
+    const p = (window as any).__swaprise;
+    return { text: p.scene.children.getByName("puzzle-hint").text, visible: p.scene.children.getByName("puzzle-hint").visible, cells: p.scene.views[0].hintCells };
+  });
+  expect(hint1.visible).toBe(true);
+  expect(hint1.text).toMatch(/^Next move: /);
+  expect(hint1.cells).toEqual([]);
+  await page.evaluate(() => (window as any).__swaprise.scene.children.getByName("hint").emit("pointerdown"));
+  const hint2 = await page.evaluate(() => {
+    const p = (window as any).__swaprise;
+    const [x, y] = String(p.game.puzzle.solution).split(" ")[1].split(",").map(Number);
+    return { cells: p.scene.views[0].hintCells, expected: [{ x, y }, { x: x + 1, y }] };
+  });
+  expect(hint2.cells).toEqual(hint2.expected);
+
+  await page.evaluate(() => (window as any).__swaprise.scene.children.getByName("undo").emit("pointerdown"));
+  const undone = await page.evaluate(() => {
+    const p = (window as any).__swaprise;
+    return { movesLeft: p.game.boards[0].movesLeft, moves: p.game.puzzleMoves, canRedo: p.game.puzzleCanRedo, hintVisible: p.scene.children.getByName("puzzle-hint").visible, cells: p.scene.views[0].hintCells };
+  });
+  expect(undone).toEqual({ movesLeft: 2, moves: [], canRedo: true, hintVisible: false, cells: [] });
+
+  await page.evaluate(() => (window as any).__swaprise.scene.children.getByName("redo").emit("pointerdown"));
+  await page.waitForFunction(() => (window as any).__swaprise.game.boards[0].isSettled());
+  const redone = await page.evaluate(() => {
+    const p = (window as any).__swaprise;
+    return { movesLeft: p.game.boards[0].movesLeft, moves: p.game.puzzleMoves, canRedo: p.game.puzzleCanRedo };
+  });
+  expect(redone).toEqual({ movesLeft: 1, moves: [{ x: first.x, y: first.y }], canRedo: false });
+});
+
+test("パズル: 手数を使い切って FAILED になっても UNDO で 1 手戻って続きを遊べる", async ({ page }) => {
+  await page.goto("/?mode=puzzle&stage=1&bgm=0");
+  await page.waitForFunction(() => Boolean((window as any).__swaprise?.game));
+  await page.evaluate(() => {
+    const p = (window as any).__swaprise;
+    const b = p.game.boards[0];
+    const [sx, sy] = String(p.game.puzzle.solution).split(" ")[0].split(",").map(Number);
+    for (let y = 0; y < 3; y++) {
+      for (let x = 0; x < 5; x++) {
+        if ((x === sx && y === sy) || b.cell(x, y).kind === b.cell(x + 1, y).kind) continue;
+        p.tick([{ moveX: 0, moveY: 0, swap: true, raise: false, cursorTo: { x, y } }]);
+        return;
+      }
+    }
+  });
+  await page.waitForFunction(() => (window as any).__swaprise.game.finished, null, { timeout: 15_000 });
+  await page.waitForFunction(() => (window as any).__swaprise.scene.views[0].overlay.list.some((o: any) => o.name === "retry"));
+  await page.evaluate(() => (window as any).__swaprise.scene.children.getByName("undo").emit("pointerdown"));
+  const after = await page.evaluate(() => {
+    const p = (window as any).__swaprise;
+    const v = p.scene.views[0];
+    return {
+      finished: p.game.finished,
+      result: p.game.puzzleResult,
+      movesLeft: p.game.boards[0].movesLeft,
+      overlay: v.overlay.visible,
+      retry: v.overlay.list.some((o: any) => o.name === "retry"),
+      ended: p.scene.ended,
+    };
+  });
+  expect(after).toEqual({ finished: false, result: null, movesLeft: 1, overlay: false, retry: false, ended: false });
+  // 戻したあと解を打てばクリアできる
+  await playSolution(page);
+  await page.waitForFunction(() => (window as any).__swaprise.game.puzzleResult === "clear", null, { timeout: 15_000 });
+});

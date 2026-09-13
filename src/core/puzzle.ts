@@ -449,6 +449,14 @@ export function boardForStage(stage: PuzzleStage, seed = 0): Board {
   return board;
 }
 
+/** 静止した Board からソルバー用の盤面を作る。ROWS より上のパネルは持たない（パズルにはない）。 */
+export function gridFromBoard(board: Board): Grid {
+  const g = emptyGrid();
+  for (let y = 0; y < ROWS; y++)
+    for (let x = 0; x < COLS; x++) g[y * COLS + x] = board.cell(x, y).kind;
+  return g;
+}
+
 /** 盤面が静止するまで進める。上限を超えたら false。 */
 export function settle(board: Board, maxFrames = 3000): boolean {
   for (let i = 0; i < maxFrames; i++) {

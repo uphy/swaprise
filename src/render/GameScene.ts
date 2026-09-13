@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import { Game, LESSONS, PUZZLES, puzzleName, type CpuLevel, type GameMode, type Input, NO_INPUT } from "../core";
 import { lessonText } from "./lessonText";
+import { hintSentence, noHintSentence } from "./puzzleHint";
 import { loadHighScores, recordCpuResult, recordLessonDone, recordPuzzleClear, recordScore } from "./highscore";
 import { recordProgress } from "../scores/progress";
 import { showScoreResult } from "./score-result";
@@ -72,6 +73,16 @@ export class GameScene extends Phaser.Scene {
   private lessonSwapped = false;
   private lessonSettledFrames = 0;
   private lessonStuckText: Phaser.GameObjects.Text | null = null;
+  /** パズルの 戻す・進める・ヒント。盤面の下（横長の画面は HUD の列）に置く */
+  private puzzleButtons: { undo: Button; redo: Button; hint: Button } | null = null;
+  /** パズルのヒント文。1 段目は技法の文、2 段目はそのまま残して盤面に目印を足す */
+  private puzzleHintText: Phaser.GameObjects.Text | null = null;
+  /** ヒントの段。0 は出していない。手を打つ・戻す・進めるで 0 に戻る */
+  private puzzleHintLevel = 0;
+  /** 結果画面の部品。パズルで失敗から戻すときに片付ける */
+  private resultButtons: Phaser.GameObjects.GameObject[] = [];
+  private resultTimer: Phaser.Time.TimerEvent | null = null;
+  private resultPointer: ((p: Phaser.Input.Pointer) => void) | null = null;
   layout!: Layout;
   private vsText: Phaser.GameObjects.Text | null = null;
   private pauseButton!: Button;
@@ -198,6 +209,29 @@ export class GameScene extends Phaser.Scene {
       if (h) this.views[0].setHint([h, { x: h.x + 1, y: h.y }]);
     }
 
+    // パズルの 戻す・進める・ヒント。手を打ち直すたびに最初からやり直さなくて済むようにする。
+    // ヒントは 1 回目で次の手の技法を文で、2 回目で入れ替えるマスを盤面に光らせる
+    this.puzzleButtons = null;
+    this.puzzleHintText = null;
+    this.puzzleHintLevel = 0;
+    this.resultButtons = [];
+    this.resultTimer = null;
+    this.resultPointer = null;
+    if (this.mode === "puzzle") {
+      const opts = { minWidth: 76, minHeight: 32, fontSize: 13 };
+      this.puzzleButtons = {
+        undo: new Button(this, 0, 0, t("UNDO"), () => this.puzzleUndo(), opts).setDepth(5).setName("undo"),
+        redo: new Button(this, 0, 0, t("REDO"), () => this.puzzleRedo(), opts).setDepth(5).setName("redo"),
+        hint: new Button(this, 0, 0, t("HINT"), () => this.puzzleHint(), opts).setDepth(5).setName("hint"),
+      };
+      this.puzzleHintText = this.add
+        .text(0, 0, "", { fontFamily: FONT_UI, fontSize: "14px", color: "#ffe066", align: "center", lineSpacing: 3, wordWrap: { width: BOARD_W + 60, useAdvancedWrap: true } })
+        .setOrigin(0.5, 0)
+        .setDepth(5)
+        .setVisible(false)
+        .setName("puzzle-hint");
+    }
+
     // 画面上のポーズボタン
     this.pauseButton = new Button(this, 0, 0, "❚❚", () => this.togglePause(), { minWidth: 44, minHeight: 30, fontSize: 13 }).setDepth(5);
 
@@ -290,6 +324,11 @@ export class GameScene extends Phaser.Scene {
     kb.on("keydown-ESC", () => this.toMenu());
     kb.on("keydown-M", toggleSound);
     kb.on("keydown-V", () => haptics.toggle());
+    if (this.mode === "puzzle") {
+      kb.on("keydown-U", () => this.puzzleUndo());
+      kb.on("keydown-Y", () => this.puzzleRedo());
+      kb.on("keydown-H", () => this.puzzleHint());
+    }
     kb.on("keydown", () => audio.start());
     this.input.on("pointerdown", () => audio.start());
 
@@ -309,8 +348,9 @@ export class GameScene extends Phaser.Scene {
       tick: (inputs: Input[]) => this.stepOnce(inputs),
     };
 
+    // パズルは時間と関係がなく、盤面を眺めてから始めるものなので、カウントダウンを置かない
     const start = (): void => {
-      if (params.get("countdown") === "0") this.beginPlay();
+      if (params.get("countdown") === "0" || this.mode === "puzzle") this.beginPlay();
       else this.runCountdown();
     };
     start();
@@ -419,11 +459,40 @@ export class GameScene extends Phaser.Scene {
       }
     }
 
+    // パズルの 戻す・進める・ヒント は盤面の下の残り手数の行の下。横長の画面はヒント文を盤面の右に出す。
+    // 横持ちのスマホはボタンも HUD の列（ポーズボタンの下）に縦に並べる
+    if (this.puzzleButtons && this.puzzleHintText) {
+      const v = this.views[0];
+      const { undo, redo, hint } = this.puzzleButtons;
+      const cx = v.ox + BOARD_W / 2;
+      if (L.phoneLandscape) {
+        const x = v.ox + BOARD_W + 12 + 50;
+        undo.setPosition(x, top + 262);
+        redo.setPosition(x, top + 298);
+        hint.setPosition(x, top + 334);
+        const left = x + 60;
+        this.puzzleHintText.setOrigin(0, 0).setAlign("left").setWordWrapWidth(Math.min(300, Math.max(160, W - left - 16)), true).setPosition(left, top + 4);
+      } else {
+        // ボタンは盤面の下の残り手数の行の下。ヒント文は縦持ちならその下、PC は下に余白がないので盤面の右
+        const y = top + BOARD_H + 52;
+        undo.setPosition(cx - 84, y);
+        redo.setPosition(cx, y);
+        hint.setPosition(cx + 84, y);
+        if (L.portrait) {
+          this.puzzleHintText.setOrigin(0.5, 0).setAlign("center").setWordWrapWidth(Math.min(W - 16, BOARD_W + 60), true).setPosition(cx, y + 26);
+        } else {
+          const left = v.ox + BOARD_W + 28;
+          this.puzzleHintText.setOrigin(0, 0).setAlign("left").setWordWrapWidth(Math.min(300, Math.max(160, W - left - 16)), true).setPosition(left, top);
+        }
+      }
+    }
+
     this.pauseDim.setSize(W, H);
     this.pauseTitle.setPosition(W / 2, H / 2 - 40 - this.pauseButtons.length * 23 - 20);
     this.pauseButtons.forEach((b, i) => b.setPosition(W / 2, H / 2 - (this.pauseButtons.length - 1) * 23 + i * 46));
 
-    this.hintText.setPosition(W / 2, H - 10).setVisible(!L.touch);
+    // キー操作の案内。パズルは画面にボタンがあり、盤面の下に置くと重なるので出さない
+    this.hintText.setPosition(W / 2, H - 10).setVisible(!L.touch && this.mode !== "puzzle");
     this.backHintText.setWordWrapWidth(W - 16).setPosition(W / 2, L.phoneLandscape ? 6 + this.backHintText.height / 2 : H - 8 - this.backHintText.height / 2);
   }
 
@@ -470,6 +539,63 @@ export class GameScene extends Phaser.Scene {
     this.touches.forEach((t) => t.clear());
     this.accumulator = 0;
     audio.gameStart();
+    audio.startBgm("game");
+  }
+
+  /** パズルで最後の手を戻す。失敗の結果画面からも戻せるので、結果の表示を片付けて続きを遊べるようにする。 */
+  private puzzleUndo(): void {
+    if (this.paused || !this.game_.puzzleUndo()) return;
+    this.clearPuzzleHint();
+    this.touches.forEach((t) => t.clear());
+    if (this.ended) this.resumeAfterUndo();
+  }
+
+  private puzzleRedo(): void {
+    if (this.paused || this.ended || !this.game_.puzzleRedoMove()) return;
+    this.clearPuzzleHint();
+    this.touches.forEach((t) => t.clear());
+  }
+
+  /** ヒント。1 回目は次の手の技法を文で出し、2 回目は入れ替えるマスを盤面に光らせる。盤面が動いている間は効かない */
+  private puzzleHint(): void {
+    if (this.paused || this.ended || !this.puzzleHintText) return;
+    if (!this.game_.boards[0].isSettled()) return;
+    const h = this.game_.puzzleHint();
+    if (!h) {
+      this.puzzleHintLevel = 1;
+      this.puzzleHintText.setText(noHintSentence()).setVisible(true);
+      this.views[0].setHint(null);
+      return;
+    }
+    if (this.puzzleHintLevel === 0) {
+      this.puzzleHintLevel = 1;
+      this.puzzleHintText.setText(hintSentence(h.techniques)).setVisible(true);
+    } else {
+      this.puzzleHintLevel = 2;
+      this.views[0].setHint([h.move, { x: h.move.x + 1, y: h.move.y }]);
+    }
+  }
+
+  private clearPuzzleHint(): void {
+    if (!this.puzzleHintText) return;
+    this.puzzleHintLevel = 0;
+    this.puzzleHintText.setVisible(false);
+    this.views[0].setHint(null);
+  }
+
+  /** 失敗の結果画面から手を戻したとき、結果の表示を消してゲームに戻る。 */
+  private resumeAfterUndo(): void {
+    this.ended = false;
+    this.pauseButton.setVisible(true);
+    this.puzzleButtons?.undo.setPrimary(false);
+    this.resultTimer?.remove(false);
+    this.resultTimer = null;
+    if (this.resultPointer) this.input.off("pointerdown", this.resultPointer);
+    this.resultPointer = null;
+    this.resultButtons.forEach((b) => b.destroy());
+    this.resultButtons = [];
+    this.views[0].hideOverlay();
+    this.accumulator = 0;
     audio.startBgm("game");
   }
 
@@ -552,6 +678,7 @@ export class GameScene extends Phaser.Scene {
     // CPU 戦は相手の盤面が小さいので、相手の大きな連鎖を自分の盤面に知らせる。2 人対戦は同じ画面で両方見えている
     if (this.mode === "cpu") announceOpponentChains(this.game_.boards[1].events, this.views[0]);
     if (this.game_.lesson) this.updateLessonHint(this.game_.boards[0].events);
+    if (this.puzzleHintLevel > 0 && this.game_.boards[0].events.some((e) => e.type === "swap")) this.clearPuzzleHint();
     this.game_.boards.forEach((b, i) => {
       this.views[i].handleEvents(b.events, true, Boolean(this.inputs[i]));
       // 自分の盤面の大きな連鎖は画面ごと揺らし、5 連鎖からは閃光も足す。
@@ -653,6 +780,12 @@ export class GameScene extends Phaser.Scene {
       this.bg.update(this.paused || this.starting ? 0 : delta);
     }
     this.views.forEach((v) => v.draw(this.paused || this.starting ? 0 : delta, !this.ended));
+    if (this.puzzleButtons) {
+      const settled = this.game_.boards[0].isSettled();
+      this.puzzleButtons.undo.setAlpha(settled && this.game_.puzzleMoves.length > 0 ? 1 : 0.4);
+      this.puzzleButtons.redo.setAlpha(settled && !this.ended && this.game_.puzzleCanRedo ? 1 : 0.4);
+      this.puzzleButtons.hint.setAlpha(settled && !this.ended ? 1 : 0.4);
+    }
     this.raiseHints.forEach((h, i) => h.setRaising(this.inputs[i]?.lastRaise ?? false, this.paused ? 0 : delta));
   }
 
@@ -698,22 +831,29 @@ export class GameScene extends Phaser.Scene {
       haptics.gameOver();
     }
     // 結果表示のあと、盤面の中をタップ（クリック）するとやり直す。自分の盤面には RETRY / MENU のボタンも出す
-    this.time.delayedCall(800, () => {
-      this.input.on("pointerdown", (p: Phaser.Input.Pointer) => {
+    this.resultTimer = this.time.delayedCall(800, () => {
+      this.resultTimer = null;
+      this.resultPointer = (p: Phaser.Input.Pointer): void => {
         if (this.touches.some((t) => t.cellAt(p.worldX, p.worldY))) this.restart();
-      });
+      };
+      this.input.on("pointerdown", this.resultPointer);
       // 主ボタンは 1 つ。次へ進む NEXT があればそれ、待機中の CPU 戦なら FIND MATCH、どちらもなければ RETRY
       const hasNext = (this.mode === "puzzle" && g.puzzleResult === "clear" && this.stage + 1 < PUZZLES.length) || (this.mode === "lesson" && g.lessonDone);
-      const retry = new Button(this, -46, BOARD_H / 2 - 40, t("RETRY"), () => this.restart(), { minWidth: 84, minHeight: 36, primary: !hasNext && !this.fromOnline }).setName("retry");
+      // パズルの失敗は UNDO（盤面の下）を主ボタンにする。1 手戻して続けるほうが最初からより近い
+      const puzzleFail = this.mode === "puzzle" && g.puzzleResult === "fail";
+      if (puzzleFail) this.puzzleButtons?.undo.setPrimary(true);
+      const retry = new Button(this, -46, BOARD_H / 2 - 40, t("RETRY"), () => this.restart(), { minWidth: 84, minHeight: 36, primary: !hasNext && !this.fromOnline && !puzzleFail }).setName("retry");
       const menu = this.fromOnline
         ? new Button(this, 46, BOARD_H / 2 - 40, t("FIND MATCH"), () => this.toFindMatch(), { minWidth: 84, minHeight: 36, primary: !hasNext }).setName("find-match")
         : new Button(this, 46, BOARD_H / 2 - 40, t("MENU"), () => this.toMenu(), { minWidth: 84, minHeight: 36 }).setName("menu");
       this.views[0].addToOverlay(retry);
       this.views[0].addToOverlay(menu);
+      this.resultButtons.push(retry, menu);
       // レッスンの結果は共有しない（練習なので）。空いた場所に達成の一言と NEXT を置く
       if (canShare() && this.mode !== "lesson") {
         const share = new Button(this, 0, BOARD_H / 2 - 84, t("SHARE"), () => void this.share(share), { minWidth: 176, minHeight: 36 });
         this.views[0].addToOverlay(share);
+        this.resultButtons.push(share);
       }
       // パズルをクリアしたら次の面へのボタン
       if (this.mode === "puzzle" && g.puzzleResult === "clear" && this.stage + 1 < PUZZLES.length) {
