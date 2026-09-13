@@ -206,7 +206,7 @@ export class GameScene extends Phaser.Scene {
     this.pauseTitle = this.add.text(0, 0, t("PAUSE"), { fontFamily: FONT_UI, fontSize: "36px", color: TEXT_COLOR, fontStyle: "700" }).setOrigin(0.5);
     const soundLabel = (): string => t("SOUND: {state}", { state: t(audio.muted ? "OFF" : "ON") });
     const vibLabel = (): string => t("VIBRATION: {state}", { state: t(haptics.enabled ? "ON" : "OFF") });
-    this.pauseButtons.push(new Button(this, 0, 0, t("RESUME"), () => this.setPaused(false), { minWidth: 180, minHeight: 40 }));
+    this.pauseButtons.push(new Button(this, 0, 0, t("RESUME"), () => this.setPaused(false), { minWidth: 180, minHeight: 40, primary: true }));
     this.pauseButtons.push(new Button(this, 0, 0, t("RESTART"), () => this.restart(), { minWidth: 180, minHeight: 40 }));
     const toggleSound = (): void => {
       audio.setMuted(!audio.muted);
@@ -590,7 +590,7 @@ export class GameScene extends Phaser.Scene {
       // 説明の本文は消して見出しだけ残す。壊れた盤面では本文の手順は使えず、縦の場所も要る（日本語は案内が 2 行になる）
       this.lessonText?.setText(lessonText(lesson.id, this.layout.touch).title);
       this.lessonStuckText?.setVisible(true);
-      this.lessonReset?.setSelected(true);
+      this.lessonReset?.setPrimary(true);
       this.place();
     }
   }
@@ -702,10 +702,12 @@ export class GameScene extends Phaser.Scene {
       this.input.on("pointerdown", (p: Phaser.Input.Pointer) => {
         if (this.touches.some((t) => t.cellAt(p.worldX, p.worldY))) this.restart();
       });
-      const retry = new Button(this, -46, BOARD_H / 2 - 40, t("RETRY"), () => this.restart(), { minWidth: 84, minHeight: 36 });
+      // 主ボタンは 1 つ。次へ進む NEXT があればそれ、待機中の CPU 戦なら FIND MATCH、どちらもなければ RETRY
+      const hasNext = (this.mode === "puzzle" && g.puzzleResult === "clear" && this.stage + 1 < PUZZLES.length) || (this.mode === "lesson" && g.lessonDone);
+      const retry = new Button(this, -46, BOARD_H / 2 - 40, t("RETRY"), () => this.restart(), { minWidth: 84, minHeight: 36, primary: !hasNext && !this.fromOnline }).setName("retry");
       const menu = this.fromOnline
-        ? new Button(this, 46, BOARD_H / 2 - 40, t("FIND MATCH"), () => this.toFindMatch(), { minWidth: 84, minHeight: 36 }).setName("find-match")
-        : new Button(this, 46, BOARD_H / 2 - 40, t("MENU"), () => this.toMenu(), { minWidth: 84, minHeight: 36 });
+        ? new Button(this, 46, BOARD_H / 2 - 40, t("FIND MATCH"), () => this.toFindMatch(), { minWidth: 84, minHeight: 36, primary: !hasNext }).setName("find-match")
+        : new Button(this, 46, BOARD_H / 2 - 40, t("MENU"), () => this.toMenu(), { minWidth: 84, minHeight: 36 }).setName("menu");
       this.views[0].addToOverlay(retry);
       this.views[0].addToOverlay(menu);
       // レッスンの結果は共有しない（練習なので）。空いた場所に達成の一言と NEXT を置く
@@ -715,7 +717,7 @@ export class GameScene extends Phaser.Scene {
       }
       // パズルをクリアしたら次の面へのボタン
       if (this.mode === "puzzle" && g.puzzleResult === "clear" && this.stage + 1 < PUZZLES.length) {
-        const next = new Button(this, 0, BOARD_H / 2 - 128, t("NEXT  {name}", { name: puzzleName(this.stage + 1) }), () => this.nextStage(), { minWidth: 176, minHeight: 36 }).setName("next");
+        const next = new Button(this, 0, BOARD_H / 2 - 128, t("NEXT  {name}", { name: puzzleName(this.stage + 1) }), () => this.nextStage(), { minWidth: 176, minHeight: 36, primary: true }).setName("next");
         this.views[0].addToOverlay(next);
       }
       // レッスンを終えたら次の課へ。最後の課ならエンドレスへ誘う
@@ -726,7 +728,7 @@ export class GameScene extends Phaser.Scene {
           fullscreen.sync();
           if (last) this.scene.restart({ mode: "endless" } satisfies GameStart);
           else this.scene.restart({ mode: "lesson", lesson: this.lesson + 1 } satisfies GameStart);
-        }, { minWidth: 176, minHeight: 36 }).setName("next");
+        }, { minWidth: 176, minHeight: 36, primary: true }).setName("next");
         this.views[0].addToOverlay(next);
       }
     });

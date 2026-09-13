@@ -12,15 +12,23 @@ export interface ButtonOptions {
   bg?: number;
   /** 塗りの不透明度 */
   bgAlpha?: number;
+  /** 主ボタン。画面で「次に進む」操作に 1 つだけ付け、黄色に塗る（RESUME、NEXT、PLAY など） */
+  primary?: boolean;
 }
 
 /** ボタンの塗りと縁の状態 */
 type Look = "normal" | "hover" | "pressed" | "selected";
 
+/** 主ボタンの色。ONLINE 画面（online.css）の黄色と同じ */
+const PRIMARY_FILL = 0xffe066;
+const PRIMARY_STROKE = 0xfff4bf;
+const PRIMARY_TEXT = "#2a2050";
+
 /**
  * タッチでもキーボードでも押せる丸いボタン。
  * Text だけの当たり判定は指には小さすぎるので、背景の角丸ごと Container にして当たり判定にする。
- * 塗りは半透明の白で、背景の空の色が透ける。選ばれている（キー操作の対象）ときは黄色に塗って文字を濃くする。
+ * 塗りは半透明の白で、背景の空の色が透ける。主ボタン（primary）は黄色に塗って文字を濃くし、画面に 1 つだけ置く。
+ * 選ばれている（キー操作の対象・面選びの現在の面）ときは白く塗って文字を濃くする。主ボタンと混ざらないよう黄色は使わない。
  */
 export class Button extends Phaser.GameObjects.Container {
   private readonly bg: Phaser.GameObjects.Graphics;
@@ -31,6 +39,7 @@ export class Button extends Phaser.GameObjects.Container {
   private readonly boxW: number;
   private readonly boxH: number;
   private selected = false;
+  private primary_ = false;
 
   constructor(scene: Phaser.Scene, x: number, y: number, text: string, onPress: () => void, opts: ButtonOptions = {}) {
     super(scene, x, y);
@@ -40,6 +49,7 @@ export class Button extends Phaser.GameObjects.Container {
     this.baseColor = opts.bg ?? 0xffffff;
     this.baseAlpha = opts.bgAlpha ?? (opts.bg === undefined ? 0.16 : 1);
     this.baseTextColor = opts.color ?? TEXT_COLOR;
+    this.primary_ = opts.primary ?? false;
     this.txt = scene.add
       .text(0, 0, text, { fontFamily: FONT_UI, fontSize: `${fontSize}px`, fontStyle: "600", color: this.baseTextColor, align: "center" })
       .setOrigin(0.5);
@@ -71,11 +81,19 @@ export class Button extends Phaser.GameObjects.Container {
     g.clear();
     const r = Math.min(12, this.boxH / 2);
     if (look === "selected") {
-      g.fillStyle(0xffe066, 1);
+      g.fillStyle(0xffffff, 0.92);
       g.fillRoundedRect(-this.boxW / 2, -this.boxH / 2, this.boxW, this.boxH, r);
-      g.lineStyle(2, 0xfff4bf, 1);
+      g.lineStyle(2, 0xffffff, 1);
       g.strokeRoundedRect(-this.boxW / 2, -this.boxH / 2, this.boxW, this.boxH, r);
-      this.txt.setColor("#2a2050");
+      this.txt.setColor(PRIMARY_TEXT);
+      return;
+    }
+    if (this.primary_) {
+      g.fillStyle(look === "pressed" ? 0xffd633 : look === "hover" ? 0xfff0a0 : PRIMARY_FILL, 1);
+      g.fillRoundedRect(-this.boxW / 2, -this.boxH / 2, this.boxW, this.boxH, r);
+      g.lineStyle(2, PRIMARY_STROKE, 1);
+      g.strokeRoundedRect(-this.boxW / 2, -this.boxH / 2, this.boxW, this.boxH, r);
+      this.txt.setColor(PRIMARY_TEXT);
       return;
     }
     const alpha = look === "pressed" ? this.baseAlpha + 0.3 : look === "hover" ? this.baseAlpha + 0.14 : this.baseAlpha;
@@ -86,16 +104,27 @@ export class Button extends Phaser.GameObjects.Container {
     this.txt.setColor(this.baseTextColor);
   }
 
-  /** 選ばれている状態。黄色に塗り、文字を濃い紫にする（面選びの現在のステージ・面、キー操作の対象）。 */
+  /** 選ばれている状態。白く塗り、文字を濃い紫にする（面選びの現在のステージ・面、キー操作の対象）。 */
   setSelected(on: boolean): this {
     this.selected = on;
     this.paint(on ? "selected" : "normal");
     return this;
   }
 
-  /** 文字の色を変える。選ばれている間は濃い紫が優先される。 */
+  /** 主ボタンにする（黄色）。画面の状況で「次に進む」操作が変わるときに使う（レッスンの RESET など）。 */
+  setPrimary(on: boolean): this {
+    this.primary_ = on;
+    this.paint(this.selected ? "selected" : "normal");
+    return this;
+  }
+
+  get primary(): boolean {
+    return this.primary_;
+  }
+
+  /** 文字の色を変える。選ばれている間と主ボタンは濃い紫が優先される。 */
   setTextColor(color: string): this {
-    if (!this.selected) this.txt.setColor(color);
+    if (!this.selected && !this.primary_) this.txt.setColor(color);
     return this;
   }
 
