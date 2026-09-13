@@ -13,6 +13,7 @@ import { audio } from "./shared";
 import { musicDanger } from "./musicDanger";
 import { wakeLock } from "./wakelock";
 import { shareText } from "./share";
+import { track } from "./analytics";
 import {
   OnlineSession,
   ApiError,
@@ -59,6 +60,8 @@ export class OnlineScene extends Phaser.Scene {
   private closing = false;
   private epoch = 0;
   private phase = "";
+  /** 計測用。試合が始まった時刻（ms）。0 なら試合中でない。 */
+  private startedAt = 0;
   private stalledMs = 0;
   private raise = false;
   private raiseHint: RaiseBar | null = null;
@@ -540,10 +543,18 @@ export class OnlineScene extends Phaser.Scene {
         this.prediction?.reset();
         audio.gameStart();
         audio.startBgm("game");
+        if (!this.startedAt) {
+          this.startedAt = Date.now();
+          track("start", { mode: "online", detail: state.kind });
+        }
       } else if (state.phase === "suspended") audio.stopBgm();
       else if (state.phase === "result" && state.result) {
         audio.stopBgm();
         this.showResult();
+        const r = state.result;
+        const outcome = r.reason === "desync" || r.reason === "server" ? "nocontest" : r.winner < 0 ? "draw" : r.winner === s.player ? "win" : "lose";
+        track("end", { mode: "online", detail: state.kind, outcome, seconds: this.startedAt ? Math.round((Date.now() - this.startedAt) / 1000) : 0 });
+        this.startedAt = 0;
         if (state.result.winner === s.player) {
           audio.win();
           haptics.win();
@@ -617,6 +628,7 @@ export class OnlineScene extends Phaser.Scene {
     if (state.phase === "waiting") {
       if (s.connection.invite)
         this.button(t("SHARE INVITE"), () => {
+          track("share", { mode: "online", detail: "invite" });
           void shareText(
             `${t("Play SWAPRISE with me!")}\n${location.origin}/?room=${s.connection.roomId}#invite=${s.connection.invite}`,
           ).then((result) => {

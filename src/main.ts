@@ -11,6 +11,7 @@ import { waitForUpdate } from "./render/update";
 import { setDocumentLanguage } from "./render/i18n";
 import { startScoreSync } from "./scores/client";
 import { fullscreen } from "./render/fullscreen";
+import { trackVisit } from "./render/analytics";
 
 // Service Worker。ビルド成果物を precache し、次回以降はオフラインでも開ける。
 // 新しい版があれば、メニューを触れるようになる前に切り替えを済ませる（遊んでいる最中に reload しない）
@@ -23,6 +24,8 @@ function loadFonts(): Promise<unknown> {
 
 Promise.all([waitForUpdate(), loadFonts()]).then(() => {
   setDocumentLanguage();
+  // 匿名 id を作る前に呼び、初めて開いた端末かを見分ける
+  trackVisit();
   startScoreSync();
   installHiDpiText();
   const layout = layoutFor("menu");

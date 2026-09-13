@@ -4,5 +4,7 @@ if (!/^\d+$/.test(pr ?? "")) throw new Error("PR_NUMBER is required");
 const config = JSON.parse(readFileSync("wrangler.jsonc", "utf8"));
 config.name = `swaprise-pr-${pr}`;
 config.routes = [];
+// 計測はプレビューの分を本番の dataset に混ぜない。
+for (const dataset of config.analytics_engine_datasets ?? []) dataset.dataset = "swaprise_preview_events";
 // Worker名ごとにDO名前空間が作られるため、本番の部屋へ接続しない。
 writeFileSync(".wrangler-preview.json", JSON.stringify(config, null, 2) + "\n");
