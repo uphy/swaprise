@@ -108,7 +108,6 @@ const JA: Record<string, string> = {
   "Surrender this match?": "この対戦を投了しますか？", "Leaving room…": "ルームから退出中…",
   "Could not leave yet. Check your connection and retry.": "まだ退出できません。接続を確認して再試行してください。",
   "P: pause   R: restart   Esc: menu   M: mute": "P: ポーズ   R: 再開   Esc: メニュー   M: 消音",
-  "P: pause   R: restart   Esc: menu   M: mute   U: undo   Y: redo   H: hint": "P: ポーズ   R: 再開   Esc: メニュー   M: 消音   U: 戻す   Y: 進める   H: ヒント",
   UNDO: "戻す", REDO: "進める", HINT: "ヒント",
   "The next move clears nothing. It sets up the move after it.": "次の手では何も消えません。その次の手のための準備です。",
   "match a row and a column": "横と縦を同時に揃える", "match a column": "縦に揃える", "match a row": "横に揃える",

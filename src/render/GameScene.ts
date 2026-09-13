@@ -307,7 +307,7 @@ export class GameScene extends Phaser.Scene {
     });
     // キーボード向けの案内。タッチ端末では出さない（ボタンがある）
     this.hintText = this.add
-      .text(0, 0, this.mode === "puzzle" ? t("P: pause   R: restart   Esc: menu   M: mute   U: undo   Y: redo   H: hint") : t("P: pause   R: restart   Esc: menu   M: mute"), { fontFamily: FONT_UI, fontSize: "12px", color: "rgba(255,255,255,0.55)" })
+      .text(0, 0, t("P: pause   R: restart   Esc: menu   M: mute"), { fontFamily: FONT_UI, fontSize: "12px", color: "rgba(255,255,255,0.55)" })
       .setOrigin(0.5);
     // 戻る操作の案内。盤面の外（画面の下端、横持ちのスマホは上端）に数秒だけ出す
     this.backHintText = this.add
@@ -472,19 +472,18 @@ export class GameScene extends Phaser.Scene {
         hint.setPosition(x, top + 334);
         const left = x + 60;
         this.puzzleHintText.setOrigin(0, 0).setAlign("left").setWordWrapWidth(Math.min(300, Math.max(160, W - left - 16)), true).setPosition(left, top + 4);
-      } else if (L.portrait) {
+      } else {
+        // ボタンは盤面の下の残り手数の行の下。ヒント文は縦持ちならその下、PC は下に余白がないので盤面の右
         const y = top + BOARD_H + 52;
         undo.setPosition(cx - 84, y);
         redo.setPosition(cx, y);
         hint.setPosition(cx + 84, y);
-        this.puzzleHintText.setOrigin(0.5, 0).setAlign("center").setWordWrapWidth(Math.min(W - 16, BOARD_W + 60), true).setPosition(cx, y + 26);
-      } else {
-        // PC は盤面の下にキー操作の案内があるので、ボタンとヒント文は盤面の右に置く
-        const left = v.ox + BOARD_W + 28;
-        undo.setPosition(left + 38, top + 16);
-        redo.setPosition(left + 122, top + 16);
-        hint.setPosition(left + 206, top + 16);
-        this.puzzleHintText.setOrigin(0, 0).setAlign("left").setWordWrapWidth(Math.min(300, Math.max(160, W - left - 16)), true).setPosition(left, top + 48);
+        if (L.portrait) {
+          this.puzzleHintText.setOrigin(0.5, 0).setAlign("center").setWordWrapWidth(Math.min(W - 16, BOARD_W + 60), true).setPosition(cx, y + 26);
+        } else {
+          const left = v.ox + BOARD_W + 28;
+          this.puzzleHintText.setOrigin(0, 0).setAlign("left").setWordWrapWidth(Math.min(300, Math.max(160, W - left - 16)), true).setPosition(left, top);
+        }
       }
     }
 
@@ -492,7 +491,8 @@ export class GameScene extends Phaser.Scene {
     this.pauseTitle.setPosition(W / 2, H / 2 - 40 - this.pauseButtons.length * 23 - 20);
     this.pauseButtons.forEach((b, i) => b.setPosition(W / 2, H / 2 - (this.pauseButtons.length - 1) * 23 + i * 46));
 
-    this.hintText.setPosition(W / 2, H - 10).setVisible(!L.touch);
+    // キー操作の案内。パズルは画面にボタンがあり、盤面の下に置くと重なるので出さない
+    this.hintText.setPosition(W / 2, H - 10).setVisible(!L.touch && this.mode !== "puzzle");
     this.backHintText.setWordWrapWidth(W - 16).setPosition(W / 2, L.phoneLandscape ? 6 + this.backHintText.height / 2 : H - 8 - this.backHintText.height / 2);
   }
 
