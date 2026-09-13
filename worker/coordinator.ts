@@ -1,6 +1,6 @@
 import { DurableObject } from "cloudflare:workers";
 import type { Env } from "./types";
-import { displayName, GAME_VERSION, type MatchKind } from "../src/net/protocol";
+import { displayName, GAME_VERSION, playerId, type MatchKind } from "../src/net/protocol";
 import { dayKey, emptyBudget, reserve, type Budget } from "./budget";
 import { json } from "./index";
 interface Assignment {
@@ -13,6 +13,7 @@ interface Waiting {
   queueId?: string;
   session: string;
   name: string;
+  player: string;
   visible: boolean;
   since: number;
   last: number;
@@ -216,6 +217,7 @@ export class Coordinator extends DurableObject<Env> {
         queueId: crypto.randomUUID(),
         session,
         name: displayName(u.searchParams.get("name")),
+        player: playerId(u.searchParams.get("player")),
         visible: u.searchParams.get("visible") !== "false",
         since:
           returned && returned.expires > Date.now()
@@ -272,7 +274,7 @@ export class Coordinator extends DurableObject<Env> {
         id,
         kind: "invite",
         invite,
-        members: [{ session, token, name: displayName(data.name) }],
+        members: [{ session, token, name: displayName(data.name), player: playerId(data.player) }],
       });
       await this.assign(session, id, token, "invite");
       return json({ roomId: id, token, invite });
@@ -281,7 +283,7 @@ export class Coordinator extends DurableObject<Env> {
       const token = crypto.randomUUID();
       const response = await this.room(join[1], "/join", {
         invite: data.invite,
-        member: { session, token, name: displayName(data.name) },
+        member: { session, token, name: displayName(data.name), player: playerId(data.player) },
       });
       if (!response.ok) return response;
       await this.assign(session, join[1], token, "invite");

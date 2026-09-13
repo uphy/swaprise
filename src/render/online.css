@@ -264,3 +264,29 @@
     grid-auto-flow: row;
   }
 }
+/* 選択画面の下に、対戦したことのある相手の戦績を並べる */
+.online-rivals {
+  margin: 4px 0 0;
+  font-size: var(--online-caption, 14px);
+  opacity: .85;
+}
+.online-rivals dt {
+  margin-bottom: 4px;
+  letter-spacing: .06em;
+}
+.online-rivals dd {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0;
+  padding: 2px 0;
+}
+.online-rivals dd span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.online-rivals dd span:last-child {
+  flex: none;
+  font-variant-numeric: tabular-nums;
+}

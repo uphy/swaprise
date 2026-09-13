@@ -1,6 +1,6 @@
 import Phaser from "phaser";
-import { onlineRecordLine, recordOnlineResult } from "./highscore";
-import { playerName, savePlayerName } from "../scores/client";
+import { onlineRecordLine, recentRivals, recordOnlineResult, rivalRecord } from "./highscore";
+import { playerId, playerName, savePlayerName } from "../scores/client";
 import { BoardView, announceOpponentChains } from "./BoardView";
 import { PlayerInput, P1_KEYS } from "./input";
 import { TouchInput } from "./touch";
@@ -325,7 +325,7 @@ export class OnlineScene extends Phaser.Scene {
       this.actions
         .querySelectorAll("button")
         .forEach((b) => (b.disabled = true));
-      const data = { name, version: GAME_VERSION, invite };
+      const data = { name, player: playerId(), version: GAME_VERSION, invite };
       if (kind === "random") {
         this.startQueue(name);
         return;
@@ -353,6 +353,25 @@ export class OnlineScene extends Phaser.Scene {
       this.button(t("FIND MATCH"), () => run("random"));
     }
     this.button(t("BACK TO MENU"), () => this.menu());
+    // 対戦したことのある相手を最後に対戦した順に出す。相手の端末が作った id で数えているので、名前を変えても同じ相手として続く
+    const rivals = recentRivals();
+    if (rivals.length) {
+      const list = document.createElement("dl");
+      list.className = "online-rivals";
+      const heading = document.createElement("dt");
+      heading.textContent = t("RECENT OPPONENTS");
+      list.append(heading);
+      for (const r of rivals) {
+        const row = document.createElement("dd");
+        const name = document.createElement("span");
+        name.textContent = r.name || t("Guest");
+        const line = document.createElement("span");
+        line.textContent = onlineRecordLine(r);
+        row.append(name, line);
+        list.append(row);
+      }
+      this.actions.append(list);
+    }
   }
   private startQueue(name: string): void {
     const attempt = ++this.queueAttempt;
@@ -404,6 +423,7 @@ export class OnlineScene extends Phaser.Scene {
     url.protocol = location.protocol === "https:" ? "wss:" : "ws:";
     url.search = new URLSearchParams({
       name,
+      player: playerId(),
       version: GAME_VERSION,
       visible: String(!document.hidden),
     }).toString();
@@ -551,7 +571,7 @@ export class OnlineScene extends Phaser.Scene {
     if (s.error) this.status.textContent = s.error;
     else if (state.phase === "waiting")
       this.status.textContent = other
-        ? t("{name} joined. Starting…", { name: other.name })
+        ? t("{name} joined. Starting…", { name: other.name }) + this.rivalNote(other)
         : t("Waiting for your friend…");
     else if (state.phase === "countdown")
       this.status.textContent = `${Math.max(1, Math.ceil((state.startAt - Date.now()) / 1000))}…`;
@@ -562,7 +582,7 @@ export class OnlineScene extends Phaser.Scene {
         ? t("The match continues while settings are open.")
         : Date.now() < this.backHintUntil
           ? t("Back does not leave the game. Use SETTINGS to leave.")
-          : `${other?.name ?? t("Opponent")} · ${t("playing")}${state.remaining <= 60000 ? ` · ${Math.ceil(state.remaining / 1000)}s` : ""}`;
+          : `${other?.name ?? t("Opponent")}${this.rivalNote(other)} · ${t("playing")}${state.remaining <= 60000 ? ` · ${Math.ceil(state.remaining / 1000)}s` : ""}`;
     else if (state.phase === "closed")
       this.status.textContent = t("The opponent left or the room closed.");
     else if (state.result) {
@@ -732,17 +752,27 @@ export class OnlineScene extends Phaser.Scene {
     const invalid = r.reason === "desync" || r.reason === "server";
     const me = this.session?.player ?? 0;
     const matchId = this.session?.state?.match?.id;
+    const other = this.session?.state?.seats[1 - me];
     // 無効試合は数えない。降参・切断負けは部屋が裁定した勝敗なので通常どおり数える
     const record = !invalid && matchId
-      ? recordOnlineResult(matchId, r.winner < 0 ? "draw" : r.winner === me ? "win" : "lose")
+      ? recordOnlineResult(matchId, r.winner < 0 ? "draw" : r.winner === me ? "win" : "lose", other ? { id: other.id ?? "", name: other.name } : undefined)
       : null;
+    const rival = record && other?.id ? record.rivals[other.id] : null;
     this.views.forEach((view, i) => {
       const b = view.board;
       const title = invalid ? t("NO CONTEST") : r.winner < 0 ? t("DRAW") : r.winner === i ? t("WIN") : t("LOSE");
       if (!invalid && r.winner >= 0) view.playResult(r.winner === i ? "win" : "lose");
-      const recordLine = record && i === me ? `\n${t("ONLINE")}  ${onlineRecordLine(record)}` : "";
+      // 通算の下に、この相手との戦績を出す。相手が旧クライアントで id が無ければ通算だけ
+      const recordLine = record && i === me
+        ? `\n${t("ONLINE")}  ${onlineRecordLine(record)}${rival ? `\n${t("vs {name}", { name: this.boardName(rival.name) })}  ${onlineRecordLine(rival)}` : ""}`
+        : "";
       view.showOverlay(title, `${t("MAX CHAIN")} x${b.maxChain}\n${t("COMBOS")} ${b.stats.combos}  ${t("CHAINS")} ${b.stats.chains}${recordLine}`);
     });
+  }
+  /** 相手と対戦したことがあれば「 · 3W 1L」を添える。初対戦なら空 */
+  private rivalNote(other: { id?: string } | null | undefined): string {
+    const r = other?.id ? rivalRecord(other.id) : null;
+    return r ? ` · ${onlineRecordLine(r)}` : "";
   }
   private boardName(name: string): string {
     const chars = [...name];

@@ -13,7 +13,7 @@ function setup(rtt = 20) {
   const messages: ServerMessage[][] = [[], []];
   const room = new RoomEngine("invite", (i, m) => messages[i].push(m));
   for (let i = 0; i < 2; i++) {
-    room.join({ session: `s${i}`, token: `t${i}`, name: `n${i}` });
+    room.join({ session: `s${i}`, token: `t${i}`, name: `n${i}`, player: `p${i}` });
     room.connect(i, true, 0);
     room.message(i, { type: "latency", rtt }, 0);
   }
@@ -251,7 +251,7 @@ it("閉じた招待部屋への再参加は元の参加者でも拒否する", (
 it("招待部屋を退出しても相手の席を残し、同じ人が入り直せる", () => {
   const room = new RoomEngine("invite", () => {});
   for (let i = 0; i < 2; i++) {
-    room.join({ session: `s${i}`, token: `t${i}`, name: `n${i}` });
+    room.join({ session: `s${i}`, token: `t${i}`, name: `n${i}`, player: `p${i}` });
     room.connect(i, true, 0);
     room.message(i, { type: "latency", rtt: 50 }, 0);
   }
@@ -261,8 +261,10 @@ it("招待部屋を退出しても相手の席を残し、同じ人が入り直�
   expect(room.state.seats[0]?.connected).toBe(true);
   // 残った人は準備済みのまま。戻ってきた相手が RTT を測り終えれば、操作なしで始まる
   expect(room.state.seats[0]?.ready).toBe(true);
-  expect(room.join({ session: "s1", token: "new", name: "Returned" })).toBe(1);
+  expect(room.join({ session: "s1", token: "new", name: "Returned", player: "p1-new" })).toBe(1);
   expect(room.members[1]?.token).toBe("new");
+  // 座席には端末の匿名 id を載せ、相手の端末が相手別の戦績を数える鍵にする。無ければ ""
+  expect(room.state.seats.map((s) => s?.id)).toEqual(["p0", "p1-new"]);
   room.connect(1, true, 0);
   expect(room.canStart()).toBe(false);
   room.message(1, { type: "latency", rtt: 50 }, 0);
@@ -272,6 +274,7 @@ it("招待部屋を退出しても相手の席を残し、同じ人が入り直�
   expect(room.state.phase).toBe("waiting");
   expect(room.members).toEqual([null, null]);
   expect(room.join({ session: "s0", token: "again", name: "Returned" })).toBe(0);
+  expect(room.state.seats[0]?.id).toBe("");
 });
 it("対戦後に招待部屋を退出すると盤面を片付けて次の参加者を待つ", () => {
   const { room } = setup();

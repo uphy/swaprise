@@ -2,11 +2,20 @@ import { displayName } from "../net/protocol";
 import { scoreRules, validSubmission, type Submission, type ScoreMode, type RankedScore, type ScoreStanding } from "./model";
 
 const NAME = "swaprise.name.v1";
+const PLAYER = "swaprise.player.v1";
 const CONSENT = "swaprise.scores.publish.v1";
 const QUEUE = "swaprise.scores.pending.v1";
 const read = (key: string): string | null => { try { return localStorage.getItem(key); } catch { return null; } };
 const write = (key: string, value: string): void => { try { localStorage.setItem(key, value); } catch { /* Full/private storage must not interrupt play. */ } };
 export const playerName = (): string => read(NAME) ?? "";
+/** 端末の匿名 id。初回に作って持ち続け、相手の端末が相手別の戦績を数える鍵にする。名前と違って変えられない */
+export function playerId(): string {
+  const saved = read(PLAYER);
+  if (saved && /^[0-9a-f-]{36}$/.test(saved)) return saved;
+  const id = crypto.randomUUID();
+  write(PLAYER, id);
+  return id;
+}
 export const savePlayerName = (name: string): string => { const value = displayName(name); write(NAME, value); return value; };
 export const publication = (): boolean | null => read(CONSENT) === null ? null : read(CONSENT) === "true";
 let controller: AbortController | null = null;

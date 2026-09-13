@@ -24,6 +24,8 @@ export interface Match {
 export interface Seat {
   rtt?: number;
   name: string;
+  /** 端末が作った匿名 id。相手別の戦績の鍵にする。送ってこない旧クライアントは "" */
+  id: string;
   connected: boolean;
   visible: boolean;
   ready: boolean;
@@ -108,6 +110,10 @@ export function displayName(value: unknown): string {
     ? [...value.replace(/[\p{C}\p{Zl}\p{Zp}]/gu, "").trim()].slice(0, 20).join("").trim() ||
         "Guest"
     : "Guest";
+}
+/** 端末が作った匿名 id（UUID）。形式が違えば "" にして、相手別の戦績には数えない */
+export function playerId(value: unknown): string {
+  return typeof value === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(value) ? value : "";
 }
 export function isInt(
   value: unknown,
