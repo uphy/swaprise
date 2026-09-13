@@ -472,17 +472,19 @@ export class GameScene extends Phaser.Scene {
         hint.setPosition(x, top + 334);
         const left = x + 60;
         this.puzzleHintText.setOrigin(0, 0).setAlign("left").setWordWrapWidth(Math.min(300, Math.max(160, W - left - 16)), true).setPosition(left, top + 4);
-      } else {
+      } else if (L.portrait) {
         const y = top + BOARD_H + 52;
         undo.setPosition(cx - 84, y);
         redo.setPosition(cx, y);
         hint.setPosition(cx + 84, y);
-        if (L.portrait) {
-          this.puzzleHintText.setOrigin(0.5, 0).setAlign("center").setWordWrapWidth(Math.min(W - 16, BOARD_W + 60), true).setPosition(cx, y + 26);
-        } else {
-          const left = v.ox + BOARD_W + 28;
-          this.puzzleHintText.setOrigin(0, 0).setAlign("left").setWordWrapWidth(Math.min(300, Math.max(160, W - left - 16)), true).setPosition(left, top);
-        }
+        this.puzzleHintText.setOrigin(0.5, 0).setAlign("center").setWordWrapWidth(Math.min(W - 16, BOARD_W + 60), true).setPosition(cx, y + 26);
+      } else {
+        // PC は盤面の下にキー操作の案内があるので、ボタンとヒント文は盤面の右に置く
+        const left = v.ox + BOARD_W + 28;
+        undo.setPosition(left + 38, top + 16);
+        redo.setPosition(left + 122, top + 16);
+        hint.setPosition(left + 206, top + 16);
+        this.puzzleHintText.setOrigin(0, 0).setAlign("left").setWordWrapWidth(Math.min(300, Math.max(160, W - left - 16)), true).setPosition(left, top + 48);
       }
     }
 
