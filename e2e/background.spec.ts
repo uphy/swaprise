@@ -46,13 +46,13 @@ test("ポーズ中は背景も止まり、画面回転で残り時間の色を�
     scene.update(0, 0);
     const before = { sky: getComputedStyle(document.body).backgroundImage, pulse: getComputedStyle(document.body, "::before").opacity };
     scene.paused = true;
-    const orb = scene.bg.orbs[0].img;
-    const position = { x: orb.x, y: orb.y, scale: orb.scaleX };
+    const orb = scene.bg.orbs[0];
+    const position = { x: orb.x, y: orb.y, scale: orb.scale };
     for (let i = 0; i < 60; i++) scene.update(0, 1000 / 60);
     return {
       before,
       after: { sky: getComputedStyle(document.body).backgroundImage, pulse: getComputedStyle(document.body, "::before").opacity },
-      position, afterPosition: { x: orb.x, y: orb.y, scale: orb.scaleX },
+      position, afterPosition: { x: orb.x, y: orb.y, scale: orb.scale },
     };
   });
   expect(state.after).toEqual(state.before);
@@ -68,6 +68,36 @@ test("ポーズ中は背景も止まり、画面回転で残り時間の色を�
   await page.evaluate(() => (window as any).__swaprise.scene.scene.start("menu"));
   await page.waitForFunction(() => document.body.dataset.sky === "menu");
   expect(await page.evaluate(() => getComputedStyle(document.body, "::before").opacity)).toBe("0");
+});
+
+test("光の玉は canvas ではなく画面全体の固定要素にあり、canvas の外の余白にも続く", async ({ page }) => {
+  // PC の横長の窓。canvas（800x520 の比）の上下に余白ができる
+  await page.setViewportSize({ width: 1200, height: 900 });
+  await page.goto("/?bgm=0&opening=0");
+  await page.waitForFunction(() => !!(window as any).__swapriseScenes?.menu);
+  await page.waitForTimeout(300);
+  const info = await page.evaluate(() => {
+    const orbs = document.getElementById("orbs")!;
+    const rect = orbs.getBoundingClientRect();
+    const canvas = document.querySelector("canvas")!.getBoundingClientRect();
+    return {
+      count: orbs.querySelectorAll(".orb").length,
+      covers: rect.top === 0 && rect.left === 0 && rect.width === window.innerWidth && rect.height === window.innerHeight,
+      canvasTop: canvas.top,
+      behindCanvas: Number(getComputedStyle(orbs).zIndex) < Number(getComputedStyle(document.getElementById("app")!).zIndex),
+      pointer: getComputedStyle(orbs).pointerEvents,
+    };
+  });
+  expect(info.count).toBe(10);
+  expect(info.covers).toBe(true);
+  expect(info.canvasTop).toBeGreaterThan(40);
+  expect(info.behindCanvas).toBe(true);
+  expect(info.pointer).toBe("none");
+  // 玉は動く（メニューでも update が呼ばれる）
+  const before = await page.evaluate(() => (window as any).__swapriseScenes.menu.bgView.orbs.map((o: any) => o.y));
+  await page.waitForTimeout(500);
+  const after = await page.evaluate(() => (window as any).__swapriseScenes.menu.bgView.orbs.map((o: any) => o.y));
+  expect(after).not.toEqual(before);
 });
 
 test("対戦は危険な側の外周だけ赤くなり、天井接触を強調して復帰時に滑らかに戻す", async ({ page }) => {

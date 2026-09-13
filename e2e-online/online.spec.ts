@@ -44,6 +44,8 @@ test("招待URLから2人で対戦し、降参して再戦する", async ({ brow
   p.on("pageerror", (e) => errors.push(e.message));
   q.on("pageerror", (e) => errors.push(e.message));
   await enter(p);
+  // 主ボタン（黄色）は画面に 1 つ。選択画面では INVITE FRIEND
+  await expect(p.locator(".online-actions button.primary")).toHaveText(["INVITE FRIEND"]);
   await p.getByRole("textbox").fill("招待した人");
   await p.getByRole("button", { name: "INVITE FRIEND", exact: true }).click();
   await expect(p.getByRole("button", { name: "SHARE INVITE" })).toBeVisible();
@@ -74,9 +76,13 @@ test("招待URLから2人で対戦し、降参して再戦する", async ({ brow
   // 案内は数秒で消え、相手の名前の表示に戻る
   await expect(q.getByRole("status")).toContainText("招待した人", { timeout: 10000 });
   await p.getByRole("button", { name: "SETTINGS", exact: true }).click();
+  await expect(p.locator(".online-actions button.primary")).toHaveText(["RESUME"]);
   await p.getByRole("button", { name: "SURRENDER", exact: true }).click();
+  // 降参の確認では、やめる側の BACK が主ボタン。YES, SURRENDER は黄色にしない
+  await expect(p.locator(".online-actions button.primary")).toHaveText(["BACK"]);
   await p.getByRole("button", { name: "YES, SURRENDER", exact: true }).click();
   await expect(q.getByRole("status")).toContainText("YOU WIN");
+  await expect(q.locator(".online-actions button.primary")).toHaveText(["REMATCH"]);
   await expect(p.getByRole("status")).toContainText("YOU LOSE");
   // 結果画面での戻る操作も何もしない。メニューへは画面のボタンから
   await p.goBack();

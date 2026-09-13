@@ -694,7 +694,7 @@ export class MenuScene extends Phaser.Scene {
     const info = this.add.text(cx, infoY, "", { fontFamily: FONT, fontSize: "13px", color: "#9a9ab0", align: "center" }).setOrigin(0.5);
     panel.add(info);
     const btnY = infoY + 38;
-    const play = new Button(this, cx - 60, btnY, t("PLAY"), () => this.startPuzzle(state.stage * PUZZLES_PER_STAGE + state.face), { minWidth: 100, minHeight: 40 }).setName("play");
+    const play = new Button(this, cx - 60, btnY, t("PLAY"), () => this.startPuzzle(state.stage * PUZZLES_PER_STAGE + state.face), { minWidth: 100, minHeight: 40, primary: true }).setName("play");
     const close = new Button(this, cx + 60, btnY, t("CLOSE"), () => this.closePicker(), { minWidth: 100, minHeight: 40 });
     panel.add([play, close]);
 

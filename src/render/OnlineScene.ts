@@ -199,10 +199,12 @@ export class OnlineScene extends Phaser.Scene {
     this.root.style.setProperty("--online-item", `${item * scale}px`);
     this.root.style.setProperty("--online-caption", `${MENU_TYPE.caption * scale}px`);
   }
-  private button(label: string, action: () => void): HTMLButtonElement {
+  /** @param primary 主ボタン（黄色）。画面に 1 つだけ。並び順ではなくここで決める（危険な操作を先頭に置いても黄色にならない） */
+  private button(label: string, action: () => void, primary = false): HTMLButtonElement {
     const button = document.createElement("button");
     button.textContent = label;
     if (label === t("BACK TO MENU")) button.className = "online-back";
+    if (primary) button.classList.add("primary");
     button.onclick = () => {
       audio.start();
       action();
@@ -247,7 +249,7 @@ export class OnlineScene extends Phaser.Scene {
       if (this.closing || this.epoch !== epoch) return;
       this.status.textContent = (e as Error).message;
       this.actions.replaceChildren();
-      this.button(t("RETRY"), () => void this.initialize());
+      this.button(t("RETRY"), () => void this.initialize(), true);
       this.button(t("BACK TO MENU"), () => this.menu());
     }
   }
@@ -275,12 +277,12 @@ export class OnlineScene extends Phaser.Scene {
         if (this.closing || this.epoch !== epoch) return;
         this.actions.replaceChildren();
         this.status.textContent = t("Could not complete the request. Check your connection and retry.");
-        this.button(t("RETRY"), () => void this.initialize());
+        this.button(t("RETRY"), () => void this.initialize(), true);
         this.button(t("BACK TO MENU"), () => this.menu());
       }
     };
-    if (participation.connection) this.button(t("RESUME HERE"), () => void run(true));
-    this.button(participation.connection ? t("LEAVE AND CONTINUE") : t("CANCEL SEARCH"), () => void run(false));
+    if (participation.connection) this.button(t("RESUME HERE"), () => void run(true), true);
+    this.button(participation.connection ? t("LEAVE AND CONTINUE") : t("CANCEL SEARCH"), () => void run(false), !participation.connection);
     this.button(t("BACK TO MENU"), () => this.menu());
   }
   private async checkParticipation(message: string): Promise<void> {
@@ -297,7 +299,7 @@ export class OnlineScene extends Phaser.Scene {
       if (this.closing || this.epoch !== epoch) return;
       this.actions.replaceChildren();
         this.status.textContent = t("Could not check participation. Check your connection and retry.");
-      this.button(t("RETRY"), () => void this.initialize());
+      this.button(t("RETRY"), () => void this.initialize(), true);
       this.button(t("BACK TO MENU"), () => this.menu());
     }
   }
@@ -345,9 +347,9 @@ export class OnlineScene extends Phaser.Scene {
           if (!this.closing && this.epoch === epoch) void this.checkParticipation(e.message);
         });
     };
-    if (roomId && invite) this.button(t("JOIN ROOM"), () => run("join"));
+    if (roomId && invite) this.button(t("JOIN ROOM"), () => run("join"), true);
     else {
-      this.button(t("INVITE FRIEND"), () => run("invite"));
+      this.button(t("INVITE FRIEND"), () => run("invite"), true);
       this.button(t("FIND MATCH"), () => run("random"));
     }
     this.button(t("BACK TO MENU"), () => this.menu());
@@ -369,7 +371,7 @@ export class OnlineScene extends Phaser.Scene {
       if (applyPendingUpdate()) return;
       this.status.textContent = error.message;
       this.actions.replaceChildren();
-      this.button(t("RELOAD"), () => location.reload());
+      this.button(t("RELOAD"), () => location.reload(), true);
       this.button(t("BACK TO MENU"), () => this.menu());
       return;
     }
@@ -438,7 +440,7 @@ export class OnlineScene extends Phaser.Scene {
       const waited = Date.now() - this.waitingSince;
       // 待っても相手が来なければ CPU 戦を提案する。CPU を人に見せかけず、押したら待機列から抜ける
       if (!this.cpuOffer && waited >= this.cpuOfferMs) {
-        this.cpuOffer = this.button(t("PLAY VS CPU"), () => this.playCpu());
+        this.cpuOffer = this.button(t("PLAY VS CPU"), () => this.playCpu(), true);
         this.cpuOffer.setAttribute("name", "play-cpu");
         this.actions.prepend(this.cpuOffer);
       }
@@ -506,7 +508,7 @@ export class OnlineScene extends Phaser.Scene {
       audio.stopBgm();
       this.status.textContent = s.error || t("Joining room…");
       this.actions.replaceChildren();
-      this.button(t("CHECK PARTICIPATION"), () => this.recoverSession());
+      this.button(t("CHECK PARTICIPATION"), () => this.recoverSession(), true);
       this.button(t("BACK TO MENU"), () => this.menu());
       return;
     }
@@ -588,7 +590,7 @@ export class OnlineScene extends Phaser.Scene {
     this.actionKey = key;
     this.actions.replaceChildren();
     if (s.error) {
-      this.button(t("CHECK PARTICIPATION"), () => this.recoverSession());
+      this.button(t("CHECK PARTICIPATION"), () => this.recoverSession(), true);
       this.button(t("LEAVE ROOM"), () => this.menu());
       return;
     }
@@ -605,7 +607,7 @@ export class OnlineScene extends Phaser.Scene {
                   ? t("Could not share the invite.")
                   : t("Invite shared.");
           });
-        });
+        }, true);
       this.button(t("LEAVE ROOM"), () => this.menu());
     } else if (state.phase === "playing" || state.phase === "suspended") {
       if (!this.settings && playing)
@@ -631,20 +633,21 @@ export class OnlineScene extends Phaser.Scene {
           this.settings = false;
           this.actionKey = "";
           this.refresh();
-        });
+        }, true);
         this.button(t("SURRENDER"), () => {
           this.actions.replaceChildren();
           this.status.textContent = t("Surrender this match?");
           this.button(t("YES, SURRENDER"), () => s.send({ type: "surrender" }));
+          // 確認では、やめる側（BACK）を主ボタンにする。降参を黄色にしない
           this.button(t("BACK"), () => {
             this.actionKey = "";
             this.refresh();
-          });
+          }, true);
         });
       }
     } else if (state.phase === "result") {
       if (other?.connected && !me?.rematch)
-        this.button(t("REMATCH"), () => s.send({ type: "rematch" }));
+        this.button(t("REMATCH"), () => s.send({ type: "rematch" }), true);
       if (state.kind === "random")
         this.button(t("NEXT MATCH"), () => {
           this.actions.replaceChildren();
@@ -664,7 +667,8 @@ export class OnlineScene extends Phaser.Scene {
               displayName(playerName()),
             );
           });
-        });
+        // REMATCH が出ていなければ（相手が去った・再戦を申し込み済み）NEXT MATCH が次の一手
+        }, !(other?.connected && !me?.rematch));
       this.button(t("BACK TO MENU"), () => this.menu());
     } else if (state.phase === "closed")
       this.button(t("BACK TO MENU"), () => this.menu());
@@ -805,7 +809,7 @@ export class OnlineScene extends Phaser.Scene {
       if (left) finish();
       else {
         this.status.textContent = t("Could not leave yet. Check your connection and retry.");
-        this.button(t("RETRY"), () => this.menu());
+        this.button(t("RETRY"), () => this.menu(), true);
         this.button(t("BACK TO MENU"), finish);
       }
     });

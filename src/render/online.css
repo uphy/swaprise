@@ -67,7 +67,8 @@
   cursor: pointer;
   touch-action: manipulation;
 }
-.online-actions button:first-of-type {
+/* 主ボタン。画面に 1 つだけ。並び順ではなく OnlineScene が明示的に付ける（YES, SURRENDER のような危険な操作を黄色にしない） */
+.online-actions button.primary {
   color: #2a2050;
   background: #ffe066;
   border-color: #fff4bf;

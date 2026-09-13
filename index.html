@@ -32,6 +32,10 @@
       #app { position: relative; box-sizing: border-box; width: 100vw; height: 100vh; height: 100dvh; padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
       /* 中央寄せは Phaser の autoCenter に任せる。CSS でも寄せると二重にずれる */
       #game { width: 100%; height: 100%; }
+      /* 空に浮かぶ光の玉（src/render/orbs.ts）。canvas の外の余白にも続くよう、canvas ではなく画面全体の固定要素に置く。#app（canvas）より下 */
+      #app { z-index: 1; }
+      #orbs { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
+      #orbs .orb { position: absolute; left: 0; top: 0; border-radius: 50%; will-change: transform; background: radial-gradient(circle, rgba(255,255,255,.55) 0%, rgba(255,255,255,.18) 50%, rgba(255,255,255,0) 100%); }
       canvas { touch-action: none; }
     </style>
   </head>
