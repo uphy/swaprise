@@ -405,14 +405,17 @@ export class GameScene extends Phaser.Scene {
         // 縦持ちは盤面の下
         this.lessonText.setOrigin(0.5, 0).setAlign("center").setWordWrapWidth(Math.min(W - 16, BOARD_W + 60), true).setPosition(v.ox + BOARD_W / 2, top + BOARD_H + barH + 18);
         this.lessonStuckText?.setOrigin(0.5, 0).setAlign("center").setWordWrapWidth(Math.min(W - 16, BOARD_W + 60), true).setPosition(v.ox + BOARD_W / 2, this.lessonText.y + this.lessonText.height + 6);
-        this.lessonReset?.setPosition(v.ox + BOARD_W / 2, this.lessonText.y + this.lessonText.height + 22 + (this.lessonStuck ? 22 : 0));
+        // 案内が出ている間は、その高さ（日本語は 2 行になる）の分だけ RESET を下げる
+        const below = this.lessonStuck && this.lessonStuckText ? this.lessonStuckText.y + this.lessonStuckText.height : this.lessonText.y + this.lessonText.height;
+        this.lessonReset?.setPosition(v.ox + BOARD_W / 2, below + 22);
       } else {
         // 横長（PC・横持ちのスマホ）は盤面の右。横持ちのスマホは HUD の列（幅 100）の右に置く
         const left = v.ox + BOARD_W + (L.phoneLandscape ? 124 : 28);
         const sideW = Math.min(300, Math.max(160, W - left - 16));
         this.lessonText.setOrigin(0, 0).setAlign("left").setWordWrapWidth(sideW, true).setPosition(left, top + (L.phoneLandscape ? 4 : 0));
         this.lessonStuckText?.setOrigin(0, 0).setAlign("left").setWordWrapWidth(sideW, true).setPosition(left, this.lessonText.y + this.lessonText.height + 8);
-        this.lessonReset?.setPosition(left + 52, this.lessonText.y + this.lessonText.height + 26 + (this.lessonStuck ? 24 : 0));
+        const below = this.lessonStuck && this.lessonStuckText ? this.lessonStuckText.y + this.lessonStuckText.height : this.lessonText.y + this.lessonText.height;
+        this.lessonReset?.setPosition(left + 52, below + 26);
       }
     }
 
@@ -584,6 +587,8 @@ export class GameScene extends Phaser.Scene {
     this.lessonSettledFrames = g.boards[0].isSettled() ? this.lessonSettledFrames + 1 : 0;
     if (lesson.rows && !this.lessonStuck && !g.lessonDone && this.lessonSwapped && this.lessonSettledFrames >= 20) {
       this.lessonStuck = true;
+      // 説明の本文は消して見出しだけ残す。壊れた盤面では本文の手順は使えず、縦の場所も要る（日本語は案内が 2 行になる）
+      this.lessonText?.setText(lessonText(lesson.id, this.layout.touch).title);
       this.lessonStuckText?.setVisible(true);
       this.lessonReset?.setSelected(true);
       this.place();

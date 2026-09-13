@@ -247,4 +247,25 @@ test.describe("スマホ・日本語", () => {
     expect(body.width).toBeLessThanOrEqual(body.board);
     await page.screenshot({ path: `${SHOT}/lesson-3-phone-ja-done.png` });
   });
+
+  test("届かない手のあとの案内（2 行）が RESET と縦に重ならない", async ({ page }) => {
+    await openLesson(page, 1);
+    await page.evaluate(() => (window as any).__swaprise.scene.scene.pause());
+    await swapAt(page, 0, 0);
+    await page.evaluate(() => {
+      const p = (window as any).__swaprise;
+      for (let i = 0; i < 60; i++) p.tick([{ moveX: 0, moveY: 0, swap: false, raise: false }]);
+    });
+    const pos = await page.evaluate(() => {
+      const p = (window as any).__swaprise;
+      const stuck = p.scene.children.getByName("lesson-stuck");
+      const reset = p.scene.children.getByName("lesson-reset");
+      return { visible: stuck.visible, stuckBottom: stuck.y + stuck.height, resetTop: reset.y - 16, screen: p.layout.height };
+    });
+    expect(pos.visible).toBe(true);
+    expect(pos.stuckBottom).toBeLessThan(pos.resetTop);
+    expect(pos.resetTop + 32).toBeLessThan(pos.screen);
+    await page.evaluate(() => (window as any).__swaprise.scene.scene.resume());
+    await page.screenshot({ path: `${SHOT}/lesson-1-stuck-phone-ja.png` });
+  });
 });
