@@ -142,6 +142,8 @@ jobs:
       - name: プレビュー版をアップロード
         id: upload
         run: |
+          # tee に繋ぐと wrangler の失敗が隠れて job が緑のまま空の URL をコメントするので、pipefail で落とす
+          set -o pipefail
           node tools/prepare-preview.mjs
           node tools/prepare-score-database.mjs .wrangler-preview.json .wrangler-preview.json
           pnpm exec wrangler deploy -c .wrangler-preview.json | tee upload.log

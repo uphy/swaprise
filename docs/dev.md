@@ -118,7 +118,9 @@ curl -s "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/an
 
 無料枠は書き込み 1 日 10 万行、読み取り 1 日 1 万問い合わせ。1 試合で 2 行なので、1 日 3 万試合まで無料に収まる。
 
-送らない条件: ブラウザが Do Not Track か Global Privacy Control を出しているとき、URL に `?track=0` があるとき、`http(s)` 以外で開いたとき。手元の `pnpm dev` / `pnpm preview` では `/api/track` が 404 になるだけで、遊びには影響しない。`wrangler dev` にはバインディングがあるが書き込み先は無く、何も残らない。
+送るのは本番（`swaprise.uphy.dev`）と PR プレビュー（`*.workers.dev`）で開いたときだけ。手元の `pnpm dev` / `pnpm preview` / `wrangler dev`（e2e を含む）からは送らない（`/api/track` が無い環境で 404 が console に残り、e2e の「エラーなし」「API を呼ばない」の確認が落ちる）。ブラウザが Do Not Track か Global Privacy Control を出しているとき、URL に `?track=0` があるときも送らない。
+
+Analytics Engine は Cloudflare のダッシュボード（Workers & Pages → Analytics Engine）で一度有効にしておく。有効でないと `wrangler deploy` がバインディングを拒み、本番とプレビューのデプロイが落ちる。
 
 ## 配信
 

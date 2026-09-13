@@ -4,8 +4,8 @@ import { language } from "./i18n";
 /**
  * 利用の計測。開いた・始めた・終えた・共有した、の 4 つの出来事を /api/track へ送る（worker/track.ts）。
  * 何が効いたかを知るためのもので、送るのは端末の匿名 id・遊び方・結果・流入元だけ。名前は送らない。
- * 送信は投げっぱなしで、失敗しても遊びに影響しない。ブラウザが「追跡しない」（Do Not Track / Global Privacy Control）を
- * 出しているときと、URL に ?track=0 があるときは送らない。
+ * 送信は投げっぱなしで、失敗しても遊びに影響しない。送るのは本番と PR プレビューの Worker で開いたときだけで、
+ * ブラウザが「追跡しない」（Do Not Track / Global Privacy Control）を出しているときと、URL に ?track=0 があるときは送らない。
  */
 
 export type TrackEvent = "visit" | "start" | "end" | "share";
@@ -47,9 +47,14 @@ export function visitFields(input: { referrer: string; search: string; ownHost: 
   };
 }
 
+/** 送る先。本番と PR プレビューの Worker だけ。手元の dev / preview（e2e を含む）には /api/track が無く、404 が console に残る */
+export function trackingHost(hostname: string): boolean {
+  return hostname === "swaprise.uphy.dev" || hostname.endsWith(".workers.dev");
+}
+
 function optedOut(): boolean {
   if (typeof navigator === "undefined" || typeof location === "undefined") return true;
-  if (!/^https?:$/.test(location.protocol)) return true;
+  if (location.protocol !== "https:" || !trackingHost(location.hostname)) return true;
   if (new URLSearchParams(location.search).get("track") === "0") return true;
   const n = navigator as Navigator & { globalPrivacyControl?: boolean };
   return navigator.doNotTrack === "1" || n.globalPrivacyControl === true;

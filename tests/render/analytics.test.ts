@@ -1,5 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { referrerHost, visitFields } from "../../src/render/analytics";
+import { referrerHost, trackingHost, visitFields } from "../../src/render/analytics";
+
+describe("trackingHost", () => {
+  it("本番と PR プレビューの Worker だけに送り、手元の dev / preview には送らない", () => {
+    expect(trackingHost("swaprise.uphy.dev")).toBe(true);
+    expect(trackingHost("swaprise-pr-66.yuhi-ishikura.workers.dev")).toBe(true);
+    expect(trackingHost("localhost")).toBe(false);
+    expect(trackingHost("127.0.0.1")).toBe(false);
+    expect(trackingHost("192.168.1.20")).toBe(false);
+  });
+});
 
 describe("referrerHost", () => {
   it("流入元のホスト名だけを残し、自分のサイト内の遷移と壊れた URL は空にする", () => {
