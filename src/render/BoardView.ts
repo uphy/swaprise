@@ -44,6 +44,9 @@ export class BoardView {
   private readonly cursor: Phaser.GameObjects.Image;
   private readonly showSwapCursor = !isTouchDevice();
   private readonly touchGfx: Phaser.GameObjects.Graphics;
+  /** レッスンの目印。動かす 2 マスを黄色の枠で点滅させる */
+  private readonly hintGfx: Phaser.GameObjects.Graphics;
+  private hintCells: { x: number; y: number }[] = [];
   touch: TouchInput | null = null;
   private readonly bg: Phaser.GameObjects.Rectangle;
   private readonly frame: Phaser.GameObjects.Rectangle;
@@ -111,8 +114,8 @@ export class BoardView {
     private readonly showLevel: boolean,
     /** タイムアタックの制限時間（フレーム）。指定すると経過時間の代わりに残り時間を出す。 */
     private readonly timeLimit: number | null = null,
-    /** パズル。得点・時間の代わりに面の名前と残り手数を出す。 */
-    private readonly puzzle = false,
+    /** パズルは得点・時間の代わりに面の名前と残り手数、レッスンは課の名前だけを出す。 */
+    private readonly style: "" | "puzzle" | "lesson" = "",
   ) {
     this.root = scene.add.container(0, 0);
     this.dangerGlow = new DangerGlow(scene);
@@ -138,6 +141,8 @@ export class BoardView {
     this.root.add(this.cursor);
     this.touchGfx = scene.add.graphics();
     this.root.add(this.touchGfx);
+    this.hintGfx = scene.add.graphics();
+    this.root.add(this.hintGfx);
     // 消えたパネルの破片。柄の絵を小さく回しながら飛ばす（オープニングと同じ）
     KIND_COLORS.forEach((_, kind) => {
       const e = scene.add.particles(0, 0, `panel-${kind}`, {
@@ -171,10 +176,26 @@ export class BoardView {
       .text(0, -34, "", { fontFamily: FONT_UI, fontSize: "34px", color: "#ffe066", fontStyle: "700", stroke: "#3a1a5a", strokeThickness: 6 })
       .setOrigin(0.5);
     this.overlayBody = scene.add
-      .text(0, 24, "", { fontFamily: FONT_UI, fontSize: puzzle ? "20px" : "14px", color: TEXT_COLOR, align: "center", lineSpacing: 2 })
+      .text(0, 24, "", { fontFamily: FONT_UI, fontSize: style ? "20px" : "14px", color: TEXT_COLOR, align: "center", lineSpacing: 2 })
       .setOrigin(0.5);
     this.overlay.add([dim, this.overlayTitle, this.overlayBody]);
     this.root.add(this.overlay);
+  }
+
+  /** レッスンの目印を出す（null で消す）。マスは盤面の座標（y は下から）。 */
+  setHint(cells: { x: number; y: number }[] | null): void {
+    this.hintCells = cells ?? [];
+    if (!this.hintCells.length) this.hintGfx.clear();
+  }
+
+  private drawHint(): void {
+    if (!this.hintCells.length) return;
+    const g = this.hintGfx;
+    g.clear();
+    const pulse = 0.55 + 0.45 * Math.sin(this.scene.time.now / 160);
+    g.lineStyle(3, 0xffe066, pulse);
+    const rise = this.board.riseProgress * CELL;
+    for (const { x, y } of this.hintCells) g.strokeRect(x * CELL + 2, (ROWS - 1 - y) * CELL - rise + 2, CELL - 4, CELL - 4);
   }
 
   /** 結果画面などのボタンを盤面の上に置く。局所座標（盤面の左上が原点）で渡す。 */
@@ -441,11 +462,14 @@ export class BoardView {
       this.resultEffect.update(delta);
     }
 
-    if (this.puzzle) {
+    this.drawHint();
+    if (this.style) {
       this.scoreText.setText(this.label);
-      const left = b.movesLeft ?? 0;
-      this.infoText.setColor(left <= 1 ? "#ff8a94" : TEXT_DIM);
-      this.infoText.setText(`MOVES ${left}`);
+      if (this.style === "puzzle") {
+        const left = b.movesLeft ?? 0;
+        this.infoText.setColor(left <= 1 ? "#ff8a94" : TEXT_DIM);
+        this.infoText.setText(`MOVES ${left}`);
+      } else this.infoText.setText("");
       this.stopBar.setVisible(false);
       this.pendingGfx.clear();
       this.pendingText.setVisible(false);

@@ -34,6 +34,8 @@ export interface HighScores {
   online: OnlineRecord;
   /** クリアしたパズルの面（0 始まりの通し番号）。 */
   puzzle: number[];
+  /** 終えたレッスンの課（0 始まり）。 */
+  lessons: number[];
 }
 
 const KEY = "swaprise.highscores.v1";
@@ -50,6 +52,7 @@ function empty(): HighScores {
     },
     online: { wins: 0, losses: 0, draws: 0, lastMatch: "" },
     puzzle: [],
+    lessons: [],
   };
 }
 
@@ -87,6 +90,9 @@ export function loadHighScores(): HighScores {
     if (o) base.online = { wins: o.wins ?? 0, losses: o.losses ?? 0, draws: o.draws ?? 0, lastMatch: typeof o.lastMatch === "string" ? o.lastMatch : "" };
     if (Array.isArray(parsed.puzzle)) {
       base.puzzle = [...new Set(parsed.puzzle.filter((n) => Number.isInteger(n) && n >= 0))].sort((a, b) => a - b);
+    }
+    if (Array.isArray(parsed.lessons)) {
+      base.lessons = [...new Set(parsed.lessons.filter((n) => Number.isInteger(n) && n >= 0))].sort((a, b) => a - b);
     }
     return base;
   } catch {
@@ -160,6 +166,14 @@ export function recordPuzzleClear(stage: number): void {
   const h = loadHighScores();
   if (h.puzzle.includes(stage)) return;
   h.puzzle = [...h.puzzle, stage].sort((a, b) => a - b);
+  save(h);
+}
+
+/** レッスンの課を終えたと記録する。 */
+export function recordLessonDone(index: number): void {
+  const h = loadHighScores();
+  if (h.lessons.includes(index)) return;
+  h.lessons = [...h.lessons, index].sort((a, b) => a - b);
   save(h);
 }
 

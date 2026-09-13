@@ -1,6 +1,7 @@
 import { CpuPlayer, type CpuLevel } from "./ai";
 import { Board } from "./board";
 import { DEFAULT_SHOCK_MAX, TIME_ATTACK_FRAMES } from "./constants";
+import { boardForLesson, lessonGoalMet, LESSONS, type Lesson } from "./lessons";
 import { boardForStage, type PuzzleStage } from "./puzzle";
 import { PUZZLES } from "./puzzles";
 import type { BoardOptions, Input } from "./types";
@@ -10,8 +11,9 @@ import { NO_INPUT } from "./types";
  * endless: 1人用。timeattack: 1人用で制限時間内の得点を競う。
  * versus: 2人対戦。cpu: 2P側を CpuPlayer が操作する対戦。
  * puzzle: 1人用。せり上がりのない面を決められた手数で全部消す。
+ * lesson: 1人用。初心者向けの練習。課ごとの目標（消す・連鎖・同時消し）に届いたら終わる。
  */
-export type GameMode = "endless" | "timeattack" | "versus" | "cpu" | "puzzle";
+export type GameMode = "endless" | "timeattack" | "versus" | "cpu" | "puzzle" | "lesson";
 
 export interface GameOptions {
   mode: GameMode;
@@ -27,6 +29,8 @@ export interface GameOptions {
   stage?: number;
   /** パズルの面データを直接渡す（テスト用）。stage より優先。 */
   puzzle?: PuzzleStage;
+  /** レッスンの課（0 始まり）。省略時は 0。 */
+  lesson?: number;
 }
 
 /**
@@ -49,14 +53,25 @@ export class Game {
   readonly puzzle: PuzzleStage | null;
   /** パズルの結果。clear は全消し、fail は手数を使い切ってパネルが残った。 */
   puzzleResult: "clear" | "fail" | null = null;
+  /** レッスンの課（0 始まり）。他のモードは -1。 */
+  readonly lessonIndex: number;
+  readonly lesson: Lesson | null;
+  /** レッスンの目標に届いたか。届いたあとは盤面が静止するのを待って finished になる。 */
+  lessonDone = false;
 
   constructor(opts: GameOptions) {
     this.mode = opts.mode;
     this.timeLimit = opts.mode === "timeattack" ? (opts.timeLimitFrames ?? TIME_ATTACK_FRAMES) : null;
     this.stage = opts.mode === "puzzle" ? Math.max(0, Math.min(PUZZLES.length - 1, opts.stage ?? 0)) : -1;
     this.puzzle = opts.mode === "puzzle" ? (opts.puzzle ?? PUZZLES[this.stage]) : null;
+    this.lessonIndex = opts.mode === "lesson" ? Math.max(0, Math.min(LESSONS.length - 1, opts.lesson ?? 0)) : -1;
+    this.lesson = opts.mode === "lesson" ? LESSONS[this.lessonIndex] : null;
     if (this.puzzle) {
       this.boards = [boardForStage(this.puzzle, opts.seed)];
+      return;
+    }
+    if (this.lesson) {
+      this.boards = [boardForLesson(this.lesson, opts.seed)];
       return;
     }
     // パズル以外はどのモードもスピードレベルが上がる（消した枚数と経過時間の高い方）
@@ -89,6 +104,13 @@ export class Game {
 
   tick(inputs: Input[]): void {
     if (this.finished) return;
+    if (this.lessonDone) {
+      // 目標に届いたら入力もせり上がりも止め、動いている消去と落下だけ終わらせる
+      const board = this.boards[0];
+      board.tick(NO_INPUT, true);
+      this.finished = board.isSettled();
+      return;
+    }
     if (this.timeUp) {
       // After the deadline, only finish existing board motion. No input,
       // automatic/manual rise, or late top-out may interrupt these chains.
@@ -115,6 +137,9 @@ export class Game {
       }
     } else if (this.boards[0].gameOver) {
       this.finished = true;
+    } else if (this.lesson) {
+      const b = this.boards[0];
+      if (lessonGoalMet(this.lesson.goal, b.events, b)) this.lessonDone = true;
     } else if (this.puzzle) {
       const b = this.boards[0];
       if (!b.isSettled()) return;
