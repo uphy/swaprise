@@ -72,6 +72,7 @@ const JA: Record<string, string> = {
   "Could not cancel yet. Please retry.": "まだキャンセルできません。もう一度お試しください。",
   "BACK TO MENU": "メニューへ", RELOAD: "再読み込み", CANCEL: "キャンセル",
   "JOIN ROOM": "ルームに参加", "INVITE FRIEND": "友達を招待", "FIND MATCH": "対戦相手を探す",
+  "PLAY VS CPU": "CPUと対戦", "No one is waiting right now.": "今は誰も待っていません。",
   "Name (optional)": "名前（任意）", Guest: "ゲスト", "Choose how to play.": "遊び方を選んでください。",
   "Join your friend’s room.": "友達のルームに参加します。", "This invite link has expired. Create a new room or find a match.": "この招待リンクは期限切れです。新しいルームを作るか、対戦相手を探してください。",
   "Could not complete the request. Check your connection and retry.": "リクエストを完了できませんでした。接続を確認して再試行してください。",

@@ -38,6 +38,10 @@ export interface GameStart {
   mode: GameMode;
   cpuLevel?: CpuLevel;
   stage?: number;
+  /** オンラインの待機中に相手がいなくて始めた CPU 戦。勝敗は記録せず、終わったら待機列へ戻る。 */
+  fromOnline?: boolean;
+  /** 前の画面が戻る操作用に積んだ履歴をそのまま引き継ぐ（積み直さない）。 */
+  historyPushed?: boolean;
 }
 
 export class GameScene extends Phaser.Scene {
@@ -51,6 +55,7 @@ export class GameScene extends Phaser.Scene {
   paused = false;
   private mode: GameMode = "endless";
   private cpuLevel: CpuLevel = "normal";
+  private fromOnline = false;
   /** パズルの面（0 始まり）。 */
   private stage = 0;
   layout!: Layout;
@@ -82,6 +87,7 @@ export class GameScene extends Phaser.Scene {
   create(data: GameStart): void {
     this.mode = data.mode ?? "endless";
     this.cpuLevel = data.cpuLevel ?? "normal";
+    this.fromOnline = !!data.fromOnline;
     this.stage = Math.max(0, Math.min(PUZZLES.length - 1, data.stage ?? 0));
     const params = new URLSearchParams(location.search);
     const seed = Number(params.get("seed")) || (Date.now() & 0xffffff);
@@ -186,7 +192,7 @@ export class GameScene extends Phaser.Scene {
     // Android の戻るジェスチャ・戻るボタンでアプリが閉じないよう、履歴を1つ積んで popstate を受ける。
     // 戻るジェスチャ（画面端からの横スワイプ）は盤面のドラッグと重なりやすいので、ゲーム中の戻る操作には
     // 何もさせない。ポーズもメニューも画面のボタンから行う。
-    history.pushState({ swaprise: "game" }, "");
+    if (!data.historyPushed) history.pushState({ swaprise: "game" }, "");
     this.historyPushed = true;
     const onPop = (): void => {
       if (!this.historyPushed) return;
@@ -395,7 +401,19 @@ export class GameScene extends Phaser.Scene {
   /** やり直し。 */
   private restart(): void {
     fullscreen.sync();
-    this.scene.restart({ mode: this.mode, cpuLevel: this.cpuLevel, stage: this.stage } satisfies GameStart);
+    this.scene.restart({ mode: this.mode, cpuLevel: this.cpuLevel, stage: this.stage, fromOnline: this.fromOnline } satisfies GameStart);
+  }
+
+  /** オンラインの待機列へ戻る。待機中に始めた CPU 戦の結果画面から。 */
+  private toFindMatch(): void {
+    audio.stopBgm();
+    audio.setDanger(false);
+    this.touches.forEach((t) => t.destroy());
+    this.touches = [];
+    // 積んだ履歴は ONLINE 画面に引き継ぐ（消して積み直すと、戻る操作の受け止めに隙間ができる）
+    const historyPushed = this.historyPushed;
+    this.historyPushed = false;
+    this.scene.start("online", { findMatch: true, historyPushed });
   }
 
   /** パズルの次の面へ。 */
@@ -577,7 +595,9 @@ export class GameScene extends Phaser.Scene {
         if (this.touches.some((t) => t.cellAt(p.worldX, p.worldY))) this.restart();
       });
       const retry = new Button(this, -46, BOARD_H / 2 - 40, t("RETRY"), () => this.restart(), { minWidth: 84, minHeight: 36 });
-      const menu = new Button(this, 46, BOARD_H / 2 - 40, t("MENU"), () => this.toMenu(), { minWidth: 84, minHeight: 36 });
+      const menu = this.fromOnline
+        ? new Button(this, 46, BOARD_H / 2 - 40, t("FIND MATCH"), () => this.toFindMatch(), { minWidth: 84, minHeight: 36 }).setName("find-match")
+        : new Button(this, 46, BOARD_H / 2 - 40, t("MENU"), () => this.toMenu(), { minWidth: 84, minHeight: 36 });
       this.views[0].addToOverlay(retry);
       this.views[0].addToOverlay(menu);
       if (canShare()) {
@@ -617,7 +637,8 @@ export class GameScene extends Phaser.Scene {
       });
     } else {
       let recordLine = "";
-      if (this.mode === "cpu" && g.winner >= 0) {
+      // 待機中の CPU 戦は VS CPU の記録に混ぜない
+      if (this.mode === "cpu" && g.winner >= 0 && !this.fromOnline) {
         const r = recordCpuResult(this.cpuLevel, g.winner === 0);
         recordLine = `\n${t("VS CPU")} ${this.cpuLevel.toUpperCase()}  ${r.wins}W ${r.losses}L`;
       }
