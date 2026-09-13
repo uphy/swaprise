@@ -127,7 +127,7 @@ test("メニューの 1 PLAYER に LEARN があり、まだ終えていない最
     m.select();
     return { label: m.texts[3].text.trim(), caption: m.captions[3].text };
   });
-  expect(caption).toEqual({ label: "LEARN", caption: "2 / 6 LESSONS · clear, chain, active chain" });
+  expect(caption).toEqual({ label: "LEARN", caption: "2 / 6 LESSONS" });
   await page.evaluate(() => {
     const m = (window as any).__swapriseScenes.menu;
     m.index = 3;
@@ -151,5 +151,22 @@ test.describe("スマホ", () => {
     expect(info.text).toContain("Drag a panel sideways");
     expect(info.bottom).toBeLessThan(info.height);
     await page.screenshot({ path: `${SHOT}/lesson-1-phone.png` });
+  });
+});
+
+test.describe("スマホ・日本語", () => {
+  const pixel = devices["Pixel 7"];
+  test.use({ viewport: pixel.viewport, deviceScaleFactor: pixel.deviceScaleFactor, isMobile: pixel.isMobile, hasTouch: pixel.hasTouch, userAgent: pixel.userAgent, locale: "ja-JP" });
+  test("日本語の説明は空白がなくても折り返され、画面の幅に収まる", async ({ page }) => {
+    await openLesson(page, 3);
+    const info = await page.evaluate(() => {
+      const p = (window as any).__swaprise;
+      const text = p.scene.children.getByName("lesson-text");
+      return { text: text.text, left: text.x - text.width / 2, right: text.x + text.width / 2, width: p.layout.width };
+    });
+    expect(info.text).toContain("連鎖");
+    expect(info.left).toBeGreaterThanOrEqual(0);
+    expect(info.right).toBeLessThanOrEqual(info.width);
+    await page.screenshot({ path: `${SHOT}/lesson-3-phone-ja.png` });
   });
 });

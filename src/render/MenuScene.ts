@@ -56,7 +56,7 @@ function itemsFor(level: Level, hs: HighScores): MenuItem[] {
       { label: t("PUZZLE"), caption: t("{count} / {total} CLEARED", { count: hs.puzzle.length, total: PUZZLES.length }), start: { mode: "puzzle" }, name: "item-puzzle" },
       {
         label: t("LEARN"),
-        caption: hs.lessons.length >= LESSONS.length ? t("all {total} lessons done", { total: LESSONS.length }) : t("{count} / {total} LESSONS · clear, chain, active chain", { count: hs.lessons.length, total: LESSONS.length }),
+        caption: hs.lessons.length >= LESSONS.length ? t("all {total} lessons done", { total: LESSONS.length }) : t("{count} / {total} LESSONS", { count: hs.lessons.length, total: LESSONS.length }),
         start: { mode: "lesson" },
         name: "item-learn",
       },

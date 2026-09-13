@@ -175,7 +175,7 @@ export class GameScene extends Phaser.Scene {
     if (this.game_.lesson) {
       const text = lessonText(this.game_.lesson.id, this.layout.touch);
       this.lessonText = this.add
-        .text(0, 0, `${text.title}\n${text.body}`, { fontFamily: FONT_UI, fontSize: "14px", color: TEXT_COLOR, align: "center", lineSpacing: 3, wordWrap: { width: BOARD_W + 60 } })
+        .text(0, 0, `${text.title}\n${text.body}`, { fontFamily: FONT_UI, fontSize: "14px", color: TEXT_COLOR, align: "center", lineSpacing: 3, wordWrap: { width: BOARD_W + 60, useAdvancedWrap: true } })
         .setOrigin(0.5, 0)
         .setDepth(5)
         .setName("lesson-text");
@@ -388,13 +388,13 @@ export class GameScene extends Phaser.Scene {
       const barH = this.raiseHints[0]?.visible ? RAISE_BAR_GAP + (L.touch ? RAISE_BAR_H : RAISE_BAR_H_MOUSE) + INFO_GAP : 0;
       if (L.portrait) {
         // 縦持ちは盤面の下
-        this.lessonText.setOrigin(0.5, 0).setAlign("center").setWordWrapWidth(Math.min(W - 16, BOARD_W + 60)).setPosition(v.ox + BOARD_W / 2, top + BOARD_H + barH + 18);
+        this.lessonText.setOrigin(0.5, 0).setAlign("center").setWordWrapWidth(Math.min(W - 16, BOARD_W + 60), true).setPosition(v.ox + BOARD_W / 2, top + BOARD_H + barH + 18);
         this.lessonReset?.setPosition(v.ox + BOARD_W / 2, this.lessonText.y + this.lessonText.height + 22);
       } else {
         // 横長（PC・横持ちのスマホ）は盤面の右。横持ちのスマホは HUD の列（幅 100）の右に置く
         const left = v.ox + BOARD_W + (L.phoneLandscape ? 124 : 28);
         const sideW = Math.min(300, Math.max(160, W - left - 16));
-        this.lessonText.setOrigin(0, 0).setAlign("left").setWordWrapWidth(sideW).setPosition(left, top + (L.phoneLandscape ? 4 : 0));
+        this.lessonText.setOrigin(0, 0).setAlign("left").setWordWrapWidth(sideW, true).setPosition(left, top + (L.phoneLandscape ? 4 : 0));
         this.lessonReset?.setPosition(left + 52, this.lessonText.y + this.lessonText.height + 26);
       }
     }
