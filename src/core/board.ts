@@ -9,6 +9,7 @@ import {
   TIMING,
   TOTAL_ROWS,
   clearTiming,
+  type ClearTiming,
   riseFramesPerRow,
 } from "./constants";
 import { garbageFromChain, garbageFromCombo, garbageFromShock, type GarbageSpec, type IncomingGarbage } from "./garbage";
@@ -96,7 +97,7 @@ export class Board {
   /** このフレームで起きた出来事。描画・音の層が読む。 */
   events: BoardEvent[] = [];
   readonly garbage = new Map<number, GarbageBlock>();
-  readonly stats = { combos: 0, chains: 0, manualRows: 0, shockSpawned: 0, shockCleared: 0 };
+  readonly stats = { combos: 0, chains: 0, manualRows: 0, shockSpawned: 0, shockCleared: 0, activeSwaps: 0 };
   /** せり上がって行が追加された回数。追加のたびに全パネルの段（y）が1つ増える。 */
   risenRows = 0;
 
@@ -106,6 +107,9 @@ export class Board {
   private readonly startLevel: number;
   private readonly speedUp: boolean;
   private readonly noRise: boolean;
+  /** レッスン用。せり上がりも次の行もない。 */
+  private readonly frozen: boolean;
+  private readonly timingScale: number;
   /** パズルモードの残り手数。他のモードは null。 */
   movesLeft: number | null = null;
   private readonly shockMax: number;
@@ -128,7 +132,7 @@ export class Board {
       this.deathTimer, this.chain, this.maxChain, this.score, this.panelsCleared, this.level, this.frame,
       this.gameOver, this.danger, this.panic, this.pendingGarbage, this.attacksOut, this.outbox,
       this.outboxAt, this.heldForChain, this.quietFrames, [...this.garbage], this.stats, this.risenRows,
-      this.nextGarbageId, this.rng.state(), this.kinds, this.startLevel, this.speedUp, this.noRise,
+      this.nextGarbageId, this.rng.state(), this.kinds, this.startLevel, this.speedUp, this.noRise, this.frozen, this.timingScale,
       this.movesLeft, this.shockMax, this.shockEvery, this.shockDue, this.stopRaiseFree, this.dropSide];
   }
 
@@ -138,7 +142,9 @@ export class Board {
     this.startLevel = opts.speedLevel ?? 1;
     this.level = this.startLevel;
     this.speedUp = opts.speedUp ?? false;
-    this.noRise = (opts.noRise ?? false) || opts.moveLimit !== undefined;
+    this.frozen = opts.frozen ?? false;
+    this.timingScale = opts.timingScale ?? 1;
+    this.noRise = (opts.noRise ?? false) || opts.moveLimit !== undefined || this.frozen;
     this.movesLeft = opts.moveLimit ?? null;
     this.shockMax = opts.shockMax ?? 0;
     this.shockEvery = Math.max(1, opts.shockEvery ?? 12);
@@ -150,8 +156,8 @@ export class Board {
     }
     const h = opts.initialHeight ?? 5;
     if (h > 0) this.fillInitial(h);
-    // パズルはせり上がりがないので、次の行は用意しない（描画もしない）
-    if (this.movesLeft === null) this.nextRow = this.generateRow();
+    // パズルとレッスンはせり上がりがないので、次の行は用意しない（描画もしない）
+    if (this.movesLeft === null && !this.frozen) this.nextRow = this.generateRow();
   }
 
   // ---------------------------------------------------------------- helpers
@@ -360,6 +366,17 @@ export class Board {
     if (this.movesLeft > 0 && this.isSettled() && this.trySwap()) this.movesLeft--;
   }
 
+  /** スピードレベルに応じた消去の時間。レッスンでは timingScale 倍に延ばす。 */
+  private clearTiming(): ClearTiming {
+    const ct = clearTiming(this.level);
+    if (this.timingScale === 1) return ct;
+    const k = this.timingScale;
+    return {
+      flash: Math.round(ct.flash * k), face: Math.round(ct.face * k), popInterval: Math.round(ct.popInterval * k),
+      hoverClear: Math.round(ct.hoverClear * k), hoverSwap: Math.round(ct.hoverSwap * k), transformHover: Math.round(ct.transformHover * k),
+    };
+  }
+
   /** カーソル位置の2枚を入れ替える。成功したら true。 */
   trySwap(): boolean {
     const { x, y } = this.cursor;
@@ -371,6 +388,8 @@ export class Board {
     const swappable = (c: Cell): boolean =>
       c.kind === EMPTY || c.state === "idle" || c.state === "swapping" || c.state === "hover";
     if (!swappable(a) || !swappable(b)) return false;
+    // 消去中（点滅・柄を見せている間）の入れ替え。アクティブ連鎖の練習で「消えている間に動かした」を数える
+    if (this.hasMatched()) this.stats.activeSwaps++;
     // 空白側に、上から落ちてくる最中のパネルが着地する寸前でも入れ替えは通す（割り込ませ）。
     this.cells[y][x] = b;
     this.cells[y][x + 1] = a;
@@ -450,7 +469,7 @@ export class Board {
         const below = this.cells[r - 1][c];
         if (cell.state === "idle") {
           if (isEmptyCell(below)) {
-            const ct = clearTiming(this.level);
+            const ct = this.clearTiming();
             this.startHover(c, r, cell.chain ? ct.hoverClear : ct.hoverSwap);
           } else if (below.garbage >= 0) {
             // おじゃまに乗っているパネルは、おじゃまと一緒に落ちる（おじゃまの猶予・落下に合わせる）
@@ -704,7 +723,7 @@ export class Board {
           cell.revealAt = TIMING.transformFlash + revealIndex * TIMING.transformInterval;
         }
       }
-      g.transformEnd = TIMING.transformFlash + g.width * g.height * TIMING.transformInterval + clearTiming(this.level).transformHover;
+      g.transformEnd = TIMING.transformFlash + g.width * g.height * TIMING.transformInterval + this.clearTiming().transformHover;
       this.emit({ type: "garbageTransform", id: g.id });
     }
   }
@@ -881,7 +900,7 @@ export class Board {
       this.outboxAt = this.frame + TIMING.garbageSendDelay;
     }
 
-    const ct = clearTiming(this.level);
+    const ct = this.clearTiming();
     list.forEach(({ x, y }, i) => {
       const cell = this.cells[y][x];
       cell.state = "matched";
@@ -976,7 +995,7 @@ export class Board {
     const touching = this.topTouching();
     let manual = false;
     // Clearing pauses automatic rise only; the player can still choose to raise.
-    if (input.raise && this.movesLeft === null && this.shakeTimer === 0 && !touching) {
+    if (input.raise && this.movesLeft === null && !this.frozen && this.shakeTimer === 0 && !touching) {
       this.riseProgress += 1 / TIMING.manualRisePerRow;
       manual = true;
     } else if (!this.noRise && !busy && this.shakeTimer === 0 && !touching && this.stopTimer === 0) {

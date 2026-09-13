@@ -10,3 +10,4 @@ export { CpuPlayer, CPU_PARAMS } from "./ai";
 export type { CpuLevel } from "./ai";
 export * from "./puzzle";
 export { PUZZLES } from "./puzzles";
+export * from "./lessons";

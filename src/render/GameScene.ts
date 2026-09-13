@@ -1,6 +1,7 @@
 import Phaser from "phaser";
-import { Game, PUZZLES, puzzleName, type CpuLevel, type GameMode, type Input, NO_INPUT } from "../core";
-import { loadHighScores, recordCpuResult, recordPuzzleClear, recordScore } from "./highscore";
+import { Game, LESSONS, PUZZLES, puzzleName, type CpuLevel, type GameMode, type Input, NO_INPUT } from "../core";
+import { lessonText } from "./lessonText";
+import { loadHighScores, recordCpuResult, recordLessonDone, recordPuzzleClear, recordScore } from "./highscore";
 import { recordProgress } from "../scores/progress";
 import { showScoreResult } from "./score-result";
 import { BoardView, announceOpponentChains, type HudSide } from "./BoardView";
@@ -15,7 +16,7 @@ import { RaiseBar } from "./RaiseBar";
 import { wakeLock } from "./wakelock";
 import { fullscreen } from "./fullscreen";
 import { canShare, shareText } from "./share";
-import { BOARD_H, BOARD_W, FONT, FONT_UI, TEXT_COLOR, TEXT_DIM, KIND_COLORS, type Layout, layoutFor, sameLayout } from "./theme";
+import { BOARD_H, BOARD_W, FONT, FONT_UI, TEXT_COLOR, TEXT_DIM, KIND_COLORS, type Layout, type SkyName, layoutFor, sameLayout } from "./theme";
 import { Background } from "./Background";
 import { t } from "./i18n";
 import { backHintDuration } from "./backHint";
@@ -42,6 +43,8 @@ export interface GameStart {
   fromOnline?: boolean;
   /** 前の画面が戻る操作用に積んだ履歴をそのまま引き継ぐ（積み直さない）。 */
   historyPushed?: boolean;
+  /** レッスンの課（0 始まり）。 */
+  lesson?: number;
 }
 
 export class GameScene extends Phaser.Scene {
@@ -58,6 +61,17 @@ export class GameScene extends Phaser.Scene {
   private fromOnline = false;
   /** パズルの面（0 始まり）。 */
   private stage = 0;
+  /** レッスンの課（0 始まり）。 */
+  private lesson = 0;
+  /** レッスンの説明文と RESET。課の目印は、この時刻（scene.time.now）から動きがなければ出す */
+  private lessonText: Phaser.GameObjects.Text | null = null;
+  private lessonReset: Button | null = null;
+  private lessonMatched = false;
+  /** 目標に届かない入れ替えをして盤面が静止した。RESET の案内を出している */
+  private lessonStuck = false;
+  private lessonSwapped = false;
+  private lessonSettledFrames = 0;
+  private lessonStuckText: Phaser.GameObjects.Text | null = null;
   layout!: Layout;
   private vsText: Phaser.GameObjects.Text | null = null;
   private pauseButton!: Button;
@@ -89,6 +103,7 @@ export class GameScene extends Phaser.Scene {
     this.cpuLevel = data.cpuLevel ?? "normal";
     this.fromOnline = !!data.fromOnline;
     this.stage = Math.max(0, Math.min(PUZZLES.length - 1, data.stage ?? 0));
+    this.lesson = Math.max(0, Math.min(LESSONS.length - 1, data.lesson ?? 0));
     const params = new URLSearchParams(location.search);
     const seed = Number(params.get("seed")) || (Date.now() & 0xffffff);
     this.scoreRun = eligibleRun(this.mode, params) ? { id: crypto.randomUUID(), seed } : null;
@@ -96,7 +111,11 @@ export class GameScene extends Phaser.Scene {
     const shockMax = params.has("shock") ? Number(params.get("shock")) || 0 : undefined;
     // ?time=秒 でタイムアタックの制限時間を変える（e2e 用）
     const timeLimitFrames = Number(params.get("time")) > 0 ? Math.round(Number(params.get("time")) * 60) : undefined;
-    this.game_ = new Game({ mode: this.mode, seed, speedLevel, cpuLevel: this.cpuLevel, shockMax, timeLimitFrames, stage: this.stage });
+    this.game_ = new Game({ mode: this.mode, seed, speedLevel, cpuLevel: this.cpuLevel, shockMax, timeLimitFrames, stage: this.stage, lesson: this.lesson });
+    this.lessonMatched = false;
+    this.lessonStuck = false;
+    this.lessonSwapped = false;
+    this.lessonSettledFrames = 0;
     this.accumulator = 0;
     this.paused = false;
     this.ended = false;
@@ -110,12 +129,16 @@ export class GameScene extends Phaser.Scene {
     this.layout = layoutFor(this.mode);
     applyLayout(this, this.layout);
     this.bg?.destroy();
-    this.bg = new Background(this, this.layout.width, this.layout.height, this.mode);
+    this.bg = new Background(this, this.layout.width, this.layout.height, this.sky());
     this.bg.setTimeRemaining(this.game_.framesLeft, false);
 
     const boards = this.game_.boards;
     if (this.mode === "puzzle") {
-      this.views.push(new BoardView(this, boards[0], `${t("PUZZLE")} ${puzzleName(this.stage)}`, false, null, true));
+      this.views.push(new BoardView(this, boards[0], `${t("PUZZLE")} ${puzzleName(this.stage)}`, false, null, "puzzle"));
+      this.inputs.push(new PlayerInput(this, P1_KEYS, 0));
+      this.vsText = null;
+    } else if (this.mode === "lesson") {
+      this.views.push(new BoardView(this, boards[0], t("LESSON {n} / {total}", { n: this.lesson + 1, total: LESSONS.length }), false, null, "lesson"));
       this.inputs.push(new PlayerInput(this, P1_KEYS, 0));
       this.vsText = null;
     } else if (boards.length === 1) {
@@ -146,8 +169,34 @@ export class GameScene extends Phaser.Scene {
       new RaiseBar(this, (p) => {
         if (this.ended || this.paused) return;
         this.touches[i]?.holdRaise(p.id);
-      }).setVisible(Boolean(this.inputs[i]) && this.mode !== "puzzle"),
+      }).setVisible(Boolean(this.inputs[i]) && this.mode !== "puzzle" && !this.game_.lesson?.rows),
     );
+
+    // レッスンの説明。盤面の下に短く出し、迷っていれば盤面の目印を光らせる。固定の面は RESET で最初の形に戻せる
+    this.lessonText?.destroy();
+    this.lessonText = null;
+    this.lessonReset?.destroy();
+    this.lessonReset = null;
+    if (this.game_.lesson) {
+      const text = lessonText(this.game_.lesson.id, this.layout.touch);
+      this.lessonText = this.add
+        .text(0, 0, `${text.title}\n${text.body}`, { fontFamily: FONT_UI, fontSize: "14px", color: TEXT_COLOR, align: "center", lineSpacing: 3, wordWrap: { width: BOARD_W + 60, useAdvancedWrap: true } })
+        .setOrigin(0.5, 0)
+        .setDepth(5)
+        .setName("lesson-text");
+      if (this.game_.lesson.rows) this.lessonReset = new Button(this, 0, 0, t("RESET"), () => this.restart(), { minWidth: 96, minHeight: 32, fontSize: 13 }).setDepth(5).setName("lesson-reset");
+      this.lessonStuckText?.destroy();
+      this.lessonStuckText = this.add
+        .text(0, 0, t("The board changed. RESET puts it back."), { fontFamily: FONT_UI, fontSize: "13px", color: "#ffe066", align: "center", wordWrap: { width: BOARD_W + 60, useAdvancedWrap: true } })
+        .setOrigin(0.5, 0)
+        .setDepth(5)
+        .setVisible(false)
+        .setName("lesson-stuck");
+      // 目印は最初から出す。手を自分で見つけるのは PUZZLE の役目で、ここは仕組みを体で覚える場。
+      // 1 手目を間違えると解けなくなる面が多く、隠すと初心者が止まる
+      const h = this.game_.lesson.hint;
+      if (h) this.views[0].setHint([h, { x: h.x + 1, y: h.y }]);
+    }
 
     // 画面上のポーズボタン
     this.pauseButton = new Button(this, 0, 0, "❚❚", () => this.togglePause(), { minWidth: 44, minHeight: 30, fontSize: 13 }).setDepth(5);
@@ -274,11 +323,16 @@ export class GameScene extends Phaser.Scene {
     this.layout = next;
     applyLayout(this, next);
     this.bg?.destroy();
-    this.bg = new Background(this, next.width, next.height, this.mode);
+    this.bg = new Background(this, next.width, next.height, this.sky());
     this.bg.setTimeRemaining(this.game_.framesLeft, !this.ended && !this.starting);
     this.bg.setStack(this.game_.boards[0], 0, !this.ended && !this.starting);
     this.place();
     (window as unknown as { __swaprise: { layout: Layout } }).__swaprise.layout = next;
+  }
+
+  /** 背景の空。レッスンはパズルと同じ空を使う */
+  private sky(): SkyName {
+    return this.mode === "lesson" ? "puzzle" : this.mode;
   }
 
   /** 現在のレイアウトに合わせて、盤面と UI の位置を決める。 */
@@ -343,6 +397,27 @@ export class GameScene extends Phaser.Scene {
     }
     // ポーズボタンは自分の盤面の右上（得点表示の右）。横持ちのスマホは上で決めた
     if (!L.phoneLandscape) this.pauseButton.setPosition(this.views[0].ox + BOARD_W - 22, top - 24);
+    // レッスンの説明は盤面の下（横持ちのスマホは盤面の右）。RESET はその下
+    if (this.lessonText) {
+      const v = this.views[0];
+      const barH = this.raiseHints[0]?.visible ? RAISE_BAR_GAP + (L.touch ? RAISE_BAR_H : RAISE_BAR_H_MOUSE) + INFO_GAP : 0;
+      if (L.portrait) {
+        // 縦持ちは盤面の下
+        this.lessonText.setOrigin(0.5, 0).setAlign("center").setWordWrapWidth(Math.min(W - 16, BOARD_W + 60), true).setPosition(v.ox + BOARD_W / 2, top + BOARD_H + barH + 18);
+        this.lessonStuckText?.setOrigin(0.5, 0).setAlign("center").setWordWrapWidth(Math.min(W - 16, BOARD_W + 60), true).setPosition(v.ox + BOARD_W / 2, this.lessonText.y + this.lessonText.height + 6);
+        // 案内が出ている間は、その高さ（日本語は 2 行になる）の分だけ RESET を下げる
+        const below = this.lessonStuck && this.lessonStuckText ? this.lessonStuckText.y + this.lessonStuckText.height : this.lessonText.y + this.lessonText.height;
+        this.lessonReset?.setPosition(v.ox + BOARD_W / 2, below + 22);
+      } else {
+        // 横長（PC・横持ちのスマホ）は盤面の右。横持ちのスマホは HUD の列（幅 100）の右に置く
+        const left = v.ox + BOARD_W + (L.phoneLandscape ? 124 : 28);
+        const sideW = Math.min(300, Math.max(160, W - left - 16));
+        this.lessonText.setOrigin(0, 0).setAlign("left").setWordWrapWidth(sideW, true).setPosition(left, top + (L.phoneLandscape ? 4 : 0));
+        this.lessonStuckText?.setOrigin(0, 0).setAlign("left").setWordWrapWidth(sideW, true).setPosition(left, this.lessonText.y + this.lessonText.height + 8);
+        const below = this.lessonStuck && this.lessonStuckText ? this.lessonStuckText.y + this.lessonStuckText.height : this.lessonText.y + this.lessonText.height;
+        this.lessonReset?.setPosition(left + 52, below + 26);
+      }
+    }
 
     this.pauseDim.setSize(W, H);
     this.pauseTitle.setPosition(W / 2, H / 2 - 40 - this.pauseButtons.length * 23 - 20);
@@ -401,7 +476,7 @@ export class GameScene extends Phaser.Scene {
   /** やり直し。 */
   private restart(): void {
     fullscreen.sync();
-    this.scene.restart({ mode: this.mode, cpuLevel: this.cpuLevel, stage: this.stage, fromOnline: this.fromOnline } satisfies GameStart);
+    this.scene.restart({ mode: this.mode, cpuLevel: this.cpuLevel, stage: this.stage, fromOnline: this.fromOnline, lesson: this.lesson } satisfies GameStart);
   }
 
   /** オンラインの待機列へ戻る。待機中に始めた CPU 戦の結果画面から。 */
@@ -476,6 +551,7 @@ export class GameScene extends Phaser.Scene {
     }
     // CPU 戦は相手の盤面が小さいので、相手の大きな連鎖を自分の盤面に知らせる。2 人対戦は同じ画面で両方見えている
     if (this.mode === "cpu") announceOpponentChains(this.game_.boards[1].events, this.views[0]);
+    if (this.game_.lesson) this.updateLessonHint(this.game_.boards[0].events);
     this.game_.boards.forEach((b, i) => {
       this.views[i].handleEvents(b.events, true, Boolean(this.inputs[i]));
       // 自分の盤面の大きな連鎖は画面ごと揺らし、5 連鎖からは閃光も足す。
@@ -487,6 +563,36 @@ export class GameScene extends Phaser.Scene {
         if (e.chain >= 5) this.flash(Math.min(0.5, 0.15 + e.chain * 0.04));
       }
     });
+  }
+
+  /**
+   * レッスンの目印は最初から出し、入れ替えたら消す（動かしたあとの盤面では元の目印が正しい手とは限らない）。
+   * アクティブ連鎖の課は、最初の消去が始まった瞬間に次の目印を出す（時間が要）。
+   * 目標に届かない入れ替えをして盤面が静止したら、RESET で戻す案内を出す。
+   */
+  private updateLessonHint(events: readonly { type: string }[]): void {
+    const lesson = this.game_.lesson!;
+    const view = this.views[0];
+    const g = this.game_;
+    if (events.some((e) => e.type === "swap")) view.setHint(null);
+    if (!this.lessonMatched && events.some((e) => e.type === "match")) {
+      this.lessonMatched = true;
+      if (lesson.hintAfterMatch) {
+        const h = lesson.hintAfterMatch;
+        view.setHint([h, { x: h.x + 1, y: h.y }]);
+      }
+    }
+    if (events.some((e) => e.type === "swap")) this.lessonSwapped = true;
+    // 入れ替えたあと静止が 20 フレーム続いたら（着地後の連鎖フラグの 12 フレームも過ぎている）、この手では届かなかった
+    this.lessonSettledFrames = g.boards[0].isSettled() ? this.lessonSettledFrames + 1 : 0;
+    if (lesson.rows && !this.lessonStuck && !g.lessonDone && this.lessonSwapped && this.lessonSettledFrames >= 20) {
+      this.lessonStuck = true;
+      // 説明の本文は消して見出しだけ残す。壊れた盤面では本文の手順は使えず、縦の場所も要る（日本語は案内が 2 行になる）
+      this.lessonText?.setText(lessonText(lesson.id, this.layout.touch).title);
+      this.lessonStuckText?.setVisible(true);
+      this.lessonReset?.setSelected(true);
+      this.place();
+    }
   }
 
   /** 画面全体の白い閃き。大きな連鎖と勝利で使う */
@@ -561,6 +667,8 @@ export class GameScene extends Phaser.Scene {
       text = `SWAPRISE  TIME ATTACK 2:00  SCORE ${b.score}  MAX CHAIN x${b.maxChain}`;
     } else if (this.mode === "puzzle") {
       text = `SWAPRISE  ${t("PUZZLE")} ${puzzleName(this.stage)}  ${g.puzzleResult === "clear" ? t("CLEAR") : t("FAILED")}`;
+    } else if (this.mode === "lesson") {
+      text = `SWAPRISE  ${t("LESSON {n} / {total}", { n: this.lesson + 1, total: LESSONS.length })}  ${t("CLEAR")}`;
     } else {
       const result = g.winner < 0 ? t("DRAW") : g.winner === 0 ? t("WIN") : t("LOSE");
       const foe = this.mode === "cpu" ? `CPU ${this.cpuLevel.toUpperCase()}` : "2P";
@@ -580,7 +688,7 @@ export class GameScene extends Phaser.Scene {
     this.wasDanger = false;
     // エンドレスと CPU に負けたときは負けの音、対戦は誰かが勝つので勝ちの音。タイムアタックは時間切れなら完走の音
     const humanWon =
-      this.mode === "versus" ? g.winner >= 0 : this.mode === "cpu" ? g.winner === 0 : this.mode === "puzzle" ? g.puzzleResult === "clear" : g.timeUp;
+      this.mode === "versus" ? g.winner >= 0 : this.mode === "cpu" ? g.winner === 0 : this.mode === "puzzle" ? g.puzzleResult === "clear" : this.mode === "lesson" ? g.lessonDone : g.timeUp;
     if (humanWon) {
       audio.win();
       haptics.win();
@@ -600,7 +708,8 @@ export class GameScene extends Phaser.Scene {
         : new Button(this, 46, BOARD_H / 2 - 40, t("MENU"), () => this.toMenu(), { minWidth: 84, minHeight: 36 });
       this.views[0].addToOverlay(retry);
       this.views[0].addToOverlay(menu);
-      if (canShare()) {
+      // レッスンの結果は共有しない（練習なので）。空いた場所に達成の一言と NEXT を置く
+      if (canShare() && this.mode !== "lesson") {
         const share = new Button(this, 0, BOARD_H / 2 - 84, t("SHARE"), () => void this.share(share), { minWidth: 176, minHeight: 36 });
         this.views[0].addToOverlay(share);
       }
@@ -609,8 +718,28 @@ export class GameScene extends Phaser.Scene {
         const next = new Button(this, 0, BOARD_H / 2 - 128, t("NEXT  {name}", { name: puzzleName(this.stage + 1) }), () => this.nextStage(), { minWidth: 176, minHeight: 36 }).setName("next");
         this.views[0].addToOverlay(next);
       }
+      // レッスンを終えたら次の課へ。最後の課ならエンドレスへ誘う
+      if (this.mode === "lesson" && g.lessonDone) {
+        const last = this.lesson + 1 >= LESSONS.length;
+        // 達成の一言は最大 4 行（見出しの下 -8 から約 70px）なので、NEXT はその下の 100 に置く
+        const next = new Button(this, 0, BOARD_H / 2 - 92, last ? t("PLAY ENDLESS") : t("NEXT LESSON"), () => {
+          fullscreen.sync();
+          if (last) this.scene.restart({ mode: "endless" } satisfies GameStart);
+          else this.scene.restart({ mode: "lesson", lesson: this.lesson + 1 } satisfies GameStart);
+        }, { minWidth: 176, minHeight: 36 }).setName("next");
+        this.views[0].addToOverlay(next);
+      }
     });
-    if (this.mode === "puzzle") {
+    if (this.mode === "lesson") {
+      this.views[0].setHint(null);
+      if (g.lessonDone) {
+        recordLessonDone(this.lesson);
+        this.views[0].showOverlay(t("NICE!"), lessonText(g.lesson!.id, this.layout.touch).done);
+      } else {
+        // せり上がる課で天井に届いた。達成ではないので記録せず、RETRY でやり直す
+        this.views[0].showOverlay(t("GAME OVER"), t("The board reached the top. Try again and make a 2-chain."));
+      }
+    } else if (this.mode === "puzzle") {
       const b = g.boards[0];
       if (g.puzzleResult === "clear") {
         recordPuzzleClear(this.stage);

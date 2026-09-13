@@ -14,7 +14,7 @@ export function loadLastMode(): LastMode | null {
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Partial<LastMode>;
     const mode = parsed.mode;
-    if (mode !== "endless" && mode !== "timeattack" && mode !== "puzzle" && mode !== "versus" && mode !== "cpu") return null;
+    if (mode !== "endless" && mode !== "timeattack" && mode !== "puzzle" && mode !== "lesson" && mode !== "versus" && mode !== "cpu") return null;
     const cpu = parsed.cpuLevel;
     return { mode, cpuLevel: cpu === "easy" || cpu === "normal" || cpu === "hard" ? cpu : undefined };
   } catch {

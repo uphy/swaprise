@@ -3,7 +3,7 @@ import { showRecordsDialog, showPlayerSettings } from "./score-dialog";
 import { ACCENT, FONT, FONT_UI, MENU_TYPE, KIND_COLORS, TEXT_COLOR, TEXT_MUTE, layoutFor, menuTitle, sameLayout } from "./theme";
 import { Background } from "./Background";
 import { createTextures } from "./textures";
-import { PUZZLES, PUZZLES_PER_STAGE, PUZZLE_STAGES, puzzleName, type CpuLevel, type GameMode } from "../core";
+import { LESSONS, PUZZLES, PUZZLES_PER_STAGE, PUZZLE_STAGES, puzzleName, type CpuLevel, type GameMode } from "../core";
 import { audio } from "./shared";
 import { loadHighScores, onlineRecordLine, type HighScores } from "./highscore";
 import { haptics } from "./haptics";
@@ -54,6 +54,12 @@ function itemsFor(level: Level, hs: HighScores): MenuItem[] {
       { label: t("ENDLESS"), caption: bestLine(hs.endless), start: { mode: "endless" }, name: "item-endless" },
       { label: t("TIME ATTACK"), caption: bestLine(hs.timeattack), start: { mode: "timeattack" }, name: "item-timeattack" },
       { label: t("PUZZLE"), caption: t("{count} / {total} CLEARED", { count: hs.puzzle.length, total: PUZZLES.length }), start: { mode: "puzzle" }, name: "item-puzzle" },
+      {
+        label: t("LEARN"),
+        caption: hs.lessons.length >= LESSONS.length ? t("all {total} lessons done", { total: LESSONS.length }) : t("{count} / {total} LESSONS", { count: hs.lessons.length, total: LESSONS.length }),
+        start: { mode: "lesson" },
+        name: "item-learn",
+      },
       { label: t("◂ BACK"), caption: "", back: true, name: "item-back" },
     ];
   }
@@ -67,7 +73,7 @@ function itemsFor(level: Level, hs: HighScores): MenuItem[] {
     ];
   }
   return [
-    { label: t("1 PLAYER"), caption: t("endless · time attack · puzzle"), group: "1p", name: "group-1p" },
+    { label: t("1 PLAYER"), caption: t("endless · time attack · puzzle · learn"), group: "1p", name: "group-1p" },
     { label: t("VS CPU"), caption: t("easy · normal · hard"), group: "cpu", name: "group-cpu" },
     { label: t("2 PLAYERS"), caption: t("one screen, two players"), start: { mode: "versus" }, name: "group-2p" },
     {
@@ -146,15 +152,16 @@ export class MenuScene extends Phaser.Scene {
     this.checkedOnlineResume = true;
     if (restoreOnline && (params.has("room") || sessionStorage.getItem("swaprise.connection.v1"))) { this.scene.start("online"); return; }
     const mode = params.get("mode");
-    if (mode === "endless" || mode === "timeattack" || mode === "versus" || mode === "cpu" || mode === "puzzle") {
+    if (mode === "endless" || mode === "timeattack" || mode === "versus" || mode === "cpu" || mode === "puzzle" || mode === "lesson") {
       const cpu = params.get("cpu");
       const cpuLevel: CpuLevel = cpu === "easy" || cpu === "hard" ? cpu : "normal";
-      // パズルの面は ?stage=2-3 か通し番号（1 始まり）
+      // パズルの面は ?stage=2-3 か通し番号（1 始まり）。レッスンの課は ?lesson=3（1 始まり）
       const stage = parseStageParam(params.get("stage"));
-      for (const key of ["mode", "cpu", "stage"]) params.delete(key);
+      const lesson = Math.max(0, (Number(params.get("lesson")) || 1) - 1);
+      for (const key of ["mode", "cpu", "stage", "lesson"]) params.delete(key);
       const rest = params.toString();
       history.replaceState(null, "", location.pathname + (rest ? `?${rest}` : ""));
-      this.scene.start("game", { mode, cpuLevel, stage } satisfies GameStart);
+      this.scene.start("game", { mode, cpuLevel, stage, lesson } satisfies GameStart);
       return;
     }
 
@@ -194,9 +201,12 @@ export class MenuScene extends Phaser.Scene {
     this.itemGap = compact ? 46 : layout.portrait ? 60 : 52;
     this.crumb = this.add.text(cx, this.itemTop - (compact ? 26 : 34), "", { fontFamily: FONT_UI, fontSize: "13px", fontStyle: "600", color: ACCENT }).setOrigin(0.5).setName("crumb");
 
-    // 下段の小ボタン。項目は最大 4 つなので、4 つ目の説明文（項目の下 16〜19px、高さ約 14px）から隙間を空けて置く。
+    // 下段の小ボタン。いちばん項目の多い階層（1 PLAYER は 5 つ）の最後の説明文（項目の下 16〜19px、高さ約 14px）から
+    // 隙間を空けて置く。階層ごとに動かすと画面が跳ねるので、どの階層でも同じ位置にする。
     // 以前は項目の間隔だけで決めていて、横長の画面では説明文とボタンの間が 6px しかなく詰まって見えた
-    const captionBottom = this.itemTop + 3 * this.itemGap + (compact ? 16 : 19) + 9;
+    const hsForCount = loadHighScores();
+    const maxItems = Math.max(...(["top", "1p", "cpu"] as Level[]).map((l) => itemsFor(l, hsForCount).length));
+    const captionBottom = this.itemTop + (maxItems - 1) * this.itemGap + (compact ? 16 : 19) + 9;
     const toolY = captionBottom + (compact ? 12 : 22) + 17;
     const toolW = layout.portrait ? 92 : 112;
     TOOLS.forEach((tool, i) => {
@@ -342,7 +352,7 @@ export class MenuScene extends Phaser.Scene {
     this.level = level;
     const last = loadLastMode();
     this.index = 0;
-    if (last && level === "1p") this.index = last.mode === "timeattack" ? 1 : last.mode === "puzzle" ? 2 : 0;
+    if (last && level === "1p") this.index = last.mode === "timeattack" ? 1 : last.mode === "puzzle" ? 2 : last.mode === "lesson" ? 3 : 0;
     if (last && level === "cpu") this.index = last.cpuLevel === "easy" ? 0 : last.cpuLevel === "hard" ? 2 : 1;
     this.toolIndex = -1;
     this.buildList();
@@ -444,14 +454,21 @@ export class MenuScene extends Phaser.Scene {
       this.showPuzzlePicker();
       return;
     }
+    if (item.start.mode === "lesson") {
+      // まだ終えていない最初の課から。全部終えていれば最初から
+      const done = new Set(loadHighScores().lessons);
+      const next = LESSONS.findIndex((_, i) => !done.has(i));
+      this.startGame("lesson", undefined, undefined, next < 0 ? 0 : next);
+      return;
+    }
     this.startGame(item.start.mode, item.start.cpuLevel);
   }
 
-  private startGame(mode: GameMode, cpuLevel?: CpuLevel, stage?: number): void {
+  private startGame(mode: GameMode, cpuLevel?: CpuLevel, stage?: number, lesson?: number): void {
     saveLastMode({ mode, cpuLevel });
     // 全画面を望んでいれば、ゲーム開始の操作の中で取り直す（戻る操作や回転で解除されていることがある）
     fullscreen.sync();
-    this.scene.start("game", { mode, cpuLevel, stage } satisfies GameStart);
+    this.scene.start("game", { mode, cpuLevel, stage, lesson } satisfies GameStart);
   }
 
   private openTool(tool: Tool): void {
