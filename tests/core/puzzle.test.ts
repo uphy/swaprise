@@ -10,6 +10,7 @@ import {
   boardForStage,
   countSolutions,
   formatRows,
+  gridFromBoard,
   hasDeadKind,
   panelCount,
   parseRows,
@@ -204,6 +205,99 @@ describe("パズル: Game の判定", () => {
     );
     expect(new Game({ mode: "endless", seed: 1 }).puzzle).toBeNull();
     expect(new Game({ mode: "endless", seed: 1 }).stage).toBe(-1);
+  });
+});
+
+describe("パズル: 戻す・進める・ヒント", () => {
+  const swapAt = (g: Game, x: number, y: number): void => {
+    g.tick([{ ...NO_INPUT, cursorTo: { x, y }, swap: true }]);
+    for (let i = 0; i < 600 && !g.boards[0].isSettled(); i++) g.tick([NO_INPUT]);
+  };
+  const rows = (g: Game): string[] => formatRows(gridFromBoard(g.boards[0]));
+
+  it("打った手を履歴に積み、戻すと 1 手前の盤面と手数に戻る。失敗の結果からも戻せる", () => {
+    const g = new Game({ mode: "puzzle", seed: 1, puzzle: SHAPE });
+    const start = rows(g);
+    swapAt(g, 1, 0);
+    expect(g.puzzleMoves).toEqual([{ x: 1, y: 0 }]);
+    const after1 = rows(g);
+    expect(after1).not.toEqual(start);
+    swapAt(g, 2, 0);
+    expect(g.boards[0].movesLeft).toBe(0);
+    for (let i = 0; i < 600 && !g.finished; i++) g.tick([NO_INPUT]);
+    expect(g.puzzleResult).toBe("fail");
+    expect(g.puzzleUndo()).toBe(true);
+    expect(g.finished).toBe(false);
+    expect(g.puzzleResult).toBeNull();
+    expect(g.boards[0].movesLeft).toBe(1);
+    expect(rows(g)).toEqual(after1);
+    expect(g.boards[0].cursor).toEqual({ x: 2, y: 0 });
+    expect(g.puzzleUndo()).toBe(true);
+    expect(rows(g)).toEqual(start);
+    expect(g.boards[0].movesLeft).toBe(2);
+    expect(g.puzzleUndo()).toBe(false);
+  });
+
+  it("進めるは戻した手を打ち直す。新しい手を打つと進める手は消える", () => {
+    const g = new Game({ mode: "puzzle", seed: 1, puzzle: SHAPE });
+    swapAt(g, 0, 0);
+    const after1 = rows(g);
+    expect(g.puzzleCanRedo).toBe(false);
+    g.puzzleUndo();
+    expect(g.puzzleCanRedo).toBe(true);
+    expect(g.puzzleRedoMove()).toBe(true);
+    expect(g.puzzleCanRedo).toBe(false);
+    expect(rows(g)).toEqual(after1);
+    expect(g.puzzleMoves).toEqual([{ x: 0, y: 0 }]);
+    expect(g.boards[0].movesLeft).toBe(1);
+    g.puzzleUndo();
+    swapAt(g, 2, 0);
+    expect(g.puzzleCanRedo).toBe(false);
+    expect(g.puzzleRedoMove()).toBe(false);
+  });
+
+  it("動いている間は戻せない。全消しのあとも戻さない", () => {
+    const g = new Game({ mode: "puzzle", seed: 1, puzzle: ONE_MOVE });
+    g.tick([{ ...NO_INPUT, cursorTo: { x: 2, y: 0 }, swap: true }]);
+    g.tick([NO_INPUT]);
+    expect(g.boards[0].isSettled()).toBe(false);
+    expect(g.puzzleUndo()).toBe(false);
+    for (let i = 0; i < 600 && !g.finished; i++) g.tick([NO_INPUT]);
+    expect(g.puzzleResult).toBe("clear");
+    expect(g.puzzleUndo()).toBe(false);
+  });
+
+  it("ヒントは次の 1 手と技法を返す。解から外れたら解き直し、残りの手数で解けなければ null", () => {
+    const g = new Game({ mode: "puzzle", seed: 1, stage: 14 }); // 2-5: N-N-HVCD!
+    const sol = parseSolution(PUZZLES[14].solution!);
+    const h0 = g.puzzleHint()!;
+    expect(h0.move).toEqual(sol[0]);
+    expect(h0.techniques).toEqual(new Set(["N"]));
+    swapAt(g, sol[0].x, sol[0].y);
+    swapAt(g, sol[1].x, sol[1].y);
+    const h2 = g.puzzleHint()!;
+    expect(h2.move).toEqual(sol[2]);
+    expect(h2.techniques).toEqual(new Set(["H", "V", "C", "D"]));
+    // 解の順を入れ替えた手（2 手目を先に打つ）からは解けないので null
+    g.puzzleUndo();
+    g.puzzleUndo();
+    swapAt(g, sol[1].x, sol[1].y);
+    expect(g.puzzleHint()).toBeNull();
+    // 解から外れても残りの手数で解ける盤面ならソルバーが手を返す
+    const g2 = new Game({ mode: "puzzle", seed: 1, puzzle: { moves: 2, rows: ["00.0.."] } });
+    swapAt(g2, 4, 0);
+    const h = g2.puzzleHint()!;
+    expect(h.move).toEqual({ x: 2, y: 0 });
+    expect(h.techniques).toEqual(new Set(["H"]));
+  });
+
+  it("パズル以外では履歴を積まず、戻す・進める・ヒントは何もしない", () => {
+    const g = new Game({ mode: "endless", seed: 1 });
+    g.tick([{ ...NO_INPUT, swap: true }]);
+    expect(g.puzzleMoves).toEqual([]);
+    expect(g.puzzleUndo()).toBe(false);
+    expect(g.puzzleRedoMove()).toBe(false);
+    expect(g.puzzleHint()).toBeNull();
   });
 });
 
