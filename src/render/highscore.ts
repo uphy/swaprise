@@ -13,6 +13,17 @@ export interface CpuRecord {
   losses: number;
 }
 
+/** 特定の相手との戦績。鍵は相手の端末が作った匿名 id（座席の id）。 */
+export interface RivalRecord {
+  /** 最後に対戦したときの相手の表示名。相手が名前を変えたら追いかける。 */
+  name: string;
+  wins: number;
+  losses: number;
+  draws: number;
+  /** 最後に対戦した日時（ms）。古い相手から捨てる。 */
+  at: number;
+}
+
 /** オンライン対戦の通算。ログインがないので端末（ブラウザ）単位の記録になる。 */
 export interface OnlineRecord {
   wins: number;
@@ -20,7 +31,12 @@ export interface OnlineRecord {
   draws: number;
   /** 最後に数えた試合の id。結果画面へ再接続したときに同じ試合を二度数えない。 */
   lastMatch: string;
+  /** 相手別の戦績。相手の匿名 id → 記録 */
+  rivals: Record<string, RivalRecord>;
 }
+
+/** 覚えておく相手の数。超えたら最後に対戦した日時が古い相手から捨てる。 */
+export const MAX_RIVALS = 100;
 
 export type OnlineOutcome = "win" | "lose" | "draw";
 
@@ -50,7 +66,7 @@ function empty(): HighScores {
       normal: { wins: 0, losses: 0 },
       hard: { wins: 0, losses: 0 },
     },
-    online: { wins: 0, losses: 0, draws: 0, lastMatch: "" },
+    online: { wins: 0, losses: 0, draws: 0, lastMatch: "", rivals: {} },
     puzzle: [],
     lessons: [],
   };
@@ -87,7 +103,13 @@ export function loadHighScores(): HighScores {
       }
     }
     const o = parsed.online;
-    if (o) base.online = { wins: o.wins ?? 0, losses: o.losses ?? 0, draws: o.draws ?? 0, lastMatch: typeof o.lastMatch === "string" ? o.lastMatch : "" };
+    if (o) {
+      base.online = { wins: o.wins ?? 0, losses: o.losses ?? 0, draws: o.draws ?? 0, lastMatch: typeof o.lastMatch === "string" ? o.lastMatch : "", rivals: {} };
+      for (const [id, r] of Object.entries(o.rivals ?? {})) {
+        if (!id || !r || typeof r !== "object") continue;
+        base.online.rivals[id] = { name: typeof r.name === "string" ? r.name : "", wins: r.wins ?? 0, losses: r.losses ?? 0, draws: r.draws ?? 0, at: r.at ?? 0 };
+      }
+    }
     if (Array.isArray(parsed.puzzle)) {
       base.puzzle = [...new Set(parsed.puzzle.filter((n) => Number.isInteger(n) && n >= 0))].sort((a, b) => a - b);
     }
@@ -141,22 +163,47 @@ export function recordCpuResult(level: CpuLevel, won: boolean): CpuRecord {
 /**
  * オンライン対戦の勝敗を記録する。同じ試合を二度は数えない（結果画面へ再接続したときも一度だけ）。
  * 無効試合（同期ずれ・サーバー障害）は呼ばない。
+ * rival を渡すと相手別にも数える。旧クライアントの相手は id が "" なので通算にだけ入る。
  */
-export function recordOnlineResult(matchId: string, outcome: OnlineOutcome): OnlineRecord {
+export function recordOnlineResult(matchId: string, outcome: OnlineOutcome, rival?: { id: string; name: string }, now = Date.now()): OnlineRecord {
   const h = loadHighScores();
   const r = h.online;
   if (r.lastMatch !== matchId) {
-    if (outcome === "win") r.wins++;
-    else if (outcome === "lose") r.losses++;
-    else r.draws++;
+    const tally = (x: { wins: number; losses: number; draws: number }): void => {
+      if (outcome === "win") x.wins++;
+      else if (outcome === "lose") x.losses++;
+      else x.draws++;
+    };
+    tally(r);
+    if (rival?.id) {
+      const rv = r.rivals[rival.id] ?? { name: rival.name, wins: 0, losses: 0, draws: 0, at: now };
+      tally(rv);
+      rv.name = rival.name;
+      rv.at = now;
+      r.rivals[rival.id] = rv;
+      for (const [id] of Object.entries(r.rivals).sort((a, b) => b[1].at - a[1].at).slice(MAX_RIVALS)) delete r.rivals[id];
+    }
     r.lastMatch = matchId;
     save(h);
   }
-  return { ...r };
+  return { ...r, rivals: { ...r.rivals } };
+}
+
+/** 相手との戦績。対戦したことがなければ null。 */
+export function rivalRecord(id: string): RivalRecord | null {
+  return (id && loadHighScores().online.rivals[id]) || null;
+}
+
+/** 対戦したことのある相手を、最後に対戦した順に返す。 */
+export function recentRivals(limit = 5): (RivalRecord & { id: string })[] {
+  return Object.entries(loadHighScores().online.rivals)
+    .map(([id, r]) => ({ id, ...r }))
+    .sort((a, b) => b.at - a.at)
+    .slice(0, limit);
 }
 
 /** 「12W 8L」の形。引き分けがあれば「12W 8L 1D」。 */
-export function onlineRecordLine(r: OnlineRecord): string {
+export function onlineRecordLine(r: { wins: number; losses: number; draws: number }): string {
   const base = t("{wins}W {losses}L", { wins: r.wins, losses: r.losses });
   return r.draws > 0 ? `${base} ${t("{draws}D", { draws: r.draws })}` : base;
 }

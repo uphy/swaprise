@@ -119,6 +119,14 @@ test("招待URLから2人で対戦し、降参して再戦する", async ({ brow
   expect(await record(q)).toEqual({ wins: 1, losses: 0, draws: 0 });
   expect((await bodies(p)).map((b: string) => b.includes("ONLINE  0W 1L"))).toEqual([true, false]);
   expect((await bodies(q)).map((b: string) => b.includes("ONLINE  1W 0L"))).toEqual([false, true]);
+  // 相手別の戦績は、相手の端末が作った匿名 id（swaprise.player.v1）を鍵に数え、通算の下に相手の名前で出す
+  const playerIdOf = (page: Page) => page.evaluate(() => localStorage.getItem("swaprise.player.v1"));
+  const rivals = (page: Page) =>
+    page.evaluate(() => JSON.parse(localStorage.getItem("swaprise.highscores.v1") ?? "{}").online?.rivals);
+  expect(await rivals(p)).toEqual({ [await playerIdOf(q) as string]: expect.objectContaining({ name: "参加した人", wins: 0, losses: 1, draws: 0 }) });
+  expect(await rivals(q)).toEqual({ [await playerIdOf(p) as string]: expect.objectContaining({ name: "招待した人", wins: 1, losses: 0, draws: 0 }) });
+  expect((await bodies(p))[0]).toContain("vs 参加した人  0W 1L");
+  expect((await bodies(q))[1]).toContain("vs 招待した人  1W 0L");
   const old = await p.evaluate(
     () => (window as any).__swapriseOnline.session.state.match.id,
   );
@@ -136,11 +144,27 @@ test("招待URLから2人で対戦し、降参して再戦する", async ({ brow
       (view: any) => !view.resultEffect && !view.overlay.visible,
     ))).toBe(true);
   }
-  // 再戦で盤面を組み直しても、前の試合を二度数えない
+  // 再戦で盤面を組み直しても、前の試合を二度数えない。対戦中の状態行には相手との戦績を添える
   expect(await record(p)).toEqual({ wins: 0, losses: 1, draws: 0 });
+  expect(Object.values(await rivals(p))).toEqual([expect.objectContaining({ wins: 0, losses: 1 })]);
+  await expect(p.locator(".online-panel p")).toContainText("参加した人 · 0W 1L · playing");
   expect(errors).toEqual([]);
   await a.close();
   await b.close();
+});
+test("選択画面に対戦したことのある相手を最後に対戦した順に並べる", async ({ browser }) => {
+  const c = await browser.newContext();
+  const page = await c.newPage();
+  await page.addInitScript(() => localStorage.setItem("swaprise.highscores.v1", JSON.stringify({
+    online: { wins: 3, losses: 1, draws: 1, lastMatch: "m", rivals: {
+      a: { name: "taro", wins: 2, losses: 0, draws: 0, at: 1000 },
+      b: { name: "", wins: 1, losses: 1, draws: 1, at: 2000 },
+    } },
+  })));
+  await enter(page);
+  await expect(page.locator(".online-rivals dt")).toHaveText("RECENT OPPONENTS");
+  await expect(page.locator(".online-rivals dd")).toHaveText(["Guest1W 1L 1D", "taro2W 0L"]);
+  await c.close();
 });
 test("ランダム待機はキャンセルでき、2人揃うと自動で開始する", async ({
   browser,

@@ -18,6 +18,8 @@ export interface Member {
   session: string;
   token: string;
   name: string;
+  /** 端末の匿名 id。相手の端末に座席で渡す。無ければ "" */
+  player?: string;
   disconnectedAt?: number;
 }
 export class RoomEngine {
@@ -56,6 +58,7 @@ export class RoomEngine {
     if (old >= 0) {
       this.members[old] = member;
       this.state.seats[old]!.name = member.name;
+      this.state.seats[old]!.id = member.player ?? "";
       return old;
     }
     const i = this.members.findIndex((m) => !m);
@@ -64,6 +67,7 @@ export class RoomEngine {
     this.members[i] = member;
     this.state.seats[i] = {
       name: member.name,
+      id: member.player ?? "",
       connected: false,
       visible: false,
       ready: false,
