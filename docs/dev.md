@@ -74,6 +74,17 @@ PR には CI がプレビュー URL をコメントする（Cloudflare の versi
 
 `index.html` の `og:*` / `twitter:card` で、SNS・チャットに URL を貼ると題字の画像と一言が出る。画像 `public/ogp.png`（1200×630）は `pnpm ogp` が `tools/make-ogp.ts` で生成する（オープニングと同じパネルのドット文字）。画像ファイルを手で描くことはしない。`og:image` はプレビュー環境からも本番の絶対 URL を指す（相対だとクローラが拾えない）。
 
+### 結果の共有カード
+
+結果画面の SHARE が送る URL は `/r?m=endless&s=12340&c=7&id=…` のような結果の共有 URL で、貼った先にはその結果のカードが出る。
+
+- `src/ogp/spec.ts` が URL と中身の対応。クライアントは `shareParams` で URL を作り、Worker は `parseShare` で読み戻して `cardSpec`（絵）と `cardMeta`（og:title / og:description）を組む。載せる情報を変えるときはここだけ直す
+- `worker/share.ts` が `/r` と `/api/ogp.png` を受ける。`/r` は index.html の `og:*` を HTMLRewriter で書き換えて返すので、人が開けばそのままメニューが出る。`/api/ogp.png` は `src/ogp/card.ts` が画像ライブラリなしで描く（1 枚 30〜60 ms、約 100 KB）。同じ URL の画像は edge cache に 1 日残す
+- 値は URL の自己申告で、範囲だけ検めて絵にする。エンドレスとタイムアタックは公開した記録の id を付け、D1 にあれば順位を出し、得点と連鎖も D1 の値で書く。未公開・非公開の id は D1 になく、URL の値だけで描かれる
+- 文字は `src/ogp/font.ts` の 5×7 ドット文字（英大文字・数字・記号）。日本語は `og:description` の文にだけ入る
+- 見本は `pnpm ogp:samples` が `/tmp/swaprise-cards/` に各モードぶん書き出す
+- オンライン対戦の結果画面には SHARE がまだ無い。URL と Worker は `m=online`（相手の名前と戦績）を受けられるので、足すときはクライアントだけ
+
 ## 計測
 
 何が効いたかを知るため、利用の出来事を [Workers Analytics Engine](https://developers.cloudflare.com/analytics/analytics-engine/) に書く。cookie は使わず、名前も IP も保存しない。`worker/track.ts` が `/api/track` で受け、`src/render/analytics.ts` が送る。取り決めは `src/net/track.ts`。

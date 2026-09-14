@@ -89,6 +89,6 @@ test("結果画面の SHARE で navigator.share に得点が渡る", async ({ pa
   const shared = await page.evaluate(() => (window as any).__shared);
   expect(shared).toHaveLength(1);
   expect(shared[0].text).toBe("SWAPRISE  SCORE 777  MAX CHAIN x3");
-  // ポートは PREVIEW_PORT で変わるので固定しない
-  expect(shared[0].url).toMatch(/^http:\/\/127\.0\.0\.1:\d+\//);
+  // URL は結果の共有 URL。貼った先で Worker がこの得点のカードを出す。ポートは PREVIEW_PORT で変わるので固定しない
+  expect(shared[0].url).toMatch(/^http:\/\/127\.0\.0\.1:\d+\/r\?m=endless&s=777&c=3(&id=[0-9a-f-]{36})?$/);
 });

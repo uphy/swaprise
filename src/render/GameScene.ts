@@ -17,6 +17,7 @@ import { RaiseBar } from "./RaiseBar";
 import { wakeLock } from "./wakelock";
 import { fullscreen } from "./fullscreen";
 import { canShare, shareText } from "./share";
+import type { ShareVerdict, ShareResult } from "../ogp/spec";
 import { BOARD_H, BOARD_W, FONT, FONT_UI, TEXT_COLOR, TEXT_DIM, KIND_COLORS, type Layout, type SkyName, layoutFor, sameLayout } from "./theme";
 import { Background } from "./Background";
 import { t } from "./i18n";
@@ -819,20 +820,26 @@ export class GameScene extends Phaser.Scene {
     const g = this.game_;
     const b = g.boards[0];
     let text: string;
-    if (this.mode === "endless") {
-      text = `SWAPRISE  SCORE ${b.score}  MAX CHAIN x${b.maxChain}`;
-    } else if (this.mode === "timeattack") {
-      text = `SWAPRISE  TIME ATTACK 2:00  SCORE ${b.score}  MAX CHAIN x${b.maxChain}`;
+    // URL は /r?… で、貼った先にこの結果のカードが出る（src/ogp/spec.ts）
+    let result: ShareResult;
+    if (this.mode === "endless" || this.mode === "timeattack") {
+      text = `SWAPRISE  ${this.mode === "timeattack" ? "TIME ATTACK 2:00  " : ""}SCORE ${b.score}  MAX CHAIN x${b.maxChain}`;
+      // 公開した記録なら Worker が順位を引いてカードに載せる。非公開・未送信なら id は D1 になく、URL の値だけで描かれる
+      result = this.scoreRun ? { mode: this.mode, score: b.score, chain: b.maxChain, id: this.scoreRun.id } : { mode: this.mode, score: b.score, chain: b.maxChain };
     } else if (this.mode === "puzzle") {
-      text = `SWAPRISE  ${t("PUZZLE")} ${puzzleName(this.stage)}  ${g.puzzleResult === "clear" ? t("CLEAR") : t("FAILED")}`;
+      const clear = g.puzzleResult === "clear";
+      text = `SWAPRISE  ${t("PUZZLE")} ${puzzleName(this.stage)}  ${clear ? t("CLEAR") : t("FAILED")}`;
+      result = clear ? { mode: "puzzle", stage: puzzleName(this.stage), clear, left: b.movesLeft ?? 0 } : { mode: "puzzle", stage: puzzleName(this.stage), clear };
     } else if (this.mode === "lesson") {
       text = `SWAPRISE  ${t("LESSON {n} / {total}", { n: this.lesson + 1, total: LESSONS.length })}  ${t("CLEAR")}`;
+      result = { mode: "lesson", n: this.lesson + 1, total: LESSONS.length };
     } else {
-      const result = g.winner < 0 ? t("DRAW") : g.winner === 0 ? t("WIN") : t("LOSE");
+      const verdict: ShareVerdict = g.winner < 0 ? "draw" : g.winner === 0 ? "win" : "lose";
       const foe = this.mode === "cpu" ? `CPU ${this.cpuLevel.toUpperCase()}` : "2P";
-      text = `SWAPRISE  ${result} vs ${foe}  MAX CHAIN x${b.maxChain}`;
+      text = `SWAPRISE  ${{ draw: t("DRAW"), win: t("WIN"), lose: t("LOSE") }[verdict]} vs ${foe}  MAX CHAIN x${b.maxChain}`;
+      result = this.mode === "cpu" ? { mode: "cpu", level: this.cpuLevel, result: verdict, chain: b.maxChain } : { mode: "versus", result: verdict, chain: b.maxChain };
     }
-    const outcome = await shareText(text);
+    const outcome = await shareText(text, result);
     button.setText(outcome === "copied" ? t("COPIED") : outcome === "failed" ? t("SHARE FAILED") : t("SHARE"));
   }
 
