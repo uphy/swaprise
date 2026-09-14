@@ -2,13 +2,17 @@
 import type { Env } from "./types";
 import { scores } from "./scores";
 import { track } from "./track";
+import { shareImage, sharePage } from "./share";
 export { Room } from "./room";
 export { Coordinator } from "./coordinator";
 export const json = (data: unknown, status = 200): Response =>
   Response.json(data, { status, headers: { "Cache-Control": "no-store" } });
 export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
+  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
+    // 結果の共有。クローラが開く公開の GET なので、Origin やセッションの確認より前に受ける
+    if (url.pathname === "/r" && request.method === "GET") return sharePage(request, env);
+    if (url.pathname === "/api/ogp.png" && request.method === "GET") return shareImage(request, env, ctx);
     if (!url.pathname.startsWith("/api/")) return env.ASSETS.fetch(request);
     const origin = request.headers.get("Origin");
     if (origin && origin !== url.origin)
