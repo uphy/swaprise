@@ -73,7 +73,7 @@ function sky(y: number): RGB {
   return SKY[SKY.length - 1][1];
 }
 
-/** 角丸の正方形の内側か。(cx, cy) 中心、半辺 h、角の半径 r。tools/make-icons.mjs と同じ。 */
+/** 角丸の正方形の内側か。(cx, cy) 中心、半辺 h、角の半径 r。かつて tools/make-icons.mjs にあったものと同じ。 */
 function inRoundedSquare(x: number, y: number, cx: number, cy: number, h: number, r: number): boolean {
   const dx = Math.abs(x - cx);
   const dy = Math.abs(y - cy);
