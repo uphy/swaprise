@@ -12,7 +12,9 @@ export type ShareResult =
   | { mode: "lesson"; n: number; total: number }
   | { mode: "cpu"; level: "easy" | "normal" | "hard"; result: ShareVerdict; chain: number }
   | { mode: "versus"; result: ShareVerdict; chain: number }
-  | { mode: "online"; result: ShareVerdict; chain: number; vs?: string; wins?: number; losses?: number };
+  | { mode: "online"; result: ShareVerdict; chain: number; vs?: string; wins?: number; losses?: number }
+  /** 対戦の招待。招待トークンは URL の hash に残し、ここには載せない（クローラも Worker も hash を見ない） */
+  | { mode: "invite"; room: string; from?: string };
 
 /** Worker が D1 から引いた順位。記録が公開されていなければ null */
 export interface ShareStanding { rank: number; total: number }
@@ -49,6 +51,10 @@ export function shareParams(r: ShareResult): URLSearchParams {
       if (r.vs) p.set("vs", r.vs);
       if (r.wins !== undefined && r.losses !== undefined) { p.set("w", String(r.wins)); p.set("l", String(r.losses)); }
       break;
+    case "invite":
+      p.set("room", r.room);
+      if (r.from) p.set("from", r.from);
+      break;
   }
   return p;
 }
@@ -57,6 +63,11 @@ const int = (v: string | null, max: number): number | null => {
   if (v === null || !/^\d{1,9}$/.test(v)) return null;
   const n = Number(v);
   return n <= max ? n : null;
+};
+/** 人の名前。空なら undefined、長ければ 12 文字で切る */
+const name = (v: string | null): string | undefined => {
+  const trimmed = v?.trim();
+  return trimmed ? [...trimmed].slice(0, 12).join("") : undefined;
 };
 const outcome = (v: string | null): ShareVerdict | null => (OUTCOMES as string[]).includes(v ?? "") ? (v as ShareVerdict) : null;
 
@@ -102,13 +113,19 @@ export function parseShare(p: URLSearchParams): ShareResult | null {
     const result = outcome(p.get("r"));
     const chain = int(p.get("c"), 99);
     if (!result || chain === null) return null;
-    const vs = p.get("vs")?.trim();
+    const vs = name(p.get("vs"));
     const out: ShareResult = { mode: m, result, chain };
-    if (vs) out.vs = [...vs].slice(0, 12).join("");
+    if (vs) out.vs = vs;
     const wins = int(p.get("w"), 9999);
     const losses = int(p.get("l"), 9999);
     if (wins !== null && losses !== null) { out.wins = wins; out.losses = losses; }
     return out;
+  }
+  if (m === "invite") {
+    const room = p.get("room");
+    if (!room || !UUID.test(room)) return null;
+    const from = name(p.get("from"));
+    return from ? { mode: m, room, from } : { mode: m, room };
   }
   return null;
 }
@@ -116,7 +133,7 @@ export function parseShare(p: URLSearchParams): ShareResult | null {
 const points = (n: number): string => n.toLocaleString("en-US");
 const chainLine = (chain: number): string => `MAX CHAIN ×${chain}`;
 const modeLabel = (mode: ShareResult["mode"]): string =>
-  ({ endless: "ENDLESS", timeattack: "TIME ATTACK 2:00", puzzle: "PUZZLE", lesson: "LESSON", cpu: "VS CPU", versus: "VS 2P", online: "ONLINE" })[mode];
+  ({ endless: "ENDLESS", timeattack: "TIME ATTACK 2:00", puzzle: "PUZZLE", lesson: "LESSON", cpu: "VS CPU", versus: "VS 2P", online: "ONLINE", invite: "ONLINE" })[mode];
 const RESULT_WORD: Record<ShareVerdict, string> = { win: "WIN", lose: "LOSE", draw: "DRAW" };
 /** WIN は強調の黄、LOSE は薄い藤色、DRAW と CLEAR は連鎖の緑 */
 const RESULT_COLOR: Record<ShareVerdict, number> = { win: 0xffe066, lose: 0xd9d4f2, draw: 0x7cf57a };
@@ -146,6 +163,8 @@ export function cardSpec(r: ShareResult, standing: ShareStanding | null = null):
       subs.push({ text: chainLine(r.chain) });
       return { mode: modeLabel(r.mode), main: RESULT_WORD[r.result], mainColor: RESULT_COLOR[r.result], subs };
     }
+    case "invite":
+      return { mode: modeLabel(r.mode), main: "JOIN ME", mainColor: 0xffe066, caption: "ONLINE VS", subs: r.from ? [{ text: `FROM ${r.from}` }] : [] };
   }
 }
 
@@ -174,6 +193,11 @@ export function cardMeta(r: ShareResult, standing: ShareStanding | null = null):
       return {
         title: `${won[r.result]}${r.vs ? ` vs ${r.vs}` : " online"}${r.wins !== undefined ? ` (${r.wins}W ${r.losses}L)` : ""} · max chain x${r.chain}${suffix}`,
         description: TAGLINE,
+      };
+    case "invite":
+      return {
+        title: `${r.from ?? "A friend"} invited you to play${suffix}`,
+        description: `リンクを開くとそのまま対戦が始まる。Open the link to join the match. ${TAGLINE}`,
       };
   }
 }

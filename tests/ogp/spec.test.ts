@@ -15,6 +15,8 @@ describe("共有 URL のパラメータ", () => {
       { mode: "versus", result: "draw", chain: 2 },
       { mode: "online", result: "lose", chain: 3, vs: "Taro", wins: 3, losses: 1 },
       { mode: "online", result: "win", chain: 5 },
+      { mode: "invite", room: "3f2a1b4c-5d6e-4f70-8a9b-0c1d2e3f4a5b", from: "Taro" },
+      { mode: "invite", room: "3f2a1b4c-5d6e-4f70-8a9b-0c1d2e3f4a5b" },
     ];
     for (const r of results) expect(roundTrip(r)).toEqual(r);
   });
@@ -24,7 +26,7 @@ describe("共有 URL のパラメータ", () => {
       "", "m=endless", "m=endless&s=abc&c=1", "m=endless&s=1&c=100", "m=endless&s=1&c=1&id=nope", "m=endless&s=123456789012&c=1",
       "m=puzzle&st=3-2", "m=puzzle&st=x&r=clear", "m=puzzle&st=3-2&r=clear&left=abc",
       "m=lesson&n=0&total=10", "m=lesson&n=11&total=10",
-      "m=cpu&lv=insane&r=win&c=1", "m=cpu&lv=hard&r=meh&c=1", "m=versus&r=win", "m=online&r=win", "m=story",
+      "m=cpu&lv=insane&r=win&c=1", "m=cpu&lv=hard&r=meh&c=1", "m=versus&r=win", "m=online&r=win", "m=story", "m=invite", "m=invite&room=nope",
     ]) expect(parseShare(new URLSearchParams(q)), q).toBeNull();
   });
 
@@ -52,5 +54,13 @@ describe("カードの中身", () => {
     expect(cardSpec({ mode: "online", result: "lose", chain: 3, vs: "Taro", wins: 3, losses: 1 }).subs).toEqual([{ text: "VS Taro  3W 1L" }, { text: "MAX CHAIN ×3" }]);
     expect(cardMeta({ mode: "online", result: "lose", chain: 3, vs: "Taro", wins: 3, losses: 1 }).title).toBe("Lost vs Taro (3W 1L) · max chain x3 – SWAPRISE");
     expect(cardMeta({ mode: "lesson", n: 3, total: 10 }).title).toBe("Lesson 3 / 10 clear – SWAPRISE");
+  });
+
+  it("招待は JOIN ME が主役で、誘った人の名前が副情報", () => {
+    const room = "3f2a1b4c-5d6e-4f70-8a9b-0c1d2e3f4a5b";
+    expect(cardSpec({ mode: "invite", room, from: "Taro" })).toEqual({ mode: "ONLINE", main: "JOIN ME", mainColor: 0xffe066, caption: "ONLINE VS", subs: [{ text: "FROM Taro" }] });
+    expect(cardSpec({ mode: "invite", room }).subs).toEqual([]);
+    expect(cardMeta({ mode: "invite", room, from: "Taro" }).title).toBe("Taro invited you to play – SWAPRISE");
+    expect(cardMeta({ mode: "invite", room }).title).toBe("A friend invited you to play – SWAPRISE");
   });
 });

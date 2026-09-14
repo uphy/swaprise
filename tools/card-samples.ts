@@ -12,6 +12,7 @@ const samples: Record<string, CardSpec> = {
   puzzle: { mode: "PUZZLE", main: "CLEAR", mainColor: 0x7cf57a, subs: [{ text: "STAGE 12" }, { text: "0 MOVES LEFT" }] },
   cpu: { mode: "VS CPU", main: "WIN", mainColor: 0xffe066, subs: [{ text: "CPU HARD" }, { text: "MAX CHAIN ×9" }] },
   online: { mode: "ONLINE", main: "LOSE", mainColor: 0xd9d4f2, subs: [{ text: "VS TARO  3W 1L" }, { text: "MAX CHAIN ×3" }] },
+  invite: { mode: "ONLINE", main: "JOIN ME", mainColor: 0xffe066, caption: "ONLINE VS", subs: [{ text: "FROM TARO" }] },
 };
 
 for (const [name, spec] of Object.entries(samples)) {

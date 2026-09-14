@@ -13,6 +13,7 @@ import { audio } from "./shared";
 import { musicDanger } from "./musicDanger";
 import { wakeLock } from "./wakelock";
 import { shareText } from "./share";
+import { SHARE_PATH, shareParams } from "../ogp/spec";
 import { track } from "./analytics";
 import {
   OnlineSession,
@@ -629,9 +630,10 @@ export class OnlineScene extends Phaser.Scene {
       if (s.connection.invite)
         this.button(t("SHARE INVITE"), () => {
           track("share", { mode: "online", detail: "invite" });
-          void shareText(
-            `${t("Play SWAPRISE with me!")}\n${location.origin}/?room=${s.connection.roomId}#invite=${s.connection.invite}`,
-          ).then((result) => {
+          // 招待リンクは /r?m=invite&room=…#invite=…。貼った先に招待のカードが出て、開けば ?room= を見てそのまま部屋に入る。
+          // トークンは hash に置き、サーバーやクローラには渡さない
+          const link = `${location.origin}${SHARE_PATH}?${shareParams({ mode: "invite", room: s.connection.roomId, from: displayName(playerName()) })}#invite=${s.connection.invite}`;
+          void shareText(`${t("Play SWAPRISE with me!")}\n${link}`).then((result) => {
             this.status.textContent =
               result === "copied"
                 ? t("Invite link copied.")

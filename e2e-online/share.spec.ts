@@ -59,3 +59,36 @@ test("公開済みの記録は D1 の順位が og:description に入り、得点
   expect(meta(unknown, "og:title")).toBe("777 points · max chain x3 – SWAPRISE");
   expect(meta(unknown, "og:description")).not.toContain("ランキング");
 });
+
+test("招待リンクは /r?m=invite&room=…#invite=… で、貼れば招待のカード、開けば部屋に入る", async ({ browser }) => {
+  const a = await browser.newContext();
+  const b = await browser.newContext();
+  const p = await a.newPage();
+  const q = await b.newPage();
+  await p.addInitScript(() => {
+    (window as any).__shared = [];
+    Object.defineProperty(navigator, "share", { configurable: true, value: (data: unknown) => { (window as any).__shared.push(data); return Promise.resolve(); } });
+  });
+  await p.goto("/?opening=0");
+  await p.waitForFunction(() => !!(window as any).__swapriseScenes?.menu);
+  // メニューの ONLINE は canvas の項目。online.spec.ts の enter と同じく index 3 を選ぶ
+  await p.evaluate(() => { const m = (window as any).__swapriseScenes.menu; m.index = 3; m.select(); });
+  await p.getByRole("textbox").fill("Taro");
+  await p.getByRole("button", { name: "INVITE FRIEND", exact: true }).click();
+  await p.getByRole("button", { name: "SHARE INVITE" }).click();
+  await p.waitForFunction(() => (window as any).__shared.length === 1);
+  const text: string = await p.evaluate(() => (window as any).__shared[0].text);
+  const link = /https?:\/\/\S+/.exec(text)![0];
+  expect(link).toMatch(/\/r\?m=invite&room=[0-9a-f-]{36}&from=Taro#invite=\S+$/);
+
+  // 貼った先: og:* が招待の内容
+  const html = await (await p.request.get(link)).text();
+  expect(meta(html, "og:title")).toBe("Taro invited you to play – SWAPRISE");
+  expect(meta(html, "og:image")).toMatch(/\/api\/ogp\.png\?m=invite&room=[0-9a-f-]{36}&from=Taro$/);
+
+  // 開いた人: そのまま部屋に入る画面
+  await q.goto(link);
+  await expect(q.getByRole("button", { name: "JOIN ROOM", exact: true })).toBeVisible();
+  await a.close();
+  await b.close();
+});

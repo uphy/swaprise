@@ -83,6 +83,7 @@ PR には CI がプレビュー URL をコメントする（Cloudflare の versi
 - 値は URL の自己申告で、範囲だけ検めて絵にする。エンドレスとタイムアタックは公開した記録の id を付け、D1 にあれば順位を出し、得点と連鎖も D1 の値で書く。未公開・非公開の id は D1 になく、URL の値だけで描かれる
 - 文字は `src/ogp/font.ts` の 5×7 ドット文字（英大文字・数字・記号）。日本語は `og:description` の文にだけ入る
 - 見本は `pnpm ogp:samples` が `/tmp/swaprise-cards/` に各モードぶん書き出す
+- オンライン対戦の招待リンクも `/r?m=invite&room=…&from=名前#invite=…` で、貼れば「JOIN ME」のカードが出る。招待トークンは hash に置き、Worker にもクローラにも渡さない。開いた人は `?room=` を見てそのまま部屋に入る
 - オンライン対戦の結果画面には SHARE がまだ無い。URL と Worker は `m=online`（相手の名前と戦績）を受けられるので、足すときはクライアントだけ
 
 ## 計測
