@@ -68,7 +68,7 @@ PR には CI がプレビュー URL をコメントする（Cloudflare の versi
 - ビルドすると manifest と Service Worker（vite-plugin-pwa）が付く
 - ビルド成果物（本体と曲の mp3、合わせて 8MB 未満）を precache するので、次回からはオフラインでも遊べる。別のプレビューURLとはキャッシュを共有しない
 - 新しい版は次に開いたときに、メニューを出す前に「UPDATING…」と表示して切り替える（遊んでいる最中に reload しない）。回線が遅くて確認が終わらないときはそのまま始め、次にメニューへ戻ったときに切り替える
-- アイコンは `node tools/make-icons.mjs` がコードから PNG を生成する（`public/icons/`）。画像ファイルを手で描くことはしない
+- アイコンは画像生成 AI で描いた `tools/icon-source.png`（1254×1254）が元絵。`python3 tools/make-icons.py`（Pillow が要る）が `public/icons/` の 4 枚に縮める。maskable は Android が中央 80% の円で切り抜くので、絵を 80% に縮めて外側を空の色で埋めている。元絵を作り直すときは、4 色の正方形を田の字に並べない（Windows のロゴに見える）
 
 ## URL を貼ったときの見え方（OGP）
 
