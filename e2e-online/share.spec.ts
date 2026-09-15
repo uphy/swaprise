@@ -77,8 +77,10 @@ test("招待リンクは /r?m=invite&room=…#invite=… で、貼れば招待�
   await p.getByRole("button", { name: "INVITE FRIEND", exact: true }).click();
   await p.getByRole("button", { name: "SHARE INVITE" }).click();
   await p.waitForFunction(() => (window as any).__shared.length === 1);
-  const text: string = await p.evaluate(() => (window as any).__shared[0].text);
-  const link = /https?:\/\/\S+/.exec(text)![0];
+  // リンクは url だけに入る。本文にも入れると共有先で本サイトと招待の 2 枚のカードが出る
+  const shared: { text: string; url: string } = await p.evaluate(() => (window as any).__shared[0]);
+  expect(shared.text).not.toMatch(/https?:\/\//);
+  const link = shared.url;
   expect(link).toMatch(/\/r\?m=invite&room=[0-9a-f-]{36}&from=Taro#invite=\S+$/);
 
   // 貼った先: og:* が招待の内容
