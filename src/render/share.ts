@@ -11,12 +11,13 @@ export function canShare(): boolean {
 }
 
 /**
- * text と一緒に送る URL。result があれば結果の共有 URL（/r?…）で、貼った先にその結果のカードが出る。
- * なければ今開いているページ
+ * text と一緒に送る URL は 1 つだけ。result があれば結果の共有 URL（/r?…）、hash 付きの招待リンクなど
+ * 出来合いの URL は link で渡す。どちらもなければ今開いているページ。
+ * text に URL を入れてはいけない。共有先が text の URL と url の両方を展開して、カードが 2 枚出る
  */
-export async function shareText(text: string, result?: ShareResult): Promise<ShareOutcome> {
-  const url = typeof location === "undefined" ? ""
-    : result ? `${location.origin}${SHARE_PATH}?${shareParams(result).toString()}` : location.origin + location.pathname;
+export async function shareText(text: string, result?: ShareResult, link?: string): Promise<ShareOutcome> {
+  const url = link ?? (typeof location === "undefined" ? ""
+    : result ? `${location.origin}${SHARE_PATH}?${shareParams(result).toString()}` : location.origin + location.pathname);
   if (typeof navigator.share === "function") {
     try {
       await navigator.share({ title: "SWAPRISE", text, url });

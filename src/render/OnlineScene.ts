@@ -633,7 +633,8 @@ export class OnlineScene extends Phaser.Scene {
           // 招待リンクは /r?m=invite&room=…#invite=…。貼った先に招待のカードが出て、開けば ?room= を見てそのまま部屋に入る。
           // トークンは hash に置き、サーバーやクローラには渡さない
           const link = `${location.origin}${SHARE_PATH}?${shareParams({ mode: "invite", room: s.connection.roomId, from: displayName(playerName()) })}#invite=${s.connection.invite}`;
-          void shareText(`${t("Play SWAPRISE with me!")}\n${link}`).then((result) => {
+          // リンクは url として渡し、本文には入れない。両方に入れると共有先でカードが 2 枚出る
+          void shareText(t("Play SWAPRISE with me!"), undefined, link).then((result) => {
             this.status.textContent =
               result === "copied"
                 ? t("Invite link copied.")
