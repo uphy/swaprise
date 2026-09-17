@@ -49,9 +49,9 @@ test("公開済みの記録は D1 の順位が og:description に入り、得点
   const html = await (await request.get(`/r?m=endless&s=1&c=1&id=${id}`)).text();
   expect(meta(html, "og:title")).toBe("4,321 points · max chain x5 – SWAPRISE");
   const description = meta(html, "og:description")!;
-  expect(description).toMatch(/^ランキング \d+ 位 \/ \d+ 件。/);
+  expect(description).toMatch(/^ランキング \d+ 位 \/ \d+ 人。/);
   const rank = Number(/ランキング (\d+) 位/.exec(description)![1]);
-  const total = Number(/\/ (\d+) 件/.exec(description)![1]);
+  const total = Number(/\/ (\d+) 人/.exec(description)![1]);
   expect(rank).toBeGreaterThanOrEqual(2);
   expect(total).toBeGreaterThanOrEqual(rank);
   // 未公開の id は順位なしで、URL の値のまま
