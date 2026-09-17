@@ -171,7 +171,7 @@ export function cardSpec(r: ShareResult, standing: ShareStanding | null = null):
 /** og:title と og:description。画像の下に出る文で、共有先によっては画像より先に読まれる */
 export function cardMeta(r: ShareResult, standing: ShareStanding | null = null): { title: string; description: string } {
   const suffix = " – SWAPRISE";
-  const rankLine = standing ? `ランキング ${standing.rank} 位 / ${standing.total} 件。` : "";
+  const rankLine = standing ? `ランキング ${standing.rank} 位 / ${standing.total} 人。` : "";
   const won: Record<ShareVerdict, string> = { win: "Won", lose: "Lost", draw: "Drew" };
   switch (r.mode) {
     case "endless":

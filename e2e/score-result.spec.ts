@@ -29,7 +29,7 @@ for (const mode of ["endless", "timeattack"]) {
     await page.goto(`/?mode=${mode}&bgm=0&countdown=0`);
     await finish(page);
     await expect(page.getByRole("region", { name: "RESULT" })).toContainText("New best! +77");
-    await expect(page.getByRole("status")).toContainText("#63 / 100 records");
+    await expect(page.getByRole("status")).toContainText("#63 / 100 players");
     await expect(page.locator("[aria-current=true]")).toContainText("<img src=x> · THIS RUN");
     expect(await page.locator(".score-result ol").evaluate((el) => getComputedStyle(el).listStylePosition)).toBe("inside");
     await expect(page.locator(".score-result img")).toHaveCount(0);

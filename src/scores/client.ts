@@ -30,9 +30,9 @@ export function pendingScores(): Submission[] {
     return Array.isArray(list) ? list.filter(validSubmission).slice(-50) : [];
   } catch { return []; }
 }
-export function enqueueScore(score: Omit<Submission, "name" | "rules">): void {
+export function enqueueScore(score: Omit<Submission, "name" | "rules" | "player">): void {
   if (publication() !== true) return;
-  const value = { ...score, name: displayName(playerName()), rules: scoreRules(score.mode) };
+  const value = { ...score, name: displayName(playerName()), rules: scoreRules(score.mode), player: playerId() };
   if (!validSubmission(value)) return;
   const pending = pendingScores();
   if (!pending.some((entry) => entry.id === value.id)) write(QUEUE, JSON.stringify([...pending, value].slice(-50)));
@@ -68,8 +68,9 @@ export async function flushScores(): Promise<void> {
     if (publication() === true && pendingScores().length) retry = setTimeout(() => void flushScores(), 60000);
   }
 }
+/** 上位 50 件（1 人 1 件）。自分の端末の行には mine が付く */
 export async function ranking(mode: ScoreMode, signal: AbortSignal): Promise<RankedScore[]> {
-  const response = await fetch(`/api/scores?mode=${mode}&rules=${scoreRules(mode)}`, { signal: AbortSignal.any([signal, AbortSignal.timeout(8000)]) });
+  const response = await fetch(`/api/scores?mode=${mode}&rules=${scoreRules(mode)}&player=${playerId()}`, { signal: AbortSignal.any([signal, AbortSignal.timeout(8000)]) });
   if (!response.ok) throw new Error("Ranking unavailable");
   const result = await response.json() as { scores: RankedScore[] };
   if (!Array.isArray(result.scores)) throw new Error("Invalid ranking");

@@ -19,9 +19,13 @@ describe("standard score rules", () => {
     expect(validSubmission({ ...entry(), mode: "timeattack", frames: 7200 })).toBe(false);
   });
   it("rejects malformed, out-of-range and old rules records", () => {
-    for (const patch of [{ score: 100000 }, { score: -1 }, { score: 1.5 }, { seed: NaN }, { name: "a\nb" }, { name: "😀".repeat(21) }, { id: "bad" }, { rules: "old" }, { frames: 0 }, { mode: "cpu" }])
+    for (const patch of [{ score: 100000 }, { score: -1 }, { score: 1.5 }, { seed: NaN }, { name: "a\nb" }, { name: "😀".repeat(21) }, { id: "bad" }, { rules: "old" }, { frames: 0 }, { mode: "cpu" }, { player: "me" }, { player: 1 }])
       expect(validSubmission({ ...entry(), ...patch })).toBe(false);
     expect(validSubmission(null)).toBe(false);
+  });
+  it("accepts a device player id but does not require one from old clients", () => {
+    expect(validSubmission({ ...entry(), player: crypto.randomUUID() })).toBe(true);
+    expect(validSubmission(entry())).toBe(true);
   });
   it("excludes custom runs but permits presentation options", () => {
     expect(eligibleRun("endless", new URLSearchParams("bgm=0&countdown=0"))).toBe(true);
@@ -52,7 +56,7 @@ describe("shared profile and retry queue", () => {
     setPublication(true); savePlayerName("Before"); const s = entry();
     enqueueScore(s); enqueueScore(s); await vi.advanceTimersByTimeAsync(0);
     savePlayerName("After"); expect(pendingScores()).toHaveLength(1);
-    expect(pendingScores()[0]).toMatchObject({ id: s.id, name: "Before" });
+    expect(pendingScores()[0]).toMatchObject({ id: s.id, name: "Before", player: localStorage.getItem("swaprise.player.v1") });
     setPublication(false); expect(pendingScores()).toEqual([]);
     enqueueScore(entry()); expect(pendingScores()).toEqual([]);
   });

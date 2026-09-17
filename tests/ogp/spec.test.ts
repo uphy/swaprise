@@ -43,7 +43,7 @@ describe("カードの中身", () => {
     expect(cardSpec(r, { rank: 38, total: 512 }).subs).toEqual([{ text: "MAX CHAIN ×7" }, { text: "RANK #38 / 512" }]);
     expect(cardMeta(r, { rank: 38, total: 512 })).toEqual({
       title: "12,340 points · max chain x7 – SWAPRISE",
-      description: expect.stringContaining("ランキング 38 位 / 512 件。"),
+      description: expect.stringContaining("ランキング 38 位 / 512 人。"),
     });
   });
 

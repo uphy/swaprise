@@ -72,7 +72,7 @@ export function showPlayerSettings(scene: Phaser.Scene, first = false, done: () 
   consent.append(checkbox, document.createTextNode(t("Publish scores automatically")));
   body.append(consent, element("p", t("Endless / time attack. Your name and records will be visible to everyone.")));
   const details = element("details");
-  details.append(element("summary", t("About publishing scores")), element("p", t("Your name, score, chain and date will be public. Each play is a separate record. Past names and published records remain when you change this setting.")),
+  details.append(element("summary", t("About publishing scores")), element("p", t("Your name, score, chain and date will be public. Rankings show only your best score on this device. Past names and published records remain when you change this setting.")),
     element("p", t("Custom games stay on this device. Failed uploads retry later (up to 50). Turning this off discards pending uploads; an upload already received cannot be recalled.")));
   body.append(details);
   button(footer, first ? "SAVE AND PLAY" : "SAVE", () => { savePlayerName(input.value); setPublication(checkbox.checked); close(); }).className = "primary";
@@ -95,11 +95,12 @@ export function showRecordsDialog(scene: Phaser.Scene): void {
     if (note) h.append(" ", element("small", note));
     parent.append(c); return c;
   };
-  const scoreRow = (parent: HTMLElement, rank: string, name: string | null, score: number, chain: number, date: string): void => {
+  const scoreRow = (parent: HTMLElement, rank: string, name: string | null, score: number, chain: number, date: string, mine = false): void => {
     const row = element("li"); row.className = "rec-row";
+    if (mine) { row.classList.add("rec-mine"); row.setAttribute("aria-current", "true"); }
     row.append(element("b", rank));
     const main = element("div"); main.className = "rec-main";
-    if (name) main.append(element("strong", name));
+    if (name) main.append(element("strong", mine ? `${name} · ${t("YOU")}` : name));
     const num = element("span", score.toLocaleString()); num.className = "rec-score"; main.append(num);
     row.append(main);
     const meta = element("div"); meta.className = "rec-meta";
@@ -154,7 +155,7 @@ export function showRecordsDialog(scene: Phaser.Scene): void {
   const online = element("section"); body.append(online); online.hidden = true;
   const onlineCard = card(online, "");
   const onlineTitle = onlineCard.querySelector("h3")!;
-  onlineCard.append(element("p", t("Standard rules · top 50 per mode · unverified scores")));
+  onlineCard.append(element("p", t("Standard rules · top 50 per mode · best score per player · unverified scores")));
   const pending = element("p"); onlineCard.append(pending);
   const status = element("p"); status.setAttribute("role", "status"); onlineCard.append(status);
   const list = element("ol"); list.className = "rec-table"; onlineCard.append(list);
@@ -179,7 +180,7 @@ export function showRecordsDialog(scene: Phaser.Scene): void {
       const scores = await ranking(mode, signal);
       if (signal.aborted) return;
       status.textContent = scores.length ? "" : t("no records yet");
-      scores.forEach((entry, i) => scoreRow(list, String(i + 1), entry.name, entry.score, entry.maxChain, new Date(entry.createdAt).toISOString().slice(0, 10)));
+      scores.forEach((entry, i) => scoreRow(list, String(i + 1), entry.name, entry.score, entry.maxChain, new Date(entry.createdAt).toISOString().slice(0, 10), entry.mine === true));
     } catch { if (!signal.aborted) status.textContent = t("Could not load rankings. Local records are still available."); }
   };
   button(onlineCard, "RETRY", () => { void flushScores(); void load(current); });
