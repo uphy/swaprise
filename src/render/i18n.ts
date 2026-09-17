@@ -4,7 +4,6 @@ const locale: Locale = typeof navigator !== "undefined" && navigator.language.to
 
 const JA: Record<string, string> = {
   "SETTLING": "連鎖を集計中",
-  "Best score per player · unverified scores": "1人1件（自己ベスト）・プレイ内容の検証なし",
   "RESULT": "結果", "POINTS": "点", "First record!": "初めての記録！", "New best! +{points}": "自己ベスト更新！ ＋{points}",
   "Matched your best!": "自己ベストと同点！", "{points} to your best": "自己ベストまであと{points}",
   "vs previous {count} average: {difference}": "直近{count}回の平均比 {difference}",
@@ -13,7 +12,6 @@ const JA: Record<string, string> = {
   "Private record · only your progress is shown.": "公開オフ · 自分の成績のみ表示しています。",
   "Upload pending. Your rank will appear after publishing.": "送信待ちです。公開後に順位を表示します。",
   "This score is not available in the ranking yet.": "この記録の順位はまだ取得できません。",
-  "TOP 50 · best score per player": "上位50件 · 1人につき自己ベスト1件",
   "#{rank} / {total} players": "{total}人中 {rank}位",
   "Could not load rankings. Your record is saved on this device.": "順位を取得できませんでした。記録はこの端末に保存されています。",
   "Your name is shared with online play.": "名前はオンライン対戦と共通です。",
@@ -30,7 +28,6 @@ const JA: Record<string, string> = {
   "OPPONENT x{chain}!": "相手が {chain} 連鎖！",
   "Publish this score?": "この記録を公開しますか？", PUBLISH: "公開する", "KEEP PRIVATE": "公開しない",
   "Your name, score, chain and date will be public. You can change this in settings.": "名前・得点・連鎖・日付が誰でも見られるようになります。設定からいつでも変えられます。",
-  "Standard rules · top 50 per mode · best score per player · unverified scores": "標準ルール・モード別上位50件・1人1件（自己ベスト）・プレイ内容の検証なし",
   "PENDING UPLOADS: {count}": "未送信の記録: {count}件", "Loading…": "読み込み中…",
   "Could not load rankings. Local records are still available.": "ランキングを取得できませんでした。端末内の記録は引き続き利用できます。",
   "1 PLAYER": "1人プレイ", "VS CPU": "CPU対戦", "2 PLAYERS": "2人プレイ", ONLINE: "オンライン",

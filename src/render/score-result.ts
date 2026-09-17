@@ -64,7 +64,6 @@ export function showScoreResult(scene: Phaser.Scene, options: {
     buttons.append(publish, keep);
   }
   const heading = node("h3", t("YOUR RANKING")); body.append(heading);
-  const note = node("p", t("Best score per player · unverified scores")); body.append(note);
   const status = node("p"); status.setAttribute("role", "status"); body.append(status);
   const list = node("ol"); body.append(list);
   const actions = node("nav"); body.append(actions);
@@ -85,22 +84,21 @@ export function showScoreResult(scene: Phaser.Scene, options: {
     list.replaceChildren();
     // 制限時間やseedを変えたプレイも同じ結果画面を使うが、標準ルールのランキングへは接続しない。
     if (options.id === null) {
-      heading.hidden = note.hidden = status.hidden = actions.hidden = true;
+      heading.hidden = status.hidden = actions.hidden = true;
       return;
     }
-    if (!consent.hidden) { heading.hidden = note.hidden = status.hidden = actions.hidden = true; return; }
+    if (!consent.hidden) { heading.hidden = status.hidden = actions.hidden = true; return; }
     heading.hidden = status.hidden = false;
     if (publication() !== true) {
-      status.textContent = t("Private record · only your progress is shown."); actions.hidden = true; note.hidden = true; return;
+      status.textContent = t("Private record · only your progress is shown."); actions.hidden = true; return;
     }
-    note.hidden = false;
     actions.hidden = false; status.textContent = t("Loading…");
     try {
       const result = all ? { scores: (await ranking(options.mode, current.signal)).map((row, i) => ({ ...row, rank: i + 1 })), rank: 0, total: 0 }
         : await standing(options.mode, options.id, current.signal);
       if (current.signal.aborted || !root.isConnected) return;
       if (!result) { status.textContent = t(pendingScores().some((s) => s.id === options.id) ? "Upload pending. Your rank will appear after publishing." : "This score is not available in the ranking yet."); return; }
-      status.textContent = all ? t("TOP 50 · best score per player") : t("#{rank} / {total} players", { rank: result.rank, total: result.total });
+      status.textContent = all ? t("TOP 50") : t("#{rank} / {total} players", { rank: result.rank, total: result.total });
       for (const row of result.scores) {
         // 上位 50 件に載るのは自己ベストなので、今回のプレイでなくても自分の行は分かるようにする
         const mine = row.id === options.id || row.mine === true;
