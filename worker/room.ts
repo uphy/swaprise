@@ -1,5 +1,5 @@
 import { DurableObject } from "cloudflare:workers";
-import type { Env } from "./types";
+import { coordinatorStub, type Env } from "./types";
 import { RoomEngine, type Member } from "./room-engine";
 import {
   GAME_VERSION,
@@ -175,9 +175,7 @@ export class Room extends DurableObject<Env> {
               for (let i = 0; i < 2; i++) {
                 const m = this.engine.members[i];
                 if (!m) continue;
-                await this.env.COORDINATOR.get(
-                  this.env.COORDINATOR.idFromName("global"),
-                ).fetch(
+                await coordinatorStub(this.env).fetch(
                   new Request("https://internal/return", {
                     method: "POST",
                     body: JSON.stringify({
@@ -439,9 +437,7 @@ export class Room extends DurableObject<Env> {
   }
   private async reserveStart(): Promise<void> {
     const id = crypto.randomUUID();
-    const response = await this.env.COORDINATOR.get(
-      this.env.COORDINATOR.idFromName("global"),
-    ).fetch(
+    const response = await coordinatorStub(this.env).fetch(
       new Request("https://internal/reserve", {
         method: "POST",
         body: JSON.stringify({
@@ -497,9 +493,7 @@ export class Room extends DurableObject<Env> {
   }
   private async release(members: { session: string; token?: string }[] = this.engine.members.flatMap((m) => m ? [m] : [])): Promise<void> {
     for (const member of members)
-        await this.env.COORDINATOR.get(
-          this.env.COORDINATOR.idFromName("global"),
-        ).fetch(
+        await coordinatorStub(this.env).fetch(
           new Request("https://internal/release", {
             method: "POST",
             headers: { "X-Session": member.session },
