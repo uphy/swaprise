@@ -8,6 +8,33 @@ async function connect(request: APIRequestContext, baseURL: string): Promise<Rec
   expect((await request.post("/api/session", { headers })).ok()).toBe(true);
   return headers;
 }
+test("D1: one row per player (their best), ranks against other players' bests, own row marked only for the viewer", async ({ request, baseURL }) => {
+  const headers = await connect(request, baseURL!);
+  const me = randomUUID(), rival = randomUUID();
+  // Scores above every other test's rows, so the ordering here is deterministic.
+  const best = { ...score(), score: 95001, player: me };
+  const lesser = { ...score(), score: 94999, player: me };
+  const rivalBest = { ...score(), score: 95000, player: rival };
+  const oldClient = { ...score(), score: 94998 };
+  for (const data of [lesser, best, rivalBest, oldClient]) expect((await request.post("/api/scores", { headers, data })).status()).toBe(201);
+  expect((await request.post("/api/scores", { headers, data: { ...score(), player: "me" } })).status()).toBe(400);
+  const rows = (await (await request.get("/api/scores?mode=endless")).json()).scores as { id: string; mine?: boolean }[];
+  expect(rows.slice(0, 3).map((r) => r.id)).toEqual([best.id, rivalBest.id, oldClient.id]);
+  expect(rows.some((r) => r.id === lesser.id)).toBe(false);
+  expect(rows.some((r) => "mine" in r)).toBe(false);
+  const viewed = (await (await request.get(`/api/scores?mode=endless&player=${me}`)).json()).scores as { id: string; mine?: boolean }[];
+  expect(viewed.filter((r) => r.mine).map((r) => r.id)).toEqual([best.id]);
+  expect((await request.get("/api/scores?mode=endless&player=me")).status()).toBe(400);
+  // A play below the player's own best is ranked as if it stood alone: only the rival is ahead.
+  const around = await (await request.get(`/api/scores?mode=endless&around=${lesser.id}`)).json();
+  expect(around.rank).toBe(2);
+  expect(around.scores.map((r: { id: string }) => r.id)).toEqual([rivalBest.id, lesser.id, oldClient.id]);
+  expect(around.total).toBeGreaterThanOrEqual(rows.length);
+  // The player counts once in the total whichever of their plays is looked up.
+  const aroundBest = await (await request.get(`/api/scores?mode=endless&around=${best.id}`)).json();
+  expect(aroundBest.rank).toBe(1);
+  expect(aroundBest.total).toBe(around.total);
+});
 test("D1: old clients can still publish and read their own rule-specific rankings", async ({ request, baseURL }) => {
   const headers = await connect(request, baseURL!);
   for (const [mode, rules] of [["endless", "scores-v1"], ["timeattack", "scores-v1"], ["timeattack", "scores-ta-v2"]] as const) {

@@ -72,6 +72,7 @@
 .score-dialog .rec-table { margin: 0; padding: 0; list-style: none; }
 .score-dialog .rec-row { display: grid; grid-template-columns: minmax(1.8em, auto) minmax(0, 1fr) auto; align-items: center; gap: .4em; padding: .3em 0; border-top: 1px solid rgba(255,255,255,.14); border-bottom: 0; }
 .score-dialog .rec-row:first-child { border-top: 0; }
+.score-dialog .rec-row.rec-mine { background: rgba(255,255,255,.14); color: #ffe066; border-radius: 10px; padding-inline: .3em; }
 .score-dialog .rec-row b { font-size: .85em; color: #ffe066; text-align: right; font-variant-numeric: tabular-nums; }
 .rec-main { display: flex; flex-wrap: wrap; align-items: baseline; gap: .15em .5em; min-width: 0; }
 .rec-main strong { font-size: .85em; overflow-wrap: anywhere; }

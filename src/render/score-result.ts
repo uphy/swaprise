@@ -64,7 +64,7 @@ export function showScoreResult(scene: Phaser.Scene, options: {
     buttons.append(publish, keep);
   }
   const heading = node("h3", t("YOUR RANKING")); body.append(heading);
-  const note = node("p", t("Ranked per play · unverified scores")); body.append(note);
+  const note = node("p", t("Best score per player · unverified scores")); body.append(note);
   const status = node("p"); status.setAttribute("role", "status"); body.append(status);
   const list = node("ol"); body.append(list);
   const actions = node("nav"); body.append(actions);
@@ -100,11 +100,13 @@ export function showScoreResult(scene: Phaser.Scene, options: {
         : await standing(options.mode, options.id, current.signal);
       if (current.signal.aborted || !root.isConnected) return;
       if (!result) { status.textContent = t(pendingScores().some((s) => s.id === options.id) ? "Upload pending. Your rank will appear after publishing." : "This score is not available in the ranking yet."); return; }
-      status.textContent = all ? t("TOP 50 · each play is a separate record") : t("#{rank} / {total} records", { rank: result.rank, total: result.total });
+      status.textContent = all ? t("TOP 50 · best score per player") : t("#{rank} / {total} players", { rank: result.rank, total: result.total });
       for (const row of result.scores) {
-        const li = node("li", `${row.name}${row.id === options.id ? ` · ${t("THIS RUN")}` : ""}`); li.value = row.rank;
+        // 上位 50 件に載るのは自己ベストなので、今回のプレイでなくても自分の行は分かるようにする
+        const mine = row.id === options.id || row.mine === true;
+        const li = node("li", `${row.name}${row.id === options.id ? ` · ${t("THIS RUN")}` : mine ? ` · ${t("YOUR BEST")}` : ""}`); li.value = row.rank;
         li.append(node("span", `${row.score.toLocaleString()} ${t("POINTS")} · ×${row.maxChain}`));
-        if (row.id === options.id) { li.className = "result-you"; li.setAttribute("aria-current", "true"); }
+        if (mine) { li.className = "result-you"; li.setAttribute("aria-current", "true"); }
         list.append(li);
       }
     } catch { if (!current.signal.aborted && root.isConnected) status.textContent = t("Could not load rankings. Your record is saved on this device."); }
