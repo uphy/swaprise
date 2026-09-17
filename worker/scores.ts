@@ -80,8 +80,8 @@ export async function scores(request: Request, env: Env, session?: string): Prom
   // publish under someone else's name. Old clients send no player id and are not checked.
   const { secret, ...submitted } = s as Submission & { secret?: unknown };
   if (submitted.player !== undefined && !(await verifyPlayer(env, submitted.player, secret))) return json({ error: "Player not verified." }, 400);
-  // Old clients send no player id; such a play counts as its own player, as migration 0002 did for old rows.
-  const payload: Required<Submission> = { ...submitted, player: submitted.player ?? submitted.id };
+  // Old clients send no player id; group their plays by name, as migration 0004 did for old rows.
+  const payload: Required<Submission> = { ...submitted, player: submitted.player ?? `name:${submitted.name}` };
   // Do not store raw IPs or session cookies. A daily hash limits cheap session resets;
   // the date also avoids retaining a stable IP-derived identity across days.
   const now = Date.now();
