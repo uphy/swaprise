@@ -1,5 +1,6 @@
 import type { Env } from "./types";
-import { PLAYER_ID, scoreRules, supportedScoreRules, scoreMode, validSubmission, type Submission } from "../src/scores/model";
+import { PLAYER_ID, plausibleScore, scoreRules, supportedScoreRules, scoreMode, validSubmission, type Submission } from "../src/scores/model";
+import { verifyPlayer } from "./players";
 
 const json = (data: unknown, status = 200): Response => Response.json(data, { status, headers: { "Cache-Control": "no-store" } });
 export async function scores(request: Request, env: Env, session?: string): Promise<Response> {
@@ -74,8 +75,13 @@ export async function scores(request: Request, env: Env, session?: string): Prom
   let s: unknown;
   try { s = JSON.parse(new TextDecoder().decode(body)); } catch { return json({ error: "Invalid score." }, 400); }
   if (!validSubmission(s)) return json({ error: "Invalid score or rules version." }, 400);
+  if (!plausibleScore(s)) return json({ error: "Implausible score." }, 400);
+  // A play under a player id must come with that id's secret (worker/players.ts); otherwise anyone could
+  // publish under someone else's name. Old clients send no player id and are not checked.
+  const { secret, ...submitted } = s as Submission & { secret?: unknown };
+  if (submitted.player !== undefined && !(await verifyPlayer(env, submitted.player, secret))) return json({ error: "Player not verified." }, 400);
   // Old clients send no player id; such a play counts as its own player, as migration 0002 did for old rows.
-  const payload: Required<Submission> = { ...s, player: s.player ?? s.id };
+  const payload: Required<Submission> = { ...submitted, player: submitted.player ?? submitted.id };
   // Do not store raw IPs or session cookies. A daily hash limits cheap session resets;
   // the date also avoids retaining a stable IP-derived identity across days.
   const now = Date.now();

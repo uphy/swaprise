@@ -1,6 +1,7 @@
 /// <reference types="@cloudflare/workers-types" />
 import { roomStub, coordinatorStub, type Env } from "./types";
 import { scores } from "./scores";
+import { registerPlayer } from "./players";
 import { track } from "./track";
 import { shareImage, sharePage } from "./share";
 export { Room } from "./room";
@@ -30,7 +31,12 @@ export default {
     )?.[1];
     if (url.pathname === "/api/session" && request.method === "POST") {
       const token = session ?? `${crypto.randomUUID()}-${crypto.randomUUID()}`;
-      return new Response(JSON.stringify({ ok: true }), {
+      // 本文に player があれば、その id の持ち主の登録も兼ねる（worker/players.ts）。D1 がなければ cookie だけ返す
+      let registration: { player: string; secret?: string } | null = null;
+      if (env.SCORES_DB && Number(request.headers.get("Content-Length") ?? 0) <= 4096) {
+        try { registration = await registerPlayer(env, await request.json()); } catch { registration = null; }
+      }
+      return new Response(JSON.stringify({ ok: true, ...registration }), {
         headers: {
           "Content-Type": "application/json",
           "Cache-Control": "no-store",
