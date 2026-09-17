@@ -43,7 +43,7 @@ test("公開済みの記録は D1 の順位が og:description に入り、得点
   const headers = await connect(request, baseURL!);
   const id = randomUUID();
   const mine = { id, rules: scoreRules("endless"), mode: "endless", name: "Sharer", score: 4321, maxChain: 5, seed: 9, frames: 20000 };
-  const better = { ...mine, id: randomUUID(), score: 99999, maxChain: 9 };
+  const better = { ...mine, id: randomUUID(), name: "Better", score: 99999, maxChain: 9 };
   for (const data of [mine, better]) expect((await request.post("/api/scores", { headers, data })).status()).toBe(201);
   // URL の自己申告（s=1）ではなく D1 の得点で書く
   const html = await (await request.get(`/r?m=endless&s=1&c=1&id=${id}`)).text();

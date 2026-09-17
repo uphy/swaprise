@@ -4,8 +4,8 @@ import { randomUUID } from "node:crypto";
 
 // frames は得点の上限（frames × 5 + 500）に収まる長さ。タイムアタックは 7200 が上限なので得点も抑える
 const score = (mode: ScoreMode = "endless") => mode === "timeattack"
-  ? { id: randomUUID(), rules: scoreRules(mode), mode, name: "D1 player", score: 30000, maxChain: 7, seed: 123, frames: 7200 }
-  : { id: randomUUID(), rules: scoreRules(mode), mode, name: "D1 player", score: 90000, maxChain: 7, seed: 123, frames: 20000 };
+  ? { id: randomUUID(), rules: scoreRules(mode), mode, name: `D1 ${randomUUID().slice(0, 8)}`, score: 30000, maxChain: 7, seed: 123, frames: 7200 }
+  : { id: randomUUID(), rules: scoreRules(mode), mode, name: `D1 ${randomUUID().slice(0, 8)}`, score: 90000, maxChain: 7, seed: 123, frames: 20000 };
 async function connect(request: APIRequestContext, baseURL: string): Promise<Record<string, string>> {
   const headers = { Origin: baseURL, "CF-Connecting-IP": `test-${randomUUID()}` };
   expect((await request.post("/api/session", { headers })).ok()).toBe(true);
@@ -50,12 +50,14 @@ test("D1: one row per player (their best), ranks against other players' bests, o
   const best = { ...score(), score: 95001, player: me, secret: mine.secret };
   const lesser = { ...score(), score: 94999, player: me, secret: mine.secret };
   const rivalBest = { ...score(), score: 95000, player: rival, secret: rivals.secret };
+  // Plays from old clients carry no player id and count as one player per name.
   const oldClient = { ...score(), score: 94998 };
-  for (const data of [lesser, best, rivalBest, oldClient]) expect((await request.post("/api/scores", { headers, data })).status()).toBe(201);
+  const oldClientAgain = { ...score(), name: oldClient.name, score: 94997 };
+  for (const data of [lesser, best, rivalBest, oldClient, oldClientAgain]) expect((await request.post("/api/scores", { headers, data })).status()).toBe(201);
   expect((await request.post("/api/scores", { headers, data: { ...score(), player: "me" } })).status()).toBe(400);
   const rows = (await (await request.get("/api/scores?mode=endless")).json()).scores as { id: string; mine?: boolean }[];
   expect(rows.slice(0, 3).map((r) => r.id)).toEqual([best.id, rivalBest.id, oldClient.id]);
-  expect(rows.some((r) => r.id === lesser.id)).toBe(false);
+  expect(rows.some((r) => r.id === lesser.id || r.id === oldClientAgain.id)).toBe(false);
   expect(rows.some((r) => "mine" in r)).toBe(false);
   const viewed = (await (await request.get(`/api/scores?mode=endless&player=${me}`)).json()).scores as { id: string; mine?: boolean }[];
   expect(viewed.filter((r) => r.mine).map((r) => r.id)).toEqual([best.id]);

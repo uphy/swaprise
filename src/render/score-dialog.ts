@@ -155,7 +155,6 @@ export function showRecordsDialog(scene: Phaser.Scene): void {
   const online = element("section"); body.append(online); online.hidden = true;
   const onlineCard = card(online, "");
   const onlineTitle = onlineCard.querySelector("h3")!;
-  onlineCard.append(element("p", t("Standard rules · top 50 per mode · best score per player · unverified scores")));
   const pending = element("p"); onlineCard.append(pending);
   const status = element("p"); status.setAttribute("role", "status"); onlineCard.append(status);
   const list = element("ol"); list.className = "rec-table"; onlineCard.append(list);
