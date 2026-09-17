@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import { CELL, FONT_UI, KIND_COLORS, TEXT_COLOR, layoutFor, menuTitle, sameLayout } from "./theme";
+import { paintTitle } from "./menuCard";
 import { Background } from "./Background";
 import { createTextures } from "./textures";
 import { DPR, applyLayout } from "./hidpi";
@@ -224,7 +225,8 @@ export class OpeningScene extends Phaser.Scene {
           duration: 520,
           delay: 120,
           onUpdate: (tw) => titleText.setColor(mixColor("#ffe066", TEXT_COLOR, tw.getValue() ?? 0)),
-          onComplete: () => titleText.setColor(TEXT_COLOR),
+          // メニューと同じ虹色へ
+          onComplete: () => paintTitle(titleText),
         });
       });
       this.at(T.settle, () => {

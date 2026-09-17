@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import { showRecordsDialog, showPlayerSettings } from "./score-dialog";
-import { ACCENT, FONT, FONT_UI, MENU_TYPE, KIND_COLORS, TEXT_COLOR, TEXT_MUTE, layoutFor, menuTitle, sameLayout } from "./theme";
+import { ACCENT, FONT, FONT_UI, KIND_COLORS, TEXT_COLOR, TEXT_MUTE, layoutFor, menuTitle, sameLayout } from "./theme";
+import { MenuCard, paintTitle } from "./menuCard";
 import { Background } from "./Background";
 import { createTextures } from "./textures";
 import { LESSONS, PUZZLES, PUZZLES_PER_STAGE, PUZZLE_STAGES, puzzleName, type CpuLevel, type GameMode } from "../core";
@@ -25,7 +26,17 @@ interface MenuItem {
   back?: boolean;
   online?: boolean;
   name: string;
+  /** カードの縁の色。 */
+  color: number;
+  /** ラベルの右の絵文字。 */
+  icon?: string;
 }
+
+/** 半幅のカード（2 PLAYERS・ONLINE）は説明が 2 行になるので、この分だけ高くする */
+const HALF_EXTRA = 12;
+
+/** カードの縁の色。1 PLAYER は金、CPU は水色、2 PLAYERS は橙、ONLINE は緑。下位の項目は柄の色を順に使う */
+const CARD = { gold: 0xffe066, cyan: 0x6fd6ff, orange: 0xffa14a, green: 0x8de76a, violet: 0xc9a2ff, red: 0xff6f7a } as const;
 
 /** メニューの階層。top は 1 PLAYER / VS CPU / 2 PLAYERS、1p と cpu はその下位。 */
 type Level = "top" | "1p" | "cpu";
@@ -51,37 +62,40 @@ function bestLine(list: HighScores["endless"]): string {
 function itemsFor(level: Level, hs: HighScores): MenuItem[] {
   if (level === "1p") {
     return [
-      { label: t("ENDLESS"), caption: bestLine(hs.endless), start: { mode: "endless" }, name: "item-endless" },
-      { label: t("TIME ATTACK"), caption: bestLine(hs.timeattack), start: { mode: "timeattack" }, name: "item-timeattack" },
-      { label: t("PUZZLE"), caption: t("{count} / {total} CLEARED", { count: hs.puzzle.length, total: PUZZLES.length }), start: { mode: "puzzle" }, name: "item-puzzle" },
+      { label: t("ENDLESS"), caption: bestLine(hs.endless), start: { mode: "endless" }, name: "item-endless", color: CARD.gold },
+      { label: t("TIME ATTACK"), caption: bestLine(hs.timeattack), start: { mode: "timeattack" }, name: "item-timeattack", color: CARD.cyan },
+      { label: t("PUZZLE"), caption: t("{count} / {total} CLEARED", { count: hs.puzzle.length, total: PUZZLES.length }), start: { mode: "puzzle" }, name: "item-puzzle", color: CARD.green },
       {
         label: t("LEARN"),
         caption: hs.lessons.length >= LESSONS.length ? t("all {total} lessons done", { total: LESSONS.length }) : t("{count} / {total} LESSONS", { count: hs.lessons.length, total: LESSONS.length }),
         start: { mode: "lesson" },
         name: "item-learn",
+        color: CARD.violet,
       },
-      { label: t("◂ BACK"), caption: "", back: true, name: "item-back" },
+      { label: t("◂ BACK"), caption: "", back: true, name: "item-back", color: CARD.gold },
     ];
   }
   if (level === "cpu") {
-    const rec = (l: CpuLevel): string => `${hs.cpu[l].wins}W ${hs.cpu[l].losses}L`;
+    const rec = (l: CpuLevel): string => t("{wins}W {losses}L", { wins: hs.cpu[l].wins, losses: hs.cpu[l].losses });
     return [
-      { label: t("EASY"), caption: rec("easy"), start: { mode: "cpu", cpuLevel: "easy" }, name: "item-easy" },
-      { label: t("NORMAL"), caption: rec("normal"), start: { mode: "cpu", cpuLevel: "normal" }, name: "item-normal" },
-      { label: t("HARD"), caption: rec("hard"), start: { mode: "cpu", cpuLevel: "hard" }, name: "item-hard" },
-      { label: t("◂ BACK"), caption: "", back: true, name: "item-back" },
+      { label: t("EASY"), caption: rec("easy"), start: { mode: "cpu", cpuLevel: "easy" }, name: "item-easy", color: CARD.green },
+      { label: t("NORMAL"), caption: rec("normal"), start: { mode: "cpu", cpuLevel: "normal" }, name: "item-normal", color: CARD.gold },
+      { label: t("HARD"), caption: rec("hard"), start: { mode: "cpu", cpuLevel: "hard" }, name: "item-hard", color: CARD.red },
+      { label: t("◂ BACK"), caption: "", back: true, name: "item-back", color: CARD.gold },
     ];
   }
   return [
-    { label: t("1 PLAYER"), caption: t("endless · time attack · puzzle · learn"), group: "1p", name: "group-1p" },
-    { label: t("VS CPU"), caption: t("easy · normal · hard"), group: "cpu", name: "group-cpu" },
-    { label: t("2 PLAYERS"), caption: t("one screen, two players"), start: { mode: "versus" }, name: "group-2p" },
+    { label: t("1 PLAYER"), caption: t("endless · time attack · puzzle · learn"), group: "1p", name: "group-1p", color: CARD.gold, icon: "💎" },
+    { label: t("VS CPU"), caption: t("easy · normal · hard"), group: "cpu", name: "group-cpu", color: CARD.cyan, icon: "🤖" },
+    { label: t("2 PLAYERS"), caption: t("one screen, two players"), start: { mode: "versus" }, name: "group-2p", color: CARD.orange, icon: "👥" },
     {
       label: t("ONLINE"),
       // 一度でも対戦したら通算の勝敗を出す。それまでは何ができるかの説明
       caption: hs.online.wins + hs.online.losses + hs.online.draws > 0 ? onlineRecordLine(hs.online) : t("invite a friend · find an opponent"),
       online: true,
       name: "group-online",
+      color: CARD.green,
+      icon: "🌐",
     },
   ];
 }
@@ -111,12 +125,18 @@ export class MenuScene extends Phaser.Scene {
   index = 0;
   /** カーソルが下段の小ボタンの行にあるとき、その番号。行にないときは -1。 */
   private toolIndex = -1;
-  private texts: Phaser.GameObjects.Text[] = [];
-  private captions: Phaser.GameObjects.Text[] = [];
+  private cards: MenuCard[] = [];
+  /** 下位メニューの「◂ BACK」。カードではなく、現在地の左の小さなボタン */
+  private backBtn: Button | null = null;
+  /** キー操作か指が乗って、カーソルの位置を見せるべきか。最初は見せない（指で押すだけの端末では要らない） */
+  private focusVisible = false;
   private tools: Button[] = [];
   private crumb!: Phaser.GameObjects.Text;
-  private itemTop = 0;
-  private itemGap = 0;
+  /** カードの列の上辺・幅・1 枚の高さ・間隔（論理 px） */
+  private listTop = 0;
+  private cardW = 0;
+  private cardH = 0;
+  private cardGap = 0;
   /** 論理座標での画面中央。scale.width は DPR 倍なので使わない。 */
   private cx = 0;
   private compact = false;
@@ -137,8 +157,9 @@ export class MenuScene extends Phaser.Scene {
   create(data: { fromOpening?: boolean } = {}): void {
     // Scene のインスタンスは使い回されるので、前回の表示物への参照を捨てる。
     // 残したままだと refresh() が破棄済みの Text を触って描画が止まる。
-    this.texts = [];
-    this.captions = [];
+    this.cards = [];
+    this.backBtn = null;
+    this.focusVisible = false;
     this.tools = [];
     this.picker = null;
     this.overlay = null;
@@ -189,6 +210,7 @@ export class MenuScene extends Phaser.Scene {
       .setOrigin(0.5)
       .setShadow(0, 4, "#2a1a5a", 10, false, true)
       .setName("title");
+    paintTitle(this.titleText);
     // 柄の飾り。背の低い画面では省いて項目の場所を空ける。曲の拍で順に弾む
     if (!compact) {
       KIND_COLORS.forEach((_, k) => {
@@ -196,21 +218,25 @@ export class MenuScene extends Phaser.Scene {
       });
     }
 
-    // 現在地（下位メニューのとき「1 PLAYER ▸」）
-    this.itemTop = titleY + (compact ? 80 : layout.portrait ? 140 : 124);
-    this.itemGap = compact ? 46 : layout.portrait ? 60 : 52;
-    this.crumb = this.add.text(cx, this.itemTop - (compact ? 26 : 34), "", { fontFamily: FONT_UI, fontSize: "13px", fontStyle: "600", color: ACCENT }).setOrigin(0.5).setName("crumb");
+    // カードの列。最上位は 1 PLAYER・VS CPU の全幅 2 枚と、2 PLAYERS・ONLINE の半幅 2 枚。下位は全幅で縦に並ぶ
+    this.cardW = Math.min(W - 24, 360);
+    this.cardH = compact ? 50 : layout.portrait ? 62 : 56;
+    this.cardGap = compact ? 8 : layout.portrait ? 10 : 8;
+    // 柄の飾り（iconsY ± 16）と、その下の現在地・BACK の行が重ならない高さから
+    this.listTop = titleY + (compact ? 52 : layout.portrait ? 124 : 116);
+    // 現在地（下位メニューのとき「1 PLAYER ▸」）。カードの列の上に置く
+    this.crumb = this.add.text(cx, this.listTop - (compact ? 12 : 16), "", { fontFamily: FONT_UI, fontSize: "13px", fontStyle: "600", color: ACCENT }).setOrigin(0.5).setName("crumb");
 
-    // 下段の小ボタン。いちばん項目の多い階層（1 PLAYER は 5 つ）の最後の説明文（項目の下 16〜19px、高さ約 14px）から
-    // 隙間を空けて置く。階層ごとに動かすと画面が跳ねるので、どの階層でも同じ位置にする。
-    // 以前は項目の間隔だけで決めていて、横長の画面では説明文とボタンの間が 6px しかなく詰まって見えた
-    const hsForCount = loadHighScores();
-    const maxItems = Math.max(...(["top", "1p", "cpu"] as Level[]).map((l) => itemsFor(l, hsForCount).length));
-    const captionBottom = this.itemTop + (maxItems - 1) * this.itemGap + (compact ? 16 : 19) + 9;
-    const toolY = captionBottom + (compact ? 12 : 22) + 17;
-    const toolW = layout.portrait ? 92 : 112;
+    // 下段の小ボタン。いちばん背の高い階層（1 PLAYER は 4 枚。最上位は 3 段で最後の段が少し高い）の下端から隙間を空けて置く。
+    // 階層ごとに動かすと画面が跳ねるので、どの階層でも同じ位置にする
+    const maxRows = 4;
+    const listBottom = this.listTop + Math.max(maxRows * this.cardH + (maxRows - 1) * this.cardGap, 3 * this.cardH + 2 * this.cardGap + HALF_EXTRA);
+    const toolH = compact ? 34 : 40;
+    const toolY = listBottom + (compact ? 12 : 18) + toolH / 2;
+    const toolGap = 8;
+    const toolW = (this.cardW - toolGap * 2) / 3;
     TOOLS.forEach((tool, i) => {
-      const b = new Button(this, cx + (i - 1) * (toolW + 8), toolY, TOOL_LABEL[tool], () => this.openTool(tool), { fontSize: 11, minWidth: toolW, minHeight: 34 }).setName(tool);
+      const b = new Button(this, cx + (i - 1) * (toolW + toolGap), toolY, TOOL_LABEL[tool], () => this.openTool(tool), { fontSize: layout.portrait ? 12 : 13, minWidth: toolW, minHeight: toolH, radius: toolH / 2, bgAlpha: 0.2 }).setName(tool);
       this.tools.push(b);
     });
 
@@ -230,7 +256,7 @@ export class MenuScene extends Phaser.Scene {
     this.buildList();
     // オープニングから続くときは、題字はそのままに、項目・小ボタン・隅の文字を上から順に浮かび上がらせる
     if (data.fromOpening) {
-      const targets = [...this.texts, ...this.captions, ...this.tools, buildText, githubLink];
+      const targets = [...this.cards.flatMap((c) => c.objects), ...this.tools, buildText, githubLink];
       targets.forEach((o) => o.setAlpha(0));
       this.tweens.add({ targets, alpha: 1, duration: 260, ease: "Quad.Out", delay: this.tweens.stagger(28) });
     }
@@ -295,54 +321,60 @@ export class MenuScene extends Phaser.Scene {
     });
   }
 
-  /** 現在の階層の項目を並べ直す。ラベルの下に小文字の説明・記録を添える。 */
+  /** 現在の階層の項目をカードで並べ直す。 */
   private buildList(): void {
-    // 浮かび上がりの途中で階層が変わることがある。破棄した Text を tween が触り続けないよう先に止める
-    this.tweens.killTweensOf([...this.texts, ...this.captions]);
-    this.texts.forEach((t) => t.destroy());
-    this.captions.forEach((t) => t.destroy());
-    this.texts = [];
-    this.captions = [];
+    // 浮かび上がりの途中で階層が変わることがある。破棄した表示物を tween が触り続けないよう先に止める
+    this.tweens.killTweensOf(this.cards.flatMap((c) => c.objects));
+    this.cards.forEach((c) => c.destroy());
+    this.cards = [];
+    this.backBtn?.destroy();
+    this.backBtn = null;
     const hs = loadHighScores();
     this.items = itemsFor(this.level, hs);
     const cx = this.cx;
-    const pad = this.compact ? 3 : 6;
+    const { cardW, cardH, cardGap, compact } = this;
+    // 最上位の 2 PLAYERS・ONLINE は 1 行に 2 枚。それ以外は 1 行に 1 枚
+    const halfW = (cardW - cardGap) / 2;
+    let row = 0;
     this.items.forEach((item, i) => {
-      const y = this.itemTop + i * this.itemGap;
-      // 指で押す前提で、文字の上下に余白を取って当たり判定を高さ 32 論理px 以上にする
-      const t = this.add
-        .text(cx, y, item.label, { fontFamily: FONT_UI, fontSize: `${this.compact ? MENU_TYPE.itemCompact : MENU_TYPE.item}px`, fontStyle: "700", color: TEXT_COLOR })
-        .setShadow(0, 2, "#2a1a5a", 6, false, true)
-        .setOrigin(0.5)
-        .setPadding(16, pad, 16, pad)
-        .setInteractive({ useHandCursor: true })
-        .setName(item.name);
-      t.on("pointerover", () => {
+      const focus = (): void => {
         this.index = i;
         this.toolIndex = -1;
-        this.refresh();
+      };
+      if (item.back) {
+        // 現在地の左に小さく置く
+        const b = new Button(this, cx - cardW / 2 + 36, this.crumb.y, item.label, () => { focus(); this.select(); }, { fontSize: 12, minWidth: 72, minHeight: 26, radius: 13 }).setName(item.name);
+        b.on("pointerover", () => { focus(); this.focusVisible = true; this.refresh(); });
+        this.backBtn = b;
+        return;
+      }
+      const half = this.level === "top" && (item.name === "group-2p" || item.name === "group-online");
+      const x = half ? cx + (item.name === "group-2p" ? -1 : 1) * (halfW + cardGap) / 2 : cx;
+      const y = this.listTop + row * (cardH + cardGap) + cardH / 2;
+      if (!half || item.name === "group-online") row++;
+      const card = new MenuCard(this, {
+        x, y: half ? y + HALF_EXTRA / 2 : y, w: half ? halfW : cardW, h: half ? cardH + HALF_EXTRA : cardH, compact,
+        label: item.label, caption: item.caption, icon: item.icon, color: item.color, name: item.name,
+        onPress: () => { focus(); this.select(); },
+        onHover: (over) => {
+          if (over) focus();
+          this.focusVisible = over;
+          this.refresh();
+        },
       });
-      t.on("pointerdown", () => {
-        this.index = i;
-        this.toolIndex = -1;
-        this.select();
-      });
-      this.texts.push(t);
-      const c = this.add
-        .text(cx, y + (this.compact ? 16 : 19), item.caption, { fontFamily: FONT_UI, fontSize: "12px", color: TEXT_MUTE })
-        .setOrigin(0.5)
-        .setName(`${item.name}-caption`);
-      this.captions.push(c);
+      this.cards.push(card);
     });
     this.crumb.setText(this.level === "top" ? "" : `${GROUP_LABEL[this.level]} ▸`);
     this.refresh();
   }
 
+  /** カーソルの位置のカードを明るくする。キー操作か指が乗ったときだけ見せる */
   private refresh(): void {
-    this.texts.forEach((t, i) => {
-      const on = this.toolIndex < 0 && i === this.index;
-      t.setColor(on ? ACCENT : TEXT_COLOR);
-      t.setText((on ? "> " : "  ") + this.items[i].label + (on ? " <" : "  "));
+    let c = 0;
+    this.items.forEach((item, i) => {
+      const on = this.focusVisible && this.toolIndex < 0 && i === this.index;
+      if (item.back) this.backBtn?.setSelected(on);
+      else this.cards[c++]?.setHot(on);
     });
     this.tools.forEach((b, i) => b.setSelected(i === this.toolIndex));
   }
@@ -369,6 +401,7 @@ export class MenuScene extends Phaser.Scene {
 
   private onKey(key: "up" | "down" | "left" | "right" | "enter" | "back"): void {
     audio.start();
+    if (key !== "enter" && key !== "back") this.focusVisible = true;
     if (this.overlay) {
       const o = this.overlay;
       if (key === "back") this.closeOverlay();

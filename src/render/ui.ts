@@ -14,6 +14,8 @@ export interface ButtonOptions {
   bgAlpha?: number;
   /** 主ボタン。画面で「次に進む」操作に 1 つだけ付け、黄色に塗る（RESUME、NEXT、PLAY など） */
   primary?: boolean;
+  /** 角の丸み。省略で 12（高さの半分まで）。高さの半分にすると錠剤形になる */
+  radius?: number;
 }
 
 /** ボタンの塗りと縁の状態 */
@@ -38,6 +40,7 @@ export class Button extends Phaser.GameObjects.Container {
   private readonly baseTextColor: string;
   private readonly boxW: number;
   private readonly boxH: number;
+  private readonly radius: number;
   private selected = false;
   private primary_ = false;
 
@@ -55,6 +58,7 @@ export class Button extends Phaser.GameObjects.Container {
       .setOrigin(0.5);
     this.boxW = Math.max(minW, this.txt.width + 28);
     this.boxH = Math.max(minH, this.txt.height + 12);
+    this.radius = Math.min(opts.radius ?? 12, this.boxH / 2);
     this.bg = scene.add.graphics();
     this.paint("normal");
     this.add([this.bg, this.txt]);
@@ -79,7 +83,7 @@ export class Button extends Phaser.GameObjects.Container {
   private paint(look: Look): void {
     const g = this.bg;
     g.clear();
-    const r = Math.min(12, this.boxH / 2);
+    const r = this.radius;
     if (look === "selected") {
       g.fillStyle(0xffffff, 0.92);
       g.fillRoundedRect(-this.boxW / 2, -this.boxH / 2, this.boxW, this.boxH, r);
