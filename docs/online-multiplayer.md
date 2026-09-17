@@ -73,6 +73,9 @@ Workerは入力形式と同一オリジンを検査し、接続先へ振り分�
 `/api/*`だけをWorkerで処理し、ゲームの静的ファイルは既存の配信を維持する。
 APIの応答とWebSocket接続をService Workerのキャッシュ対象にしない。
 D1は不要。部屋と受付の状態はSQLite版Durable Objectsで管理する。
+部屋とCoordinatorのstubは`locationHint: "apac"`付きで取得する（`worker/types.ts`）。
+DOは最初に触ったWorkerの近くに作られ、部屋はCoordinatorの`/init`で最初に触られるので、指定がないとCoordinatorと同じ場所に置かれる。
+ヒントは作成時にしか効かず、既存のDOは動かない。
 
 ### 4.1 Coordinator
 

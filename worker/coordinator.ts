@@ -1,5 +1,5 @@
 import { DurableObject } from "cloudflare:workers";
-import type { Env } from "./types";
+import { roomStub, type Env } from "./types";
 import { displayName, GAME_VERSION, playerId, type MatchKind } from "../src/net/protocol";
 import { dayKey, emptyBudget, reserve, type Budget } from "./budget";
 import { json } from "./index";
@@ -31,9 +31,7 @@ export class Coordinator extends DurableObject<Env> {
       "active:" + session,
     );
     if (!a) return null;
-    const response = await this.env.ROOMS.get(
-      this.env.ROOMS.idFromName(a.roomId),
-    ).fetch(new Request("https://internal/membership", {
+    const response = await roomStub(this.env, a.roomId).fetch(new Request("https://internal/membership", {
       headers: { "X-Session": session },
     }));
     if (!response.ok) throw new Error("Could not check room membership.");
@@ -292,7 +290,7 @@ export class Coordinator extends DurableObject<Env> {
     return json({ error: "Not found." }, 404);
   }
   private room(id: string, path: string, data: unknown): Promise<Response> {
-    return this.env.ROOMS.get(this.env.ROOMS.idFromName(id)).fetch(
+    return roomStub(this.env, id).fetch(
       new Request("https://internal" + path, {
         method: "POST",
         body: JSON.stringify(data),

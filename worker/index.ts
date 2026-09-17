@@ -1,5 +1,5 @@
 /// <reference types="@cloudflare/workers-types" />
-import type { Env } from "./types";
+import { roomStub, coordinatorStub, type Env } from "./types";
 import { scores } from "./scores";
 import { track } from "./track";
 import { shareImage, sharePage } from "./share";
@@ -53,9 +53,7 @@ export default {
       const room = /^\/api\/rooms\/([a-f0-9-]{36})\/(?:ws|metrics|status)$/.exec(
         url.pathname,
       );
-      const target = room
-        ? env.ROOMS.get(env.ROOMS.idFromName(room[1]))
-        : env.COORDINATOR.get(env.COORDINATOR.idFromName("global"));
+      const target = room ? roomStub(env, room[1]) : coordinatorStub(env);
       return await target.fetch(new Request(request, { headers }));
     } catch {
       return json(
