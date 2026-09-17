@@ -303,6 +303,18 @@ export class Board {
     return false;
   }
 
+  /** 落下前の猶予中か落下中のパネル・おじゃまがあるか。 */
+  private hasFalling(): boolean {
+    for (let r = 0; r < TOTAL_ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        const s = this.cells[r][c].state;
+        if (s === "hover" || s === "falling") return true;
+      }
+    }
+    for (const g of this.garbage.values()) if (g.state === "hover" || g.state === "falling") return true;
+    return false;
+  }
+
   private topTouching(): boolean {
     for (let c = 0; c < COLS; c++) {
       if (!isEmptyCell(this.cells[ROWS - 1][c])) return true;
@@ -1025,7 +1037,8 @@ export class Board {
 
   private updateStatus(): void {
     const touching = this.topTouching();
-    const busy = this.hasMatched() || this.hasTransforming();
+    // 消去・変身に加えて落下も待つ。消して下に空間が空いたのに、落ちる前にゲームオーバーになるのを防ぐ
+    const busy = this.hasMatched() || this.hasTransforming() || this.hasFalling();
     if (touching && !busy) {
       this.deathTimer++;
       if (this.deathTimer > TIMING.deathGrace) {

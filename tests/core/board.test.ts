@@ -411,6 +411,25 @@ describe("せり上がりとゲームオーバー", () => {
     expect(b.gameOver).toBe(false);
   });
 
+  it("天井に付いたおじゃまの下を消したとき、落ちきる前にはゲームオーバーにならない", () => {
+    const b = emptyBoard();
+    // おじゃまが変身しないよう、消す列とおじゃまの間に 1 段挟む
+    b.setColumns([[0, 2], [0, 3], [1, 2], [0]]);
+    b.placeGarbage(0, 2, 3, ROWS - 2);
+    // 猶予を残り 10 フレームまで使ってから下を消す
+    run(b, TIMING.deathGrace - 10);
+    moveCursor(b, 2, 0);
+    press(b, { swap: true }, TIMING.swap);
+    const g = [...b.garbage.values()][0];
+    for (let f = 0; f < 600 && !(g.state === "idle" && g.y === 1); f++) {
+      run(b, 1);
+      expect(b.gameOver, `frame=${f} state=${g.state} y=${g.y}`).toBe(false);
+    }
+    // 1 段落ちて天井から離れ、猶予の計時が戻る
+    expect(g.y).toBe(1);
+    expect(b.deathTimer).toBe(0);
+  });
+
   it("高さ 9 以上にパネルがあると危険状態になり、8 では入らない", () => {
     const low = emptyBoard();
     const eight: number[] = [];
