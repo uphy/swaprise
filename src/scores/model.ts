@@ -46,6 +46,19 @@ export function validSubmission(v: unknown): v is Submission {
     && integer(s.seed, 0, 0xffffffff) && integer(s.frames, 1, s.mode === "timeattack" ? 7200 : 5184000)
     && (s.player === undefined || (typeof s.player === "string" && PLAYER_ID.test(s.player)));
 }
+/**
+ * 得点・最大連鎖・frames の間で、ゲームの仕組み上あり得ない組み合わせを弾く（Worker が投稿時に使う）。
+ * 上限は hard CPU の最速（60 秒窓で 73 点/秒、10 秒窓で 141 点/秒。pnpm sim で計測）の 2 倍以上の 300 点/秒（frames × 5）に、
+ * 序盤の 1 回の消去ぶんとして 500 点を足す。連鎖は 1 段ごとに点滅・消去・落下で最速でも 60 フレーム余りかかる。
+ * n 連鎖は各段で 3 枚以上消えるので、その合計より少ない得点で n 連鎖にはならない。
+ * リプレイ検証の代わりではなく、素朴な偽装（600 フレームで 99999 点）を落とすだけ。
+ */
+export function plausibleScore(s: Pick<Submission, "score" | "maxChain" | "frames">): boolean {
+  const CHAIN_BONUS = [0, 0, 50, 80, 150, 300, 400, 500, 700, 900, 1100, 1300, 1500, 1800];
+  let least = 0;
+  for (let k = 1; k <= s.maxChain && s.maxChain >= 2; k++) least += 30 + (CHAIN_BONUS[k] ?? 0);
+  return s.score <= s.frames * 5 + 500 && s.score >= least && (s.maxChain - 1) * 60 <= s.frames;
+}
 /** Seed/debug overrides are not the standard ranking rules, even if the score looks normal. */
 export function eligibleRun(mode: string, params: URLSearchParams): mode is ScoreMode {
   return scoreMode(mode) && !["seed", "speed", "time", "shock"].some((key) => params.has(key));

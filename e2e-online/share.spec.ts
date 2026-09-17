@@ -42,7 +42,7 @@ test("読めない共有 URL は素の index.html を返し、画像は 404", as
 test("公開済みの記録は D1 の順位が og:description に入り、得点は D1 の値を使う", async ({ request, baseURL }) => {
   const headers = await connect(request, baseURL!);
   const id = randomUUID();
-  const mine = { id, rules: scoreRules("endless"), mode: "endless", name: "Sharer", score: 4321, maxChain: 5, seed: 9, frames: 600 };
+  const mine = { id, rules: scoreRules("endless"), mode: "endless", name: "Sharer", score: 4321, maxChain: 5, seed: 9, frames: 20000 };
   const better = { ...mine, id: randomUUID(), score: 99999, maxChain: 9 };
   for (const data of [mine, better]) expect((await request.post("/api/scores", { headers, data })).status()).toBe(201);
   // URL の自己申告（s=1）ではなく D1 の得点で書く

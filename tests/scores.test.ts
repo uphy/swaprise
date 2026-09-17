@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { SCORE_RULES, scoreRules, eligibleRun, validSubmission, type Submission } from "../src/scores/model";
+import { SCORE_RULES, scoreRules, eligibleRun, plausibleScore, validSubmission, type Submission } from "../src/scores/model";
 import { enqueueScore, flushScores, pendingScores, playerName, publication, savePlayerName, setPublication } from "../src/scores/client";
 
 const entry = (): Submission => ({ id: crypto.randomUUID(), rules: SCORE_RULES, mode: "endless", name: "Player", score: 1200, maxChain: 4, seed: 7, frames: 600 });
@@ -26,6 +26,16 @@ describe("standard score rules", () => {
   it("accepts a device player id but does not require one from old clients", () => {
     expect(validSubmission({ ...entry(), player: crypto.randomUUID() })).toBe(true);
     expect(validSubmission(entry())).toBe(true);
+  });
+  it("rejects scores the game could not have produced in the frames or with the chain", () => {
+    expect(plausibleScore({ score: 0, maxChain: 1, frames: 1 })).toBe(true);
+    expect(plausibleScore({ score: 19062, maxChain: 6, frames: 472 * 60 })).toBe(true); // hard CPU, seed 4
+    expect(plausibleScore({ score: 36500, maxChain: 13, frames: 7200 })).toBe(true);
+    expect(plausibleScore({ score: 99999, maxChain: 5, frames: 600 })).toBe(false);
+    expect(plausibleScore({ score: 99999, maxChain: 5, frames: 19900 })).toBe(true);
+    expect(plausibleScore({ score: 100, maxChain: 5, frames: 6000 })).toBe(false); // a 5-chain alone scores 730
+    expect(plausibleScore({ score: 730, maxChain: 5, frames: 6000 })).toBe(true);
+    expect(plausibleScore({ score: 5000, maxChain: 20, frames: 1000 })).toBe(false); // 19 more chain steps need 1140 frames
   });
   it("excludes custom runs but permits presentation options", () => {
     expect(eligibleRun("endless", new URLSearchParams("bgm=0&countdown=0"))).toBe(true);
@@ -65,6 +75,30 @@ describe("shared profile and retry queue", () => {
     vi.mocked(fetch).mockResolvedValue(new Response(JSON.stringify({ ok: true }), { status: 200 }));
     await flushScores(); expect(pendingScores()).toEqual([]);
     expect(vi.mocked(fetch).mock.calls.at(-1)?.[0]).toBe("/api/scores");
+  });
+  it("keeps the player secret from the first session and sends it with every score", async () => {
+    setPublication(true); enqueueScore(entry()); await vi.advanceTimersByTimeAsync(0);
+    const player = localStorage.getItem("swaprise.player.v1");
+    const secret = "ab".repeat(32);
+    vi.mocked(fetch).mockImplementation(async (url) => new Response(JSON.stringify(url === "/api/session" ? { ok: true, player, secret } : { ok: true }), { status: 200 }));
+    await flushScores();
+    expect(localStorage.getItem("swaprise.player.secret.v1")).toBe(secret);
+    const posted = vi.mocked(fetch).mock.calls.filter(([url]) => url === "/api/scores").map(([, init]) => JSON.parse(init!.body as string));
+    expect(posted).toHaveLength(1); expect(posted[0]).toMatchObject({ player, secret });
+    // The second session proves ownership with the secret and gets no new one.
+    enqueueScore(entry()); await vi.advanceTimersByTimeAsync(0);
+    const sessions = vi.mocked(fetch).mock.calls.filter(([url]) => url === "/api/session").map(([, init]) => JSON.parse(init!.body as string));
+    expect(sessions.at(-1)).toEqual({ player, secret });
+  });
+  it("adopts a replacement player id from the server and relabels pending scores", async () => {
+    setPublication(true); enqueueScore(entry()); await vi.advanceTimersByTimeAsync(0);
+    const replacement = crypto.randomUUID();
+    vi.mocked(fetch).mockImplementation(async (url) => new Response(JSON.stringify(url === "/api/session" ? { ok: true, player: replacement, secret: "cd".repeat(32) } : { ok: false }), { status: url === "/api/session" ? 200 : 503 }));
+    await flushScores();
+    expect(localStorage.getItem("swaprise.player.v1")).toBe(replacement);
+    expect(pendingScores()[0].player).toBe(replacement);
+    const posted = vi.mocked(fetch).mock.calls.filter(([url]) => url === "/api/scores").map(([, init]) => JSON.parse(init!.body as string));
+    expect(posted[0]).toMatchObject({ player: replacement, secret: "cd".repeat(32) });
   });
   it("tolerates corrupt queue data and caps saved pending plays", async () => {
     localStorage.setItem("swaprise.scores.pending.v1", "bad"); expect(pendingScores()).toEqual([]);

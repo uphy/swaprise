@@ -3,6 +3,8 @@ import { scoreRules, validSubmission, type Submission, type ScoreMode, type Rank
 
 const NAME = "swaprise.name.v1";
 const PLAYER = "swaprise.player.v1";
+/** player の持ち主である証。初回の投稿時にサーバーから 1 度だけ受け取る。他の端末や人には見せない */
+const SECRET = "swaprise.player.secret.v1";
 const CONSENT = "swaprise.scores.publish.v1";
 const QUEUE = "swaprise.scores.pending.v1";
 const read = (key: string): string | null => { try { return localStorage.getItem(key); } catch { return null; } };
@@ -51,10 +53,19 @@ export async function flushScores(): Promise<void> {
     signal: AbortSignal.any([signal, AbortSignal.timeout(8000)]),
   });
   try {
-    if (!(await post("session", {})).ok) return;
+    // セッションと一緒に player の持ち主を登録する。初回は秘密が返る。id が他の端末のものだったら新しい id が返るので、
+    // 端末の id と送信待ちの記録をその id に付け替える（worker/players.ts）
+    const session = await post("session", { player: playerId(), secret: read(SECRET) ?? undefined });
+    if (!session.ok) return;
+    const issued = await session.json().catch(() => ({})) as { player?: string; secret?: string };
+    if (typeof issued.secret === "string") write(SECRET, issued.secret);
+    if (typeof issued.player === "string" && issued.player !== playerId()) {
+      write(PLAYER, issued.player);
+      write(QUEUE, JSON.stringify(pendingScores().map((entry) => ({ ...entry, player: issued.player }))));
+    }
     for (const score of pendingScores()) {
       if (publication() !== true || signal.aborted) break;
-      const response = await post("scores", score);
+      const response = await post("scores", { ...score, secret: read(SECRET) ?? undefined });
       if (response.ok || [400, 409, 413].includes(response.status)) {
         write(QUEUE, JSON.stringify(pendingScores().filter((entry) => entry.id !== score.id)));
       } else break;
