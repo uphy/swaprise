@@ -167,7 +167,7 @@ export class BoardView {
     this.dangerGlow = new DangerGlow(scene);
     const bandColor = mix(BOARD_BG, color, 0.35);
     this.frame = scene.add.image(-FRAME_EXTENT, -FRAME_EXTENT, makeFrameTexture(scene, color, bandColor)).setOrigin(0).setScale(1 / DPR);
-    this.corners = makeCorners(scene, bandColor);
+    this.corners = makeCorners(scene, color, bandColor);
     this.root.add([this.dangerGlow.root, this.frame]);
 
     for (let r = 0; r < DRAW_ROWS; r++) {
@@ -651,31 +651,47 @@ function makeFrameTexture(scene: Phaser.Scene, color: number, band: number): str
   const ctx = texture.context;
   ctx.scale(DPR, DPR);
   ctx.translate(FRAME_EXTENT, FRAME_EXTENT);
-  const x = -FRAME_PAD;
-  const y = -FRAME_PAD;
-  const bw = BOARD_W + FRAME_PAD * 2;
-  const bh = BOARD_H + FRAME_PAD * 2;
-  const r = FRAME_RADIUS;
-  const hex = (c: number): string => `#${c.toString(16).padStart(6, "0")}`;
-  const stroke = (sx: number, sy: number, sw: number, sh: number, sr: number, width: number, style: string): void => {
-    roundRectPath(ctx, sx, sy, sw, sh, sr);
-    ctx.lineWidth = width;
-    ctx.strokeStyle = style;
-    ctx.stroke();
-  };
-  const rgba = (c: number, a: number): string => `rgba(${(c >> 16) & 0xff}, ${(c >> 8) & 0xff}, ${c & 0xff}, ${a})`;
-  GLOW_STEPS.forEach(([width, alpha]) => stroke(x, y, bw, bh, r, width, rgba(color, alpha)));
-  roundRectPath(ctx, x, y, bw, bh, r);
-  ctx.fillStyle = hex(band);
-  ctx.fill();
-  roundRectPath(ctx, 0, 0, BOARD_W, BOARD_H, BOARD_RADIUS);
-  ctx.fillStyle = hex(BOARD_BG);
-  ctx.fill();
-  stroke(x, y, bw, bh, r, 2.5, rgba(color, 0.9));
-  stroke(x + 2.5, y + 2.5, bw - 5, bh - 5, r - 2.5, 1, "rgba(255, 255, 255, 0.45)");
+  const { x, y, bw, bh, r } = frameRect();
+  GLOW_STEPS.forEach(([width, alpha]) => strokeRoundRect(ctx, x, y, bw, bh, r, width, rgba(color, alpha)));
+  paintFrameBody(ctx, color, band, true);
   texture.refresh();
   return key;
 }
+
+/** 枠の帯の矩形。盤面の左上を原点にした座標 */
+function frameRect(): { x: number; y: number; bw: number; bh: number; r: number } {
+  return { x: -FRAME_PAD, y: -FRAME_PAD, bw: BOARD_W + FRAME_PAD * 2, bh: BOARD_H + FRAME_PAD * 2, r: FRAME_RADIUS };
+}
+
+/**
+ * 枠の本体。帯を塗り、中を濃紺で角のまま塗り、外縁の色の線と内側の白い線を引く。
+ * 枠の絵と四隅の蓋の両方で使う。蓋は盤面の角の 10×10 にこれと同じ絵を描いて丸角の弧の内側をくり抜くので、
+ * 白い線が角の四角に食い込む部分（線は角から 0.45px 内側を通る）も蓋の上で途切れない
+ */
+function paintFrameBody(ctx: CanvasRenderingContext2D, color: number, band: number, interior: boolean): void {
+  const { x, y, bw, bh, r } = frameRect();
+  roundRectPath(ctx, x, y, bw, bh, r);
+  ctx.fillStyle = hex(band);
+  ctx.fill();
+  // 中は角を丸めずに塗る。丸みは蓋（makeCorners）が作る。枠と蓋の両方で弧を描くと、弧の端に半端な段差が出た。
+  // 蓋には中を塗らない（蓋は帯と線だけを持ち、弧の内側は透明でパネルが見える）
+  if (interior) {
+    ctx.fillStyle = hex(BOARD_BG);
+    ctx.fillRect(0, 0, BOARD_W, BOARD_H);
+  }
+  strokeRoundRect(ctx, x, y, bw, bh, r, 2.5, rgba(color, 0.9));
+  strokeRoundRect(ctx, x + 2.5, y + 2.5, bw - 5, bh - 5, r - 2.5, 1, "rgba(255, 255, 255, 0.45)");
+}
+
+function strokeRoundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number, width: number, style: string): void {
+  roundRectPath(ctx, x, y, w, h, r);
+  ctx.lineWidth = width;
+  ctx.strokeStyle = style;
+  ctx.stroke();
+}
+
+const hex = (c: number): string => `#${c.toString(16).padStart(6, "0")}`;
+const rgba = (c: number, a: number): string => `rgba(${(c >> 16) & 0xff}, ${(c >> 8) & 0xff}, ${c & 0xff}, ${a})`;
 
 /** 丸角の矩形のパスを作る。ctx.roundRect は古い Safari にないので arcTo で組む */
 function roundRectPath(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number): void {
@@ -697,9 +713,9 @@ function mix(a: number, b: number, t: number): number {
 /**
  * 盤面の四隅の蓋。丸角の弧の外側（角の四角から弧を除いた三日月形）を帯の色で塗った絵を、パネルの上に置いて隅を隠す。
  * Phaser の Graphics で描くと WebGL ではアンチエイリアスがなく弧がギザつき、枠の弧とも合わなかったので、
- * canvas 2D で DPR 倍の大きさに描いた 1 枚の絵を 4 隅に反転して置く。弧は枠の弧より 0.5px 小さくし、境目に隙間が出ないようにする
+ * canvas 2D で DPR 倍の大きさに描いた 1 枚の絵を 4 隅に反転して置く。盤面の中の丸みはこの蓋だけで作る（枠の中は角のまま塗る）
  */
-function makeCorners(scene: Phaser.Scene, color: number): Phaser.GameObjects.Image[] {
+function makeCorners(scene: Phaser.Scene, color: number, band: number): Phaser.GameObjects.Image[] {
   const r = BOARD_RADIUS;
   const key = `board-corner-${color.toString(16)}`;
   if (!scene.textures.exists(key)) {
@@ -707,11 +723,12 @@ function makeCorners(scene: Phaser.Scene, color: number): Phaser.GameObjects.Ima
     const texture = scene.textures.createCanvas(key, size, size);
     if (texture) {
       const ctx = texture.context;
-      ctx.fillStyle = `#${color.toString(16).padStart(6, "0")}`;
-      ctx.fillRect(0, 0, size, size);
+      ctx.scale(DPR, DPR);
+      paintFrameBody(ctx, color, band, false);
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.globalCompositeOperation = "destination-out";
       ctx.beginPath();
-      ctx.arc(r * DPR, r * DPR, (r - 0.5) * DPR, 0, Math.PI * 2);
+      ctx.arc(r * DPR, r * DPR, r * DPR, 0, Math.PI * 2);
       ctx.fill();
       texture.refresh();
     }
