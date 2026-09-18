@@ -447,3 +447,32 @@ describe("せり上がりとゲームオーバー", () => {
     expect(isEmptyCell(b.cell(0, ROWS - 1))).toBe(true);
   });
 });
+
+describe("プレイの集計（stats）", () => {
+  it("成功した入れ替えと消去の回数を数え、消去は連鎖と入れ替えによるものに分ける", () => {
+    const b = emptyBoard();
+    b.setColumns(CHAIN3);
+    // 空マス同士の入れ替えは失敗で数えない
+    moveCursor(b, 3, 5);
+    press(b, { swap: true });
+    expect(b.stats.swaps).toBe(0);
+    // (0,4) の 4 を右へ抜くと縦→縦→横の3連鎖
+    moveCursor(b, 0, 4);
+    press(b, { swap: true }, 600);
+    expect(b.stats.swaps).toBe(1);
+    expect(b.stats.matches).toBe(3);
+    expect(b.stats.swapMatches).toBe(1);
+    expect(b.stats.chains).toBe(2);
+    expect(b.maxChain).toBe(3);
+  });
+
+  it("揃わない入れ替えも swaps に数える", () => {
+    const b = emptyBoard();
+    b.setColumns([[0, 1], [2, 3], [4, 0], [1, 2], [3, 4], [0, 1]]);
+    moveCursor(b, 0, 0);
+    press(b, { swap: true }, TIMING.swap + 1);
+    press(b, { swap: true }, TIMING.swap + 1);
+    expect(b.stats.swaps).toBe(2);
+    expect(b.stats.matches).toBe(0);
+  });
+});

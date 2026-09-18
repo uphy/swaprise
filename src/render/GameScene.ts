@@ -32,7 +32,7 @@ const RAISE_BAR_GAP = 12;
 /** せり上げバーの下端から時間などの行までの隙間 */
 const INFO_GAP = 8;
 import { enqueueScore } from "../scores/client";
-import { track } from "./analytics";
+import { playFields, track } from "./analytics";
 
 const STEP_MS = 1000 / 60;
 /** 縦持ちの CPU 対戦で、CPU の盤面を描く大きさ。 */
@@ -854,7 +854,10 @@ export class GameScene extends Phaser.Scene {
     // エンドレスと CPU に負けたときは負けの音、対戦は誰かが勝つので勝ちの音。タイムアタックは時間切れなら完走の音
     const humanWon =
       this.mode === "versus" ? g.winner >= 0 : this.mode === "cpu" ? g.winner === 0 : this.mode === "puzzle" ? g.puzzleResult === "clear" : this.mode === "lesson" ? g.lessonDone : g.timeUp;
-    track("end", { mode: this.mode, detail: this.trackDetail(), outcome: this.trackOutcome(), seconds: Math.round((Date.now() - this.startedAt) / 1000) });
+    track("end", {
+      mode: this.mode, detail: this.trackDetail(), outcome: this.trackOutcome(), seconds: Math.round((Date.now() - this.startedAt) / 1000),
+      play: playFields({ board: g.boards[0], touch: this.touches[0], keys: this.inputs[0], touchDevice: this.layout.touch, portrait: this.layout.portrait }),
+    });
     if (humanWon) {
       audio.win();
       haptics.win();

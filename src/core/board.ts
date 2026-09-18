@@ -97,7 +97,13 @@ export class Board {
   /** このフレームで起きた出来事。描画・音の層が読む。 */
   events: BoardEvent[] = [];
   readonly garbage = new Map<number, GarbageBlock>();
-  readonly stats = { combos: 0, chains: 0, manualRows: 0, shockSpawned: 0, shockCleared: 0, activeSwaps: 0 };
+  /**
+   * 1 プレイの集計。結果画面・計測（src/net/track.ts）・シミュレーション（tools/sim/）が読む。
+   * swaps は成功した入れ替えの回数、matches は消去が起きた回数、swapMatches はそのうち連鎖でないもの
+   * （入れ替えや、入れ替えで落ちたパネルで揃えた消去。せり上がりで揃った稀な消去も含む）。
+   * swapMatches / swaps が「入れ替え 1 回あたりの揃い」で、何も考えずに動かし続ける遊び方と狙った遊び方を見分ける目安になる。
+   */
+  readonly stats = { combos: 0, chains: 0, manualRows: 0, shockSpawned: 0, shockCleared: 0, activeSwaps: 0, swaps: 0, matches: 0, swapMatches: 0 };
   /** せり上がって行が追加された回数。追加のたびに全パネルの段（y）が1つ増える。 */
   risenRows = 0;
 
@@ -415,6 +421,7 @@ export class Board {
       c.timer = TIMING.swap;
       c.swapFrom = from;
     }
+    this.stats.swaps++;
     this.emit({ type: "swap" });
     return true;
   }
@@ -870,11 +877,14 @@ export class Board {
     const n = list.length;
     const chaining = list.some(({ x, y }) => this.cells[y][x].chain);
     let chainNow = 1;
+    this.stats.matches++;
     if (chaining) {
       this.chain++;
       chainNow = this.chain;
       this.maxChain = Math.max(this.maxChain, chainNow);
       this.stats.chains++;
+    } else {
+      this.stats.swapMatches++;
     }
     if (n >= 4) this.stats.combos++;
 

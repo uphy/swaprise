@@ -1,4 +1,5 @@
 import { playerId } from "../scores/client";
+import { emptyPlayStats, type PlayStats } from "../net/track";
 import { language } from "./i18n";
 
 /**
@@ -15,6 +16,49 @@ export interface TrackFields {
   detail?: string;
   outcome?: string;
   seconds?: number;
+  /** end に付ける 1 プレイの集計と、主な操作・画面の向き（playFields() で作る）。 */
+  play?: PlayFields;
+}
+
+export interface PlayFields {
+  input: "touch" | "mouse" | "keys";
+  orientation: "portrait" | "landscape";
+  stats: PlayStats;
+}
+
+/** playFields() が読む盤面と操作の集計。Board / TouchInput / PlayerInput の該当部分だけ。 */
+export interface PlaySources {
+  board: {
+    score: number;
+    maxChain: number;
+    panelsCleared: number;
+    level: number;
+    risenRows: number;
+    stats: { swaps: number; matches: number; swapMatches: number; chains: number; combos: number; manualRows: number };
+  };
+  touch?: { stats: { drags: number; dragSteps: number; dragMidStops: number; taps: number } } | null;
+  keys?: { stats: { keySwaps: number } } | null;
+  /** タッチ端末向けのレイアウトか（Layout.touch）。 */
+  touchDevice: boolean;
+  portrait: boolean;
+}
+
+/**
+ * end に付ける 1 プレイの集計を、盤面と操作の集計から組む。
+ * 主な操作は入れ替えを多く出した側で決める。キー・パッドの方が多ければ keys、そうでなければタッチ端末なら touch、それ以外は mouse。
+ */
+export function playFields(src: PlaySources): PlayFields {
+  const stats = emptyPlayStats();
+  const b = src.board;
+  Object.assign(stats, {
+    score: b.score, maxChain: b.maxChain, swaps: b.stats.swaps, matches: b.stats.matches, swapMatches: b.stats.swapMatches,
+    chains: b.stats.chains, combos: b.stats.combos, panels: b.panelsCleared, risenRows: b.risenRows, manualRows: b.stats.manualRows, level: b.level,
+    drags: src.touch?.stats.drags ?? 0, dragSteps: src.touch?.stats.dragSteps ?? 0, dragMidStops: src.touch?.stats.dragMidStops ?? 0,
+    taps: src.touch?.stats.taps ?? 0, keySwaps: src.keys?.stats.keySwaps ?? 0,
+  });
+  const pointer = stats.dragSteps + stats.taps;
+  const input = stats.keySwaps > pointer ? "keys" : src.touchDevice ? "touch" : "mouse";
+  return { input, orientation: src.portrait ? "portrait" : "landscape", stats };
 }
 
 /** 起動時に 1 度だけ集める、流入元とその端末の情報。 */
@@ -71,6 +115,9 @@ function send(event: TrackEvent, fields: TrackFields): void {
     detail: fields.detail ?? "",
     outcome: fields.outcome ?? "",
     seconds: fields.seconds ?? 0,
+    input: fields.play?.input ?? "",
+    orientation: fields.play?.orientation ?? "",
+    stats: fields.play?.stats ?? emptyPlayStats(),
     referrer: visit?.referrer ?? "",
     source: visit?.source ?? "",
     first: visit?.first ?? "0",

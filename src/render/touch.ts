@@ -42,6 +42,12 @@ interface Drag {
 export class TouchInput {
   private queue: Input[] = [];
   private readonly drags = new Map<number, Drag>();
+  /**
+   * 操作の集計（計測 src/net/track.ts の drags / dragSteps / dragMidStops / taps）。
+   * drags は 1 マス以上動かしたドラッグの本数、dragSteps はドラッグで出した入れ替えの回数、
+   * dragMidStops は指がまだ先へ進んでいる途中で揃って止まった回数、taps はクリックで出した入れ替えの回数。
+   */
+  readonly stats = { drags: 0, dragSteps: 0, dragMidStops: 0, taps: 0 };
 
   /** 選択中のマスと、現在の指の移動量で予約している移動先。 */
   get feedback(): { x: number; y: number; targetX: number } | null {
@@ -150,7 +156,10 @@ export class TouchInput {
     // イベント間隔が粗くても、通過した全列を一度に認識する。
     while (target < COLS - 1 && position - target >= SWIPE_RATIO) target++;
     while (target > 0 && position - target <= -SWIPE_RATIO) target--;
-    if (target !== d.cellX + d.pending) d.mode = "swipe";
+    if (target !== d.cellX + d.pending && d.mode !== "swipe") {
+      d.mode = "swipe";
+      this.stats.drags++;
+    }
     d.pending = target - d.cellX;
   }
 
@@ -176,6 +185,7 @@ export class TouchInput {
       const here = this.board.cell(d.cellX, d.cellY);
       if (d.panel) {
         if (isEmptyCell(here) || here.state === "matched" || here.state === "popped" || here.state === "falling") {
+          if (d.pending !== 0 && (here.state === "matched" || here.state === "popped")) this.stats.dragMidStops++;
           this.drags.delete(id);
           continue;
         }
@@ -192,6 +202,7 @@ export class TouchInput {
       const left = dir > 0 ? d.cellX : target;
       // 掴んでいるパネルの現在の位置で入れ替える
       this.queue.push({ moveX: 0, moveY: 0, swap: true, raise: false, cursorTo: { x: left, y: d.cellY } });
+      this.stats.dragSteps++;
       d.cellX = target;
       d.pending -= dir;
       // 入れ替え先の下が空なら、パネルはそこで落ちる。ドラッグはここで終える
@@ -216,6 +227,7 @@ export class TouchInput {
     // マスの中央を叩いたときは、左右のうち近い側の隣と入れ替える。
     const boundary = Math.round((d.startX - this.ox) / this.cell);
     const left = Math.max(0, Math.min(COLS - 2, boundary - 1));
+    this.stats.taps++;
     this.queue.push({ moveX: 0, moveY: 0, swap: true, raise: false, cursorTo: { x: left, y: d.cellY } });
   }
 

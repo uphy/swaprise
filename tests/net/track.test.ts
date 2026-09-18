@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseTrack, toTrackRow } from "../../src/net/track";
+import { PLAY_STATS, emptyPlayStats, parseTrack, toTrackRow } from "../../src/net/track";
 
 const PLAYER = "0f6c5c1e-9b7a-4d2e-8c3f-1a2b3c4d5e6f";
 
@@ -8,7 +8,7 @@ describe("parseTrack", () => {
     const p = parseTrack({ event: "start", player: PLAYER, mode: "cpu", detail: "hard" });
     expect(p).toEqual({
       event: "start", player: PLAYER, mode: "cpu", detail: "hard", outcome: "", referrer: "", source: "",
-      locale: "", first: "0", display: "browser", version: "", seconds: 0,
+      locale: "", first: "0", display: "browser", version: "", seconds: 0, input: "", orientation: "", stats: emptyPlayStats(),
     });
   });
   it("未知の出来事・id の形違い・JSON でないものは捨てる", () => {
@@ -30,6 +30,13 @@ describe("parseTrack", () => {
     expect(parseTrack({ event: "end", player: PLAYER, seconds: "9" })!.seconds).toBe(0);
     expect(parseTrack({ event: "visit", player: PLAYER, first: "yes", display: "tv" })).toMatchObject({ first: "0", display: "browser" });
   });
+  it("プレイの集計は知っている項目だけ整数で受け、主な操作と向きは決まった値だけ通す", () => {
+    const p = parseTrack({ event: "end", player: PLAYER, input: "touch", orientation: "portrait", stats: { swaps: 12.4, swapMatches: 3, extra: 9, score: -1, level: "9", drags: 1e9 } })!;
+    expect(p.input).toBe("touch");
+    expect(p.orientation).toBe("portrait");
+    expect(p.stats).toEqual({ ...emptyPlayStats(), swaps: 12, swapMatches: 3, drags: 1_000_000 });
+    expect(parseTrack({ event: "end", player: PLAYER, input: "voice", orientation: "upside", stats: "none" })).toMatchObject({ input: "", orientation: "", stats: emptyPlayStats() });
+  });
 });
 
 describe("toTrackRow", () => {
@@ -37,8 +44,17 @@ describe("toTrackRow", () => {
     const p = parseTrack({ event: "visit", player: PLAYER, referrer: "news.ycombinator.com", source: "x", locale: "ja", first: "1", version: "2026-09-13 abc1234" })!;
     expect(toTrackRow(p, "JP")).toEqual({
       indexes: [PLAYER],
-      blobs: ["visit", "", "", "", "news.ycombinator.com", "x", "JP", "ja", "1", "browser", "2026-09-13 abc1234"],
-      doubles: [0],
+      blobs: ["visit", "", "", "", "news.ycombinator.com", "x", "JP", "ja", "1", "browser", "2026-09-13 abc1234", "", ""],
+      doubles: [0, ...PLAY_STATS.map(() => 0)],
     });
+  });
+  it("end のプレイの集計を double2 以降に PLAY_STATS の並びで置く。列は Analytics Engine の上限 20 に収まる", () => {
+    const stats = Object.fromEntries(PLAY_STATS.map((k, i) => [k, i + 1]));
+    const p = parseTrack({ event: "end", player: PLAYER, mode: "endless", seconds: 90, input: "keys", orientation: "landscape", stats })!;
+    const row = toTrackRow(p, "JP");
+    expect(row.blobs.slice(11)).toEqual(["keys", "landscape"]);
+    expect(row.doubles).toEqual([90, ...PLAY_STATS.map((_, i) => i + 1)]);
+    expect(row.doubles.length).toBeLessThanOrEqual(20);
+    expect(row.blobs.length).toBeLessThanOrEqual(20);
   });
 });

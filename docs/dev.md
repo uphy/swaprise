@@ -96,7 +96,7 @@ PR には CI がプレビュー URL をコメントする（Cloudflare の versi
 |---|---|---|
 | `visit` | 起動時に 1 度 | 空。流入元（referrer のホスト名、`utm_source`）と、初めての端末かどうか（`first`）を付ける |
 | `start` | 試合が始まった | mode は遊び方、detail は CPU の強さ・パズルの面・課の番号・オンラインの入り方（`random` / `invite`）。待機中の CPU 戦は `normal/online` |
-| `end` | 決着した | outcome は `win` / `lose` / `draw` / `clear` / `failed` / `timeup` / `over` / `nocontest`、`seconds` は試合時間 |
+| `end` | 決着した | outcome は `win` / `lose` / `draw` / `clear` / `failed` / `timeup` / `over` / `nocontest`、`seconds` は試合時間。1 プレイの集計（下の表）と主な操作・画面の向きを付ける |
 | `share` | 共有ボタンを押した | detail は `result`（結果）か `invite`（招待リンク） |
 
 Analytics Engine の列。dataset は本番 `swaprise_events`、PR プレビュー `swaprise_preview_events`（`tools/prepare-preview.mjs` が付け替える）。
@@ -105,7 +105,31 @@ Analytics Engine の列。dataset は本番 `swaprise_events`、PR プレビュ�
 |---|---|
 | `index1` | 端末の匿名 id（`swaprise.player.v1`）。戻ってきた端末を数える鍵 |
 | `blob1` 〜 `blob11` | event, mode, detail, outcome, referrer, utm_source, 国（Cloudflare の `cf.country`）, 言語, first, display（`standalone` はホーム画面から）, ビルド識別子 |
+| `blob12` | `end` の主な操作。`touch` / `mouse` / `keys`（キーボード・パッドの入れ替えがタッチ・クリックより多い） |
+| `blob13` | `end` の画面の向き。`portrait` / `landscape` |
 | `double1` | `end` の試合時間（秒） |
+| `double2` 〜 `double17` | `end` の 1 プレイの集計（下の表。並びは `src/net/track.ts` の `PLAY_STATS`） |
+
+1 プレイの集計。操作と速度を調整するときの手がかりで、特に「何も考えずになぞり続ける遊び方」を見分けるために入れた。盤面の値は `Board.stats`、操作の値は `TouchInput.stats` と `PlayerInput.stats` が数える。手元では結果画面で `window.__swaprise.game.boards[0].stats` と `__swaprise.scene.touches[0].stats` を読める。
+
+| 列 | 項目 | 中身 |
+|---|---|---|
+| `double2` | score | 得点 |
+| `double3` | maxChain | 最大連鎖 |
+| `double4` | swaps | 成功した入れ替えの回数 |
+| `double5` | matches | 消去が起きた回数 |
+| `double6` | swapMatches | 消去のうち連鎖でないもの（入れ替えで揃えた）。`swapMatches / swaps` が入れ替え 1 回あたりの揃いで、`pnpm sim endless` では狙って遊ぶ CPU が 5〜6 割、なぞるだけの swiper が 5% |
+| `double7` | chains | 2 連鎖目以降の消去の回数 |
+| `double8` | combos | 4 枚以上の同時消しの回数 |
+| `double9` | panels | 消した枚数 |
+| `double10` | risenRows | せり上がった段数（自動と手動の合計） |
+| `double11` | manualRows | 手動でせり上げた段数 |
+| `double12` | level | 終了時のスピードレベル |
+| `double13` | drags | 横に引いたドラッグの本数（1 マス以上動かしたもの） |
+| `double14` | dragSteps | ドラッグで出した入れ替えの回数 |
+| `double15` | dragMidStops | ドラッグの途中（指がまだ先へ進んでいる）で揃って止まった回数 |
+| `double16` | taps | マウスのクリックで出した入れ替えの回数 |
+| `double17` | keySwaps | キーボード・ゲームパッドで出した入れ替えの回数 |
 
 読むのは Cloudflare の [SQL API](https://developers.cloudflare.com/analytics/analytics-engine/sql-api/)。API token に **Account Analytics Read** が要る。保持は 90 日。
 
@@ -121,6 +145,11 @@ curl -s "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/an
 
 # 流入元ごとの訪問数（referrer と utm_source）
 # SELECT blob5 AS referrer, blob6 AS source, count() FROM swaprise_events WHERE blob1 = 'visit' GROUP BY referrer, source ORDER BY count() DESC
+
+# 操作ごとの、入れ替え 1 回あたりの揃いと得点/分（エンドレス）。なぞるだけの遊び方は swap_match_rate が低く drag_steps が多い
+# SELECT blob12 AS input, count() AS plays, avg(double6 / greatest(double4, 1)) AS swap_match_rate,
+#   avg(double2 / greatest(double1, 1) * 60) AS score_per_min, avg(double14) AS drag_steps, avg(double15) AS drag_mid_stops, avg(double3) AS max_chain
+#   FROM swaprise_events WHERE blob1 = 'end' AND blob2 = 'endless' GROUP BY input
 
 # 先週に始めて今週も遊んだ端末（1 週間後の定着）
 # SELECT count(DISTINCT index1) FROM swaprise_events

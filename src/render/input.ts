@@ -48,6 +48,8 @@ export class PlayerInput {
   touch: TouchInput | null = null;
   /** 直前の poll でせり上げが押されていたか（描画のヒント用）。 */
   lastRaise = false;
+  /** キーボード・ゲームパッドで出した入れ替えの回数（計測 src/net/track.ts の keySwaps）。 */
+  readonly stats = { keySwaps: 0 };
 
   constructor(
     private scene: Phaser.Scene,
@@ -136,6 +138,7 @@ export class PlayerInput {
     const swap = (swapDown && !this.swapWasDown) || this.pressed.swap === true;
     this.pressed.swap = false;
     this.swapWasDown = swapDown;
+    if (swap) this.stats.keySwaps++;
     const input: Input = {
       moveX: left && !right ? -1 : right && !left ? 1 : 0,
       moveY: up && !down ? 1 : down && !up ? -1 : 0,
