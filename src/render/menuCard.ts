@@ -105,9 +105,9 @@ export class MenuCard {
     // 半透明の白い地。背景の空が透ける
     g.fillStyle(0xffffff, this.hot ? 0.24 : 0.12);
     g.fillRoundedRect(x - w / 2, y - h / 2, w, h, r);
-    // ガラスの反射。上半分を少し白くする
+    // ガラスの反射。上半分を少し白くする。上の 2 角だけカードと同じ丸み
     g.fillStyle(0xffffff, this.hot ? 0.14 : 0.1);
-    g.fillRoundedRect(x - w / 2 + 3, y - h / 2 + 3, w - 6, h * 0.45, r - 3);
+    g.fillRoundedRect(x - w / 2 + 3, y - h / 2 + 3, w - 6, h * 0.45, { tl: r - 3, tr: r - 3, bl: 0, br: 0 });
     // 縁。色の線の内側に細い白で、光る枠に見せる
     g.lineStyle(2.5, color, this.hot ? 1 : 0.9);
     g.strokeRoundedRect(x - w / 2, y - h / 2, w, h, r);

@@ -201,7 +201,8 @@ export class OpeningScene extends Phaser.Scene {
         const flash = this.add.rectangle(0, 0, W, H, 0xffffff, 0.5).setOrigin(0).setDepth(20);
         this.tweens.add({ targets: flash, alpha: 0, duration: 260, ease: "Quad.Out", onComplete: () => flash.destroy() });
         this.tweens.add({ targets: glow, scale: 1.9, alpha: { from: 0.85, to: 0 }, duration: 750, ease: "Cubic.Out" });
-        titleArt.scale = 2.2;
+        // 大きく出して縮める。画面の幅からはみ出さない大きさまで（縦持ちでは幅いっぱいなのでほとんど膨らまない）
+        titleArt.scale = Math.min(2.2, (W - 8) / titleArt.text.width);
         this.tweens.add({ targets: titleArt, alpha: 1, duration: 90 });
         this.tweens.add({ targets: titleArt, scale: 1, duration: 300, ease: "Back.Out", easeParams: [1.4] });
       });

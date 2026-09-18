@@ -103,11 +103,14 @@ export class Button extends Phaser.GameObjects.Container {
     const alpha = look === "pressed" ? this.baseAlpha + 0.3 : look === "hover" ? this.baseAlpha + 0.14 : this.baseAlpha;
     g.fillStyle(this.baseColor, Math.min(1, alpha));
     g.fillRoundedRect(-this.boxW / 2, -this.boxH / 2, this.boxW, this.boxH, r);
-    // ガラスの反射。上寄りに白い楕円を置く（塗りが白のときだけ。色付きの塗りは濁る）。
-    // 角丸の矩形で描くと、錠剤形の丸い端と合わずに欠けて見えた
+    // ガラスの反射。上半分を少し白くする（塗りが白のときだけ。色付きの塗りは濁る）。
+    // 上の 2 角だけをボタンと同じ丸みにした帯。楕円だと輪郭がくっきり見え、全部の角を丸めた矩形だと錠剤形の端と合わなかった
     if (this.baseColor === 0xffffff) {
-      g.fillStyle(0xffffff, 0.12);
-      g.fillEllipse(0, -this.boxH * 0.2, this.boxW - 12, this.boxH * 0.42);
+      const inset = 3;
+      const bandH = this.boxH * 0.45;
+      const top = Math.min(Math.max(0, r - inset), bandH);
+      g.fillStyle(0xffffff, 0.1);
+      g.fillRoundedRect(-this.boxW / 2 + inset, -this.boxH / 2 + inset, this.boxW - inset * 2, bandH, { tl: top, tr: top, bl: 0, br: 0 });
     }
     g.lineStyle(2, 0xffffff, look === "hover" ? 0.9 : 0.6);
     g.strokeRoundedRect(-this.boxW / 2, -this.boxH / 2, this.boxW, this.boxH, r);
