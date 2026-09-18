@@ -5,7 +5,7 @@ import { BoardView, announceOpponentChains } from "./BoardView";
 import { PlayerInput, P1_KEYS } from "./input";
 import { TouchInput } from "./touch";
 import { applyLayout } from "./hidpi";
-import { BOARD_H, BOARD_W, layoutFor, sameLayout, type Layout } from "./theme";
+import { BOARD_H, BOARD_W, CARD, layoutFor, sameLayout, type Layout } from "./theme";
 import { haptics } from "./haptics";
 import { FONT_UI, MENU_TYPE } from "./theme";
 import { Background } from "./Background";
@@ -738,6 +738,10 @@ export class OnlineScene extends Phaser.Scene {
             ? t("YOU")
             : this.boardName(s.state?.seats[i]?.name ?? "Guest"),
           i === s.player,
+          null,
+          "",
+          // 枠の色。自分は他の対戦と同じ水色、相手は藤色
+          i === s.player ? CARD.cyan : CARD.violet,
         ),
     );
     this.playerInput = new PlayerInput(this, P1_KEYS, 0);

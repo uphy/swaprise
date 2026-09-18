@@ -1,7 +1,7 @@
 import Phaser from "phaser";
 import { t } from "./i18n";
 import { Board, COLS, EMPTY, ROWS, TIMING, TOTAL_ROWS, isPanel, type BoardEvent } from "../core";
-import { BOARD_BG, BOARD_H, BOARD_W, CELL, FONT, FONT_UI, KIND_COLORS, TEXT_COLOR, TEXT_DIM, chainColor, isTouchDevice } from "./theme";
+import { BOARD_BG, BOARD_H, BOARD_W, CARD, CELL, FONT, FONT_UI, KIND_COLORS, TEXT_COLOR, TEXT_DIM, chainColor, isTouchDevice } from "./theme";
 import { audio } from "./shared";
 import { haptics } from "./haptics";
 import { DPR } from "./hidpi";
@@ -26,6 +26,19 @@ export function announceOpponentChains(events: BoardEvent[], mine: BoardView): v
 }
 /** 盤面と横置きの HUD の間隔。 */
 const HUD_GAP = 12;
+/** 盤面の枠。パネルの外側に FRAME_PAD の帯を回し、その外縁を色の線と光で縁取る（メニューのカードと同じ作り） */
+const FRAME_PAD = 6;
+const FRAME_RADIUS = 16;
+const BOARD_RADIUS = 10;
+/** 縁の外の光。[線の太さ, alpha] を太い順に重ねる（menuCard.ts と同じ） */
+const GLOW_STEPS: readonly (readonly [number, number])[] = [
+  [18, 0.04],
+  [13, 0.06],
+  [9, 0.09],
+  [5, 0.14],
+];
+/** 枠の絵が盤面の外へ広がる幅。帯と、いちばん太い光の線の外側半分 */
+const FRAME_EXTENT = FRAME_PAD + GLOW_STEPS[0][0] / 2;
 
 /** 描画する行の範囲。可視12段の上に、降ってくるおじゃまが見えるぶんだけ余裕を持たせる。 */
 const DRAW_ROWS = Math.min(TOTAL_ROWS, ROWS + 6);
@@ -48,11 +61,19 @@ export class BoardView {
   private readonly hintGfx: Phaser.GameObjects.Graphics;
   private hintCells: { x: number; y: number }[] = [];
   touch: TouchInput | null = null;
-  private readonly bg: Phaser.GameObjects.Rectangle;
-  private readonly frame: Phaser.GameObjects.Rectangle;
+  private readonly frame: Phaser.GameObjects.Image;
+  /** 四隅の蓋。角のパネルの隅が盤面の丸角の外に出るぶんを、枠の帯と同じ色で覆う（パネルの上に置く） */
+  private readonly corners: Phaser.GameObjects.Image[];
+  /** 盤面の中の色。e2e が警告の演出で変わっていないことを確かめる */
+  readonly bgColor = BOARD_BG;
   private readonly dangerGlow: DangerGlow;
+  /** 1P・VS CPU などの名前。メニューのラベルと同じ丸い書体 */
+  private readonly labelText: Phaser.GameObjects.Text;
+  /** 得点の数字。桁が揃う等幅 */
   private readonly scoreText: Phaser.GameObjects.Text;
   private readonly infoText: Phaser.GameObjects.Text;
+  /** 残り時間の行の下敷き。空が暖色に変わっても赤い数字を読み取れるように、タイムアタックだけ出す */
+  private readonly infoPill: Phaser.GameObjects.Graphics | null;
   private readonly pendingGfx: Phaser.GameObjects.Graphics;
   /** 予告おじゃまの段数。バーの脇に数字で出す */
   private readonly pendingText: Phaser.GameObjects.Text;
@@ -93,16 +114,39 @@ export class BoardView {
     this.hud = hud;
     this.root.setPosition(ox, oy).setScale(scale);
     if (hud === "top") {
-      this.scoreText.setPosition(0, -30).setOrigin(0, 0);
+      // 名前と得点を 1 行に。得点は名前の右に隙間を空けて続ける
+      this.labelText.setPosition(0, -32).setOrigin(0, 0);
+      this.scoreText.setPosition(this.labelText.width + 10, -30).setOrigin(0, 0);
       // 時間・速度・最大連鎖の行。せり上げバーがある盤面では、バーの下（infoY）に置く
       this.infoText.setPosition(BOARD_W, infoY).setOrigin(1, 0).setAlign("right");
     } else if (hud === "right") {
-      this.scoreText.setPosition(BOARD_W + HUD_GAP, 0).setOrigin(0, 0);
-      this.infoText.setPosition(BOARD_W + HUD_GAP, 28).setOrigin(0, 0).setAlign("left");
+      // 横置きは幅が狭いので、名前・得点・時間を縦に積む
+      this.labelText.setPosition(BOARD_W + HUD_GAP, -2).setOrigin(0, 0);
+      this.scoreText.setPosition(BOARD_W + HUD_GAP, 20).setOrigin(0, 0);
+      this.infoText.setPosition(BOARD_W + HUD_GAP, 48).setOrigin(0, 0).setAlign("left");
     } else {
-      this.scoreText.setPosition(-HUD_GAP, 0).setOrigin(1, 0);
-      this.infoText.setPosition(-HUD_GAP, 28).setOrigin(1, 0).setAlign("right");
+      this.labelText.setPosition(-HUD_GAP, -2).setOrigin(1, 0);
+      this.scoreText.setPosition(-HUD_GAP, 20).setOrigin(1, 0);
+      this.infoText.setPosition(-HUD_GAP, 48).setOrigin(1, 0).setAlign("right");
     }
+    this.placeInfoPill();
+  }
+
+  /** 残り時間の行の下敷きを文字の大きさに合わせて描き直す。 */
+  private placeInfoPill(): void {
+    const g = this.infoPill;
+    if (!g) return;
+    const padX = 8;
+    const padY = 3;
+    const w = this.infoText.width + padX * 2;
+    const h = this.infoText.height + padY * 2;
+    const x = this.infoText.x - this.infoText.originX * this.infoText.width - padX;
+    const y = this.infoText.y - this.infoText.originY * this.infoText.height - padY;
+    g.clear();
+    g.fillStyle(BOARD_BG, 0.78);
+    g.fillRoundedRect(x, y, w, h, h / 2);
+    g.lineStyle(1, 0xffffff, 0.35);
+    g.strokeRoundedRect(x, y, w, h, h / 2);
   }
 
   destroy(): void { this.root.destroy(true); }
@@ -110,18 +154,21 @@ export class BoardView {
   constructor(
     private readonly scene: Phaser.Scene,
     readonly board: Board,
-    private readonly label: string,
+    label: string,
     private readonly showLevel: boolean,
     /** タイムアタックの制限時間（フレーム）。指定すると経過時間の代わりに残り時間を出す。 */
     private readonly timeLimit: number | null = null,
     /** パズルは得点・時間の代わりに面の名前と残り手数、レッスンは課の名前だけを出す。 */
     private readonly style: "" | "puzzle" | "lesson" = "",
+    /** 枠の縁の色。メニューでこのモードを選んだカードと同じ色にする */
+    color: number = CARD.gold,
   ) {
     this.root = scene.add.container(0, 0);
     this.dangerGlow = new DangerGlow(scene);
-    this.frame = scene.add.rectangle(-4, -4, BOARD_W + 8, BOARD_H + 8, 0xffffff, 0.45).setOrigin(0);
-    this.bg = scene.add.rectangle(0, 0, BOARD_W, BOARD_H, BOARD_BG).setOrigin(0);
-    this.root.add([this.dangerGlow.root, this.frame, this.bg]);
+    const bandColor = mix(BOARD_BG, color, 0.35);
+    this.frame = scene.add.image(-FRAME_EXTENT, -FRAME_EXTENT, makeFrameTexture(scene, color, bandColor)).setOrigin(0).setScale(1 / DPR);
+    this.corners = makeCorners(scene, color, bandColor);
+    this.root.add([this.dangerGlow.root, this.frame]);
 
     for (let r = 0; r < DRAW_ROWS; r++) {
       const row: Phaser.GameObjects.Image[] = [];
@@ -137,6 +184,7 @@ export class BoardView {
       this.root.add(img);
       this.nextCells.push(img);
     }
+    this.root.add(this.corners);
     this.cursor = scene.add.image(0, 0, "cursor").setOrigin(0).setScale(1 / DPR);
     this.root.add(this.cursor);
     this.touchGfx = scene.add.graphics();
@@ -159,19 +207,31 @@ export class BoardView {
       this.emitters.push(e);
     });
 
-    this.scoreText = scene.add.text(0, -30, "", { fontFamily: FONT, fontSize: "18px", color: TEXT_COLOR, fontStyle: "bold" }).setOrigin(0, 0);
+    // 名前は丸い書体、得点は等幅。どちらもメニューのラベルと同じ濃い紫の影で空から浮かせる
+    this.labelText = scene.add
+      .text(0, -32, label, { fontFamily: FONT_UI, fontSize: "20px", color: TEXT_COLOR, fontStyle: "700" })
+      .setShadow(0, 2, "#2a1a5a", 6, false, true)
+      .setOrigin(0, 0);
+    this.scoreText = scene.add
+      .text(0, -30, "", { fontFamily: FONT, fontSize: "18px", color: TEXT_COLOR, fontStyle: "bold" })
+      .setShadow(0, 2, "#2a1a5a", 6, false, true)
+      .setOrigin(0, 0);
     this.infoText = scene.add
-      .text(BOARD_W, BOARD_H + 14, "", { fontFamily: FONT, fontSize: "13px", color: TEXT_DIM, align: "right" })
+      .text(BOARD_W, BOARD_H + 14, "", { fontFamily: FONT_UI, fontSize: "13px", color: TEXT_DIM, fontStyle: "600", align: "right" })
+      .setShadow(0, 1, "#2a1a5a", 4, false, true)
       .setOrigin(1, 0);
-    // 空が暖色に変わっても、残り時間の赤い数字を読み取れるようにする。
-    if (timeLimit !== null) this.infoText.setBackgroundColor("#211d35dd").setPadding(3, 2);
+    this.infoPill = timeLimit !== null ? scene.add.graphics() : null;
     this.pendingGfx = scene.add.graphics();
     this.pendingText = scene.add.text(0, 0, "", { fontFamily: FONT, fontSize: "15px", color: TEXT_DIM, fontStyle: "bold" }).setVisible(false);
     this.stopBar = scene.add.rectangle(0, BOARD_H + 6, 0, 4, 0x66ccff).setOrigin(0);
-    this.root.add([this.scoreText, this.infoText, this.pendingGfx, this.pendingText, this.stopBar]);
+    if (this.infoPill) this.root.add(this.infoPill);
+    this.root.add([this.labelText, this.scoreText, this.infoText, this.pendingGfx, this.pendingText, this.stopBar]);
 
     this.overlay = scene.add.container(BOARD_W / 2, BOARD_H / 2).setVisible(false);
-    const dim = scene.add.rectangle(0, 0, BOARD_W, BOARD_H, 0x1a1030, 0.72);
+    // 暗幕は盤面の角に合わせて丸める（矩形だと角が枠の帯にはみ出す）
+    const dim = scene.add.graphics();
+    dim.fillStyle(0x1a1030, 0.72);
+    dim.fillRoundedRect(-BOARD_W / 2, -BOARD_H / 2, BOARD_W, BOARD_H, BOARD_RADIUS);
     this.overlayTitle = scene.add
       .text(0, -34, "", { fontFamily: FONT_UI, fontSize: "34px", color: "#ffe066", fontStyle: "700", stroke: "#3a1a5a", strokeThickness: 6 })
       .setOrigin(0.5);
@@ -467,7 +527,7 @@ export class BoardView {
 
     this.drawHint();
     if (this.style) {
-      this.scoreText.setText(this.label);
+      this.scoreText.setText("");
       if (this.style === "puzzle") {
         const left = b.movesLeft ?? 0;
         this.infoText.setColor(left <= 1 ? "#ff8a94" : TEXT_DIM);
@@ -485,7 +545,7 @@ export class BoardView {
       this.scoreBump = Math.max(0, this.scoreBump - 0.08);
       this.scoreText.setScale(1 + this.scoreBump * 0.25);
     } else this.scoreText.setScale(1);
-    this.scoreText.setText(`${this.label}  ${String(this.shownScore).padStart(6, "0")}`);
+    this.scoreText.setText(String(this.shownScore).padStart(6, "0"));
     let seconds: number;
     if (this.timeLimit !== null) {
       // 残り時間。ゲームのフレームで数えるので、ポーズ中は減らない
@@ -503,7 +563,11 @@ export class BoardView {
     if (this.showLevel) parts.push(`SPEED ${b.level}`);
     parts.push(`MAX x${b.maxChain}`);
     // 横置きの HUD は幅が狭いので1行ずつ
-    this.infoText.setText(parts.join(this.hud === "top" ? "   " : "\n"));
+    const info = parts.join(this.hud === "top" ? "   " : "\n");
+    if (info !== this.infoText.text) {
+      this.infoText.setText(info);
+      this.placeInfoPill();
+    }
 
     const stopW = Math.min(1, b.stopTimer / TIMING.stopMax) * BOARD_W;
     this.stopBar.setSize(stopW, 4);
@@ -568,4 +632,108 @@ export class BoardView {
     this.resultEffect?.destroy();
     this.resultEffect = null;
   }
+}
+
+/**
+ * 盤面の枠の絵。パネルの外側の帯を塗り、外縁を色の線と光で縁取る（menuCard.ts の paintGlass と同じ作り）。
+ * 帯はメニューのカードと違って不透明（縁の色を濃紺に薄く混ぜた色）。角のパネルの隅を隠す蓋（makeCorners）を
+ * 同じ色で塗るためで、半透明だと蓋の下のパネルが透ける。中は不透明の濃紺。パネルの色はこの上で読むので、空を透かさない。
+ * Phaser の Graphics ではなく canvas 2D で DPR 倍の大きさに描く。Graphics は WebGL でアンチエイリアスがなく、
+ * 丸角の弧が蓋の弧と合わずに角に段差が出た。静止した絵なので 1 度描けばよい。色ごとに 1 枚を使い回す
+ */
+function makeFrameTexture(scene: Phaser.Scene, color: number, band: number): string {
+  const key = `board-frame-${color.toString(16)}`;
+  if (scene.textures.exists(key)) return key;
+  const w = BOARD_W + FRAME_EXTENT * 2;
+  const h = BOARD_H + FRAME_EXTENT * 2;
+  const texture = scene.textures.createCanvas(key, Math.ceil(w * DPR), Math.ceil(h * DPR));
+  if (!texture) return key;
+  const ctx = texture.context;
+  ctx.scale(DPR, DPR);
+  ctx.translate(FRAME_EXTENT, FRAME_EXTENT);
+  const { x, y, bw, bh, r } = frameRect();
+  GLOW_STEPS.forEach(([width, alpha]) => strokeRoundRect(ctx, x, y, bw, bh, r, width, rgba(color, alpha)));
+  paintFrameBody(ctx, color, band, true);
+  texture.refresh();
+  return key;
+}
+
+/** 枠の帯の矩形。盤面の左上を原点にした座標 */
+function frameRect(): { x: number; y: number; bw: number; bh: number; r: number } {
+  return { x: -FRAME_PAD, y: -FRAME_PAD, bw: BOARD_W + FRAME_PAD * 2, bh: BOARD_H + FRAME_PAD * 2, r: FRAME_RADIUS };
+}
+
+/**
+ * 枠の本体。帯を塗り、中を濃紺で角のまま塗り、外縁の色の線と内側の白い線を引く。
+ * 枠の絵と四隅の蓋の両方で使う。蓋は盤面の角の 10×10 にこれと同じ絵を描いて丸角の弧の内側をくり抜くので、
+ * 白い線が角の四角に食い込む部分（線は角から 0.45px 内側を通る）も蓋の上で途切れない
+ */
+function paintFrameBody(ctx: CanvasRenderingContext2D, color: number, band: number, interior: boolean): void {
+  const { x, y, bw, bh, r } = frameRect();
+  roundRectPath(ctx, x, y, bw, bh, r);
+  ctx.fillStyle = hex(band);
+  ctx.fill();
+  // 中は角を丸めずに塗る。丸みは蓋（makeCorners）が作る。枠と蓋の両方で弧を描くと、弧の端に半端な段差が出た。
+  // 蓋には中を塗らない（蓋は帯と線だけを持ち、弧の内側は透明でパネルが見える）
+  if (interior) {
+    ctx.fillStyle = hex(BOARD_BG);
+    ctx.fillRect(0, 0, BOARD_W, BOARD_H);
+  }
+  strokeRoundRect(ctx, x, y, bw, bh, r, 2.5, rgba(color, 0.9));
+  strokeRoundRect(ctx, x + 2.5, y + 2.5, bw - 5, bh - 5, r - 2.5, 1, "rgba(255, 255, 255, 0.45)");
+}
+
+function strokeRoundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number, width: number, style: string): void {
+  roundRectPath(ctx, x, y, w, h, r);
+  ctx.lineWidth = width;
+  ctx.strokeStyle = style;
+  ctx.stroke();
+}
+
+const hex = (c: number): string => `#${c.toString(16).padStart(6, "0")}`;
+const rgba = (c: number, a: number): string => `rgba(${(c >> 16) & 0xff}, ${(c >> 8) & 0xff}, ${c & 0xff}, ${a})`;
+
+/** 丸角の矩形のパスを作る。ctx.roundRect は古い Safari にないので arcTo で組む */
+function roundRectPath(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number): void {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+/** 2 色を t（0〜1）で混ぜる。 */
+function mix(a: number, b: number, t: number): number {
+  const ch = (shift: number): number => Math.round(((a >> shift) & 0xff) * (1 - t) + ((b >> shift) & 0xff) * t);
+  return (ch(16) << 16) | (ch(8) << 8) | ch(0);
+}
+
+/**
+ * 盤面の四隅の蓋。丸角の弧の外側（角の四角から弧を除いた三日月形）を帯の色で塗った絵を、パネルの上に置いて隅を隠す。
+ * Phaser の Graphics で描くと WebGL ではアンチエイリアスがなく弧がギザつき、枠の弧とも合わなかったので、
+ * canvas 2D で DPR 倍の大きさに描いた 1 枚の絵を 4 隅に反転して置く。盤面の中の丸みはこの蓋だけで作る（枠の中は角のまま塗る）
+ */
+function makeCorners(scene: Phaser.Scene, color: number, band: number): Phaser.GameObjects.Image[] {
+  const r = BOARD_RADIUS;
+  const key = `board-corner-${color.toString(16)}`;
+  if (!scene.textures.exists(key)) {
+    const size = Math.ceil(r * DPR);
+    const texture = scene.textures.createCanvas(key, size, size);
+    if (texture) {
+      const ctx = texture.context;
+      ctx.scale(DPR, DPR);
+      paintFrameBody(ctx, color, band, false);
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.globalCompositeOperation = "destination-out";
+      ctx.beginPath();
+      ctx.arc(r * DPR, r * DPR, r * DPR, 0, Math.PI * 2);
+      ctx.fill();
+      texture.refresh();
+    }
+  }
+  const at = (x: number, y: number, flipX: boolean, flipY: boolean): Phaser.GameObjects.Image =>
+    scene.add.image(x, y, key).setOrigin(flipX ? 1 : 0, flipY ? 1 : 0).setFlip(flipX, flipY).setScale(1 / DPR);
+  return [at(0, 0, false, false), at(BOARD_W, 0, true, false), at(0, BOARD_H, false, true), at(BOARD_W, BOARD_H, true, true)];
 }
