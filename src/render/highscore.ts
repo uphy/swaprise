@@ -6,6 +6,8 @@ export interface ScoreEntry {
   maxChain: number;
   /** ISO 8601 の日付。 */
   date: string;
+  /** 成功した入れ替えの回数。1 手あたりの得点を出す。古い記録にはない */
+  swaps?: number;
 }
 
 export interface CpuRecord {
@@ -94,7 +96,7 @@ export function loadHighScores(): HighScores {
       if (!Array.isArray(list)) continue;
       base[mode] = list
         .filter((e) => typeof e?.score === "number")
-        .map((e) => ({ score: e.score, maxChain: e.maxChain ?? 1, date: e.date ?? "" }));
+        .map((e) => ({ score: e.score, maxChain: e.maxChain ?? 1, date: e.date ?? "", ...(typeof e.swaps === "number" ? { swaps: e.swaps } : {}) }));
     }
     if (parsed.cpu) {
       for (const level of ["easy", "normal", "hard"] as CpuLevel[]) {
@@ -136,9 +138,9 @@ function save(h: HighScores): void {
  * エンドレス・タイムアタックの結果を記録する。上位5件だけ残す。
  * 戻り値は順位（1始まり）。5位以内に入らなければ 0。
  */
-export function recordScore(mode: ScoreMode, score: number, maxChain: number, now = new Date()): number {
+export function recordScore(mode: ScoreMode, score: number, maxChain: number, now = new Date(), swaps?: number): number {
   const h = loadHighScores();
-  const entry: ScoreEntry = { score, maxChain, date: now.toISOString().slice(0, 10) };
+  const entry: ScoreEntry = { score, maxChain, date: now.toISOString().slice(0, 10), ...(swaps === undefined ? {} : { swaps }) };
   const list = [...h[mode], entry].sort((a, b) => b.score - a.score || b.maxChain - a.maxChain);
   const rank = list.indexOf(entry) + 1;
   h[mode] = list.slice(0, MAX_ENTRIES);

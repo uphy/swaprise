@@ -78,9 +78,11 @@ test("settings share online name and rankings handle network failures safely", a
   await page.getByRole("button", { name: "ONLINE ENDLESS", exact: true }).click();
   await expect(page.getByRole("status")).toContainText("Could not load rankings");
   await page.unroute("**/api/scores?*");
-  await page.route("**/api/scores?*", (r) => r.fulfill({ json: { scores: [{ id: "one", name: "<img src=x onerror=alert(1)>", score: 321, maxChain: 2, createdAt: Date.now() }] } }));
+  await page.route("**/api/scores?*", (r) => r.fulfill({ json: { scores: [{ id: "one", name: "<img src=x onerror=alert(1)>", score: 321, maxChain: 2, createdAt: Date.now(), swaps: 30 }] } }));
   await page.getByRole("button", { name: "RETRY", exact: true }).click();
   await expect(page.getByRole("listitem")).toContainText("<img src=x onerror=alert(1)>");
+  // サーバーが swaps を返した行には 1 手あたりの得点が出る
+  await expect(page.getByRole("listitem")).toContainText("PTS / SWAP 10.7");
   expect(await page.getByRole("listitem").evaluate((el) => parseFloat(getComputedStyle(el).fontSize))).toBeGreaterThanOrEqual(22);
   await expect(page.locator("dialog img")).toHaveCount(0);
   await page.getByRole("button", { name: "ONLINE TIME ATTACK", exact: true }).click();

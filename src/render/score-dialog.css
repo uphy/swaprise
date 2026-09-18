@@ -46,6 +46,9 @@
 .score-result button { font-size: 22px; }
 .score-result .result-summary { margin-bottom: 20px; }
 .result-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 20px 0; }
+/* 1 手あたりの得点が付くと 4 枠。スマホでは 2×2、横に余裕があれば 4 つ並べる */
+.result-stats.four { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (min-width: 600px) { .result-stats.four { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 .result-stats div { padding: 12px 4px; border-radius: 12px; background: rgba(20,12,50,.3); text-align: center; }
 .result-stats dt { font-size: 18px; }
 .result-consent { padding: 16px; border-radius: 12px; background: rgba(20,12,50,.3); margin: 20px 0; }

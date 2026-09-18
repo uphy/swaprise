@@ -15,7 +15,7 @@ test("メニューの RECORDS をタップすると上位5件の一覧が開き�
       "swaprise.highscores.v1",
       JSON.stringify({
         endless: [
-          { score: 4321, maxChain: 4, date: "2026-09-01" },
+          { score: 4321, maxChain: 4, date: "2026-09-01", swaps: 400 },
           { score: 1000, maxChain: 2, date: "2026-09-02" },
         ],
         cpu: { easy: { wins: 1, losses: 0 }, normal: { wins: 0, losses: 2 }, hard: { wins: 0, losses: 0 } },
@@ -34,12 +34,14 @@ test("メニューの RECORDS をタップすると上位5件の一覧が開き�
     return { x: rect.left + t.x * s, y: rect.top + t.y * s };
   });
   await page.touchscreen.tap(pos.x, pos.y);
-  // 行は 順位・得点・最大連鎖・日付 の列。得点は桁区切り
+  // 行は 順位・得点・最大連鎖・1 手あたり・日付 の列。得点は桁区切り。1 手あたりは swaps を持つ記録だけに出る
   const rows = page.getByRole("listitem");
   await expect(rows.nth(0)).toContainText("4,321");
   await expect(rows.nth(0)).toContainText("MAX CHAIN ×4");
+  await expect(rows.nth(0)).toContainText("PTS / SWAP 10.8");
   await expect(rows.nth(0)).toContainText("2026-09-01");
   await expect(rows.nth(1)).toContainText("1,000");
+  await expect(rows.nth(1)).not.toContainText("PTS / SWAP");
   await expect(rows.nth(1)).toContainText("2026-09-02");
   await expect(page.getByRole("listitem").filter({ hasText: "NORMAL" })).toContainText("0W 2L");
   // オンラインの通算は 1 行。引き分けは D、勝率は引き分けを除いて出す
