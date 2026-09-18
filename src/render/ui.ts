@@ -152,6 +152,11 @@ export class Button extends Phaser.GameObjects.Container {
     return this.txt.text;
   }
 
+  /** e2e 用。文字の Text そのもの */
+  get label(): Phaser.GameObjects.Text {
+    return this.txt;
+  }
+
   /** 論理座標がボタンの上か。せり上げ判定などで、ボタンの上のタッチを除くために使う。 */
   contains(x: number, y: number): boolean {
     if (!this.visible) return false;

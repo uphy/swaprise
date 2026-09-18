@@ -130,6 +130,13 @@ export class MenuScene extends Phaser.Scene {
   private cards: MenuCard[] = [];
   /** 下位メニューの「◂ BACK」。カードではなく、現在地の左の小さなボタン */
   private backBtn: Button | null = null;
+  /** e2e 用。項目の順にラベルの Text（BACK はボタンの Text）と説明の Text を並べる */
+  get texts(): Phaser.GameObjects.Text[] {
+    return this.items.map((item) => (item.back ? this.backBtn!.label : this.cards[this.cards.findIndex((c) => c.label.name === item.name)].label));
+  }
+  get captions(): Phaser.GameObjects.Text[] {
+    return this.cards.map((c) => c.caption);
+  }
   /** キー操作か指が乗って、カーソルの位置を見せるべきか。最初は見せない（指で押すだけの端末では要らない） */
   private focusVisible = false;
   private tools: Button[] = [];
