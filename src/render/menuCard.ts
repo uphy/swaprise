@@ -53,27 +53,25 @@ export class MenuCard {
     // 中心に置いて相対座標で描く。押したときの縮みが中心を軸に回るように
     this.bg = scene.add.graphics({ x, y });
     this.paint();
-    // ラベルは上寄せ、説明はその下に上端を揃えて置く（半幅のカードでは説明が 2 行になる）
-    const top = y - h / 2;
-    const labelY = spec.caption ? top + (compact ? 16 : 20) : y;
+    // ラベルと説明を 1 つの塊にして、カードの中で上下中央に置く（説明は半幅のカードで 2 行になることがある）
     this.label = scene.add
-      .text(x, labelY, spec.label, { fontFamily: FONT_UI, fontSize: `${compact ? MENU_TYPE.itemCompact : MENU_TYPE.item}px`, fontStyle: "700", color: spec.labelColor ?? TEXT_COLOR })
+      .text(x, y, spec.label, { fontFamily: FONT_UI, fontSize: `${compact ? MENU_TYPE.itemCompact : MENU_TYPE.item}px`, fontStyle: "700", color: spec.labelColor ?? TEXT_COLOR })
       .setShadow(0, 2, "#2a1a5a", 6, false, true)
       .setOrigin(0.5)
       .setName(spec.name);
     this.caption = scene.add
-      .text(x, top + (compact ? 27 : 33), spec.caption, { fontFamily: FONT_UI, fontSize: "12px", color: TEXT_DIM, align: "center" })
+      .text(x, y, spec.caption, { fontFamily: FONT_UI, fontSize: "12px", color: TEXT_DIM, align: "center" })
       .setOrigin(0.5, 0)
       .setName(`${spec.name}-caption`);
     // 説明がカードの幅に入らなければ、少し小さくし、それでも入らなければ折り返す（半幅のカードの英語）
     const maxW = w - 16;
     if (!shrinkToFit(this.caption, maxW, 11)) this.caption.setWordWrapWidth(maxW, true);
     this.objects.push(this.bg, this.label, this.caption);
+    let icon: Phaser.GameObjects.Image | null = null;
+    const iconW = MENU_ICON_SIZE * (compact ? 0.85 : 1);
     if (spec.icon) {
       // ラベルとアイコンを合わせて中央に寄せる。日本語のラベルは半幅のカードに入らないことがあるので、ラベルを縮める
-      const iconScale = (compact ? 0.85 : 1) / DPR;
-      const iconW = MENU_ICON_SIZE * (compact ? 0.85 : 1);
-      const icon = scene.add.image(0, labelY, `icon-${spec.icon}`).setScale(iconScale);
+      icon = scene.add.image(0, y, `icon-${spec.icon}`).setScale((compact ? 0.85 : 1) / DPR);
       const gap = 6;
       shrinkToFit(this.label, maxW - gap - iconW, 16);
       const total = this.label.width + gap + iconW;
@@ -81,6 +79,15 @@ export class MenuCard {
       icon.setX(x + total / 2 - iconW / 2);
       this.objects.push(icon);
     } else shrinkToFit(this.label, maxW, 16);
+    // 上下の位置。ラベルと説明の間は空けない（日本語の文字は箱いっぱいに描かれ、詰めると触れる）
+    const labelH = this.label.height;
+    const captionH = spec.caption ? this.caption.height : 0;
+    const gapY = 0;
+    const blockH = labelH + gapY + captionH;
+    const labelY = y - blockH / 2 + labelH / 2;
+    this.label.setY(labelY);
+    icon?.setY(labelY);
+    this.caption.setY(labelY + labelH / 2 + gapY);
     // 当たり判定。カード全体を指で押せるよう、透明の矩形を一番上に置く
     const hit = scene.add.rectangle(x, y, w, h, 0xffffff, 0).setInteractive({ useHandCursor: true }).setName(`${spec.name}-card`);
     hit.on("pointerover", () => spec.onHover(true));

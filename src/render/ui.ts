@@ -16,6 +16,8 @@ export interface ButtonOptions {
   primary?: boolean;
   /** 角の丸み。省略で 12（高さの半分まで）。高さの半分にすると錠剤形になる */
   radius?: number;
+  /** 文字の左右の余白の合計（論理 px）。省略で 28 */
+  padX?: number;
 }
 
 /** ボタンの塗りと縁の状態 */
@@ -56,7 +58,7 @@ export class Button extends Phaser.GameObjects.Container {
     this.txt = scene.add
       .text(0, 0, text, { fontFamily: FONT_UI, fontSize: `${fontSize}px`, fontStyle: "600", color: this.baseTextColor, align: "center" })
       .setOrigin(0.5);
-    this.boxW = Math.max(minW, this.txt.width + 28);
+    this.boxW = Math.max(minW, this.txt.width + (opts.padX ?? 28));
     this.boxH = Math.max(minH, this.txt.height + 12);
     this.radius = Math.min(opts.radius ?? 12, this.boxH / 2);
     this.bg = scene.add.graphics();

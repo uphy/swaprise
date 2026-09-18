@@ -234,10 +234,29 @@ export class MenuScene extends Phaser.Scene {
     const listBottom = this.listTop + Math.max(maxRows * this.cardH + (maxRows - 1) * this.cardGap, 3 * this.cardH + 2 * this.cardGap + HALF_EXTRA);
     const toolH = compact ? 34 : 40;
     const toolY = listBottom + (compact ? 12 : 18) + toolH / 2;
+    // 3 つを同じ幅で並べる。文字が入らない（英語の HOW TO PLAY）ときは文字ごとの幅にし、それでも列に収まらなければ文字を小さくする
     const toolGap = 8;
-    const toolW = (this.cardW - toolGap * 2) / 3;
+    const toolPad = 20;
+    const equalW = (this.cardW - toolGap * 2) / 3;
+    let toolFont = layout.portrait ? 12 : 13;
+    const measure = (size: number): number[] =>
+      TOOLS.map((tool) => {
+        const t = this.add.text(0, 0, TOOL_LABEL[tool], { fontFamily: FONT_UI, fontSize: `${size}px`, fontStyle: "600" });
+        const w = t.width + toolPad;
+        t.destroy();
+        return w;
+      });
+    let widths = measure(toolFont);
+    if (widths.reduce((a, b) => a + b, 0) + toolGap * 2 > this.cardW) {
+      toolFont -= 1;
+      widths = measure(toolFont);
+    }
+    if (Math.max(...widths) <= equalW) widths = widths.map(() => equalW);
+    const toolsW = widths.reduce((a, b) => a + b, 0) + toolGap * 2;
+    let toolX = cx - toolsW / 2;
     TOOLS.forEach((tool, i) => {
-      const b = new Button(this, cx + (i - 1) * (toolW + toolGap), toolY, TOOL_LABEL[tool], () => this.openTool(tool), { fontSize: layout.portrait ? 12 : 13, minWidth: toolW, minHeight: toolH, radius: toolH / 2, bgAlpha: 0.2 }).setName(tool);
+      const b = new Button(this, toolX + widths[i] / 2, toolY, TOOL_LABEL[tool], () => this.openTool(tool), { fontSize: toolFont, minWidth: widths[i], minHeight: toolH, radius: toolH / 2, bgAlpha: 0.2, padX: toolPad }).setName(tool);
+      toolX += widths[i] + toolGap;
       this.tools.push(b);
     });
 
