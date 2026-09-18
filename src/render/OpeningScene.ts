@@ -1,6 +1,6 @@
 import Phaser from "phaser";
 import { CELL, FONT_UI, KIND_COLORS, layoutFor, menuTitle, sameLayout } from "./theme";
-import { TitleArt } from "./title";
+import { TITLE_ICON_KINDS, TitleArt } from "./title";
 import { Background } from "./Background";
 import { createTextures } from "./textures";
 import { DPR, applyLayout } from "./hidpi";
@@ -212,9 +212,9 @@ export class OpeningScene extends Phaser.Scene {
       // 柄の飾り（メニューと同じ 6 枚）が上から降りてくる。背の低い画面ではメニューにも無いので出さない
       if (!title.compact) {
         this.at(T.icons, () => {
-          KIND_COLORS.forEach((_, k) => {
-            const icon = this.add.image(cx - 100 + k * 40, title.iconsY - 26, `panel-${k}`).setScale(0).setAlpha(0).setDepth(10);
-            this.tweens.add({ targets: icon, y: title.iconsY, scale: 1 / DPR, alpha: 1, delay: k * 40, duration: 260, ease: "Back.Out" });
+          TITLE_ICON_KINDS.forEach((kind, i) => {
+            const icon = this.add.image(cx - 100 + i * 40, title.iconsY - 26, `panel-${kind}`).setScale(0).setAlpha(0).setDepth(10);
+            this.tweens.add({ targets: icon, y: title.iconsY, scale: 1 / DPR, alpha: 1, delay: i * 40, duration: 260, ease: "Back.Out" });
           });
         });
       }

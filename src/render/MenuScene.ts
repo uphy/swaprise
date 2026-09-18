@@ -1,8 +1,8 @@
 import Phaser from "phaser";
 import { showRecordsDialog, showPlayerSettings } from "./score-dialog";
-import { ACCENT, FONT, FONT_UI, KIND_COLORS, TEXT_COLOR, TEXT_MUTE, layoutFor, menuTitle, sameLayout } from "./theme";
+import { ACCENT, FONT, FONT_UI, TEXT_COLOR, TEXT_MUTE, layoutFor, menuTitle, sameLayout } from "./theme";
 import { MenuCard, paintGlass } from "./menuCard";
-import { TitleArt } from "./title";
+import { TITLE_ICON_KINDS, TitleArt } from "./title";
 import { createMenuIcons, type MenuIcon } from "./menuIcons";
 import { Background } from "./Background";
 import { createTextures } from "./textures";
@@ -224,8 +224,8 @@ export class MenuScene extends Phaser.Scene {
     this.title = new TitleArt(this, cx, titleY, title.size);
     // 柄の飾り。背の低い画面では省いて項目の場所を空ける。曲の拍で順に弾む
     if (!compact) {
-      KIND_COLORS.forEach((_, k) => {
-        this.icons.push(this.add.image(cx - 100 + k * 40, title.iconsY, `panel-${k}`).setScale(1 / DPR));
+      TITLE_ICON_KINDS.forEach((kind, i) => {
+        this.icons.push(this.add.image(cx - 100 + i * 40, title.iconsY, `panel-${kind}`).setScale(1 / DPR));
       });
     }
 
