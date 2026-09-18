@@ -1,5 +1,7 @@
 /** 漂う光の玉の数。多いと盤面の邪魔になる */
 const ORB_COUNT = 10;
+/** メニューの空に散る光の粒の数 */
+const SPARK_COUNT = 90;
 
 interface Orb {
   el: HTMLDivElement;
@@ -49,6 +51,29 @@ class OrbField {
       this.orbs.push({ el, x: rnd() * W, y: rnd() * H, size, speed: (4 + rnd() * 10) * k, phase: rnd() * Math.PI * 2, scale: 1 });
     }
     this.place();
+    this.sparkle(rnd, W, H, k);
+  }
+
+  /**
+   * 空に散る小さな光の粒。メニューだけに出す（CSS の body[data-sky="menu"] で表示を切り替える）。
+   * 位置・色・瞬きの周期は決め打ちで散らし、動きは CSS のアニメーションに任せて JS では触らない
+   */
+  private sparkle(rnd: () => number, W: number, H: number, k: number): void {
+    if (!this.root) return;
+    const colors = ["#ffffff", "#ffd6e8", "#fff1b0", "#c6f6ff", "#e2ccff"];
+    for (let i = 0; i < SPARK_COUNT; i++) {
+      const el = document.createElement("div");
+      el.className = "spark";
+      const size = (1.5 + rnd() * 2.5) * k;
+      el.style.width = `${size}px`;
+      el.style.height = `${size}px`;
+      el.style.left = `${(rnd() * W).toFixed(1)}px`;
+      el.style.top = `${(rnd() * H).toFixed(1)}px`;
+      el.style.color = colors[Math.floor(rnd() * colors.length)];
+      el.style.animationDuration = `${(1.8 + rnd() * 2.6).toFixed(2)}s`;
+      el.style.animationDelay = `${(-rnd() * 4).toFixed(2)}s`;
+      this.root.append(el);
+    }
   }
 
   private place(): void {

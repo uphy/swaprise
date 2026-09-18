@@ -125,7 +125,9 @@ test("メニュー: 1P PUZZLE で面選びが開き、クリア済みの次の�
     localStorage.setItem("swaprise.highscores.v1", JSON.stringify({ puzzle: [0, 1] }));
   });
   await page.goto("/?bgm=0&opening=0");
-  await page.waitForTimeout(400);
+  // メニューができてから押す。固定の待ちだけだと、ビルド直後の最初の読み込みで間に合わず Enter が落ちた
+  await page.waitForFunction(() => Boolean((window as any).__swapriseScenes?.menu));
+  await page.waitForTimeout(200);
   // 1 PLAYER → 3 番目の PUZZLE。キーは間を空けて押す（続けて押すと Phaser が取りこぼす）
   await page.keyboard.press("Enter");
   await page.waitForTimeout(150);

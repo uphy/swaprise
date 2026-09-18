@@ -14,6 +14,10 @@ export interface ButtonOptions {
   bgAlpha?: number;
   /** 主ボタン。画面で「次に進む」操作に 1 つだけ付け、黄色に塗る（RESUME、NEXT、PLAY など） */
   primary?: boolean;
+  /** 角の丸み。省略で 12（高さの半分まで）。高さの半分にすると錠剤形になる */
+  radius?: number;
+  /** 文字の左右の余白の合計（論理 px）。省略で 28 */
+  padX?: number;
 }
 
 /** ボタンの塗りと縁の状態 */
@@ -38,6 +42,7 @@ export class Button extends Phaser.GameObjects.Container {
   private readonly baseTextColor: string;
   private readonly boxW: number;
   private readonly boxH: number;
+  private readonly radius: number;
   private selected = false;
   private primary_ = false;
 
@@ -53,8 +58,9 @@ export class Button extends Phaser.GameObjects.Container {
     this.txt = scene.add
       .text(0, 0, text, { fontFamily: FONT_UI, fontSize: `${fontSize}px`, fontStyle: "600", color: this.baseTextColor, align: "center" })
       .setOrigin(0.5);
-    this.boxW = Math.max(minW, this.txt.width + 28);
+    this.boxW = Math.max(minW, this.txt.width + (opts.padX ?? 28));
     this.boxH = Math.max(minH, this.txt.height + 12);
+    this.radius = Math.min(opts.radius ?? 12, this.boxH / 2);
     this.bg = scene.add.graphics();
     this.paint("normal");
     this.add([this.bg, this.txt]);
@@ -79,7 +85,7 @@ export class Button extends Phaser.GameObjects.Container {
   private paint(look: Look): void {
     const g = this.bg;
     g.clear();
-    const r = Math.min(12, this.boxH / 2);
+    const r = this.radius;
     if (look === "selected") {
       g.fillStyle(0xffffff, 0.92);
       g.fillRoundedRect(-this.boxW / 2, -this.boxH / 2, this.boxW, this.boxH, r);
@@ -99,7 +105,16 @@ export class Button extends Phaser.GameObjects.Container {
     const alpha = look === "pressed" ? this.baseAlpha + 0.3 : look === "hover" ? this.baseAlpha + 0.14 : this.baseAlpha;
     g.fillStyle(this.baseColor, Math.min(1, alpha));
     g.fillRoundedRect(-this.boxW / 2, -this.boxH / 2, this.boxW, this.boxH, r);
-    g.lineStyle(2, 0xffffff, look === "hover" ? 0.8 : 0.5);
+    // ガラスの反射。上半分を少し白くする（塗りが白のときだけ。色付きの塗りは濁る）。
+    // 上の 2 角だけをボタンと同じ丸みにした帯。楕円だと輪郭がくっきり見え、全部の角を丸めた矩形だと錠剤形の端と合わなかった
+    if (this.baseColor === 0xffffff) {
+      const inset = 3;
+      const bandH = this.boxH * 0.45;
+      const top = Math.min(Math.max(0, r - inset), bandH);
+      g.fillStyle(0xffffff, 0.1);
+      g.fillRoundedRect(-this.boxW / 2 + inset, -this.boxH / 2 + inset, this.boxW - inset * 2, bandH, { tl: top, tr: top, bl: 0, br: 0 });
+    }
+    g.lineStyle(2, 0xffffff, look === "hover" ? 0.9 : 0.6);
     g.strokeRoundedRect(-this.boxW / 2, -this.boxH / 2, this.boxW, this.boxH, r);
     this.txt.setColor(this.baseTextColor);
   }
@@ -135,6 +150,11 @@ export class Button extends Phaser.GameObjects.Container {
 
   get text(): string {
     return this.txt.text;
+  }
+
+  /** e2e 用。文字の Text そのもの */
+  get label(): Phaser.GameObjects.Text {
+    return this.txt;
   }
 
   /** 論理座標がボタンの上か。せり上げ判定などで、ボタンの上のタッチを除くために使う。 */

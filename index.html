@@ -48,6 +48,10 @@
       #app { z-index: 1; }
       #orbs { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
       #orbs .orb { position: absolute; left: 0; top: 0; border-radius: 50%; will-change: transform; background: radial-gradient(circle, rgba(255,255,255,.55) 0%, rgba(255,255,255,.18) 50%, rgba(255,255,255,0) 100%); }
+      /* メニューの空に散る光の粒（src/render/orbs.ts）。瞬きは CSS だけで動かす。メニュー以外の画面では盤面の邪魔になるので消す */
+      #orbs .spark { position: absolute; border-radius: 50%; opacity: 0; background: currentColor; box-shadow: 0 0 6px 1px currentColor; animation: spark-twinkle 3s ease-in-out infinite; }
+      body:not([data-sky="menu"]) #orbs .spark { display: none; }
+      @keyframes spark-twinkle { 0%, 100% { opacity: 0; transform: scale(0.6); } 50% { opacity: 0.9; transform: scale(1.2); } }
       canvas { touch-action: none; }
     </style>
   </head>

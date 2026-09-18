@@ -4,7 +4,9 @@ test("メニューから始めたゲームを Esc で抜けると、メニュー
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
   await page.goto("/?bgm=0&countdown=0&opening=0");
-  await page.waitForTimeout(400);
+  // メニューができてから押す。固定の待ちだけだと、ビルド直後の最初の読み込みで間に合わず Enter が落ちた
+  await page.waitForFunction(() => Boolean((window as any).__swapriseScenes?.menu));
+  await page.waitForTimeout(200);
   // 1 PLAYER → ENDLESS
   await page.keyboard.press("Enter");
   await page.waitForTimeout(150);
