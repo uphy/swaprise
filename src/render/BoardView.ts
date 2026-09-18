@@ -37,6 +37,8 @@ const GLOW_STEPS: readonly (readonly [number, number])[] = [
   [9, 0.09],
   [5, 0.14],
 ];
+/** 枠の絵が盤面の外へ広がる幅。帯と、いちばん太い光の線の外側半分 */
+const FRAME_EXTENT = FRAME_PAD + GLOW_STEPS[0][0] / 2;
 
 /** 描画する行の範囲。可視12段の上に、降ってくるおじゃまが見えるぶんだけ余裕を持たせる。 */
 const DRAW_ROWS = Math.min(TOTAL_ROWS, ROWS + 6);
@@ -59,7 +61,7 @@ export class BoardView {
   private readonly hintGfx: Phaser.GameObjects.Graphics;
   private hintCells: { x: number; y: number }[] = [];
   touch: TouchInput | null = null;
-  private readonly frame: Phaser.GameObjects.Graphics;
+  private readonly frame: Phaser.GameObjects.Image;
   /** 四隅の蓋。角のパネルの隅が盤面の丸角の外に出るぶんを、枠の帯と同じ色で覆う（パネルの上に置く） */
   private readonly corners: Phaser.GameObjects.Image[];
   /** 盤面の中の色。e2e が警告の演出で変わっていないことを確かめる */
@@ -163,8 +165,8 @@ export class BoardView {
   ) {
     this.root = scene.add.container(0, 0);
     this.dangerGlow = new DangerGlow(scene);
-    this.frame = scene.add.graphics();
-    const bandColor = paintFrame(this.frame, color);
+    const bandColor = mix(BOARD_BG, color, 0.35);
+    this.frame = scene.add.image(-FRAME_EXTENT, -FRAME_EXTENT, makeFrameTexture(scene, color, bandColor)).setOrigin(0).setScale(1 / DPR);
     this.corners = makeCorners(scene, bandColor);
     this.root.add([this.dangerGlow.root, this.frame]);
 
@@ -633,32 +635,57 @@ export class BoardView {
 }
 
 /**
- * 盤面の枠。パネルの外側の帯を塗り、外縁を色の線と光で縁取る（menuCard.ts の paintGlass と同じ作り）。
- * 帯はメニューのカードと違って不透明（縁の色を濃紺に薄く混ぜた色）。角のパネルの隅を隠す蓋（paintCorners）を
- * 同じ色で塗るためで、半透明だと蓋の下のパネルが透ける。WebGL の Phaser 4 では setMask で切り抜けない。
- * 中は不透明の濃紺。パネルの色はこの上で読むので、空を透かさない。戻り値は帯の色
+ * 盤面の枠の絵。パネルの外側の帯を塗り、外縁を色の線と光で縁取る（menuCard.ts の paintGlass と同じ作り）。
+ * 帯はメニューのカードと違って不透明（縁の色を濃紺に薄く混ぜた色）。角のパネルの隅を隠す蓋（makeCorners）を
+ * 同じ色で塗るためで、半透明だと蓋の下のパネルが透ける。中は不透明の濃紺。パネルの色はこの上で読むので、空を透かさない。
+ * Phaser の Graphics ではなく canvas 2D で DPR 倍の大きさに描く。Graphics は WebGL でアンチエイリアスがなく、
+ * 丸角の弧が蓋の弧と合わずに角に段差が出た。静止した絵なので 1 度描けばよい。色ごとに 1 枚を使い回す
  */
-function paintFrame(g: Phaser.GameObjects.Graphics, color: number): number {
+function makeFrameTexture(scene: Phaser.Scene, color: number, band: number): string {
+  const key = `board-frame-${color.toString(16)}`;
+  if (scene.textures.exists(key)) return key;
+  const w = BOARD_W + FRAME_EXTENT * 2;
+  const h = BOARD_H + FRAME_EXTENT * 2;
+  const texture = scene.textures.createCanvas(key, Math.ceil(w * DPR), Math.ceil(h * DPR));
+  if (!texture) return key;
+  const ctx = texture.context;
+  ctx.scale(DPR, DPR);
+  ctx.translate(FRAME_EXTENT, FRAME_EXTENT);
   const x = -FRAME_PAD;
   const y = -FRAME_PAD;
-  const w = BOARD_W + FRAME_PAD * 2;
-  const h = BOARD_H + FRAME_PAD * 2;
+  const bw = BOARD_W + FRAME_PAD * 2;
+  const bh = BOARD_H + FRAME_PAD * 2;
   const r = FRAME_RADIUS;
-  g.clear();
-  GLOW_STEPS.forEach(([width, alpha]) => {
-    g.lineStyle(width, color, alpha);
-    g.strokeRoundedRect(x, y, w, h, r);
-  });
-  const band = mix(BOARD_BG, color, 0.35);
-  g.fillStyle(band, 1);
-  g.fillRoundedRect(x, y, w, h, r);
-  g.fillStyle(BOARD_BG, 1);
-  g.fillRoundedRect(0, 0, BOARD_W, BOARD_H, BOARD_RADIUS);
-  g.lineStyle(2.5, color, 0.9);
-  g.strokeRoundedRect(x, y, w, h, r);
-  g.lineStyle(1, 0xffffff, 0.45);
-  g.strokeRoundedRect(x + 2.5, y + 2.5, w - 5, h - 5, r - 2.5);
-  return band;
+  const hex = (c: number): string => `#${c.toString(16).padStart(6, "0")}`;
+  const stroke = (sx: number, sy: number, sw: number, sh: number, sr: number, width: number, style: string): void => {
+    roundRectPath(ctx, sx, sy, sw, sh, sr);
+    ctx.lineWidth = width;
+    ctx.strokeStyle = style;
+    ctx.stroke();
+  };
+  const rgba = (c: number, a: number): string => `rgba(${(c >> 16) & 0xff}, ${(c >> 8) & 0xff}, ${c & 0xff}, ${a})`;
+  GLOW_STEPS.forEach(([width, alpha]) => stroke(x, y, bw, bh, r, width, rgba(color, alpha)));
+  roundRectPath(ctx, x, y, bw, bh, r);
+  ctx.fillStyle = hex(band);
+  ctx.fill();
+  roundRectPath(ctx, 0, 0, BOARD_W, BOARD_H, BOARD_RADIUS);
+  ctx.fillStyle = hex(BOARD_BG);
+  ctx.fill();
+  stroke(x, y, bw, bh, r, 2.5, rgba(color, 0.9));
+  stroke(x + 2.5, y + 2.5, bw - 5, bh - 5, r - 2.5, 1, "rgba(255, 255, 255, 0.45)");
+  texture.refresh();
+  return key;
+}
+
+/** 丸角の矩形のパスを作る。ctx.roundRect は古い Safari にないので arcTo で組む */
+function roundRectPath(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number): void {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
 }
 
 /** 2 色を t（0〜1）で混ぜる。 */
