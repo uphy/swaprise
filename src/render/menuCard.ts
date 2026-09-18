@@ -40,6 +40,30 @@ const GLOW_STEPS: readonly (readonly [number, number])[] = [
   [5, 0.14],
 ];
 
+/**
+ * 色の縁が光る半透明のガラスの板を (x, y) を中心に描く。メニューのカードと、設定・遊び方の板で共通。
+ * 縁の外側の光は太さの違う半透明の線の重ねで作る（ぼかしは薄い alpha の裾が明るく描かれて四角く見えた）
+ */
+export function paintGlass(g: Phaser.GameObjects.Graphics, x: number, y: number, w: number, h: number, color: number, hot = false): void {
+  g.clear();
+  const r = RADIUS;
+  GLOW_STEPS.forEach(([width, alpha]) => {
+    g.lineStyle(width, color, alpha * (hot ? 1.6 : 1));
+    g.strokeRoundedRect(x - w / 2, y - h / 2, w, h, r);
+  });
+  // 半透明の白い地。背景の空が透ける
+  g.fillStyle(0xffffff, hot ? 0.24 : 0.12);
+  g.fillRoundedRect(x - w / 2, y - h / 2, w, h, r);
+  // ガラスの反射。上半分を少し白くする。上の 2 角だけカードと同じ丸み
+  g.fillStyle(0xffffff, hot ? 0.14 : 0.1);
+  g.fillRoundedRect(x - w / 2 + 3, y - h / 2 + 3, w - 6, Math.min(h * 0.45, 40), { tl: r - 3, tr: r - 3, bl: 0, br: 0 });
+  // 縁。色の線の内側に細い白で、光る枠に見せる
+  g.lineStyle(2.5, color, hot ? 1 : 0.9);
+  g.strokeRoundedRect(x - w / 2, y - h / 2, w, h, r);
+  g.lineStyle(1, 0xffffff, hot ? 0.7 : 0.45);
+  g.strokeRoundedRect(x - w / 2 + 2.5, y - h / 2 + 2.5, w - 5, h - 5, r - 2.5);
+}
+
 export class MenuCard {
   /** 浮かび上がりの tween に使う、このカードの表示物すべて。 */
   readonly objects: (Phaser.GameObjects.Graphics | Phaser.GameObjects.Text | Phaser.GameObjects.Rectangle | Phaser.GameObjects.Image)[] = [];
@@ -111,29 +135,7 @@ export class MenuCard {
   }
 
   private paint(): void {
-    const { w, h, color } = this.spec;
-    const x = 0;
-    const y = 0;
-    const g = this.bg;
-    g.clear();
-    const r = RADIUS;
-    // 縁の外側に滲む光。太さの違う半透明の線を重ねる。
-    // ぼかしたテクスチャや Text の影は使わない。薄い alpha の裾が明るく描かれ、四角い板に見えた
-    GLOW_STEPS.forEach(([width, alpha]) => {
-      g.lineStyle(width, color, alpha * (this.hot ? 1.6 : 1));
-      g.strokeRoundedRect(x - w / 2, y - h / 2, w, h, r);
-    });
-    // 半透明の白い地。背景の空が透ける
-    g.fillStyle(0xffffff, this.hot ? 0.24 : 0.12);
-    g.fillRoundedRect(x - w / 2, y - h / 2, w, h, r);
-    // ガラスの反射。上半分を少し白くする。上の 2 角だけカードと同じ丸み
-    g.fillStyle(0xffffff, this.hot ? 0.14 : 0.1);
-    g.fillRoundedRect(x - w / 2 + 3, y - h / 2 + 3, w - 6, h * 0.45, { tl: r - 3, tr: r - 3, bl: 0, br: 0 });
-    // 縁。色の線の内側に細い白で、光る枠に見せる
-    g.lineStyle(2.5, color, this.hot ? 1 : 0.9);
-    g.strokeRoundedRect(x - w / 2, y - h / 2, w, h, r);
-    g.lineStyle(1, 0xffffff, this.hot ? 0.7 : 0.45);
-    g.strokeRoundedRect(x - w / 2 + 2.5, y - h / 2 + 2.5, w - 5, h - 5, r - 2.5);
+    paintGlass(this.bg, 0, 0, this.spec.w, this.spec.h, this.spec.color, this.hot);
   }
 
   /** 指が乗っている・キー操作の対象。地を明るくし縁を強める */
