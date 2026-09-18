@@ -1,7 +1,8 @@
 import Phaser from "phaser";
 import { showRecordsDialog, showPlayerSettings } from "./score-dialog";
 import { ACCENT, FONT, FONT_UI, KIND_COLORS, TEXT_COLOR, TEXT_MUTE, layoutFor, menuTitle, sameLayout } from "./theme";
-import { MenuCard, drawTitleHalo, paintTitle } from "./menuCard";
+import { MenuCard } from "./menuCard";
+import { TitleArt } from "./title";
 import { Background } from "./Background";
 import { createTextures } from "./textures";
 import { LESSONS, PUZZLES, PUZZLES_PER_STAGE, PUZZLE_STAGES, puzzleName, type CpuLevel, type GameMode } from "../core";
@@ -134,6 +135,8 @@ export class MenuScene extends Phaser.Scene {
   private crumb!: Phaser.GameObjects.Text;
   /** カードの列の上辺・幅・1 枚の高さ・間隔（論理 px） */
   private listTop = 0;
+  /** 現在地・BACK の行の中心 y */
+  private headerY = 0;
   private cardW = 0;
   private cardH = 0;
   private cardGap = 0;
@@ -142,9 +145,7 @@ export class MenuScene extends Phaser.Scene {
   private compact = false;
   private overlay: Overlay | null = null;
   private bgView: Background | null = null;
-  private titleText: Phaser.GameObjects.Text | null = null;
-  /** 題字と一緒に拍で膨らむ層（後ろの光と押し出し） */
-  private titleLayers: (Phaser.GameObjects.Text | Phaser.GameObjects.Graphics)[] = [];
+  private title: TitleArt | null = null;
   private icons: Phaser.GameObjects.Image[] = [];
   /** パズルの面選び。開いている間はメニューのキー操作をこちらへ回す。 */
   private picker: { panel: Phaser.GameObjects.Container; state: { stage: number; face: number }; refresh: () => void } | null = null;
@@ -207,19 +208,7 @@ export class MenuScene extends Phaser.Scene {
     const compact = title.compact;
     this.compact = compact;
     const titleY = title.y;
-    // 題字の後ろに白い光を敷き、押し出しの濃い紫を下にずらして重ねる
-    const titleGlow = drawTitleHalo(this, cx, titleY, title.size * 4.9, title.size);
-    const titleBase = this.add
-      .text(cx, titleY + 4, "SWAPRISE", { fontFamily: FONT_UI, fontSize: `${title.size}px`, color: "#5a2f9c", fontStyle: "700" })
-      .setOrigin(0.5)
-      .setStroke("#5a2f9c", 3);
-    this.titleLayers = [titleGlow, titleBase];
-    this.titleText = this.add
-      .text(cx, titleY, "SWAPRISE", { fontFamily: FONT_UI, fontSize: `${title.size}px`, color: TEXT_COLOR, fontStyle: "700" })
-      .setOrigin(0.5)
-      .setShadow(0, 4, "#2a1a5a", 10, false, true)
-      .setName("title");
-    paintTitle(this.titleText);
+    this.title = new TitleArt(this, cx, titleY, title.size);
     // 柄の飾り。背の低い画面では省いて項目の場所を空ける。曲の拍で順に弾む
     if (!compact) {
       KIND_COLORS.forEach((_, k) => {
@@ -231,10 +220,11 @@ export class MenuScene extends Phaser.Scene {
     this.cardW = Math.min(W - 24, 360);
     this.cardH = compact ? 50 : layout.portrait ? 62 : 56;
     this.cardGap = compact ? 8 : layout.portrait ? 10 : 8;
-    // 柄の飾り（iconsY ± 16）と、その下の現在地・BACK の行が重ならない高さから
-    this.listTop = titleY + (compact ? 52 : layout.portrait ? 124 : 116);
-    // 現在地（下位メニューのとき「1 PLAYER ▸」）。カードの列の上に置く
-    this.crumb = this.add.text(cx, this.listTop - (compact ? 12 : 16), "", { fontFamily: FONT_UI, fontSize: "13px", fontStyle: "600", color: ACCENT }).setOrigin(0.5).setName("crumb");
+    // 柄の飾り（iconsY ± 16）の下から
+    this.listTop = titleY + (compact ? 62 : layout.portrait ? 124 : 116);
+    // 現在地（下位メニューのとき「1 PLAYER ▸」）と BACK の行。下位メニューでは柄の飾りを消し、その場所に置く
+    this.headerY = compact ? this.listTop - 24 : title.iconsY;
+    this.crumb = this.add.text(cx, this.headerY, "", { fontFamily: FONT_UI, fontSize: "14px", fontStyle: "700", color: ACCENT }).setOrigin(0.5).setName("crumb");
 
     // 下段の小ボタン。いちばん背の高い階層（1 PLAYER は 4 枚。最上位は 3 段で最後の段が少し高い）の下端から隙間を空けて置く。
     // 階層ごとに動かすと画面が跳ねるので、どの階層でも同じ位置にする
@@ -268,7 +258,7 @@ export class MenuScene extends Phaser.Scene {
     this.buildList();
     // オープニングから続くときは、題字はそのままに、項目・小ボタン・隅の文字を上から順に浮かび上がらせる
     if (data.fromOpening) {
-      const targets = [...this.cards.flatMap((c) => c.objects), ...this.tools, buildText, githubLink, titleGlow];
+      const targets = [...this.cards.flatMap((c) => c.objects), ...this.tools, buildText, githubLink];
       targets.forEach((o) => o.setAlpha(0));
       this.tweens.add({ targets, alpha: 1, duration: 260, ease: "Quad.Out", delay: this.tweens.stagger(28) });
     }
@@ -325,8 +315,7 @@ export class MenuScene extends Phaser.Scene {
     if (!beat) return;
     // 題字は拍の頭でわずかに膨らみ、柄の飾りは小節の中で順に弾む
     const swell = Math.pow(1 - beat.phase, 3);
-    this.titleText?.setScale(1 + swell * 0.03);
-    this.titleLayers.forEach((o) => o.setScale(1 + swell * 0.03));
+    if (this.title) this.title.scale = 1 + swell * 0.03;
     this.icons.forEach((icon, i) => {
       const local = (beat.bar * 6 - i + 6) % 6;
       const hop = local < 1 ? Math.sin(local * Math.PI) : 0;
@@ -355,8 +344,8 @@ export class MenuScene extends Phaser.Scene {
         this.toolIndex = -1;
       };
       if (item.back) {
-        // 現在地の左に小さく置く
-        const b = new Button(this, cx - cardW / 2 + 36, this.crumb.y, item.label, () => { focus(); this.select(); }, { fontSize: 12, minWidth: 72, minHeight: 26, radius: 13 }).setName(item.name);
+        // 現在地の左に置く
+        const b = new Button(this, cx - cardW / 2 + 42, this.headerY, item.label, () => { focus(); this.select(); }, { fontSize: 13, minWidth: 84, minHeight: 32, radius: 16 }).setName(item.name);
         b.on("pointerover", () => { focus(); this.focusVisible = true; this.refresh(); });
         this.backBtn = b;
         return;
@@ -378,6 +367,8 @@ export class MenuScene extends Phaser.Scene {
       this.cards.push(card);
     });
     this.crumb.setText(this.level === "top" ? "" : `${GROUP_LABEL[this.level]} ▸`);
+    // 柄の飾りは最上位だけ。下位ではその場所を現在地と BACK に使う
+    this.icons.forEach((icon) => icon.setVisible(this.level === "top"));
     this.refresh();
   }
 

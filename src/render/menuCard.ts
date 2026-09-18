@@ -36,30 +36,6 @@ const GLOW_STEPS: readonly (readonly [number, number])[] = [
   [5, 0.14],
 ];
 
-/** 題字の虹色。左から桃・黄・緑・水・藤 */
-const TITLE_STOPS: readonly (readonly [number, string])[] = [
-  [0, "#ffb3c8"],
-  [0.28, "#ffe08a"],
-  [0.52, "#b6f5a0"],
-  [0.76, "#9fe1ff"],
-  [1, "#d9b8ff"],
-];
-
-/**
- * 題字の周りの光。白い楕円を alpha を変えて重ね、周りの空へ滲ませる。
- * Text の影や canvas のぼかしで作ると、薄い alpha の裾が明るく描かれて四角い板に見えた
- */
-export function drawTitleHalo(scene: Phaser.Scene, x: number, y: number, textW: number, textH: number): Phaser.GameObjects.Graphics {
-  const g = scene.add.graphics({ x, y });
-  const steps = 12;
-  for (let i = 0; i < steps; i++) {
-    const t = i / (steps - 1);
-    g.fillStyle(0xffffff, 0.028);
-    g.fillEllipse(0, 0, textW + 40 + (1 - t) * 120, textH + 16 + (1 - t) * 70);
-  }
-  return g;
-}
-
 export class MenuCard {
   /** 浮かび上がりの tween に使う、このカードの表示物すべて。 */
   readonly objects: (Phaser.GameObjects.Graphics | Phaser.GameObjects.Text | Phaser.GameObjects.Rectangle)[] = [];
@@ -158,17 +134,4 @@ function shrinkToFit(text: Phaser.GameObjects.Text, maxW: number, minSize: numbe
   const size = Math.max(minSize, Math.floor((parseFloat(text.style.fontSize as string) * maxW) / text.width));
   text.setFontSize(size);
   return text.width <= maxW;
-}
-
-/**
- * 題字の虹色。左から桃・黄・緑・水・藤へ移る淡い色で、白い縁と濃い影で背景から浮かせる。
- * 文字の下辺に濃い紫を重ねると厚みが出る（extrusion）。押し出しの層は menu が別の Text で描く
- */
-export function paintTitle(text: Phaser.GameObjects.Text): void {
-  text.setStroke("rgba(255,255,255,0.6)", 3);
-  text.setShadow(0, 3, "rgba(40, 16, 90, 0.7)", 6, false, true);
-  // 座標は論理 px。canvas の幅は resolution（DPR）倍なので使わない
-  const grad = text.context.createLinearGradient(0, 0, text.width, 0);
-  TITLE_STOPS.forEach(([at, c]) => grad.addColorStop(at, c));
-  text.setFill(grad);
 }

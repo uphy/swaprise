@@ -1,6 +1,6 @@
 import Phaser from "phaser";
-import { CELL, FONT_UI, KIND_COLORS, TEXT_COLOR, layoutFor, menuTitle, sameLayout } from "./theme";
-import { paintTitle } from "./menuCard";
+import { CELL, FONT_UI, KIND_COLORS, layoutFor, menuTitle, sameLayout } from "./theme";
+import { TitleArt } from "./title";
 import { Background } from "./Background";
 import { createTextures } from "./textures";
 import { DPR, applyLayout } from "./hidpi";
@@ -53,16 +53,6 @@ const FLASH_MS = 200;
 const POP_STEP = 13;
 /** pop の音は何枚に 1 回か。13 ms 間隔で全部鳴らすと 1.5 秒に 136 発の連射になる。 */
 const POP_SOUND_EVERY = 3;
-
-/** "#rrggbb" の 2 色を k（0〜1）で混ぜる。 */
-function mixColor(from: string, to: string, k: number): string {
-  const hex = (s: string, i: number): number => parseInt(s.slice(1 + i * 2, 3 + i * 2), 16);
-  const mix = (i: number): string =>
-    Math.round(hex(from, i) + (hex(to, i) - hex(from, i)) * Math.max(0, Math.min(1, k)))
-      .toString(16)
-      .padStart(2, "0");
-  return `#${mix(0)}${mix(1)}${mix(2)}`;
-}
 
 export class OpeningScene extends Phaser.Scene {
   phase: OpeningPhase = "rise";
@@ -161,13 +151,9 @@ export class OpeningScene extends Phaser.Scene {
       .setScale(imgScale * 1.6)
       .setAlpha(0)
       .setDepth(4);
-    const titleText = this.add
-      .text(cx, centerY, "SWAPRISE", { fontFamily: FONT_UI, fontSize: `${title.size}px`, color: "#ffe066", fontStyle: "700" })
-      .setOrigin(0.5)
-      .setShadow(0, 4, "#2a1a5a", 10, false, true)
-      .setAlpha(0)
-      .setDepth(10)
-      .setName("title");
+    // 題字はメニューと同じ 3 層（光・押し出し・虹色の文字）。閃光の中でこの姿のまま現れ、そのまま上がる
+    const titleArt = new TitleArt(this, cx, centerY, title.size).setDepth(10);
+    titleArt.alpha = 0;
     const glow = this.add.image(cx, centerY, "glow").setScale(0.2).setAlpha(0).setDepth(8).setBlendMode(Phaser.BlendModes.ADD);
 
     /** 続きを始める。ここからの時刻は T で数える。 */
@@ -215,22 +201,12 @@ export class OpeningScene extends Phaser.Scene {
         const flash = this.add.rectangle(0, 0, W, H, 0xffffff, 0.5).setOrigin(0).setDepth(20);
         this.tweens.add({ targets: flash, alpha: 0, duration: 260, ease: "Quad.Out", onComplete: () => flash.destroy() });
         this.tweens.add({ targets: glow, scale: 1.9, alpha: { from: 0.85, to: 0 }, duration: 750, ease: "Cubic.Out" });
-        titleText.setScale(2.2);
-        this.tweens.add({ targets: titleText, alpha: 1, duration: 90 });
-        this.tweens.add({ targets: titleText, scale: 1, duration: 300, ease: "Back.Out", easeParams: [1.4] });
-        // 熱を帯びた黄色から、メニューと同じ白へ
-        this.tweens.addCounter({
-          from: 0,
-          to: 1,
-          duration: 520,
-          delay: 120,
-          onUpdate: (tw) => titleText.setColor(mixColor("#ffe066", TEXT_COLOR, tw.getValue() ?? 0)),
-          // メニューと同じ虹色へ
-          onComplete: () => paintTitle(titleText),
-        });
+        titleArt.scale = 2.2;
+        this.tweens.add({ targets: titleArt, alpha: 1, duration: 90 });
+        this.tweens.add({ targets: titleArt, scale: 1, duration: 300, ease: "Back.Out", easeParams: [1.4] });
       });
       this.at(T.settle, () => {
-        this.tweens.add({ targets: titleText, y: title.y, duration: 440, ease: "Cubic.InOut" });
+        this.tweens.add({ targets: titleArt, y: title.y, duration: 440, ease: "Cubic.InOut" });
       });
       // 柄の飾り（メニューと同じ 6 枚）が上から降りてくる。背の低い画面ではメニューにも無いので出さない
       if (!title.compact) {
