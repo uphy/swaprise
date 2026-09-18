@@ -84,7 +84,7 @@ const JA: Record<string, string> = {
   "The board rises on its own. Make a 2-chain. Hold X to raise it faster.": "盤面はひとりでにせり上がります。2連鎖を作りましょう。X を押すと速く上がります。",
   "A chain on a rising board. You are ready for ENDLESS.": "せり上がる盤面で連鎖ができました。エンドレスで遊べます。",
   "NEW RECORD!": "新記録!", "RANK {rank}": "{rank}位", "TIME UP": "時間切れ", "GAME OVER": "ゲームオーバー",
-  SCORE: "スコア", "MAX CHAIN": "最大連鎖", COMBOS: "同時消し", CHAINS: "連鎖", DRAW: "DRAW", WIN: "WIN", LOSE: "LOSE",
+  SCORE: "スコア", "MAX CHAIN": "最大連鎖", COMBOS: "同時消し", CHAINS: "連鎖", "PTS / SWAP": "1手あたり", DRAW: "DRAW", WIN: "WIN", LOSE: "LOSE",
   "UPDATING…": "更新中…", "CHECKING FOR UPDATES…": "更新を確認中…",
   "TAP TO START": "タップでスタート", "PRESS ANY KEY": "キーを押してスタート",
   "Connecting…": "接続中…", "Reconnecting…": "再接続中…", "Leaving…": "退出中…",

@@ -3,6 +3,9 @@ import { PLAYER_ID, plausibleScore, scoreRules, supportedScoreRules, scoreMode, 
 import { verifyPlayer } from "./players";
 
 const json = (data: unknown, status = 200): Response => Response.json(data, { status, headers: { "Cache-Control": "no-store" } });
+/** swaps 列は migration 0005 より前の記録では NULL。JSON には数値のときだけ載せ、クライアントは無ければ 1 手あたりを出さない */
+const withSwaps = <T extends { swaps: number | null }>({ swaps, ...row }: T): Omit<T, "swaps"> & { swaps?: number } =>
+  swaps === null ? row : { ...row, swaps };
 export async function scores(request: Request, env: Env, session?: string): Promise<Response> {
   if (!env.SCORES_DB) return json({ error: "Rankings are currently unavailable." }, 503);
   const url = new URL(request.url);
@@ -41,19 +44,19 @@ export async function scores(request: Request, env: Env, session?: string): Prom
       ), stats AS (
         SELECT 1 + COUNT(*) AS total, 1 + COALESCE(SUM(CASE WHEN ${before("s", "t")} THEN 1 ELSE 0 END), 0) AS targetRank
         FROM others s, target t
-      ) SELECT n.id, n.name, n.score, n.max_chain AS maxChain, n.created_at AS createdAt,
+      ) SELECT n.id, n.name, n.score, n.max_chain AS maxChain, n.created_at AS createdAt, n.swaps,
         targetRank + delta AS rank, total, targetRank FROM neighbors n, stats ORDER BY rank`)
-        .bind(rules, mode, id).all<{ id: string; name: string; score: number; maxChain: number; createdAt: number; rank: number; total: number; targetRank: number }>();
+        .bind(rules, mode, id).all<{ id: string; name: string; score: number; maxChain: number; createdAt: number; swaps: number | null; rank: number; total: number; targetRank: number }>();
       if (!result.results.length) return json({ error: "Score not published yet." }, 404);
       const first = result.results[0];
-      return json({ rank: first.targetRank, total: first.total, scores: result.results.map(({ total, targetRank, ...row }) => row) });
+      return json({ rank: first.targetRank, total: first.total, scores: result.results.map(({ total, targetRank, ...row }) => withSwaps(row)) });
     }
     // Walks the ranking index in order and stops after 50 bests; a play below its player's best costs one lookup.
-    const rows = await env.SCORES_DB.prepare(`SELECT id, name, score, max_chain AS maxChain, created_at AS createdAt, player = ? AS mine
+    const rows = await env.SCORES_DB.prepare(`SELECT id, name, score, max_chain AS maxChain, created_at AS createdAt, swaps, player = ? AS mine
       FROM scores s WHERE rules = ? AND mode = ? AND ${best} ORDER BY score DESC, max_chain DESC, created_at, id LIMIT 50`)
-      .bind(viewer ?? "", rules, mode).all<{ id: string; name: string; score: number; maxChain: number; createdAt: number; mine: number }>();
+      .bind(viewer ?? "", rules, mode).all<{ id: string; name: string; score: number; maxChain: number; createdAt: number; swaps: number | null; mine: number }>();
     // Player ids stay private: only the viewer's own rows are marked, and only when they asked.
-    return json({ rules, mode, scores: rows.results.map(({ mine, ...row }) => mine ? { ...row, mine: true } : row) });
+    return json({ rules, mode, scores: rows.results.map(({ mine, ...row }) => mine ? { ...withSwaps(row), mine: true } : withSwaps(row)) });
   }
   if (request.method !== "POST") return json({ error: "Method not allowed." }, 405);
   if (!session) return json({ error: "Please reconnect." }, 401);
@@ -81,7 +84,7 @@ export async function scores(request: Request, env: Env, session?: string): Prom
   const { secret, ...submitted } = s as Submission & { secret?: unknown };
   if (submitted.player !== undefined && !(await verifyPlayer(env, submitted.player, secret))) return json({ error: "Player not verified." }, 400);
   // Old clients send no player id; group their plays by name, as migration 0004 did for old rows.
-  const payload: Required<Submission> = { ...submitted, player: submitted.player ?? `name:${submitted.name}` };
+  const payload: Submission & { player: string } = { ...submitted, player: submitted.player ?? `name:${submitted.name}` };
   // Do not store raw IPs or session cookies. A daily hash limits cheap session resets;
   // the date also avoids retaining a stable IP-derived identity across days.
   const now = Date.now();
@@ -89,22 +92,23 @@ export async function scores(request: Request, env: Env, session?: string): Prom
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(identity));
   const submitter = Array.from(new Uint8Array(digest), (v) => v.toString(16).padStart(2, "0")).join("");
   const existing = async (): Promise<Response | null> => {
-    const row = await env.SCORES_DB.prepare("SELECT id, rules, mode, name, score, max_chain AS maxChain, seed, frames, player FROM scores WHERE id = ?")
-      .bind(payload.id).first<Required<Submission>>();
+    const row = await env.SCORES_DB.prepare("SELECT id, rules, mode, name, score, max_chain AS maxChain, seed, frames, player, swaps FROM scores WHERE id = ?")
+      .bind(payload.id).first<Submission & { player: string; swaps: number | null }>();
     if (!row) return null;
-    return Object.keys(row).every((key) => row[key as keyof Submission] === payload[key as keyof Submission])
+    // 古い投稿は swaps を持たない（列は NULL）。再送で undefined と NULL を別物にしない
+    return Object.keys(row).every((key) => (row[key as keyof Submission] ?? undefined) === payload[key as keyof Submission])
       ? json({ ok: true, id: row.id }) : json({ error: "Score ID already used." }, 409);
   };
   const duplicate = await existing();
   if (duplicate) return duplicate;
   // Rate check and insert in one SQLite statement: concurrent requests cannot exceed it.
   const result = await env.SCORES_DB.prepare(`INSERT INTO scores
-    (id, rules, mode, name, score, max_chain, seed, frames, created_at, submitter, player)
-    SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? WHERE
+    (id, rules, mode, name, score, max_chain, seed, frames, created_at, submitter, player, swaps)
+    SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? WHERE
     (SELECT COUNT(*) FROM scores WHERE submitter = ? AND created_at >= ?) < 60
     ON CONFLICT(id) DO NOTHING`)
     .bind(payload.id, payload.rules, payload.mode, payload.name, payload.score, payload.maxChain, payload.seed, payload.frames,
-      now, submitter, payload.player, submitter, now - 3600000).run();
+      now, submitter, payload.player, payload.swaps ?? null, submitter, now - 3600000).run();
   if (result.meta.changes) return json({ ok: true, id: payload.id }, 201);
   return await existing() ?? json({ error: "Too many scores. Try again later." }, 429);
 }

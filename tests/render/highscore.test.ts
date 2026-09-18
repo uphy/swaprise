@@ -1,11 +1,22 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { loadHighScores, MAX_RIVALS, onlineRecordLine, recentRivals, recordOnlineResult, rivalRecord } from "../../src/render/highscore";
+import { loadHighScores, MAX_RIVALS, onlineRecordLine, recentRivals, recordOnlineResult, recordScore, rivalRecord } from "../../src/render/highscore";
 
 beforeEach(() => {
   const values = new Map<string, string>();
   vi.stubGlobal("localStorage", {
     getItem: (key: string) => values.get(key) ?? null,
     setItem: (key: string, value: string) => values.set(key, value),
+  });
+});
+
+describe("recordScore", () => {
+  it("入れ替えの回数を記録に残し、渡さなければ持たない（古い記録と同じ形）", () => {
+    recordScore("endless", 7976, 4, new Date("2026-09-18T12:00:00Z"), 446);
+    recordScore("endless", 1000, 2, new Date("2026-09-18T12:00:00Z"));
+    const [best, second] = loadHighScores().endless;
+    expect(best).toEqual({ score: 7976, maxChain: 4, date: "2026-09-18", swaps: 446 });
+    expect(second).toEqual({ score: 1000, maxChain: 2, date: "2026-09-18" });
+    expect("swaps" in second).toBe(false);
   });
 });
 

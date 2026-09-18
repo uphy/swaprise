@@ -27,6 +27,11 @@ describe("standard score rules", () => {
     expect(validSubmission({ ...entry(), player: crypto.randomUUID() })).toBe(true);
     expect(validSubmission(entry())).toBe(true);
   });
+  it("入れ替えの回数（swaps）は省略でき、あれば 0 以上の整数だけ受ける", () => {
+    expect(validSubmission({ ...entry(), swaps: 446 })).toBe(true);
+    expect(validSubmission({ ...entry(), swaps: 0 })).toBe(true);
+    for (const swaps of [-1, 1.5, "446", 1_000_001]) expect(validSubmission({ ...entry(), swaps })).toBe(false);
+  });
   it("rejects scores the game could not have produced in the frames or with the chain", () => {
     expect(plausibleScore({ score: 0, maxChain: 1, frames: 1 })).toBe(true);
     expect(plausibleScore({ score: 19062, maxChain: 6, frames: 472 * 60 })).toBe(true); // hard CPU, seed 4

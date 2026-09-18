@@ -3,6 +3,7 @@ import { playerName, savePlayerName, publication, setPublication, pendingScores,
 import type { ScoreMode } from "../scores/model";
 import { t } from "./i18n";
 import { loadHighScores, onlineRecordLine } from "./highscore";
+import { perSwap } from "./score-result";
 import { PUZZLES, type CpuLevel } from "../core";
 import "./score-dialog.css";
 
@@ -96,7 +97,7 @@ export function showRecordsDialog(scene: Phaser.Scene, onClose: () => void = () 
     if (note) h.append(" ", element("small", note));
     parent.append(c); return c;
   };
-  const scoreRow = (parent: HTMLElement, rank: string, name: string | null, score: number, chain: number, date: string, mine = false): void => {
+  const scoreRow = (parent: HTMLElement, rank: string, name: string | null, score: number, chain: number, date: string, mine = false, swaps?: number): void => {
     const row = element("li"); row.className = "rec-row";
     if (mine) { row.classList.add("rec-mine"); row.setAttribute("aria-current", "true"); }
     row.append(element("b", rank));
@@ -105,7 +106,10 @@ export function showRecordsDialog(scene: Phaser.Scene, onClose: () => void = () 
     const num = element("span", score.toLocaleString()); num.className = "rec-score"; main.append(num);
     row.append(main);
     const meta = element("div"); meta.className = "rec-meta";
-    meta.append(element("span", `${t("MAX CHAIN")} ×${chain}`), element("span", date));
+    meta.append(element("span", `${t("MAX CHAIN")} ×${chain}`));
+    // 1 手あたりの得点。少ない入れ替えで大きく消すほど上がる。古い記録は swaps を持たないので出さない
+    if (swaps) meta.append(element("span", `${t("PTS / SWAP")} ${perSwap(score, swaps)}`));
+    meta.append(element("span", date));
     row.append(meta);
     parent.append(row);
   };
@@ -113,7 +117,7 @@ export function showRecordsDialog(scene: Phaser.Scene, onClose: () => void = () 
     const c = card(local, title, t("TOP 5"), color);
     if (!entries.length) c.append(element("p", t("no records yet")));
     const ol = element("ol"); ol.className = "rec-table"; c.append(ol);
-    entries.forEach((entry, i) => scoreRow(ol, String(i + 1), null, entry.score, entry.maxChain, entry.date));
+    entries.forEach((entry, i) => scoreRow(ol, String(i + 1), null, entry.score, entry.maxChain, entry.date, false, entry.swaps));
   }
   const cpu = card(local, t("VS CPU"), "", "#ff6f7a");
   const table = element("ol"); table.className = "rec-table"; cpu.append(table);
@@ -180,7 +184,7 @@ export function showRecordsDialog(scene: Phaser.Scene, onClose: () => void = () 
       const scores = await ranking(mode, signal);
       if (signal.aborted) return;
       status.textContent = scores.length ? "" : t("no records yet");
-      scores.forEach((entry, i) => scoreRow(list, String(i + 1), entry.name, entry.score, entry.maxChain, new Date(entry.createdAt).toISOString().slice(0, 10), entry.mine === true));
+      scores.forEach((entry, i) => scoreRow(list, String(i + 1), entry.name, entry.score, entry.maxChain, new Date(entry.createdAt).toISOString().slice(0, 10), entry.mine === true, entry.swaps));
     } catch { if (!signal.aborted) status.textContent = t("Could not load rankings. Local records are still available."); }
   };
   button(onlineCard, "RETRY", () => { void flushScores(); void load(current); });

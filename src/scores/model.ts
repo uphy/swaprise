@@ -17,6 +17,8 @@ export interface Submission {
   frames: number;
   /** 端末の匿名 id（swaprise.player.v1）。ランキングは player ごとに自己ベスト 1 件。古い投稿にはなく、その場合はプレイ id を使う */
   player?: string;
+  /** 成功した入れ替えの回数。1 手あたりの得点（score / swaps）を出すのに使う。古い投稿・送信待ちにはない */
+  swaps?: number;
 }
 export interface RankedScore {
   id: string;
@@ -24,6 +26,8 @@ export interface RankedScore {
   score: number;
   maxChain: number;
   createdAt: number;
+  /** 成功した入れ替えの回数。1 手あたりの得点（score / swaps）を出すのに使う。古い記録にはない */
+  swaps?: number;
   /** 一覧を取った端末の記録なら true。GET に player を付けたときだけ付く */
   mine?: boolean;
 }
@@ -44,7 +48,8 @@ export function validSubmission(v: unknown): v is Submission {
     && s.name === s.name.trim() && !/[\p{C}\p{Zl}\p{Zp}]/u.test(s.name)
     && integer(s.score, 0, 99999) && integer(s.maxChain, 0, 9999)
     && integer(s.seed, 0, 0xffffffff) && integer(s.frames, 1, s.mode === "timeattack" ? 7200 : 5184000)
-    && (s.player === undefined || (typeof s.player === "string" && PLAYER_ID.test(s.player)));
+    && (s.player === undefined || (typeof s.player === "string" && PLAYER_ID.test(s.player)))
+    && (s.swaps === undefined || integer(s.swaps, 0, 1_000_000));
 }
 /**
  * 得点・最大連鎖・frames の間で、ゲームの仕組み上あり得ない組み合わせを弾く（Worker が投稿時に使う）。

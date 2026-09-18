@@ -9,10 +9,14 @@ import "./score-dialog.css";
 const node = <K extends keyof HTMLElementTagNameMap>(tag: K, text = "") => {
   const el = document.createElement(tag); el.textContent = text; return el;
 };
+/** 1 手あたりの得点（得点 ÷ 成功した入れ替え）。小数 1 桁。少ない入れ替えで大きく消すほど上がる */
+export const perSwap = (score: number, swaps: number): string => (score / swaps).toFixed(1);
 /** A result screen, not a modal. Keyboard retry/menu remain available. */
 export function showScoreResult(scene: Phaser.Scene, options: {
   mode: ScoreMode; title: string | null; score: number; chain: number; progress: Progress | null;
   id: string | null; combos: number; chains: number; retry: () => void; menu: () => void; share?: (button: HTMLButtonElement) => void;
+  /** 成功した入れ替えの回数。あれば 1 手あたりの得点を出す */
+  swaps?: number;
   /** 公開の可否が未決なら、この記録を公開するかを結果画面で聞く。決めるまで記録は端末に留まる */
   submission?: Omit<Submission, "name" | "rules"> | null;
 }): void {
@@ -36,7 +40,10 @@ export function showScoreResult(scene: Phaser.Scene, options: {
   // 得点も本文と一緒にスクロールさせ、大きな文字でも再開ボタンを画面内に保つ。
   body.append(summary);
   const stats = node("dl"); stats.className = "result-stats";
-  for (const [label, value] of [["MAX CHAIN", `×${options.chain}`], ["COMBOS", options.combos], ["CHAINS", options.chains]] as const) {
+  const cells: [string, string | number][] = [["MAX CHAIN", `×${options.chain}`], ["COMBOS", options.combos], ["CHAINS", options.chains]];
+  // 1 手あたりの得点。入れ替えが 0 回なら出さない
+  if (options.swaps) { cells.push(["PTS / SWAP", perSwap(options.score, options.swaps)]); stats.classList.add("four"); }
+  for (const [label, value] of cells) {
     const stat = node("div"); stat.append(node("dt", t(label)), node("dd", String(value))); stats.append(stat);
   }
   body.append(stats);
@@ -103,7 +110,7 @@ export function showScoreResult(scene: Phaser.Scene, options: {
         // 上位 50 件に載るのは自己ベストなので、今回のプレイでなくても自分の行は分かるようにする
         const mine = row.id === options.id || row.mine === true;
         const li = node("li", `${row.name}${row.id === options.id ? ` · ${t("THIS RUN")}` : mine ? ` · ${t("YOUR BEST")}` : ""}`); li.value = row.rank;
-        li.append(node("span", `${row.score.toLocaleString()} ${t("POINTS")} · ×${row.maxChain}`));
+        li.append(node("span", `${row.score.toLocaleString()} ${t("POINTS")} · ×${row.maxChain}${row.swaps ? ` · ${t("PTS / SWAP")} ${perSwap(row.score, row.swaps)}` : ""}`));
         if (mine) { li.className = "result-you"; li.setAttribute("aria-current", "true"); }
         list.append(li);
       }
