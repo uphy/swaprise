@@ -1,7 +1,7 @@
 import Phaser from "phaser";
 import { showRecordsDialog, showPlayerSettings } from "./score-dialog";
 import { ACCENT, FONT, FONT_UI, KIND_COLORS, TEXT_COLOR, TEXT_MUTE, layoutFor, menuTitle, sameLayout } from "./theme";
-import { MenuCard, paintTitle } from "./menuCard";
+import { MenuCard, drawTitleHalo, paintTitle } from "./menuCard";
 import { Background } from "./Background";
 import { createTextures } from "./textures";
 import { LESSONS, PUZZLES, PUZZLES_PER_STAGE, PUZZLE_STAGES, puzzleName, type CpuLevel, type GameMode } from "../core";
@@ -143,6 +143,8 @@ export class MenuScene extends Phaser.Scene {
   private overlay: Overlay | null = null;
   private bgView: Background | null = null;
   private titleText: Phaser.GameObjects.Text | null = null;
+  /** 題字と一緒に拍で膨らむ層（後ろの光と押し出し） */
+  private titleLayers: (Phaser.GameObjects.Text | Phaser.GameObjects.Graphics)[] = [];
   private icons: Phaser.GameObjects.Image[] = [];
   /** パズルの面選び。開いている間はメニューのキー操作をこちらへ回す。 */
   private picker: { panel: Phaser.GameObjects.Container; state: { stage: number; face: number }; refresh: () => void } | null = null;
@@ -205,6 +207,13 @@ export class MenuScene extends Phaser.Scene {
     const compact = title.compact;
     this.compact = compact;
     const titleY = title.y;
+    // 題字の後ろに白い光を敷き、押し出しの濃い紫を下にずらして重ねる
+    const titleGlow = drawTitleHalo(this, cx, titleY, title.size * 4.9, title.size);
+    const titleBase = this.add
+      .text(cx, titleY + 4, "SWAPRISE", { fontFamily: FONT_UI, fontSize: `${title.size}px`, color: "#5a2f9c", fontStyle: "700" })
+      .setOrigin(0.5)
+      .setStroke("#5a2f9c", 3);
+    this.titleLayers = [titleGlow, titleBase];
     this.titleText = this.add
       .text(cx, titleY, "SWAPRISE", { fontFamily: FONT_UI, fontSize: `${title.size}px`, color: TEXT_COLOR, fontStyle: "700" })
       .setOrigin(0.5)
@@ -240,14 +249,17 @@ export class MenuScene extends Phaser.Scene {
       this.tools.push(b);
     });
 
-    // ビルド識別子（日付と commit）。スマホで今どの版が動いているかを確かめるため、左下に小さく出す
-    const buildText = this.add.text(6, H - 4, __BUILD_ID__, { fontFamily: FONT, fontSize: "9px", color: "rgba(255,255,255,0.4)" }).setOrigin(0, 1).setName("build");
+    // ビルド識別子（日付と commit）。スマホで今どの版が動いているかを確かめるため、下端の中央に小さく出す
+    const buildText = this.add.text(0, H - 4, __BUILD_ID__, { fontFamily: FONT, fontSize: "9px", color: "rgba(255,255,255,0.4)" }).setOrigin(0, 1).setName("build");
     const githubLink = this.add
-      .text(6 + buildText.width + 8, H - 4, "GitHub", { fontFamily: FONT, fontSize: "9px", color: "rgba(255,255,255,0.7)" })
+      .text(0, H - 4, "GitHub", { fontFamily: FONT, fontSize: "9px", color: "rgba(255,255,255,0.7)" })
       .setOrigin(0, 1)
       .setInteractive({ useHandCursor: true })
       .setName("github-link")
       .on("pointerdown", () => window.open("https://github.com/uphy/swaprise", "_blank", "noopener"));
+    const footerW = buildText.width + 8 + githubLink.width;
+    buildText.setX(cx - footerW / 2);
+    githubLink.setX(cx - footerW / 2 + buildText.width + 8);
 
     // 前回遊んだモードにカーソルを置く
     const last = loadLastMode();
@@ -256,7 +268,7 @@ export class MenuScene extends Phaser.Scene {
     this.buildList();
     // オープニングから続くときは、題字はそのままに、項目・小ボタン・隅の文字を上から順に浮かび上がらせる
     if (data.fromOpening) {
-      const targets = [...this.cards.flatMap((c) => c.objects), ...this.tools, buildText, githubLink];
+      const targets = [...this.cards.flatMap((c) => c.objects), ...this.tools, buildText, githubLink, titleGlow];
       targets.forEach((o) => o.setAlpha(0));
       this.tweens.add({ targets, alpha: 1, duration: 260, ease: "Quad.Out", delay: this.tweens.stagger(28) });
     }
@@ -314,6 +326,7 @@ export class MenuScene extends Phaser.Scene {
     // 題字は拍の頭でわずかに膨らみ、柄の飾りは小節の中で順に弾む
     const swell = Math.pow(1 - beat.phase, 3);
     this.titleText?.setScale(1 + swell * 0.03);
+    this.titleLayers.forEach((o) => o.setScale(1 + swell * 0.03));
     this.icons.forEach((icon, i) => {
       const local = (beat.bar * 6 - i + 6) % 6;
       const hop = local < 1 ? Math.sin(local * Math.PI) : 0;

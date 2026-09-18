@@ -27,6 +27,39 @@ export interface MenuCardSpec {
  * メニューの 1 項目を表す、色の縁を光らせた半透明のカード。
  * Container にまとめず Scene 直下に置く。e2e が scene.children.getByName でラベルと説明を探すため。
  */
+const RADIUS = 16;
+/** 縁の外の光。[線の太さ, alpha] を太い順に重ねる */
+const GLOW_STEPS: readonly (readonly [number, number])[] = [
+  [18, 0.04],
+  [13, 0.06],
+  [9, 0.09],
+  [5, 0.14],
+];
+
+/** 題字の虹色。左から桃・黄・緑・水・藤 */
+const TITLE_STOPS: readonly (readonly [number, string])[] = [
+  [0, "#ffb3c8"],
+  [0.28, "#ffe08a"],
+  [0.52, "#b6f5a0"],
+  [0.76, "#9fe1ff"],
+  [1, "#d9b8ff"],
+];
+
+/**
+ * 題字の周りの光。白い楕円を alpha を変えて重ね、周りの空へ滲ませる。
+ * Text の影や canvas のぼかしで作ると、薄い alpha の裾が明るく描かれて四角い板に見えた
+ */
+export function drawTitleHalo(scene: Phaser.Scene, x: number, y: number, textW: number, textH: number): Phaser.GameObjects.Graphics {
+  const g = scene.add.graphics({ x, y });
+  const steps = 12;
+  for (let i = 0; i < steps; i++) {
+    const t = i / (steps - 1);
+    g.fillStyle(0xffffff, 0.028);
+    g.fillEllipse(0, 0, textW + 40 + (1 - t) * 120, textH + 16 + (1 - t) * 70);
+  }
+  return g;
+}
+
 export class MenuCard {
   /** 浮かび上がりの tween に使う、このカードの表示物すべて。 */
   readonly objects: (Phaser.GameObjects.Graphics | Phaser.GameObjects.Text | Phaser.GameObjects.Rectangle)[] = [];
@@ -56,7 +89,7 @@ export class MenuCard {
       .setName(`${spec.name}-caption`);
     // 説明がカードの幅に入らなければ、少し小さくし、それでも入らなければ折り返す（半幅のカードの英語）
     const maxW = w - 16;
-    if (!shrinkToFit(this.caption, maxW, 10)) this.caption.setWordWrapWidth(maxW, true);
+    if (!shrinkToFit(this.caption, maxW, 11)) this.caption.setWordWrapWidth(maxW, true);
     this.objects.push(this.bg, this.label, this.caption);
     if (spec.icon) {
       // ラベルと絵文字を合わせて中央に寄せる。日本語のラベルは半幅のカードに入らないことがあるので、ラベルを縮める
@@ -86,17 +119,24 @@ export class MenuCard {
     const y = 0;
     const g = this.bg;
     g.clear();
-    const r = 16;
-    // 縁の外側の光。太い半透明の線を重ねてにじませる
-    g.lineStyle(10, color, this.hot ? 0.22 : 0.12);
-    g.strokeRoundedRect(x - w / 2, y - h / 2, w, h, r);
-    g.lineStyle(5, color, this.hot ? 0.4 : 0.25);
-    g.strokeRoundedRect(x - w / 2, y - h / 2, w, h, r);
+    const r = RADIUS;
+    // 縁の外側に滲む光。太さの違う半透明の線を重ねる。
+    // ぼかしたテクスチャや Text の影は使わない。薄い alpha の裾が明るく描かれ、四角い板に見えた
+    GLOW_STEPS.forEach(([width, alpha]) => {
+      g.lineStyle(width, color, alpha * (this.hot ? 1.6 : 1));
+      g.strokeRoundedRect(x - w / 2, y - h / 2, w, h, r);
+    });
     // 半透明の白い地。背景の空が透ける
-    g.fillStyle(0xffffff, this.hot ? 0.22 : 0.1);
+    g.fillStyle(0xffffff, this.hot ? 0.24 : 0.12);
     g.fillRoundedRect(x - w / 2, y - h / 2, w, h, r);
-    g.lineStyle(2, color, this.hot ? 1 : 0.85);
+    // ガラスの反射。上半分を少し白くする
+    g.fillStyle(0xffffff, this.hot ? 0.14 : 0.1);
+    g.fillRoundedRect(x - w / 2 + 3, y - h / 2 + 3, w - 6, h * 0.45, r - 3);
+    // 縁。色の線の内側に細い白で、光る枠に見せる
+    g.lineStyle(2.5, color, this.hot ? 1 : 0.9);
     g.strokeRoundedRect(x - w / 2, y - h / 2, w, h, r);
+    g.lineStyle(1, 0xffffff, this.hot ? 0.7 : 0.45);
+    g.strokeRoundedRect(x - w / 2 + 2.5, y - h / 2 + 2.5, w - 5, h - 5, r - 2.5);
   }
 
   /** 指が乗っている・キー操作の対象。地を明るくし縁を強める */
@@ -120,17 +160,15 @@ function shrinkToFit(text: Phaser.GameObjects.Text, maxW: number, minSize: numbe
   return text.width <= maxW;
 }
 
-/** 題字の虹色。左から桃・黄・緑・水・藤へ移る淡い色で、白い縁と影で背景から浮かせる */
+/**
+ * 題字の虹色。左から桃・黄・緑・水・藤へ移る淡い色で、白い縁と濃い影で背景から浮かせる。
+ * 文字の下辺に濃い紫を重ねると厚みが出る（extrusion）。押し出しの層は menu が別の Text で描く
+ */
 export function paintTitle(text: Phaser.GameObjects.Text): void {
-  text.setStroke("rgba(255,255,255,0.45)", 2);
+  text.setStroke("rgba(255,255,255,0.6)", 3);
+  text.setShadow(0, 3, "rgba(40, 16, 90, 0.7)", 6, false, true);
   // 座標は論理 px。canvas の幅は resolution（DPR）倍なので使わない
   const grad = text.context.createLinearGradient(0, 0, text.width, 0);
-  ([
-    [0, "#ffb3c8"],
-    [0.28, "#ffe08a"],
-    [0.52, "#b6f5a0"],
-    [0.76, "#9fe1ff"],
-    [1, "#d9b8ff"],
-  ] as const).forEach(([at, c]) => grad.addColorStop(at, c));
+  TITLE_STOPS.forEach(([at, c]) => grad.addColorStop(at, c));
   text.setFill(grad);
 }
