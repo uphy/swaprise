@@ -61,7 +61,7 @@ export class BoardView {
   touch: TouchInput | null = null;
   private readonly frame: Phaser.GameObjects.Graphics;
   /** 四隅の蓋。角のパネルの隅が盤面の丸角の外に出るぶんを、枠の帯と同じ色で覆う（パネルの上に置く） */
-  private readonly corners: Phaser.GameObjects.Graphics;
+  private readonly corners: Phaser.GameObjects.Image[];
   /** 盤面の中の色。e2e が警告の演出で変わっていないことを確かめる */
   readonly bgColor = BOARD_BG;
   private readonly dangerGlow: DangerGlow;
@@ -165,8 +165,7 @@ export class BoardView {
     this.dangerGlow = new DangerGlow(scene);
     this.frame = scene.add.graphics();
     const bandColor = paintFrame(this.frame, color);
-    this.corners = scene.add.graphics();
-    paintCorners(this.corners, bandColor);
+    this.corners = makeCorners(scene, bandColor);
     this.root.add([this.dangerGlow.root, this.frame]);
 
     for (let r = 0; r < DRAW_ROWS; r++) {
@@ -668,28 +667,29 @@ function mix(a: number, b: number, t: number): number {
   return (ch(16) << 16) | (ch(8) << 8) | ch(0);
 }
 
-/** 盤面の四隅で、丸角の弧の外側（角の四角から弧を除いた三日月形）を帯の色で塗る。パネルの上に置いて隅を隠す */
-function paintCorners(g: Phaser.GameObjects.Graphics, color: number): void {
+/**
+ * 盤面の四隅の蓋。丸角の弧の外側（角の四角から弧を除いた三日月形）を帯の色で塗った絵を、パネルの上に置いて隅を隠す。
+ * Phaser の Graphics で描くと WebGL ではアンチエイリアスがなく弧がギザつき、枠の弧とも合わなかったので、
+ * canvas 2D で DPR 倍の大きさに描いた 1 枚の絵を 4 隅に反転して置く。弧は枠の弧より 0.5px 小さくし、境目に隙間が出ないようにする
+ */
+function makeCorners(scene: Phaser.Scene, color: number): Phaser.GameObjects.Image[] {
   const r = BOARD_RADIUS;
-  g.clear();
-  g.fillStyle(color, 1);
-  const corner = (cx: number, cy: number, sx: number, sy: number): void => {
-    // (cx, cy) が角、(sx, sy) は角から盤面の内側へ向かう向き
-    g.beginPath();
-    g.moveTo(cx, cy);
-    g.lineTo(cx + sx * r, cy);
-    g.arc(cx + sx * r, cy + sy * r, r, sy > 0 ? -Math.PI / 2 : Math.PI / 2, sx > 0 ? Math.PI : 0, sx * sy > 0);
-    g.lineTo(cx, cy + sy * r);
-    g.closePath();
-    g.fillPath();
-    // 弧の縁を同じ色でなぞる。塗りだけだと、枠の弧との境目に 1px 弱のパネルが透けた
-    g.lineStyle(2, color, 1);
-    g.beginPath();
-    g.arc(cx + sx * r, cy + sy * r, r, sy > 0 ? -Math.PI / 2 : Math.PI / 2, sx > 0 ? Math.PI : 0, sx * sy > 0);
-    g.strokePath();
-  };
-  corner(0, 0, 1, 1);
-  corner(BOARD_W, 0, -1, 1);
-  corner(0, BOARD_H, 1, -1);
-  corner(BOARD_W, BOARD_H, -1, -1);
+  const key = `board-corner-${color.toString(16)}`;
+  if (!scene.textures.exists(key)) {
+    const size = Math.ceil(r * DPR);
+    const texture = scene.textures.createCanvas(key, size, size);
+    if (texture) {
+      const ctx = texture.context;
+      ctx.fillStyle = `#${color.toString(16).padStart(6, "0")}`;
+      ctx.fillRect(0, 0, size, size);
+      ctx.globalCompositeOperation = "destination-out";
+      ctx.beginPath();
+      ctx.arc(r * DPR, r * DPR, (r - 0.5) * DPR, 0, Math.PI * 2);
+      ctx.fill();
+      texture.refresh();
+    }
+  }
+  const at = (x: number, y: number, flipX: boolean, flipY: boolean): Phaser.GameObjects.Image =>
+    scene.add.image(x, y, key).setOrigin(flipX ? 1 : 0, flipY ? 1 : 0).setFlip(flipX, flipY).setScale(1 / DPR);
+  return [at(0, 0, false, false), at(BOARD_W, 0, true, false), at(0, BOARD_H, false, true), at(BOARD_W, BOARD_H, true, true)];
 }
