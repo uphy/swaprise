@@ -740,8 +740,8 @@ export class OnlineScene extends Phaser.Scene {
           i === s.player,
           null,
           "",
-          // 枠の色。自分は ONLINE のカードの緑、相手は藤色
-          i === s.player ? CARD.green : CARD.violet,
+          // 枠の色。自分は他の対戦と同じ水色、相手は藤色
+          i === s.player ? CARD.cyan : CARD.violet,
         ),
     );
     this.playerInput = new PlayerInput(this, P1_KEYS, 0);

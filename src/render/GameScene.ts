@@ -159,16 +159,16 @@ export class GameScene extends Phaser.Scene {
       this.inputs.push(new PlayerInput(this, P1_KEYS, 0));
       this.vsText = null;
     } else if (boards.length === 1) {
-      // 枠の色はメニューのカードと同じ。エンドレスは金、タイムアタックは水色
-      this.views.push(new BoardView(this, boards[0], "1P", true, this.game_.timeLimit, "", this.mode === "timeattack" ? CARD.cyan : CARD.gold));
+      // 枠の色。エンドレスは橙（青い空に映える。金は注意の色に見えた）、タイムアタックはカードと同じ水色
+      this.views.push(new BoardView(this, boards[0], "1P", true, this.game_.timeLimit, "", this.mode === "timeattack" ? CARD.cyan : CARD.orange));
       this.inputs.push(new PlayerInput(this, P1_KEYS, 0));
       this.vsText = null;
     } else {
       const isCpu = this.mode === "cpu";
-      // 枠の色。CPU 戦は自分が VS CPU のカードの水色、相手は難易度のカードの色（EASY 緑・NORMAL 金・HARD 赤）。
-      // 2 人対戦は 2 PLAYERS のカードの橙と、それと見分けやすい藤色
-      const cpuColor = { easy: CARD.green, normal: CARD.gold, hard: CARD.red }[this.cpuLevel];
-      this.views.push(new BoardView(this, boards[0], "1P", true, null, "", isCpu ? CARD.cyan : CARD.orange));
+      // 枠の色。自分の盤面は水色、相手は CPU なら難易度の色（EASY 緑・NORMAL 橙・HARD 赤）、2P なら藤色。
+      // 金は盤面を囲むと注意の色に見えたので使わない
+      const cpuColor = { easy: CARD.green, normal: CARD.orange, hard: CARD.red }[this.cpuLevel];
+      this.views.push(new BoardView(this, boards[0], "1P", true, null, "", CARD.cyan));
       this.views.push(new BoardView(this, boards[1], isCpu ? `${t("VS CPU")} ${this.cpuLevel.toUpperCase()}` : "2P", false, null, "", isCpu ? cpuColor : CARD.violet));
       this.inputs.push(new PlayerInput(this, P1_KEYS, 0));
       if (!isCpu) this.inputs.push(new PlayerInput(this, P2_KEYS, 1));

@@ -60,6 +60,9 @@ export class BoardView {
   private hintCells: { x: number; y: number }[] = [];
   touch: TouchInput | null = null;
   private readonly frame: Phaser.GameObjects.Graphics;
+  /** パネルの層。盤面の丸角で切り抜く */
+  private readonly panelLayer: Phaser.GameObjects.Container;
+  private readonly maskShape: Phaser.GameObjects.Graphics;
   /** 盤面の中の色。e2e が警告の演出で変わっていないことを確かめる */
   readonly bgColor = BOARD_BG;
   private readonly dangerGlow: DangerGlow;
@@ -109,6 +112,9 @@ export class BoardView {
     this.scale = scale;
     this.hud = hud;
     this.root.setPosition(ox, oy).setScale(scale);
+    this.maskShape.clear();
+    this.maskShape.fillStyle(0xffffff, 1);
+    this.maskShape.fillRoundedRect(ox, oy, BOARD_W * scale, BOARD_H * scale, BOARD_RADIUS * scale);
     if (hud === "top") {
       // 名前と得点を 1 行に。得点は名前の右に隙間を空けて続ける
       this.labelText.setPosition(0, -32).setOrigin(0, 0);
@@ -145,7 +151,10 @@ export class BoardView {
     g.strokeRoundedRect(x, y, w, h, h / 2);
   }
 
-  destroy(): void { this.root.destroy(true); }
+  destroy(): void {
+    this.root.destroy(true);
+    this.maskShape.destroy();
+  }
 
   constructor(
     private readonly scene: Phaser.Scene,
@@ -163,20 +172,25 @@ export class BoardView {
     this.dangerGlow = new DangerGlow(scene);
     this.frame = scene.add.graphics();
     paintFrame(this.frame, color);
-    this.root.add([this.dangerGlow.root, this.frame]);
+    // パネルは盤面の丸角で切り抜く。切り抜かないと角のパネルの隅が濃紺の外にはみ出す。
+    // 切り抜きの形は画面座標で描くので、place() で盤面の位置と拡大率に合わせて描き直す
+    this.panelLayer = scene.add.container(0, 0);
+    this.maskShape = scene.make.graphics({ x: 0, y: 0 }, false);
+    this.panelLayer.setMask(this.maskShape.createGeometryMask());
+    this.root.add([this.dangerGlow.root, this.frame, this.panelLayer]);
 
     for (let r = 0; r < DRAW_ROWS; r++) {
       const row: Phaser.GameObjects.Image[] = [];
       for (let c = 0; c < COLS; c++) {
         const img = scene.add.image(0, 0, "panel-0").setOrigin(0).setScale(1 / DPR).setVisible(false);
-        this.root.add(img);
+        this.panelLayer.add(img);
         row.push(img);
       }
       this.cells.push(row);
     }
     for (let c = 0; c < COLS; c++) {
       const img = scene.add.image(0, 0, "panel-0-dark").setOrigin(0).setScale(1 / DPR);
-      this.root.add(img);
+      this.panelLayer.add(img);
       this.nextCells.push(img);
     }
     this.cursor = scene.add.image(0, 0, "cursor").setOrigin(0).setScale(1 / DPR);
