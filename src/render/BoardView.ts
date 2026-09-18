@@ -29,7 +29,8 @@ const HUD_GAP = 12;
 /** 盤面の枠。パネルの外側に FRAME_PAD の帯を回し、その外縁を色の線と光で縁取る（メニューのカードと同じ作り） */
 const FRAME_PAD = 6;
 const FRAME_RADIUS = 16;
-const BOARD_RADIUS = 10;
+/** 盤面の中の角の丸み。パネル（余白 1px・角 5px）の隅がこの丸角の外に出ない大きさにする。8 以上だと角のパネルの隅がはみ出す */
+const BOARD_RADIUS = 6;
 /** 縁の外の光。[線の太さ, alpha] を太い順に重ねる（menuCard.ts と同じ） */
 const GLOW_STEPS: readonly (readonly [number, number])[] = [
   [18, 0.04],
@@ -60,9 +61,6 @@ export class BoardView {
   private hintCells: { x: number; y: number }[] = [];
   touch: TouchInput | null = null;
   private readonly frame: Phaser.GameObjects.Graphics;
-  /** パネルの層。盤面の丸角で切り抜く */
-  private readonly panelLayer: Phaser.GameObjects.Container;
-  private readonly maskShape: Phaser.GameObjects.Graphics;
   /** 盤面の中の色。e2e が警告の演出で変わっていないことを確かめる */
   readonly bgColor = BOARD_BG;
   private readonly dangerGlow: DangerGlow;
@@ -112,9 +110,6 @@ export class BoardView {
     this.scale = scale;
     this.hud = hud;
     this.root.setPosition(ox, oy).setScale(scale);
-    this.maskShape.clear();
-    this.maskShape.fillStyle(0xffffff, 1);
-    this.maskShape.fillRoundedRect(ox, oy, BOARD_W * scale, BOARD_H * scale, BOARD_RADIUS * scale);
     if (hud === "top") {
       // 名前と得点を 1 行に。得点は名前の右に隙間を空けて続ける
       this.labelText.setPosition(0, -32).setOrigin(0, 0);
@@ -151,10 +146,7 @@ export class BoardView {
     g.strokeRoundedRect(x, y, w, h, h / 2);
   }
 
-  destroy(): void {
-    this.root.destroy(true);
-    this.maskShape.destroy();
-  }
+  destroy(): void { this.root.destroy(true); }
 
   constructor(
     private readonly scene: Phaser.Scene,
@@ -172,25 +164,20 @@ export class BoardView {
     this.dangerGlow = new DangerGlow(scene);
     this.frame = scene.add.graphics();
     paintFrame(this.frame, color);
-    // パネルは盤面の丸角で切り抜く。切り抜かないと角のパネルの隅が濃紺の外にはみ出す。
-    // 切り抜きの形は画面座標で描くので、place() で盤面の位置と拡大率に合わせて描き直す
-    this.panelLayer = scene.add.container(0, 0);
-    this.maskShape = scene.make.graphics({ x: 0, y: 0 }, false);
-    this.panelLayer.setMask(this.maskShape.createGeometryMask());
-    this.root.add([this.dangerGlow.root, this.frame, this.panelLayer]);
+    this.root.add([this.dangerGlow.root, this.frame]);
 
     for (let r = 0; r < DRAW_ROWS; r++) {
       const row: Phaser.GameObjects.Image[] = [];
       for (let c = 0; c < COLS; c++) {
         const img = scene.add.image(0, 0, "panel-0").setOrigin(0).setScale(1 / DPR).setVisible(false);
-        this.panelLayer.add(img);
+        this.root.add(img);
         row.push(img);
       }
       this.cells.push(row);
     }
     for (let c = 0; c < COLS; c++) {
       const img = scene.add.image(0, 0, "panel-0-dark").setOrigin(0).setScale(1 / DPR);
-      this.panelLayer.add(img);
+      this.root.add(img);
       this.nextCells.push(img);
     }
     this.cursor = scene.add.image(0, 0, "cursor").setOrigin(0).setScale(1 / DPR);
