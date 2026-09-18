@@ -11,7 +11,8 @@ async function enter(page: Page) {
     const m = (window as any).__swapriseScenes.menu;
     const canvas = m.game.canvas;
     const scale = m.cameras.main.zoom * canvas.getBoundingClientRect().width / canvas.width;
-    const item = { size: parseFloat(m.texts[3].style.fontSize) * scale, family: m.texts[3].style.fontFamily };
+    // 文字の基準は全幅のカード（1 PLAYER）。ONLINE は半幅のカードで一回り小さい
+    const item = { size: parseFloat(m.texts[0].style.fontSize) * scale, family: m.texts[0].style.fontFamily };
     m.index = 3;
     m.select();
     return item;
