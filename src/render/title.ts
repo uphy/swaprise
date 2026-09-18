@@ -10,6 +10,12 @@ const TITLE_STOPS: readonly (readonly [number, string])[] = [
   [1, "#c07dff"],
 ];
 
+/**
+ * 題字の下に並べる柄の飾りの順。題字の虹（桃→黄→緑→水→藤）に合わせて色相の順に並べる。
+ * 柄の番号順（赤・緑・水・黄・紫・青）だと題字の色の流れと食い違って見えた
+ */
+export const TITLE_ICON_KINDS: readonly number[] = [0, 3, 1, 2, 5, 4];
+
 /** 押し出し（文字の下辺の厚み）の色とずれ */
 const EXTRUDE_COLOR = "#3a1a72";
 const EXTRUDE_DY = 5;
