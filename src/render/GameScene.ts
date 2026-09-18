@@ -18,7 +18,7 @@ import { wakeLock } from "./wakelock";
 import { fullscreen } from "./fullscreen";
 import { canShare, shareText } from "./share";
 import type { ShareVerdict, ShareResult } from "../ogp/spec";
-import { BOARD_H, BOARD_W, FONT, FONT_UI, TEXT_COLOR, TEXT_DIM, KIND_COLORS, type Layout, type SkyName, layoutFor, sameLayout } from "./theme";
+import { BOARD_H, BOARD_W, CARD, FONT, FONT_UI, TEXT_COLOR, TEXT_DIM, KIND_COLORS, type Layout, type SkyName, layoutFor, sameLayout } from "./theme";
 import { Background } from "./Background";
 import { t } from "./i18n";
 import { backHintDuration } from "./backHint";
@@ -151,24 +151,30 @@ export class GameScene extends Phaser.Scene {
 
     const boards = this.game_.boards;
     if (this.mode === "puzzle") {
-      this.views.push(new BoardView(this, boards[0], `${t("PUZZLE")} ${puzzleName(this.stage)}`, false, null, "puzzle"));
+      this.views.push(new BoardView(this, boards[0], `${t("PUZZLE")} ${puzzleName(this.stage)}`, false, null, "puzzle", CARD.green));
       this.inputs.push(new PlayerInput(this, P1_KEYS, 0));
       this.vsText = null;
     } else if (this.mode === "lesson") {
-      this.views.push(new BoardView(this, boards[0], t("LESSON {n} / {total}", { n: this.lesson + 1, total: LESSONS.length }), false, null, "lesson"));
+      this.views.push(new BoardView(this, boards[0], t("LESSON {n} / {total}", { n: this.lesson + 1, total: LESSONS.length }), false, null, "lesson", CARD.violet));
       this.inputs.push(new PlayerInput(this, P1_KEYS, 0));
       this.vsText = null;
     } else if (boards.length === 1) {
-      this.views.push(new BoardView(this, boards[0], "1P", true, this.game_.timeLimit));
+      // 枠の色はメニューのカードと同じ。エンドレスは金、タイムアタックは水色
+      this.views.push(new BoardView(this, boards[0], "1P", true, this.game_.timeLimit, "", this.mode === "timeattack" ? CARD.cyan : CARD.gold));
       this.inputs.push(new PlayerInput(this, P1_KEYS, 0));
       this.vsText = null;
     } else {
       const isCpu = this.mode === "cpu";
-      this.views.push(new BoardView(this, boards[0], "1P", true));
-      this.views.push(new BoardView(this, boards[1], isCpu ? `${t("VS CPU")} ${this.cpuLevel.toUpperCase()}` : "2P", false));
+      // 枠の色。CPU 戦は自分が VS CPU のカードの水色、相手は難易度のカードの色（EASY 緑・NORMAL 金・HARD 赤）。
+      // 2 人対戦は 2 PLAYERS のカードの橙と、それと見分けやすい藤色
+      const cpuColor = { easy: CARD.green, normal: CARD.gold, hard: CARD.red }[this.cpuLevel];
+      this.views.push(new BoardView(this, boards[0], "1P", true, null, "", isCpu ? CARD.cyan : CARD.orange));
+      this.views.push(new BoardView(this, boards[1], isCpu ? `${t("VS CPU")} ${this.cpuLevel.toUpperCase()}` : "2P", false, null, "", isCpu ? cpuColor : CARD.violet));
       this.inputs.push(new PlayerInput(this, P1_KEYS, 0));
       if (!isCpu) this.inputs.push(new PlayerInput(this, P2_KEYS, 1));
-      this.vsText = this.add.text(0, 0, "VS", { fontFamily: FONT_UI, fontSize: "28px", fontStyle: "700", color: TEXT_DIM }).setOrigin(0.5);
+      this.vsText = this.add
+        .text(0, 0, "VS", { fontFamily: FONT_UI, fontSize: "28px", fontStyle: "700", color: "#ffe066", stroke: "#3a1a5a", strokeThickness: 6 })
+        .setOrigin(0.5);
     }
 
     // タッチは横ドラッグ、マウスはクリック・横ドラッグで入れ替え。CPU の盤面は触れない。

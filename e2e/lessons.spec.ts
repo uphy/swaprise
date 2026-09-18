@@ -33,7 +33,7 @@ test("レッスン 1: 説明と課の名前を出し、せり上がりもバー�
       lesson: p.game.lessonIndex,
       nextRow: p.game.boards[0].nextRow.length,
       movesLeft: p.game.boards[0].movesLeft,
-      label: v.scoreText.text,
+      label: v.labelText.text,
       info: v.infoText.text,
       bar: p.scene.raiseHints[0].visible,
       text: p.scene.children.getByName("lesson-text")?.text,

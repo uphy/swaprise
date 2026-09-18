@@ -33,7 +33,7 @@ test("パズル: 面の名前と残り手数を出し、解どおりに入れ替
       boards: p.game.boards.length,
       nextRow: p.game.boards[0].nextRow.length,
       movesLeft: p.game.boards[0].movesLeft,
-      score: v.scoreText.text,
+      score: v.labelText.text,
       text: v.infoText.text,
       // 次の行のパネルは描かない
       nextVisible: v.nextCells.some((img: any) => img.visible),
@@ -74,7 +74,7 @@ test("パズル: 面の名前と残り手数を出し、解どおりに入れ替
     p.scene.views[0].overlay.list.find((o: any) => o.name === "next").emit("pointerdown");
   });
   await page.waitForFunction(() => (window as any).__swaprise?.game?.stage === 1);
-  expect(await page.evaluate(() => (window as any).__swaprise.scene.views[0].scoreText.text)).toBe("PUZZLE 1-2");
+  expect(await page.evaluate(() => (window as any).__swaprise.scene.views[0].labelText.text)).toBe("PUZZLE 1-2");
 });
 
 test("パズル: 消えない入れ替えで手数を使い切ると FAILED。手数が尽きたあとの入れ替えは効かない", async ({ page }) => {

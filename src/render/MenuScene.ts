@@ -1,6 +1,6 @@
 import Phaser from "phaser";
 import { showRecordsDialog, showPlayerSettings } from "./score-dialog";
-import { ACCENT, FONT, FONT_UI, TEXT_COLOR, TEXT_MUTE, layoutFor, menuTitle, sameLayout } from "./theme";
+import { ACCENT, CARD, FONT, FONT_UI, TEXT_COLOR, TEXT_MUTE, layoutFor, menuTitle, sameLayout } from "./theme";
 import { MenuCard, paintGlass } from "./menuCard";
 import { TITLE_ICON_KINDS, TitleArt } from "./title";
 import { createMenuIcons, type MenuIcon } from "./menuIcons";
@@ -36,9 +36,6 @@ interface MenuItem {
 
 /** 半幅のカード（2 PLAYERS・ONLINE）は説明が 2 行になるので、この分だけ高くする */
 const HALF_EXTRA = 12;
-
-/** カードの縁の色。1 PLAYER は金、CPU は水色、2 PLAYERS は橙、ONLINE は緑。下位の項目は柄の色を順に使う */
-const CARD = { gold: 0xffe066, cyan: 0x6fd6ff, orange: 0xffa14a, green: 0x8de76a, violet: 0xc9a2ff, red: 0xff6f7a } as const;
 
 /** メニューの階層。top は 1 PLAYER / VS CPU / 2 PLAYERS、1p と cpu はその下位。 */
 type Level = "top" | "1p" | "cpu";

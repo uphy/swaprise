@@ -108,7 +108,7 @@ test("対戦は危険な側の外周だけ赤くなり、天井接触を強調�
     const view = scene.views[1];
     b.setColumns([[0, 1, 2, 3, 4, 0, 1, 2, 3, 4, 0], [1], [2], [3], [4], [0]]);
     for (let i = 0; i < 60; i++) scene.update(0, 1000 / 60);
-    const danger = { left: scene.views[0].dangerGlow?.root.visible, right: view.dangerGlow?.root.visible, inside: view.bg.fillColor, level: view.dangerGlow?.level };
+    const danger = { left: scene.views[0].dangerGlow?.root.visible, right: view.dangerGlow?.root.visible, inside: view.bgColor, level: view.dangerGlow?.level };
     b.setColumns([[0, 1, 2, 3, 4, 0, 1, 2, 3, 4, 0, 1], [1], [2], [3], [4], [0]]);
     for (let i = 0; i < 30; i++) scene.update(0, 1000 / 60);
     const ceiling = view.dangerGlow?.ceiling.alpha;
@@ -118,7 +118,7 @@ test("対戦は危険な側の外周だけ赤くなり、天井接触を強調�
     for (let i = 0; i < 120; i++) scene.update(0, 1000 / 60);
     return { danger, ceiling, recovering, recovered: view.dangerGlow?.root.visible };
   });
-  expect(result.danger).toMatchObject({ left: false, right: true, inside: 0x1e1e2a });
+  expect(result.danger).toMatchObject({ left: false, right: true, inside: 0x1c1730 });
   expect(result.ceiling).toBeGreaterThan(0.3);
   expect(result.recovering).toBeGreaterThan(0);
   expect(result.recovering).toBeLessThan(result.danger.level);

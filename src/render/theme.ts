@@ -12,7 +12,10 @@ export const KIND_NAMES = ["square", "circle", "triangle", "plus", "hexagon", "c
 export const GARBAGE_COLOR = 0x8a8a96;
 export const GARBAGE_DARK = 0x5c5c68;
 export const BG_COLOR = 0x14141c;
-export const BOARD_BG = 0x1e1e2a;
+/** 盤面の中。空（青〜桃）になじむよう、黒ではなくわずかに紫寄りの濃紺。パネルの色はこの上で読む */
+export const BOARD_BG = 0x1c1730;
+/** メニューのカードと盤面の枠の縁の色。1 PLAYER は金、CPU は水色、2 PLAYERS は橙、ONLINE は緑。下位の項目は柄の色を順に使う */
+export const CARD = { gold: 0xffe066, cyan: 0x6fd6ff, orange: 0xffa14a, green: 0x8de76a, violet: 0xc9a2ff, red: 0xff6f7a } as const;
 export const TEXT_COLOR = "#f4f4f8";
 /** 副題・説明・記録などの控えめな文字。背景が明るい紫系なので、灰色ではなく薄い藤色にする */
 export const TEXT_DIM = "#d9d4f2";
