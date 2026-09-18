@@ -83,14 +83,15 @@ export function showPlayerSettings(scene: Phaser.Scene, first = false, done: () 
  * この端末はモードごとの札（エンドレス・タイムアタックの上位 5 件、CPU 戦の勝敗、パズルの進み）。
  * 行は 順位・得点・最大連鎖・日付 を列で揃え、得点を大きく出す。一覧は ol / li のまま（読み上げと e2e が listitem を見る）
  */
-export function showRecordsDialog(scene: Phaser.Scene): void {
-  const { root, body, tools, footer, close } = dialog(scene, t("RECORDS"));
+export function showRecordsDialog(scene: Phaser.Scene, onClose: () => void = () => {}): void {
+  const { root, body, tools, footer, close } = dialog(scene, t("RECORDS"), onClose);
   root.classList.add("records-screen");
   const sources = element("nav"); sources.className = "rec-tabs"; tools.append(sources);
   const local = element("section"); body.append(local);
   const hs = loadHighScores();
-  const card = (parent: HTMLElement, title: string, note = ""): HTMLElement => {
-    const c = element("section"); c.className = "rec-card";
+  // 札の縁の色。メニューのカードと同じ（エンドレスは金、タイムアタックは水色、CPU は赤、オンラインは緑、パズルは緑）
+  const card = (parent: HTMLElement, title: string, note = "", color = "#ffe066"): HTMLElement => {
+    const c = element("section"); c.className = "rec-card"; c.style.setProperty("--card", color);
     const h = element("h3", title); c.append(h);
     if (note) h.append(" ", element("small", note));
     parent.append(c); return c;
@@ -108,13 +109,13 @@ export function showRecordsDialog(scene: Phaser.Scene): void {
     row.append(meta);
     parent.append(row);
   };
-  for (const [title, entries] of [[t("ENDLESS"), hs.endless], [t("TIME ATTACK"), hs.timeattack]] as const) {
-    const c = card(local, title, t("TOP 5"));
+  for (const [title, entries, color] of [[t("ENDLESS"), hs.endless, "#ffe066"], [t("TIME ATTACK"), hs.timeattack, "#6fd6ff"]] as const) {
+    const c = card(local, title, t("TOP 5"), color);
     if (!entries.length) c.append(element("p", t("no records yet")));
     const ol = element("ol"); ol.className = "rec-table"; c.append(ol);
     entries.forEach((entry, i) => scoreRow(ol, String(i + 1), null, entry.score, entry.maxChain, entry.date));
   }
-  const cpu = card(local, t("VS CPU"));
+  const cpu = card(local, t("VS CPU"), "", "#ff6f7a");
   const table = element("ol"); table.className = "rec-table"; cpu.append(table);
   for (const level of ["easy", "normal", "hard"] as CpuLevel[]) {
     const r = hs.cpu[level];
@@ -129,7 +130,7 @@ export function showRecordsDialog(scene: Phaser.Scene): void {
     row.append(meta);
     table.append(row);
   }
-  const versus = card(local, t("ONLINE"));
+  const versus = card(local, t("ONLINE"), "", "#8de76a");
   const orow = element("li"); orow.className = "rec-row";
   orow.append(element("b", t("TOTAL")));
   const omain = element("div"); omain.className = "rec-main";
@@ -140,7 +141,7 @@ export function showRecordsDialog(scene: Phaser.Scene): void {
   ometa.append(element("span", decided ? `${Math.round((hs.online.wins / decided) * 100)}%` : "–"));
   orow.append(ometa);
   const otable = element("ol"); otable.className = "rec-table"; otable.append(orow); versus.append(otable);
-  const puzzle = card(local, t("PUZZLE"));
+  const puzzle = card(local, t("PUZZLE"), "", "#8de76a");
   const prow = element("div"); prow.className = "rec-row";
   prow.append(element("b", "✓"));
   const pmain = element("div"); pmain.className = "rec-main";
@@ -153,7 +154,7 @@ export function showRecordsDialog(scene: Phaser.Scene): void {
 
   // 切り替えは一段。この端末 / オンライン エンドレス / オンライン タイムアタック の 3 つで、スクロールしても上に残る
   const online = element("section"); body.append(online); online.hidden = true;
-  const onlineCard = card(online, "");
+  const onlineCard = card(online, "", "", "#8de76a");
   const onlineTitle = onlineCard.querySelector("h3")!;
   const pending = element("p"); onlineCard.append(pending);
   const status = element("p"); status.setAttribute("role", "status"); onlineCard.append(status);

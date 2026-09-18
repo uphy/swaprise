@@ -1,7 +1,8 @@
-/* Focus containment is native; presentation is a full game menu, not a card. */
-.score-dialog { position: fixed; inset: 0; margin: 0; width: 100%; max-width: none; max-height: none; padding: 0; border: 0; border-radius: 0; background: linear-gradient(180deg, #2a2690 0%, #7c3fbd 55%, #ff7ea6 100%); color: #f4f4f8; font: 22px/1.5 "Fredoka", "Hiragino Maru Gothic ProN", "BIZ UDPGothic", "Arial Rounded MT Bold", sans-serif; box-sizing: border-box; overflow: hidden; outline: none; touch-action: pan-y; }
-.score-dialog::backdrop { background: #2a2690; }
-.score-result { z-index: 10; height: 100dvh; }
+/* Focus containment is native; presentation is a full game menu, not a card.
+   見た目はトップメニューに合わせる: 薄い暗幕の下に空が透け、中身は色の縁が光る半透明のガラスの札、ボタンは錠剤形 */
+.score-dialog { position: fixed; inset: 0; margin: 0; width: 100%; max-width: none; max-height: none; padding: 0; border: 0; border-radius: 0; background: rgba(26,16,48,.6); color: #f4f4f8; font: 22px/1.5 "Fredoka", "Hiragino Maru Gothic ProN", "BIZ UDPGothic", "Arial Rounded MT Bold", sans-serif; box-sizing: border-box; overflow: hidden; outline: none; touch-action: pan-y; }
+.score-dialog::backdrop { background: transparent; }
+.score-result { z-index: 10; height: 100dvh; background: linear-gradient(180deg, #2a2690 0%, #7c3fbd 55%, #ff7ea6 100%); }
 .result-summary strong { font-size: clamp(48px, 16vw, 64px); line-height: 1.2; color: #ffe066; overflow-wrap: anywhere; }
 .result-summary p { margin: 4px 0 8px; }
 .score-result .result-you { background: rgba(255,255,255,.14); color: #ffe066; border-radius: 10px; }
@@ -11,9 +12,9 @@
 .score-dialog.score-result li { padding: 8px 10px; }
 .score-screen { box-sizing: border-box; width: min(100%, 680px); height: 100%; margin: auto; display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto; padding: max(20px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left)); }
 .player-screen .score-screen { max-width: 480px; }
-.score-screen header { padding-bottom: 16px; }
+.score-screen header { padding-bottom: 16px; text-align: center; }
 .score-screen header small { color: #d9d4f2; font-size: 11px; letter-spacing: .2em; }
-.score-dialog h2 { font-size: 32px; margin: 4px 0 0; }
+.score-dialog h2 { font-size: 32px; margin: 4px 0 0; text-shadow: 0 2px 6px #2a1a5a; }
 .score-dialog h3 { font-size: 22px; color: #ffe066; margin: 22px 0 8px; }
 .score-content { overflow-y: auto; min-height: 0; overscroll-behavior: contain; padding: 0 2px 16px; }
 .score-dialog p { color: #e6e2f7; font-size: 18px; margin: 12px 0; overflow-wrap: anywhere; }
@@ -23,13 +24,13 @@
 .score-dialog input[type=checkbox] { flex: 0 0 28px; width: 28px; height: 28px; margin: 0; accent-color: #ffe066; }
 .score-dialog details { margin-top: 18px; border-top: 1px solid rgba(255,255,255,.25); }
 .score-dialog summary { cursor: pointer; padding: 14px 0; min-height: 28px; font-size: 18px; color: #e6e2f7; }
-.score-dialog button { min-height: 56px; padding: 10px 12px; border: 2px solid rgba(255,255,255,.5); border-radius: 14px; background: rgba(255,255,255,.16); color: #f4f4f8; font: inherit; font-weight: 600; font-size: 20px; cursor: pointer; touch-action: manipulation; }
+.score-dialog button { min-height: 56px; padding: 10px 12px; border: 2px solid rgba(255,255,255,.6); border-radius: 999px; background: linear-gradient(180deg, rgba(255,255,255,.12) 0%, rgba(255,255,255,.12) 45%, rgba(255,255,255,0) 45%) , rgba(255,255,255,.2); color: #f4f4f8; font: inherit; font-weight: 600; font-size: 20px; cursor: pointer; touch-action: manipulation; }
 .score-dialog button[aria-pressed=true], .score-dialog button.primary { color: #2a2050; background: #ffe066; border-color: #fff4bf; }
 .score-dialog :focus-visible { outline: 2px solid #ffe066; outline-offset: 2px; }
 .score-dialog nav { display: flex; gap: 8px; margin-bottom: 10px; }
 .score-dialog nav button { flex: 1; }
 .score-dialog [hidden] { display: none !important; }
-.score-footer { display: flex; gap: 10px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,.25); }
+.score-footer { display: flex; gap: 10px; padding-top: 12px; }
 .score-footer button { flex: 1; }
 .player-screen .score-footer button.primary { flex: 1.6; }
 .score-dialog ol { margin: 0; padding-left: 44px; font-variant-numeric: tabular-nums; }
@@ -60,12 +61,12 @@
 
 /* 記録。切り替えは段組みのタブ、中身はモードごとの札。得点を大きく、順位・連鎖・日付を列で揃える。
    大きさは em で書き、スマホでは根元の文字を画面の短辺に合わせて大きくする（ゲーム画面の文字と同じくらいに見えるように） */
-.rec-tabs { display: flex; gap: .25em; padding: .18em; margin-bottom: .4em; border-radius: .7em; background: rgba(20,12,50,.35); }
-.score-dialog .rec-tabs button { flex: 1; display: grid; gap: 0; line-height: 1.15; min-height: 2.4em; padding: .25em .3em; border: 0; border-radius: .55em; background: transparent; font-size: .72em; color: #e6e2f7; word-break: keep-all; }
-.score-dialog .rec-tabs button[aria-pressed=true] { background: #ffe066; color: #2a2050; }
+.rec-tabs { display: flex; gap: .3em; margin-bottom: .5em; }
+.score-dialog .rec-tabs button { flex: 1; display: grid; gap: 0; line-height: 1.15; min-height: 2.4em; padding: .25em .3em; font-size: .72em; color: #f4f4f8; word-break: keep-all; }
+.score-dialog .rec-tabs button[aria-pressed=true] { background: rgba(255,255,255,.92); border-color: #fff; color: #2a2050; }
 .score-dialog .rec-tabs button small { font-size: .6em; letter-spacing: .12em; opacity: .8; }
-.rec-card { margin: 0 0 .55em; padding: .5em .6em .35em; border-radius: .8em; background: rgba(20,12,50,.32); }
-.score-dialog .rec-card h3 { margin: 0 0 .3em; font-size: 1.05em; color: #ffe066; }
+.rec-card { --card: #ffe066; margin: 0 0 .7em; padding: .5em .6em .4em; border-radius: 16px; background: linear-gradient(180deg, rgba(255,255,255,.1) 0%, rgba(255,255,255,.1) 40px, rgba(255,255,255,0) 40px), rgba(255,255,255,.12); border: 2.5px solid var(--card); box-shadow: 0 0 0 1px rgba(255,255,255,.3) inset, 0 0 6px 2px color-mix(in srgb, var(--card) 35%, transparent), 0 0 14px 6px color-mix(in srgb, var(--card) 12%, transparent); }
+.score-dialog .rec-card h3 { margin: 0 0 .3em; font-size: 1.05em; color: #ffe066; text-shadow: 0 2px 6px #2a1a5a; }
 .score-dialog .rec-card h3 small { font-size: .55em; color: #d9d4f2; letter-spacing: .12em; font-weight: 600; margin-left: .5em; }
 .score-dialog .rec-card p { margin: .25em 0; font-size: .75em; }
 .score-dialog .rec-card button { min-height: 2em; margin-top: .3em; font-size: .8em; }

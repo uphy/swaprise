@@ -1,7 +1,7 @@
 import Phaser from "phaser";
 import { showRecordsDialog, showPlayerSettings } from "./score-dialog";
 import { ACCENT, FONT, FONT_UI, KIND_COLORS, TEXT_COLOR, TEXT_MUTE, layoutFor, menuTitle, sameLayout } from "./theme";
-import { MenuCard } from "./menuCard";
+import { MenuCard, paintGlass } from "./menuCard";
 import { TitleArt } from "./title";
 import { createMenuIcons, type MenuIcon } from "./menuIcons";
 import { Background } from "./Background";
@@ -155,6 +155,10 @@ export class MenuScene extends Phaser.Scene {
   private bgView: Background | null = null;
   private title: TitleArt | null = null;
   private icons: Phaser.GameObjects.Image[] = [];
+  /** 下端のビルド識別子と GitHub。記録・設定・遊び方を開いている間は隠す */
+  private footer: Phaser.GameObjects.Text[] = [];
+  /** 記録・設定・遊び方を開いている間は false。メニューの表示物を隠し、板だけが空の上に浮かぶ */
+  private menuShown = true;
   /** パズルの面選び。開いている間はメニューのキー操作をこちらへ回す。 */
   private picker: { panel: Phaser.GameObjects.Container; state: { stage: number; face: number }; refresh: () => void } | null = null;
 
@@ -275,6 +279,7 @@ export class MenuScene extends Phaser.Scene {
       .setInteractive({ useHandCursor: true })
       .setName("github-link")
       .on("pointerdown", () => window.open("https://github.com/uphy/swaprise", "_blank", "noopener"));
+    this.footer = [buildText, githubLink];
     const footerW = buildText.width + 8 + githubLink.width;
     buildText.setX(cx - footerW / 2);
     githubLink.setX(cx - footerW / 2 + buildText.width + 8);
@@ -398,6 +403,16 @@ export class MenuScene extends Phaser.Scene {
     // 柄の飾りは最上位だけ。下位ではその場所を現在地と BACK に使う
     this.icons.forEach((icon) => icon.setVisible(this.level === "top"));
     this.refresh();
+    this.setMenuShown(this.menuShown);
+  }
+
+  /** メニューの表示物（題字・柄の飾り・カード・下段・下端）をまとめて出し入れする。記録・設定・遊び方の板を開く間は隠す */
+  private setMenuShown(on: boolean): void {
+    this.menuShown = on;
+    const all = [...this.title?.layers ?? [], ...this.cards.flatMap((c) => c.objects), ...this.tools, ...this.footer, this.crumb];
+    if (this.backBtn) all.push(this.backBtn);
+    all.forEach((o) => o.setVisible(on));
+    this.icons.forEach((icon) => icon.setVisible(on && this.level === "top"));
   }
 
   /** カーソルの位置のカードを明るくする。キー操作か指が乗ったときだけ見せる */
@@ -547,34 +562,44 @@ export class MenuScene extends Phaser.Scene {
    * 暗幕・見出し・本文・縦に並ぶボタン・CLOSE からなるオーバーレイ。記録・設定・遊び方で共通。
    * 暗幕のタップと Esc で閉じる。↑↓ でボタンを選び、Enter で押す。
    */
-  private openOverlay(name: string, title: string, body: string, buttons: OverlayButton[], decorate?: (panel: Phaser.GameObjects.Container, cx: number, y: number) => number): Overlay {
+  private openOverlay(name: string, title: string, body: string, buttons: OverlayButton[], color: number, decorate?: (panel: Phaser.GameObjects.Container, cx: number, y: number) => number): Overlay {
     const layout = layoutFor("menu");
     const W = layout.width;
     const H = layout.height;
     const cx = W / 2;
-    const dim = this.add.rectangle(0, 0, W, H, 0x1a1030, 0.9).setOrigin(0).setInteractive();
+    // 暗幕は薄く、後ろのメニューと空が透ける。中身は色の縁が光るガラスの板に入れる
+    this.setMenuShown(false);
+    const dim = this.add.rectangle(0, 0, W, H, 0x1a1030, 0.5).setOrigin(0).setInteractive();
     const panel = this.add.container(0, 0, [dim]).setDepth(50).setName(name);
-    const btnH = 46;
+    const cardW = Math.min(W - 24, 360);
+    const pad = 16;
+    const btnH = 40;
+    const btnGap = 8;
     const bodyText = body
-      ? this.add.text(cx, 0, body, { fontFamily: FONT_UI, fontSize: "14px", color: TEXT_COLOR, align: "left", lineSpacing: 4, wordWrap: { width: W - 40, useAdvancedWrap: true } }).setOrigin(0.5, 0)
+      ? this.add.text(cx, 0, body, { fontFamily: FONT_UI, fontSize: "14px", color: TEXT_COLOR, align: "left", lineSpacing: 4, wordWrap: { width: cardW - pad * 2, useAdvancedWrap: true } }).setOrigin(0.5, 0)
       : null;
     // 見出しと本文の間に絵（遊び方の図）を入れるときは、その高さぶん本文を下げる
     const deco = this.add.container(0, 0);
     const decoH = decorate ? decorate(deco, cx, 0) : 0;
-    const bodyH = (bodyText ? bodyText.height + 16 : 0) + decoH;
+    const bodyH = (bodyText ? bodyText.height + 12 : 0) + decoH;
     const all: OverlayButton[] = [...buttons, { label: t("CLOSE"), onPress: () => this.closeOverlay() }];
-    const total = 44 + bodyH + all.length * btnH;
-    const top = Math.max(this.compact ? 10 : 30, (H - total) / 2);
-    panel.add(this.add.text(cx, top + 14, title, { fontFamily: FONT_UI, fontSize: "26px", color: TEXT_COLOR, fontStyle: "700" }).setOrigin(0.5));
-    deco.setY(top + 44);
+    const titleH = 44;
+    const cardH = pad + titleH + bodyH + all.length * (btnH + btnGap) - btnGap + pad;
+    const cy = Math.max(cardH / 2 + (this.compact ? 6 : 20), H / 2);
+    const top = cy - cardH / 2;
+    const glass = this.add.graphics({ x: cx, y: cy });
+    paintGlass(glass, 0, 0, cardW, cardH, color);
+    panel.add(glass);
+    panel.add(this.add.text(cx, top + pad + 16, title, { fontFamily: FONT_UI, fontSize: "26px", color: TEXT_COLOR, fontStyle: "700" }).setOrigin(0.5).setShadow(0, 2, "#2a1a5a", 6, false, true));
+    deco.setY(top + pad + titleH);
     panel.add(deco);
     if (bodyText) {
-      bodyText.setY(top + 44 + decoH);
+      bodyText.setY(top + pad + titleH + decoH);
       panel.add(bodyText);
     }
     const list: Button[] = [];
     all.forEach((spec, i) => {
-      const b = new Button(this, cx, top + 44 + bodyH + i * btnH + btnH / 2, spec.label, () => spec.onPress(b), { minWidth: 220, minHeight: 40 });
+      const b = new Button(this, cx, top + pad + titleH + bodyH + i * (btnH + btnGap) + btnH / 2, spec.label, () => spec.onPress(b), { minWidth: cardW - pad * 2, minHeight: btnH, radius: btnH / 2, bgAlpha: 0.2 });
       if (spec.name) b.setName(spec.name);
       panel.add(b);
       list.push(b);
@@ -591,11 +616,13 @@ export class MenuScene extends Phaser.Scene {
   private closeOverlay(): void {
     this.overlay?.panel.destroy();
     this.overlay = null;
+    this.setMenuShown(true);
   }
 
   /** 上位5件と CPU 戦の勝敗、パズルのクリア数。 */
   private showRecords(): void {
-    showRecordsDialog(this);
+    this.setMenuShown(false);
+    showRecordsDialog(this, () => this.setMenuShown(true));
   }
 
   /** 音・振動（対応端末のみ）・全画面（対応端末のみ）。 */
@@ -603,7 +630,15 @@ export class MenuScene extends Phaser.Scene {
     const layout = layoutFor("menu");
     const soundLabel = (): string => t("SOUND: {state}", { state: t(audio.muted ? "OFF" : "ON") });
     const buttons: OverlayButton[] = [
-      { label: t("PLAYER SETTINGS"), name: "player-settings", onPress: () => showPlayerSettings(this) },
+      {
+        label: t("PLAYER SETTINGS"),
+        name: "player-settings",
+        // DOM のダイアログが重なる間は設定の板を隠し、閉じたら戻す
+        onPress: () => {
+          this.overlay?.panel.setVisible(false);
+          showPlayerSettings(this, false, () => this.overlay?.panel.setVisible(true));
+        },
+      },
       {
         label: soundLabel(),
         name: "sound",
@@ -630,7 +665,7 @@ export class MenuScene extends Phaser.Scene {
     const withFullscreen = fullscreen.supported && layout.touch;
     const fsLabel = (): string => t("FULL SCREEN: {state}", { state: t(fullscreen.wanted ? "ON" : "OFF") });
     if (withFullscreen) buttons.push({ label: fsLabel(), name: "fullscreen", onPress: () => fullscreen.toggle() });
-    const overlay = this.openOverlay("settings-panel", t("SETTINGS"), "", buttons);
+    const overlay = this.openOverlay("settings-panel", t("SETTINGS"), "", buttons, CARD.cyan);
     const fsBtn = overlay.buttons.find((b) => b.name === "fullscreen");
     fsBtn?.on("pointerdown", () => fsBtn.setText(fsLabel()));
   }
@@ -657,7 +692,7 @@ export class MenuScene extends Phaser.Scene {
       lines.push("");
       lines.push(t("P pause   R restart   Esc menu   M mute   V vibration"));
     }
-    this.openOverlay("howto-panel", t("HOW TO PLAY"), lines.join("\n"), [], (panel, cx, y) => this.drawHowToDiagram(panel, cx, y));
+    this.openOverlay("howto-panel", t("HOW TO PLAY"), lines.join("\n"), [], CARD.green, (panel, cx, y) => this.drawHowToDiagram(panel, cx, y));
   }
 
   /**
@@ -666,7 +701,7 @@ export class MenuScene extends Phaser.Scene {
    */
   private drawHowToDiagram(panel: Phaser.GameObjects.Container, cx: number, y: number): number {
     // 全体は 4 枚 + 矢印 + 4 枚で幅 304（パネルは 32 角、中心で置く）。縦持ちの幅 300 でも切れないよう、横幅に合わせて縮める
-    const fit = Math.min(1, (layoutFor("menu").width - 24) / 304);
+    const fit = Math.min(1, (Math.min(layoutFor("menu").width - 24, 360) - 40) / 304);
     const s = fit / DPR;
     const step = 34 * fit;
     const row = y + 22;
