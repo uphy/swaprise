@@ -1,7 +1,7 @@
 /** 漂う光の玉の数。多いと盤面の邪魔になる */
 const ORB_COUNT = 10;
 /** メニューの空に散る光の粒の数 */
-const SPARK_COUNT = 48;
+const SPARK_COUNT = 90;
 
 interface Orb {
   el: HTMLDivElement;
