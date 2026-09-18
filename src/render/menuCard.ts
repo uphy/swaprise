@@ -12,8 +12,10 @@ export interface MenuCardSpec {
   label: string;
   /** ラベルの下の小さな説明・記録。 */
   caption: string;
-  /** 右上の角に小さく添えるアイコン（menuIcons.ts のテクスチャ）。 */
+  /** ラベルの左に添えるアイコン（menuIcons.ts のテクスチャ）。 */
   icon?: MenuIcon;
+  /** 半幅のカード。文字を一回り小さくし、アイコンとラベルを合わせて中央に寄せる */
+  narrow?: boolean;
   /** 縁と光の色。 */
   color: number;
   /** ラベルの色。省略で白 */
@@ -53,12 +55,16 @@ export class MenuCard {
     // 中心に置いて相対座標で描く。押したときの縮みが中心を軸に回るように
     this.bg = scene.add.graphics({ x, y });
     this.paint();
-    // ラベルと説明はカードの中央に 1 つの塊として置き、アイコンは右上の角の縁に載せる（シールのようなバッジ）。
-    // 角の丸みの外側に置くので、幅いっぱいのラベルとも重ならない
-    const badge = compact ? 16 : 18;
+    // ラベルと説明はカードの中央に 1 つの塊として置き、アイコンはラベルの左に隙間を空けて添える。
+    // 全幅のカードではラベルの位置を動かさず、アイコンだけ左にぶら下げる（文字の中心がカードの中心のまま）。
+    // 半幅のカードは左に余裕がないので、アイコンとラベルを合わせて中央に寄せ、文字も一回り小さくする
+    const narrow = spec.narrow ?? false;
+    const fontSize = compact || narrow ? MENU_TYPE.itemCompact : MENU_TYPE.item;
+    const iconW = spec.icon ? (narrow ? 16 : 20) * (compact ? 0.85 : 1) : 0;
+    const iconGap = narrow ? 6 : 8;
     const maxW = w - 16;
     this.label = scene.add
-      .text(x, y, spec.label, { fontFamily: FONT_UI, fontSize: `${compact ? MENU_TYPE.itemCompact : MENU_TYPE.item}px`, fontStyle: "700", color: spec.labelColor ?? TEXT_COLOR })
+      .text(x, y, spec.label, { fontFamily: FONT_UI, fontSize: `${fontSize}px`, fontStyle: "700", color: spec.labelColor ?? TEXT_COLOR })
       .setShadow(0, 2, "#2a1a5a", 6, false, true)
       .setOrigin(0.5)
       .setName(spec.name);
@@ -69,17 +75,28 @@ export class MenuCard {
     // 説明がカードの幅に入らなければ、少し小さくし、それでも入らなければ折り返す（半幅のカードの英語）
     if (!shrinkToFit(this.caption, maxW, 10)) this.caption.setWordWrapWidth(maxW, true);
     this.objects.push(this.bg, this.label, this.caption);
-    shrinkToFit(this.label, maxW, 16);
+    let icon: Phaser.GameObjects.Image | null = null;
     if (spec.icon) {
-      const icon = scene.add.image(x + w / 2 - 3, y - h / 2 + 3, `icon-${spec.icon}`).setScale(badge / MENU_ICON_SIZE / DPR);
+      icon = scene.add.image(0, y, `icon-${spec.icon}`).setScale(iconW / MENU_ICON_SIZE / DPR);
       this.objects.push(icon);
     }
+    if (icon && narrow) {
+      shrinkToFit(this.label, maxW - iconGap - iconW, 16);
+      const total = iconW + iconGap + this.label.width;
+      icon.setX(x - total / 2 + iconW / 2);
+      this.label.setX(x + total / 2 - this.label.width / 2);
+    } else if (icon) {
+      // ラベルは中央のまま。アイコンがカードからはみ出す幅なら、その分だけラベルを縮める
+      shrinkToFit(this.label, maxW - 2 * (iconGap + iconW), 16);
+      icon.setX(x - this.label.width / 2 - iconGap - iconW / 2);
+    } else shrinkToFit(this.label, maxW, 16);
     // 上下の位置。ラベルと説明の間は空けない（日本語の文字は箱いっぱいに描かれ、詰めると触れる）
     const labelH = this.label.height;
     const captionH = spec.caption ? this.caption.height : 0;
     const blockH = labelH + captionH;
     const labelY = y - blockH / 2 + labelH / 2;
     this.label.setY(labelY);
+    icon?.setY(labelY);
     this.caption.setY(labelY + labelH / 2);
     // 当たり判定。カード全体を指で押せるよう、透明の矩形を一番上に置く
     const hit = scene.add.rectangle(x, y, w, h, 0xffffff, 0).setInteractive({ useHandCursor: true }).setName(`${spec.name}-card`);
