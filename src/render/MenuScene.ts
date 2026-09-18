@@ -234,9 +234,10 @@ export class MenuScene extends Phaser.Scene {
     this.cardH = compact ? 50 : layout.portrait ? 62 : 56;
     this.cardGap = compact ? 8 : layout.portrait ? 10 : 8;
     // 柄の飾り（iconsY ± 16）の下から
-    this.listTop = titleY + (compact ? 62 : layout.portrait ? 124 : 116);
+    // 背の低い画面では題字の下端（titleY + 約 40）と BACK（高さ 26）が重ならない高さまで下げる
+    this.listTop = titleY + (compact ? 72 : layout.portrait ? 124 : 116);
     // 現在地（下位メニューのとき「1 PLAYER ▸」）と BACK の行。下位メニューでは柄の飾りを消し、その場所に置く
-    this.headerY = compact ? this.listTop - 24 : title.iconsY;
+    this.headerY = compact ? this.listTop - 18 : title.iconsY;
     this.crumb = this.add.text(cx, this.headerY, "", { fontFamily: FONT_UI, fontSize: "14px", fontStyle: "700", color: ACCENT }).setOrigin(0.5).setName("crumb");
 
     // 下段の小ボタン。いちばん背の高い階層（1 PLAYER は 4 枚。最上位は 3 段で最後の段が少し高い）の下端から隙間を空けて置く。
@@ -378,7 +379,7 @@ export class MenuScene extends Phaser.Scene {
       };
       if (item.back) {
         // 現在地の左に置く
-        const b = new Button(this, cx - cardW / 2 + 42, this.headerY, item.label, () => { focus(); this.select(); }, { fontSize: 13, minWidth: 84, minHeight: 32, radius: 16 }).setName(item.name);
+        const b = new Button(this, cx - cardW / 2 + 42, this.headerY, item.label, () => { focus(); this.select(); }, { fontSize: compact ? 12 : 13, minWidth: 84, minHeight: compact ? 26 : 32, radius: 16 }).setName(item.name);
         b.on("pointerover", () => { focus(); this.focusVisible = true; this.refresh(); });
         this.backBtn = b;
         return;
