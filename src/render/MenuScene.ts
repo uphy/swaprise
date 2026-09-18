@@ -377,7 +377,7 @@ export class MenuScene extends Phaser.Scene {
       if (!half || item.name === "group-online") row++;
       const card = new MenuCard(this, {
         x, y: half ? y + HALF_EXTRA / 2 : y, w: half ? halfW : cardW, h: half ? cardH + HALF_EXTRA : cardH, compact,
-        label: item.label, caption: item.caption, icon: item.icon, iconAt: half ? "inline" : "left", color: item.color, name: item.name,
+        label: item.label, caption: item.caption, icon: item.icon, color: item.color, name: item.name,
         onPress: () => { focus(); this.select(); },
         onHover: (over) => {
           if (over) focus();
