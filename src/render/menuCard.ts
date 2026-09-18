@@ -1,5 +1,7 @@
 import Phaser from "phaser";
 import { FONT_UI, MENU_TYPE, TEXT_COLOR, TEXT_DIM } from "./theme";
+import { DPR } from "./hidpi";
+import { MENU_ICON_SIZE, type MenuIcon } from "./menuIcons";
 
 export interface MenuCardSpec {
   /** 中心の論理座標と大きさ。 */
@@ -10,8 +12,8 @@ export interface MenuCardSpec {
   label: string;
   /** ラベルの下の小さな説明・記録。 */
   caption: string;
-  /** ラベルの右に添える絵文字。 */
-  icon?: string;
+  /** ラベルの右に添えるアイコン（menuIcons.ts のテクスチャ）。 */
+  icon?: MenuIcon;
   /** 縁と光の色。 */
   color: number;
   /** ラベルの色。省略で白 */
@@ -38,7 +40,7 @@ const GLOW_STEPS: readonly (readonly [number, number])[] = [
 
 export class MenuCard {
   /** 浮かび上がりの tween に使う、このカードの表示物すべて。 */
-  readonly objects: (Phaser.GameObjects.Graphics | Phaser.GameObjects.Text | Phaser.GameObjects.Rectangle)[] = [];
+  readonly objects: (Phaser.GameObjects.Graphics | Phaser.GameObjects.Text | Phaser.GameObjects.Rectangle | Phaser.GameObjects.Image)[] = [];
   private readonly bg: Phaser.GameObjects.Graphics;
   readonly label: Phaser.GameObjects.Text;
   readonly caption: Phaser.GameObjects.Text;
@@ -68,13 +70,15 @@ export class MenuCard {
     if (!shrinkToFit(this.caption, maxW, 11)) this.caption.setWordWrapWidth(maxW, true);
     this.objects.push(this.bg, this.label, this.caption);
     if (spec.icon) {
-      // ラベルと絵文字を合わせて中央に寄せる。日本語のラベルは半幅のカードに入らないことがあるので、ラベルを縮める
-      const icon = scene.add.text(0, labelY, spec.icon, { fontFamily: FONT_UI, fontSize: `${compact ? 16 : 18}px` }).setOrigin(0.5);
+      // ラベルとアイコンを合わせて中央に寄せる。日本語のラベルは半幅のカードに入らないことがあるので、ラベルを縮める
+      const iconScale = (compact ? 0.85 : 1) / DPR;
+      const iconW = MENU_ICON_SIZE * (compact ? 0.85 : 1);
+      const icon = scene.add.image(0, labelY, `icon-${spec.icon}`).setScale(iconScale);
       const gap = 6;
-      shrinkToFit(this.label, maxW - gap - icon.width, 16);
-      const total = this.label.width + gap + icon.width;
+      shrinkToFit(this.label, maxW - gap - iconW, 16);
+      const total = this.label.width + gap + iconW;
       this.label.setX(x - total / 2 + this.label.width / 2);
-      icon.setX(x + total / 2 - icon.width / 2);
+      icon.setX(x + total / 2 - iconW / 2);
       this.objects.push(icon);
     } else shrinkToFit(this.label, maxW, 16);
     // 当たり判定。カード全体を指で押せるよう、透明の矩形を一番上に置く

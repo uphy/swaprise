@@ -3,6 +3,7 @@ import { showRecordsDialog, showPlayerSettings } from "./score-dialog";
 import { ACCENT, FONT, FONT_UI, KIND_COLORS, TEXT_COLOR, TEXT_MUTE, layoutFor, menuTitle, sameLayout } from "./theme";
 import { MenuCard } from "./menuCard";
 import { TitleArt } from "./title";
+import { createMenuIcons, type MenuIcon } from "./menuIcons";
 import { Background } from "./Background";
 import { createTextures } from "./textures";
 import { LESSONS, PUZZLES, PUZZLES_PER_STAGE, PUZZLE_STAGES, puzzleName, type CpuLevel, type GameMode } from "../core";
@@ -29,8 +30,8 @@ interface MenuItem {
   name: string;
   /** カードの縁の色。 */
   color: number;
-  /** ラベルの右の絵文字。 */
-  icon?: string;
+  /** ラベルの右のアイコン。 */
+  icon?: MenuIcon;
 }
 
 /** 半幅のカード（2 PLAYERS・ONLINE）は説明が 2 行になるので、この分だけ高くする */
@@ -86,9 +87,9 @@ function itemsFor(level: Level, hs: HighScores): MenuItem[] {
     ];
   }
   return [
-    { label: t("1 PLAYER"), caption: t("endless · time attack · puzzle · learn"), group: "1p", name: "group-1p", color: CARD.gold, icon: "💎" },
-    { label: t("VS CPU"), caption: t("easy · normal · hard"), group: "cpu", name: "group-cpu", color: CARD.cyan, icon: "🤖" },
-    { label: t("2 PLAYERS"), caption: t("one screen, two players"), start: { mode: "versus" }, name: "group-2p", color: CARD.orange, icon: "👥" },
+    { label: t("1 PLAYER"), caption: t("endless · time attack · puzzle · learn"), group: "1p", name: "group-1p", color: CARD.gold, icon: "gem" },
+    { label: t("VS CPU"), caption: t("easy · normal · hard"), group: "cpu", name: "group-cpu", color: CARD.cyan, icon: "robot" },
+    { label: t("2 PLAYERS"), caption: t("one screen, two players"), start: { mode: "versus" }, name: "group-2p", color: CARD.orange, icon: "people" },
     {
       label: t("ONLINE"),
       // 一度でも対戦したら通算の勝敗を出す。それまでは何ができるかの説明
@@ -96,7 +97,7 @@ function itemsFor(level: Level, hs: HighScores): MenuItem[] {
       online: true,
       name: "group-online",
       color: CARD.green,
-      icon: "🌐",
+      icon: "globe",
     },
   ];
 }
@@ -170,6 +171,7 @@ export class MenuScene extends Phaser.Scene {
     // 遊んでいる間に新版が見つかっていたら、メニューへ戻ったこのタイミングで切り替える（まもなく reload される）
     if (applyPendingUpdate()) return;
     createTextures(this);
+    createMenuIcons(this);
     // URL の ?mode= は最初の1回だけ効かせる。Esc でメニューに戻ったときに再び飛ばされないよう、ここで消す。
     const params = new URLSearchParams(location.search);
     const restoreOnline = !this.checkedOnlineResume;
