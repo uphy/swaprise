@@ -682,6 +682,11 @@ function paintCorners(g: Phaser.GameObjects.Graphics, color: number): void {
     g.lineTo(cx, cy + sy * r);
     g.closePath();
     g.fillPath();
+    // 弧の縁を同じ色でなぞる。塗りだけだと、枠の弧との境目に 1px 弱のパネルが透けた
+    g.lineStyle(2, color, 1);
+    g.beginPath();
+    g.arc(cx + sx * r, cy + sy * r, r, sy > 0 ? -Math.PI / 2 : Math.PI / 2, sx > 0 ? Math.PI : 0, sx * sy > 0);
+    g.strokePath();
   };
   corner(0, 0, 1, 1);
   corner(BOARD_W, 0, -1, 1);
