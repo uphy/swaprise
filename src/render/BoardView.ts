@@ -29,8 +29,7 @@ const HUD_GAP = 12;
 /** 盤面の枠。パネルの外側に FRAME_PAD の帯を回し、その外縁を色の線と光で縁取る（メニューのカードと同じ作り） */
 const FRAME_PAD = 6;
 const FRAME_RADIUS = 16;
-/** 盤面の中の角の丸み。パネル（余白 1px・角 5px）の隅がこの丸角の外に出ない大きさにする。8 以上だと角のパネルの隅がはみ出す */
-const BOARD_RADIUS = 6;
+const BOARD_RADIUS = 10;
 /** 縁の外の光。[線の太さ, alpha] を太い順に重ねる（menuCard.ts と同じ） */
 const GLOW_STEPS: readonly (readonly [number, number])[] = [
   [18, 0.04],
@@ -61,6 +60,8 @@ export class BoardView {
   private hintCells: { x: number; y: number }[] = [];
   touch: TouchInput | null = null;
   private readonly frame: Phaser.GameObjects.Graphics;
+  /** 四隅の蓋。角のパネルの隅が盤面の丸角の外に出るぶんを、枠の帯と同じ色で覆う（パネルの上に置く） */
+  private readonly corners: Phaser.GameObjects.Graphics;
   /** 盤面の中の色。e2e が警告の演出で変わっていないことを確かめる */
   readonly bgColor = BOARD_BG;
   private readonly dangerGlow: DangerGlow;
@@ -163,7 +164,9 @@ export class BoardView {
     this.root = scene.add.container(0, 0);
     this.dangerGlow = new DangerGlow(scene);
     this.frame = scene.add.graphics();
-    paintFrame(this.frame, color);
+    const bandColor = paintFrame(this.frame, color);
+    this.corners = scene.add.graphics();
+    paintCorners(this.corners, bandColor);
     this.root.add([this.dangerGlow.root, this.frame]);
 
     for (let r = 0; r < DRAW_ROWS; r++) {
@@ -180,6 +183,7 @@ export class BoardView {
       this.root.add(img);
       this.nextCells.push(img);
     }
+    this.root.add(this.corners);
     this.cursor = scene.add.image(0, 0, "cursor").setOrigin(0).setScale(1 / DPR);
     this.root.add(this.cursor);
     this.touchGfx = scene.add.graphics();
@@ -630,10 +634,12 @@ export class BoardView {
 }
 
 /**
- * 盤面の枠。パネルの外側の帯を半透明の白で塗り、外縁を色の線と光で縁取る（menuCard.ts の paintGlass と同じ作り）。
- * 中は不透明の濃紺。パネルの色はこの上で読むので、空を透かさない
+ * 盤面の枠。パネルの外側の帯を塗り、外縁を色の線と光で縁取る（menuCard.ts の paintGlass と同じ作り）。
+ * 帯はメニューのカードと違って不透明（縁の色を濃紺に薄く混ぜた色）。角のパネルの隅を隠す蓋（paintCorners）を
+ * 同じ色で塗るためで、半透明だと蓋の下のパネルが透ける。WebGL の Phaser 4 では setMask で切り抜けない。
+ * 中は不透明の濃紺。パネルの色はこの上で読むので、空を透かさない。戻り値は帯の色
  */
-function paintFrame(g: Phaser.GameObjects.Graphics, color: number): void {
+function paintFrame(g: Phaser.GameObjects.Graphics, color: number): number {
   const x = -FRAME_PAD;
   const y = -FRAME_PAD;
   const w = BOARD_W + FRAME_PAD * 2;
@@ -644,7 +650,8 @@ function paintFrame(g: Phaser.GameObjects.Graphics, color: number): void {
     g.lineStyle(width, color, alpha);
     g.strokeRoundedRect(x, y, w, h, r);
   });
-  g.fillStyle(0xffffff, 0.14);
+  const band = mix(BOARD_BG, color, 0.35);
+  g.fillStyle(band, 1);
   g.fillRoundedRect(x, y, w, h, r);
   g.fillStyle(BOARD_BG, 1);
   g.fillRoundedRect(0, 0, BOARD_W, BOARD_H, BOARD_RADIUS);
@@ -652,4 +659,32 @@ function paintFrame(g: Phaser.GameObjects.Graphics, color: number): void {
   g.strokeRoundedRect(x, y, w, h, r);
   g.lineStyle(1, 0xffffff, 0.45);
   g.strokeRoundedRect(x + 2.5, y + 2.5, w - 5, h - 5, r - 2.5);
+  return band;
+}
+
+/** 2 色を t（0〜1）で混ぜる。 */
+function mix(a: number, b: number, t: number): number {
+  const ch = (shift: number): number => Math.round(((a >> shift) & 0xff) * (1 - t) + ((b >> shift) & 0xff) * t);
+  return (ch(16) << 16) | (ch(8) << 8) | ch(0);
+}
+
+/** 盤面の四隅で、丸角の弧の外側（角の四角から弧を除いた三日月形）を帯の色で塗る。パネルの上に置いて隅を隠す */
+function paintCorners(g: Phaser.GameObjects.Graphics, color: number): void {
+  const r = BOARD_RADIUS;
+  g.clear();
+  g.fillStyle(color, 1);
+  const corner = (cx: number, cy: number, sx: number, sy: number): void => {
+    // (cx, cy) が角、(sx, sy) は角から盤面の内側へ向かう向き
+    g.beginPath();
+    g.moveTo(cx, cy);
+    g.lineTo(cx + sx * r, cy);
+    g.arc(cx + sx * r, cy + sy * r, r, sy > 0 ? -Math.PI / 2 : Math.PI / 2, sx > 0 ? Math.PI : 0, sx * sy > 0);
+    g.lineTo(cx, cy + sy * r);
+    g.closePath();
+    g.fillPath();
+  };
+  corner(0, 0, 1, 1);
+  corner(BOARD_W, 0, -1, 1);
+  corner(0, BOARD_H, 1, -1);
+  corner(BOARD_W, BOARD_H, -1, -1);
 }
