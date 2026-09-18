@@ -14,7 +14,7 @@ import { musicDanger } from "./musicDanger";
 import { wakeLock } from "./wakelock";
 import { shareText } from "./share";
 import { SHARE_PATH, shareParams } from "../ogp/spec";
-import { track } from "./analytics";
+import { playFields, track } from "./analytics";
 import {
   OnlineSession,
   ApiError,
@@ -554,7 +554,11 @@ export class OnlineScene extends Phaser.Scene {
         this.showResult();
         const r = state.result;
         const outcome = r.reason === "desync" || r.reason === "server" ? "nocontest" : r.winner < 0 ? "draw" : r.winner === s.player ? "win" : "lose";
-        track("end", { mode: "online", detail: state.kind, outcome, seconds: this.startedAt ? Math.round((Date.now() - this.startedAt) / 1000) : 0 });
+        const board = this.prediction?.game.boards[s.player];
+        track("end", {
+          mode: "online", detail: state.kind, outcome, seconds: this.startedAt ? Math.round((Date.now() - this.startedAt) / 1000) : 0,
+          play: board ? playFields({ board, touch: this.touch, keys: this.playerInput, touchDevice: this.layout.touch, portrait: this.layout.portrait }) : undefined,
+        });
         this.startedAt = 0;
         if (state.result.winner === s.player) {
           audio.win();
