@@ -2,7 +2,7 @@ import Phaser from "phaser";
 
 /**
  * 盤面の下に置く、押している間だけ手動でせり上げるバー。
- * メニューのボタンと同じ角丸・半透明の白で塗り、中央に上向きの山形を 1 つ描く。
+ * HUD の札と同じ濃紺の半透明の角丸で塗り、中央に上向きの山形を 1 つ描く。
  * せり上げ中（このバー・2本指・キー・ゲームパッドのどれでも）は黄色に点灯し、山形が上へ流れ続ける。
  * 当たり判定は描いた高さより上下に広げ、指の大きさ（44dp 以上）を確保する。
  */
@@ -56,13 +56,21 @@ export class RaiseBar extends Phaser.GameObjects.Container {
     const r = Math.min(12, h / 2);
     g.clear();
     if (this.raising) {
+      // 点灯。黄色の板に、下の濃い厚みと上の光
+      g.fillStyle(0xc99a1c, 1);
+      g.fillRoundedRect(-w / 2, -h / 2 + 2, w, h, r);
       g.fillStyle(0xffe066, 1);
       g.fillRoundedRect(-w / 2, -h / 2, w, h, r);
-      g.lineStyle(2, 0xfff4bf, 1);
+      g.fillStyle(0xffffff, 0.4);
+      g.fillRoundedRect(-w / 2 + 4, -h / 2 + 2, w - 8, h * 0.35, { tl: r - 2, tr: r - 2, bl: 2, br: 2 });
+      g.lineStyle(1.5, 0xfff4bf, 1);
     } else {
-      g.fillStyle(0xffffff, 0.16);
+      // 待機。HUD の札と同じ濃紺の半透明
+      g.fillStyle(0x120c2c, 0.55);
       g.fillRoundedRect(-w / 2, -h / 2, w, h, r);
-      g.lineStyle(2, 0xffffff, 0.5);
+      g.fillStyle(0xffffff, 0.06);
+      g.fillRoundedRect(-w / 2 + 3, -h / 2 + 2, w - 6, h * 0.4, { tl: r - 2, tr: r - 2, bl: 2, br: 2 });
+      g.lineStyle(1, 0xffffff, 0.3);
     }
     g.strokeRoundedRect(-w / 2, -h / 2, w, h, r);
     this.drawGlyph();

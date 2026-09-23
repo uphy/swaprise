@@ -1,7 +1,9 @@
 import Phaser from "phaser";
 import { t } from "./i18n";
 import { Board, COLS, EMPTY, ROWS, TIMING, TOTAL_ROWS, isPanel, type BoardEvent } from "../core";
-import { BOARD_BG, BOARD_H, BOARD_W, CARD, CELL, FONT, FONT_UI, KIND_COLORS, TEXT_COLOR, TEXT_DIM, chainColor, isTouchDevice } from "./theme";
+import { BOARD_BG, BOARD_H, BOARD_W, CARD, CELL, FONT_UI, GARBAGE_COLOR, KIND_COLORS, TEXT_COLOR, TEXT_DIM, chainColor, isTouchDevice } from "./theme";
+import { CURSOR_PAD, css, garbageFrame, roundRect, tint } from "./textures";
+import { gradientFill } from "./ui";
 import { audio } from "./shared";
 import { haptics } from "./haptics";
 import { DPR } from "./hidpi";
@@ -26,19 +28,20 @@ export function announceOpponentChains(events: BoardEvent[], mine: BoardView): v
 }
 /** 盤面と横置きの HUD の間隔。 */
 const HUD_GAP = 12;
-/** 盤面の枠。パネルの外側に FRAME_PAD の帯を回し、その外縁を色の線と光で縁取る（メニューのカードと同じ作り） */
-const FRAME_PAD = 6;
-const FRAME_RADIUS = 16;
-const BOARD_RADIUS = 10;
-/** 縁の外の光。[線の太さ, alpha] を太い順に重ねる（menuCard.ts と同じ） */
-const GLOW_STEPS: readonly (readonly [number, number])[] = [
-  [18, 0.04],
-  [13, 0.06],
-  [9, 0.09],
-  [5, 0.14],
-];
-/** 枠の絵が盤面の外へ広がる幅。帯と、いちばん太い光の線の外側半分 */
-const FRAME_EXTENT = FRAME_PAD + GLOW_STEPS[0][0] / 2;
+/**
+ * 盤面の枠。パネルの外側に FRAME_PAD の縁（ベゼル）を回し、その外に色の光と影を落とす。
+ * 縁は上が明るく下が濃いグラデーションで、盤面が空から一段浮いた板に見える
+ */
+const FRAME_PAD = 7;
+const FRAME_RADIUS = 15;
+const BOARD_RADIUS = 9;
+/** 枠の絵が盤面の外へ広がる幅。縁と、外の光・影の裾 */
+const FRAME_EXTENT = FRAME_PAD + 24;
+/** HUD の文字の影と、札の地の色（夜空の紺） */
+const HUD_INK = "#1c1238";
+const PLATE = 0x120c2c;
+/** 時間・速度・最大連鎖の札の高さ */
+const CHIP_H = 20;
 
 /** 描画する行の範囲。可視12段の上に、降ってくるおじゃまが見えるぶんだけ余裕を持たせる。 */
 const DRAW_ROWS = Math.min(TOTAL_ROWS, ROWS + 6);
@@ -67,13 +70,24 @@ export class BoardView {
   /** 盤面の中の色。e2e が警告の演出で変わっていないことを確かめる */
   readonly bgColor = BOARD_BG;
   private readonly dangerGlow: DangerGlow;
-  /** 1P・VS CPU などの名前。メニューのラベルと同じ丸い書体 */
+  /** 1P・VS CPU などの名前。枠の色の札に濃い文字で載せる */
   private readonly labelText: Phaser.GameObjects.Text;
-  /** 得点の数字。桁が揃う等幅 */
+  /** 得点の見出し（SCORE）と数字 */
+  private readonly scoreCaption: Phaser.GameObjects.Text;
   private readonly scoreText: Phaser.GameObjects.Text;
-  private readonly infoText: Phaser.GameObjects.Text;
-  /** 残り時間の行の下敷き。空が暖色に変わっても赤い数字を読み取れるように、タイムアタックだけ出す */
-  private readonly infoPill: Phaser.GameObjects.Graphics | null;
+  /** 名前の札と得点の板 */
+  private readonly hudGfx: Phaser.GameObjects.Graphics;
+  /** 得点の板を描いたときの数字の幅。桁が増えたら描き直す */
+  private hudScoreW = -1;
+  /** 時間・速度・最大連鎖の札。見出しと値の組を横（HUD が横なら縦）に並べる */
+  private readonly statsGfx: Phaser.GameObjects.Graphics;
+  private readonly chips: { caption: Phaser.GameObjects.Text; value: Phaser.GameObjects.Text }[] = [];
+  /** 札の並びの上端（HUD が上のとき）。place() の infoY */
+  private infoY = BOARD_H + 14;
+  /** 札の中身を 1 行にした文字列（例: 00:12   SPEED 1   MAX x1）。描き直しの判定と e2e に使う */
+  infoLine = "";
+  /** 枠の縁の色 */
+  private readonly color: number;
   private readonly pendingGfx: Phaser.GameObjects.Graphics;
   /** 予告おじゃまの段数。バーの脇に数字で出す */
   private readonly pendingText: Phaser.GameObjects.Text;
@@ -85,7 +99,11 @@ export class BoardView {
   private resultEffect: ResultEffect | null = null;
   private readonly overlayTitle: Phaser.GameObjects.Text;
   private readonly overlayBody: Phaser.GameObjects.Text;
-  private stopBar: Phaser.GameObjects.Rectangle;
+  /** 結果の本文の下敷き */
+  private readonly overlayPlate: Phaser.GameObjects.Graphics;
+  /** 停止時間のゲージ。盤面の下の縁に沿って光る */
+  private readonly stopBar: Phaser.GameObjects.Graphics;
+  private readonly sparks: Phaser.GameObjects.Particles.ParticleEmitter;
   /** 消えたパネルの破片。柄ごとに 1 つ */
   private readonly emitters: Phaser.GameObjects.Particles.ParticleEmitter[] = [];
   /** 揃った瞬間の白い閃き。使い回す */
@@ -113,41 +131,164 @@ export class BoardView {
     this.scale = scale;
     this.hud = hud;
     this.root.setPosition(ox, oy).setScale(scale);
-    if (hud === "top") {
-      // 名前と得点を 1 行に。得点は名前の右に隙間を空けて続ける
-      this.labelText.setPosition(0, -32).setOrigin(0, 0);
-      this.scoreText.setPosition(this.labelText.width + 10, -30).setOrigin(0, 0);
-      // 時間・速度・最大連鎖の行。せり上げバーがある盤面では、バーの下（infoY）に置く
-      this.infoText.setPosition(BOARD_W, infoY).setOrigin(1, 0).setAlign("right");
-    } else if (hud === "right") {
-      // 横置きは幅が狭いので、名前・得点・時間を縦に積む
-      this.labelText.setPosition(BOARD_W + HUD_GAP, -2).setOrigin(0, 0);
-      this.scoreText.setPosition(BOARD_W + HUD_GAP, 20).setOrigin(0, 0);
-      this.infoText.setPosition(BOARD_W + HUD_GAP, 48).setOrigin(0, 0).setAlign("left");
-    } else {
-      this.labelText.setPosition(-HUD_GAP, -2).setOrigin(1, 0);
-      this.scoreText.setPosition(-HUD_GAP, 20).setOrigin(1, 0);
-      this.infoText.setPosition(-HUD_GAP, 48).setOrigin(1, 0).setAlign("right");
-    }
-    this.placeInfoPill();
+    this.infoY = infoY;
+    this.layoutHud();
+    this.layoutStats();
   }
 
-  /** 残り時間の行の下敷きを文字の大きさに合わせて描き直す。 */
-  private placeInfoPill(): void {
-    const g = this.infoPill;
-    if (!g) return;
-    const padX = 8;
-    const padY = 3;
-    const w = this.infoText.width + padX * 2;
-    const h = this.infoText.height + padY * 2;
-    const x = this.infoText.x - this.infoText.originX * this.infoText.width - padX;
-    const y = this.infoText.y - this.infoText.originY * this.infoText.height - padY;
+  /**
+   * 名前の札と得点の板を置き直す。HUD が上なら盤面の上に 1 行で [1P] SCORE 012345、
+   * 横なら盤面の脇に縦に積む。得点の数字の幅が変わったら draw からも呼ぶ
+   */
+  private layoutHud(): void {
+    const g = this.hudGfx;
     g.clear();
-    g.fillStyle(BOARD_BG, 0.78);
-    g.fillRoundedRect(x, y, w, h, h / 2);
-    g.lineStyle(1, 0xffffff, 0.35);
-    g.strokeRoundedRect(x, y, w, h, h / 2);
+    const label = this.labelText;
+    const hasScore = !this.style;
+    const pillPadX = 9;
+    const pillH = 22;
+    const pillW = label.width + pillPadX * 2;
+    this.hudScoreW = this.scoreText.width;
+    const plate = (x: number, y: number, w: number, h: number): void => {
+      g.fillStyle(PLATE, 0.62);
+      g.fillRoundedRect(x, y, w, h, Math.min(15, h / 2));
+      g.lineStyle(1, 0xffffff, 0.2);
+      g.strokeRoundedRect(x, y, w, h, Math.min(15, h / 2));
+    };
+    const pill = (x: number, cy: number): void => {
+      // 名前の札。枠と同じ色で、下に濃い厚み、上に細い光
+      g.fillStyle(tint(this.color, -0.35), 1);
+      g.fillRoundedRect(x, cy - pillH / 2 + 1.5, pillW, pillH, pillH / 2);
+      g.fillStyle(this.color, 1);
+      g.fillRoundedRect(x, cy - pillH / 2, pillW, pillH, pillH / 2);
+      g.fillStyle(0xffffff, 0.35);
+      g.fillRoundedRect(x + 4, cy - pillH / 2 + 2, pillW - 8, pillH * 0.38, { tl: pillH * 0.3, tr: pillH * 0.3, bl: 2, br: 2 });
+    };
+    if (this.hud === "top" && this.scale < 1) {
+      // 小さく描く相手の盤面は幅が足りないので、名前の札と得点を 2 段に積む（画面では盤面の上 12〜60px）
+      pill(0, -52);
+      label.setOrigin(0.5, 0.5).setPosition(pillW / 2, -52);
+      if (hasScore) {
+        plate(-4, -38, 4 + 10 + this.scoreText.width + 14, 30);
+        this.scoreText.setOrigin(0, 0.5).setPosition(10, -23);
+      }
+    } else if (this.hud === "top") {
+      const cy = -24;
+      const plateH = 30;
+      // 幅が足りないとき（小さく描く相手の盤面、盤面の右上にポーズボタンが入るとき）は SCORE の見出しを省く
+      const fits = 4 + pillW + 10 + this.scoreCaption.width + 6 + this.scoreText.width + 14 <= this.hudMaxW + 4;
+      const captionW = fits ? this.scoreCaption.width : -6;
+      if (hasScore) {
+        const w = 4 + pillW + 10 + captionW + 6 + this.scoreText.width + 14;
+        plate(-4, cy - plateH / 2, w, plateH);
+      }
+      pill(0, cy);
+      label.setOrigin(0.5, 0.5).setPosition(pillW / 2, cy);
+      this.scoreCaption.setOrigin(0, 0.5).setPosition(pillW + 10, cy + 1);
+      this.scoreText.setOrigin(0, 0.5).setPosition(pillW + 10 + captionW + 6, cy);
+    } else {
+      // 横置きは幅が狭いので、名前・得点・札を縦に積む。右の HUD は左揃え、左の HUD は右揃え
+      const right = this.hud === "right";
+      const edge = right ? BOARD_W + HUD_GAP : -HUD_GAP;
+      const colW = 100;
+      const x0 = right ? edge : edge - colW;
+      const pillX = right ? edge : edge - pillW;
+      pill(pillX, pillH / 2);
+      label.setOrigin(0.5, 0.5).setPosition(pillX + pillW / 2, pillH / 2);
+      if (hasScore) {
+        plate(x0, pillH + 6, colW, 42);
+        this.scoreCaption.setOrigin(0, 0).setPosition(x0 + 11, pillH + 10);
+        this.scoreText.setOrigin(0, 0.5).setPosition(x0 + 10, pillH + 6 + 28);
+      }
+    }
+    this.scoreCaption.setVisible(hasScore && !(this.hud === "top" && (this.scale < 1 || this.scoreText.x < this.scoreCaption.x + this.scoreCaption.width)));
   }
+
+  /** 盤面の上の名前と得点の板に使える幅。盤面の右上にポーズボタンを置くときに狭める */
+  private hudMaxW = Infinity;
+
+  setHudMaxWidth(w: number): void {
+    if (w === this.hudMaxW) return;
+    this.hudMaxW = w;
+    this.layoutHud();
+  }
+
+  /** 札の並びを置き直す。中身（見出し・値）が変わったときにも呼ぶ */
+  private layoutStats(): void {
+    const g = this.statsGfx;
+    g.clear();
+    const gap = 4;
+    const padX = 7;
+    const inner = 4;
+    const widths = this.chips.map(({ caption, value }) => padX * 2 + (caption.text ? caption.width + inner : 0) + value.width);
+    this.chipRects = [];
+    const drawChip = (i: number, x: number, y: number, w: number): void => {
+      const { caption, value } = this.chips[i];
+      this.chipRects.push({ x, y, w });
+      g.fillStyle(PLATE, 0.62);
+      g.fillRoundedRect(x, y, w, CHIP_H, CHIP_H / 2);
+      g.lineStyle(1, 0xffffff, 0.2);
+      g.strokeRoundedRect(x, y, w, CHIP_H, CHIP_H / 2);
+      caption.setOrigin(0, 0.5).setPosition(x + padX, y + CHIP_H / 2 + 0.5);
+      value.setOrigin(0, 0.5).setPosition(x + padX + (caption.text ? caption.width + inner : 0), y + CHIP_H / 2);
+    };
+    if (this.hud === "top") {
+      // 盤面の右端に揃えて右から並べる
+      let x = BOARD_W;
+      for (let i = this.chips.length - 1; i >= 0; i--) {
+        x -= widths[i];
+        drawChip(i, x, this.infoY, widths[i]);
+        x -= gap;
+      }
+    } else {
+      const right = this.hud === "right";
+      const edge = right ? BOARD_W + HUD_GAP : -HUD_GAP;
+      const top = this.style ? 30 : 78;
+      this.chips.forEach((_, i) => drawChip(i, right ? edge : edge - widths[i], top + i * (CHIP_H + gap), widths[i]));
+    }
+  }
+
+  /** 札の並びの画面上の範囲（論理 px）。e2e がせり上げバーとの間隔を確かめる */
+  statsBounds(): { x: number; y: number; width: number; height: number } {
+    const rects = this.chipRects;
+    if (!rects.length) return { x: this.ox, y: this.oy, width: 0, height: 0 };
+    const x0 = Math.min(...rects.map((r) => r.x));
+    const y0 = Math.min(...rects.map((r) => r.y));
+    const x1 = Math.max(...rects.map((r) => r.x + r.w));
+    const y1 = Math.max(...rects.map((r) => r.y + CHIP_H));
+    return { x: this.ox + x0 * this.scale, y: this.oy + y0 * this.scale, width: (x1 - x0) * this.scale, height: (y1 - y0) * this.scale };
+  }
+
+  /**
+   * 札の中身を入れ替える。見出しと値の組を渡し、変わっていれば文字を差し替えて並べ直す。
+   * color は値の色（残りわずかの時間や手数を赤く）
+   */
+  private setStats(items: { caption: string; value: string; color?: string }[]): void {
+    const line = items.map((it) => (it.caption === "SPEED" || it.caption === "MOVES" ? `${it.caption} ${it.value}` : it.caption === "MAX" ? `MAX ${it.value}` : it.value)).join("   ");
+    const colors = items.map((it) => it.color ?? "").join();
+    if (line === this.infoLine && colors === this.chipColors) return;
+    this.infoLine = line;
+    this.chipColors = colors;
+    while (this.chips.length < items.length) {
+      const caption = this.scene.add.text(0, 0, "", { fontFamily: FONT_UI, fontSize: "9px", fontStyle: "700", color: TEXT_DIM });
+      const value = this.scene.add.text(0, 0, "", { fontFamily: FONT_UI, fontSize: "14px", fontStyle: "700", color: TEXT_COLOR }).setShadow(0, 1, HUD_INK, 2, false, true);
+      this.root.add([caption, value]);
+      this.chips.push({ caption, value });
+    }
+    while (this.chips.length > items.length) {
+      const c = this.chips.pop()!;
+      c.caption.destroy();
+      c.value.destroy();
+    }
+    items.forEach((it, i) => {
+      this.chips[i].caption.setText(it.caption);
+      this.chips[i].value.setText(it.value).setColor(it.color ?? TEXT_COLOR);
+    });
+    this.layoutStats();
+  }
+  private chipColors = "";
+  /** 札の位置（局所座標）。statsBounds が使う */
+  private chipRects: { x: number; y: number; w: number }[] = [];
 
   destroy(): void { this.root.destroy(true); }
 
@@ -164,10 +305,10 @@ export class BoardView {
     color: number = CARD.gold,
   ) {
     this.root = scene.add.container(0, 0);
+    this.color = color;
     this.dangerGlow = new DangerGlow(scene);
-    const bandColor = mix(BOARD_BG, color, 0.35);
-    this.frame = scene.add.image(-FRAME_EXTENT, -FRAME_EXTENT, makeFrameTexture(scene, color, bandColor)).setOrigin(0).setScale(1 / DPR);
-    this.corners = makeCorners(scene, color, bandColor);
+    this.frame = scene.add.image(-FRAME_EXTENT, -FRAME_EXTENT, makeFrameTexture(scene, color)).setOrigin(0).setScale(1 / DPR);
+    this.corners = makeCorners(scene, color);
     this.root.add([this.dangerGlow.root, this.frame]);
 
     for (let r = 0; r < DRAW_ROWS; r++) {
@@ -198,7 +339,7 @@ export class BoardView {
         angle: { min: 0, max: 360 },
         gravityY: 600,
         lifespan: { min: 280, max: 560 },
-        scale: { start: 0.45 / DPR, end: 0 },
+        scale: { start: 0.42 / DPR, end: 0 },
         alpha: { start: 1, end: 0 },
         rotate: { min: -180, max: 180 },
         emitting: false,
@@ -206,42 +347,55 @@ export class BoardView {
       this.root.add(e);
       this.emitters.push(e);
     });
+    // 光の粒。消えたパネルの色に染めて、破片と一緒に散らす
+    this.sparks = scene.add.particles(0, 0, "spark", {
+      speed: { min: 40, max: 170 },
+      angle: { min: 0, max: 360 },
+      lifespan: { min: 240, max: 520 },
+      scale: { start: 0.9 / DPR, end: 0 },
+      alpha: { start: 1, end: 0 },
+      blendMode: Phaser.BlendModes.ADD,
+      emitting: false,
+    });
+    this.root.add(this.sparks);
 
-    // 名前は丸い書体、得点は等幅。どちらもメニューのラベルと同じ濃い紫の影で空から浮かせる
-    this.labelText = scene.add
-      .text(0, -32, label, { fontFamily: FONT_UI, fontSize: "20px", color: TEXT_COLOR, fontStyle: "700" })
-      .setShadow(0, 2, "#2a1a5a", 6, false, true)
-      .setOrigin(0, 0);
+    // HUD。名前は枠の色の札に濃い文字、得点は見出し付きの大きな数字
+    this.hudGfx = scene.add.graphics();
+    this.labelText = scene.add.text(0, 0, label, { fontFamily: FONT_UI, fontSize: "14px", color: HUD_INK, fontStyle: "700" }).setOrigin(0.5);
+    this.scoreCaption = scene.add.text(0, 0, "SCORE", { fontFamily: FONT_UI, fontSize: "9px", color: TEXT_DIM, fontStyle: "700" });
     this.scoreText = scene.add
-      .text(0, -30, "", { fontFamily: FONT, fontSize: "18px", color: TEXT_COLOR, fontStyle: "bold" })
-      .setShadow(0, 2, "#2a1a5a", 6, false, true)
-      .setOrigin(0, 0);
-    this.infoText = scene.add
-      .text(BOARD_W, BOARD_H + 14, "", { fontFamily: FONT_UI, fontSize: "13px", color: TEXT_DIM, fontStyle: "600", align: "right" })
-      .setShadow(0, 1, "#2a1a5a", 4, false, true)
-      .setOrigin(1, 0);
-    this.infoPill = timeLimit !== null ? scene.add.graphics() : null;
+      .text(0, 0, "000000", { fontFamily: FONT_UI, fontSize: "20px", color: TEXT_COLOR, fontStyle: "700" })
+      .setShadow(0, 2, HUD_INK, 3, false, true);
+    this.statsGfx = scene.add.graphics();
     this.pendingGfx = scene.add.graphics();
-    this.pendingText = scene.add.text(0, 0, "", { fontFamily: FONT, fontSize: "15px", color: TEXT_DIM, fontStyle: "bold" }).setVisible(false);
-    this.stopBar = scene.add.rectangle(0, BOARD_H + 6, 0, 4, 0x66ccff).setOrigin(0);
-    if (this.infoPill) this.root.add(this.infoPill);
-    this.root.add([this.labelText, this.scoreText, this.infoText, this.pendingGfx, this.pendingText, this.stopBar]);
+    this.pendingText = scene.add
+      .text(0, 0, "", { fontFamily: FONT_UI, fontSize: "14px", color: TEXT_COLOR, fontStyle: "700", stroke: HUD_INK, strokeThickness: 3 })
+      .setVisible(false);
+    this.stopBar = scene.add.graphics();
+    this.root.add([this.hudGfx, this.labelText, this.scoreCaption, this.scoreText, this.statsGfx, this.pendingGfx, this.pendingText, this.stopBar]);
 
     this.overlay = scene.add.container(BOARD_W / 2, BOARD_H / 2).setVisible(false);
-    // 暗幕は盤面の角に合わせて丸める（矩形だと角が枠の帯にはみ出す）
+    // 暗幕は盤面の角に合わせて丸める（矩形だと角が枠の縁にはみ出す）。上下を濃く、中央を少し明るく
     const dim = scene.add.graphics();
-    dim.fillStyle(0x1a1030, 0.72);
-    dim.fillRoundedRect(-BOARD_W / 2, -BOARD_H / 2, BOARD_W, BOARD_H, BOARD_RADIUS);
+    dim.fillGradientStyle(0x0c0820, 0x0c0820, 0x1a1040, 0x1a1040, 0.84, 0.84, 0.7, 0.7);
+    dim.fillRect(-BOARD_W / 2, -BOARD_H / 2 + BOARD_RADIUS, BOARD_W, BOARD_H - BOARD_RADIUS * 2);
+    dim.fillStyle(0x0c0820, 0.84);
+    dim.fillRoundedRect(-BOARD_W / 2, -BOARD_H / 2, BOARD_W, BOARD_RADIUS * 2, { tl: BOARD_RADIUS, tr: BOARD_RADIUS, bl: 0, br: 0 });
+    dim.fillStyle(0x1a1040, 0.7);
+    dim.fillRoundedRect(-BOARD_W / 2, BOARD_H / 2 - BOARD_RADIUS * 2, BOARD_W, BOARD_RADIUS * 2, { tl: 0, tr: 0, bl: BOARD_RADIUS, br: BOARD_RADIUS });
     this.overlayTitle = scene.add
-      .text(0, -34, "", { fontFamily: FONT_UI, fontSize: "34px", color: "#ffe066", fontStyle: "700", stroke: "#3a1a5a", strokeThickness: 6 })
+      .text(0, -34, "", { fontFamily: FONT_UI, fontSize: "36px", color: "#ffe066", fontStyle: "700", stroke: HUD_INK, strokeThickness: 7 })
+      .setShadow(0, 4, "rgba(0, 0, 0, 0.45)", 6, true, true)
       .setOrigin(0.5);
     this.overlayBody = scene.add
       // レッスンの達成の一言は文なので、盤面の幅で文字単位に折り返す（日本語は空白で折り返せない）
-      .text(0, 24, "", { fontFamily: FONT_UI, fontSize: style === "puzzle" ? "20px" : "14px", color: TEXT_COLOR, align: "center", lineSpacing: 2, wordWrap: { width: BOARD_W - 12, useAdvancedWrap: true } })
+      .text(0, 24, "", { fontFamily: FONT_UI, fontSize: style === "puzzle" ? "20px" : "14px", color: TEXT_COLOR, align: "center", lineSpacing: 3, wordWrap: { width: BOARD_W - 12, useAdvancedWrap: true } })
+      .setShadow(0, 1, HUD_INK, 2, false, true)
       .setOrigin(0.5);
     // レッスンの達成の一言は行数が変わるので、上端を固定して下へ伸ばす（中央揃えだと 3 行以上でボタンに重なる）
     if (style === "lesson") this.overlayBody.setOrigin(0.5, 0).setY(-8);
-    this.overlay.add([dim, this.overlayTitle, this.overlayBody]);
+    this.overlayPlate = scene.add.graphics();
+    this.overlay.add([dim, this.overlayPlate, this.overlayTitle, this.overlayBody]);
     this.root.add(this.overlay);
   }
 
@@ -364,7 +518,18 @@ export class BoardView {
     const kind = isPanel(cell) ? cell.kind : -1;
     const e = this.emitters[kind >= 0 && kind < this.emitters.length ? kind : 0];
     const rise = this.board.riseProgress * CELL;
-    e.explode(6, x * CELL + CELL / 2, (ROWS - 1 - y) * CELL - rise + CELL / 2);
+    const px = x * CELL + CELL / 2;
+    const py = (ROWS - 1 - y) * CELL - rise + CELL / 2;
+    e.explode(5, px, py);
+    this.sparks.setParticleTint(tint(KIND_COLORS[kind >= 0 && kind < KIND_COLORS.length ? kind : 0], 0.35));
+    this.sparks.explode(4, px, py);
+  }
+
+  /** 揃った場所から広がる光の輪。連鎖が伸びるほど大きく、連鎖の色に染める */
+  private ring(x: number, y: number, color: number, size: number): void {
+    const ring = this.scene.add.image(x, y, "ring").setBlendMode(Phaser.BlendModes.ADD).setTint(color).setScale(0.3 / DPR).setAlpha(0.95);
+    this.root.add(ring);
+    this.scene.tweens.add({ targets: ring, scale: size / DPR, alpha: 0, duration: 420, ease: "Cubic.Out", onComplete: () => ring.destroy() });
   }
 
   /**
@@ -372,34 +537,41 @@ export class BoardView {
    * 出た瞬間に大きく弾んでから、少し浮いて消える
    */
   private popup(x: number, y: number, panels: number, chain: number): void {
-    const px = Math.min(BOARD_W - 24, Math.max(24, x * CELL + CELL / 2));
+    const px = Math.min(BOARD_W - 30, Math.max(30, x * CELL + CELL / 2));
     const py = (ROWS - 1 - y) * CELL;
-    const items: { text: string; color: string; size: number }[] = [];
-    if (panels >= 4) items.push({ text: String(panels), color: "#ff5c6c", size: 20 + Math.min(12, (panels - 4) * 2) });
-    if (chain >= 2) items.push({ text: `x${chain}`, color: chainColor(chain), size: 22 + Math.min(20, (chain - 2) * 3) });
-    items.forEach((it, i) => {
-      const t = this.scene.add
-        .text(px, py + i * 26, it.text, {
-          fontFamily: FONT_UI,
-          fontSize: `${it.size}px`,
-          fontStyle: "700",
-          color: it.color,
-          stroke: "#2a1040",
-          strokeThickness: 5,
-        })
-        .setOrigin(0.5)
-        .setScale(1.8)
+    const items: { text: string; caption: string; color: string; size: number }[] = [];
+    if (panels >= 4) items.push({ text: String(panels), caption: "COMBO", color: "#ff5c6c", size: 22 + Math.min(12, (panels - 4) * 2) });
+    if (chain >= 2) items.push({ text: `x${chain}`, caption: "CHAIN", color: chainColor(chain), size: 26 + Math.min(22, (chain - 2) * 3) });
+    if (items.length) this.ring(px, py + CELL / 2, Phaser.Display.Color.HexStringToColor(items[items.length - 1].color).color, 1.2 + Math.min(2, chain * 0.25));
+    // 見出し（COMBO / CHAIN）の下に数字。2 つあれば縦に積む。1 つ目の数字の中心が揃った行の上端に来る
+    let top = py - 26;
+    items.forEach((it) => {
+      const caption = this.scene.add
+        .text(px, top, it.caption, { fontFamily: FONT_UI, fontSize: "10px", fontStyle: "700", color: "#ffffff", stroke: HUD_INK, strokeThickness: 4 })
+        .setOrigin(0.5, 0)
         .setAlpha(0);
-      this.root.add(t);
-      this.scene.tweens.add({ targets: t, scale: 1, alpha: 1, duration: 160, ease: "Back.Out", easeParams: [2] });
+      const main = this.scene.add
+        .text(px, top + 9, it.text, { fontFamily: FONT_UI, fontSize: `${it.size}px`, fontStyle: "700", color: it.color, stroke: HUD_INK, strokeThickness: 6 })
+        .setShadow(0, 3, "rgba(0, 0, 0, 0.4)", 4, true, false)
+        .setOrigin(0.5, 0)
+        .setScale(1.9)
+        .setAlpha(0);
+      gradientFill(main, "#ffffff", it.color);
+      top += 9 + main.height - 8;
+      this.root.add([caption, main]);
+      this.scene.tweens.add({ targets: main, scale: 1, alpha: 1, duration: 180, ease: "Back.Out", easeParams: [2.2] });
+      this.scene.tweens.add({ targets: caption, alpha: 1, duration: 140, delay: 60 });
       this.scene.tweens.add({
-        targets: t,
-        y: t.y - 34,
+        targets: [main, caption],
+        y: "-=34",
         alpha: 0,
-        delay: 420 + Math.min(400, chain * 40),
+        delay: 440 + Math.min(400, chain * 40),
         duration: 420,
         ease: "Quad.In",
-        onComplete: () => t.destroy(),
+        onComplete: () => {
+          main.destroy();
+          caption.destroy();
+        },
       });
     });
     // 連鎖が伸びたら得点の文字も弾む
@@ -418,10 +590,11 @@ export class BoardView {
    */
   private incomingPopup(rows: number): void {
     const text = this.scene.add
-      .text(BoardView.PENDING_X + this.pendingWidth + 40, BoardView.PENDING_Y + 12, `+${rows}`, { fontFamily: FONT_UI, fontSize: "24px", fontStyle: "700", color: "#ff8a94", stroke: "#2a1040", strokeThickness: 5 })
+      .text(BoardView.PENDING_X + this.pendingWidth + 40, BoardView.PENDING_Y + 12, `+${rows}`, { fontFamily: FONT_UI, fontSize: "24px", fontStyle: "700", color: "#ff8a94", stroke: HUD_INK, strokeThickness: 6 })
       .setOrigin(0.5)
       .setScale(1.8)
       .setAlpha(0);
+    gradientFill(text, "#ffe0e4", "#ff5c6c");
     this.root.add(text);
     this.scene.tweens.add({ targets: text, scale: 1, alpha: 1, duration: 160, ease: "Back.Out", easeParams: [2] });
     this.scene.tweens.add({ targets: text, y: text.y - 26, alpha: 0, delay: 600, duration: 420, ease: "Quad.In", onComplete: () => text.destroy() });
@@ -430,7 +603,7 @@ export class BoardView {
   /** 盤面の上のほうに短い知らせを出す。相手の大きな連鎖など、自分の盤面から目を離せない場面向け */
   announce(message: string, color: string): void {
     const text = this.scene.add
-      .text(BOARD_W / 2, CELL * 2, message, { fontFamily: FONT_UI, fontSize: "20px", fontStyle: "700", color, stroke: "#2a1040", strokeThickness: 5, align: "center" })
+      .text(BOARD_W / 2, CELL * 2, message, { fontFamily: FONT_UI, fontSize: "20px", fontStyle: "700", color, stroke: HUD_INK, strokeThickness: 6, align: "center" })
       .setOrigin(0.5)
       .setScale(1.6)
       .setAlpha(0);
@@ -458,6 +631,7 @@ export class BoardView {
         let dx = 0;
         let dy = 0;
         let key: string;
+        let frame: string | undefined;
         let visible = true;
         if (isPanel(cell)) {
           key = `panel-${cell.kind}`;
@@ -469,16 +643,24 @@ export class BoardView {
         } else {
           const g = b.garbage.get(cell.garbage);
           key = g?.type === "shock" ? "garbage-shock" : "garbage";
+          // 板の外周に当たる辺だけ縁取る。ブロック全体が 1 枚の板に見える
+          frame = g ? garbageFrame(r === g.y + g.height - 1, c === g.x + g.width - 1, r === g.y, c === g.x) : garbageFrame(true, true, true, true);
           if (g?.state === "falling") dy = (g.fallTimer / TIMING.fallPerRow) * CELL;
           if (g?.state === "transforming") {
             // 色が見えるのは通常パネルになる最下段だけ。
             // 上段はめくり順が来るまで点滅し、その後もおじゃまの姿を保つ。
             if (cell.revealAt <= 0) {
-              if (r === g.y && cell.revealKind !== EMPTY) key = `panel-${cell.revealKind}`;
-            } else if (blink) key = "white";
+              if (r === g.y && cell.revealKind !== EMPTY) {
+                key = `panel-${cell.revealKind}`;
+                frame = undefined;
+              }
+            } else if (blink) {
+              key = "white";
+              frame = undefined;
+            }
           }
         }
-        img.setTexture(key);
+        img.setTexture(key, frame);
         img.setAlpha(key === "white" ? 0.5 : 1);
         const py = (ROWS - 1 - r) * CELL - rise + dy + shake;
         img.setPosition(c * CELL + dx, py);
@@ -497,7 +679,9 @@ export class BoardView {
       img.setPosition(c * CELL, py);
       img.setVisible(this.clip(img, py));
     }
-    this.cursor.setPosition(b.cursor.x * CELL - 3, (ROWS - 1 - b.cursor.y) * CELL - rise - 3 + shake);
+    this.cursor.setPosition(b.cursor.x * CELL - CURSOR_PAD, (ROWS - 1 - b.cursor.y) * CELL - rise - CURSOR_PAD + shake);
+    // カーソルはゆっくり息をするように明滅させる
+    this.cursor.setAlpha(0.82 + 0.18 * Math.cos(this.scene.time.now / 260));
     // タッチ端末は直接触れたパネルと移動先の枠を使う。
     this.cursor.setVisible(!b.gameOver && this.showSwapCursor);
     this.touchGfx.clear();
@@ -507,13 +691,18 @@ export class BoardView {
       const top = Math.max(1, py + 2);
       const bottom = Math.min(BOARD_H - 1, py + CELL - 2);
       if (bottom > top) {
-        // 白枠が掴んだパネル、青枠が予約している停止位置。
-        this.touchGfx.lineStyle(2, 0x66ccff, 1);
-        this.touchGfx.strokeRect(selection.targetX * CELL + 2, top, CELL - 4, bottom - top);
+        // 白枠が掴んだパネル、水色の枠が予約している停止位置。角を丸めてパネルの形に合わせる
+        const g = this.touchGfx;
+        g.fillStyle(0x66ccff, 0.18);
+        g.fillRoundedRect(selection.targetX * CELL + 2, top, CELL - 4, bottom - top, 6);
+        g.lineStyle(2, 0x8fdcff, 1);
+        g.strokeRoundedRect(selection.targetX * CELL + 2, top, CELL - 4, bottom - top, 6);
         const selected = b.cell(selection.x, selection.y);
         const dx = selected.state === "swapping" ? selected.swapFrom * (selected.timer / TIMING.swap) * CELL : 0;
-        this.touchGfx.lineStyle(2, 0xffffff, 1);
-        this.touchGfx.strokeRect(selection.x * CELL + dx + 4, top + 2, CELL - 8, Math.max(0, bottom - top - 4));
+        g.lineStyle(4, 0x1c1238, 0.5);
+        g.strokeRoundedRect(selection.x * CELL + dx + 1, top - 1, CELL - 2, Math.max(0, bottom - top + 2), 7);
+        g.lineStyle(2.5, 0xffffff, 1);
+        g.strokeRoundedRect(selection.x * CELL + dx + 1, top - 1, CELL - 2, Math.max(0, bottom - top + 2), 7);
       }
     }
 
@@ -527,13 +716,8 @@ export class BoardView {
 
     this.drawHint();
     if (this.style) {
-      this.scoreText.setText("");
-      if (this.style === "puzzle") {
-        const left = b.movesLeft ?? 0;
-        this.infoText.setColor(left <= 1 ? "#ff8a94" : TEXT_DIM);
-        this.infoText.setText(`MOVES ${left}`);
-      } else this.infoText.setText("");
-      this.stopBar.setVisible(false);
+      this.setStats(this.style === "puzzle" ? [{ caption: "MOVES", value: String(b.movesLeft ?? 0), color: (b.movesLeft ?? 0) <= 1 ? "#ff8a94" : undefined }] : []);
+      this.stopBar.clear();
       this.pendingGfx.clear();
       this.pendingText.setVisible(false);
       return;
@@ -545,7 +729,12 @@ export class BoardView {
       this.scoreBump = Math.max(0, this.scoreBump - 0.08);
       this.scoreText.setScale(1 + this.scoreBump * 0.25);
     } else this.scoreText.setScale(1);
-    this.scoreText.setText(String(this.shownScore).padStart(6, "0"));
+    const score = String(this.shownScore).padStart(6, "0");
+    if (score !== this.scoreText.text) {
+      this.scoreText.setText(score);
+      // 数字の幅は字ごとに違うので、板からはみ出しそう・余りそうなら描き直す
+      if (Math.abs(this.scoreText.width - this.hudScoreW) > 3) this.layoutHud();
+    }
     let seconds: number;
     if (this.timeLimit !== null) {
       // 残り時間。ゲームのフレームで数えるので、ポーズ中は減らない
@@ -556,24 +745,26 @@ export class BoardView {
     }
     const mm = String(Math.floor(seconds / 60)).padStart(2, "0");
     const ss = String(seconds % 60).padStart(2, "0");
-    const parts = [`${mm}:${ss}`];
-    if (this.timeLimit !== null && b.frame >= this.timeLimit && !b.isSettled()) parts.push(t("SETTLING"));
     // 残り10秒を切ったら赤く
-    this.infoText.setColor(this.timeLimit !== null && seconds <= 10 ? "#ff8a94" : TEXT_DIM);
-    if (this.showLevel) parts.push(`SPEED ${b.level}`);
-    parts.push(`MAX x${b.maxChain}`);
-    // 横置きの HUD は幅が狭いので1行ずつ
-    const info = parts.join(this.hud === "top" ? "   " : "\n");
-    if (info !== this.infoText.text) {
-      this.infoText.setText(info);
-      this.placeInfoPill();
+    const stats: { caption: string; value: string; color?: string }[] = [
+      { caption: "TIME", value: `${mm}:${ss}`, color: this.timeLimit !== null && seconds <= 10 ? "#ff8a94" : undefined },
+    ];
+    if (this.timeLimit !== null && b.frame >= this.timeLimit && !b.isSettled()) stats.push({ caption: "", value: t("SETTLING"), color: "#ffe066" });
+    if (this.showLevel) stats.push({ caption: "SPEED", value: String(b.level) });
+    stats.push({ caption: "MAX", value: `x${b.maxChain}` });
+    this.setStats(stats);
+
+    // 停止時間のゲージ。盤面の下の縁の上に、水色の光る線で残りを示す
+    const stopW = Math.min(1, b.stopTimer / TIMING.stopMax) * (BOARD_W - 8);
+    this.stopBar.clear();
+    if (stopW > 0) {
+      this.stopBar.fillStyle(0x66ccff, 0.35);
+      this.stopBar.fillRoundedRect(4, BOARD_H + 2, stopW, 6, 3);
+      this.stopBar.fillStyle(0xbfeeff, 1);
+      this.stopBar.fillRoundedRect(4, BOARD_H + 3.5, stopW, 3, 1.5);
     }
 
-    const stopW = Math.min(1, b.stopTimer / TIMING.stopMax) * BOARD_W;
-    this.stopBar.setSize(stopW, 4);
-    this.stopBar.setVisible(stopW > 0);
-
-    // 予告おじゃま。盤面の中の上端に、板を高さぶんのバーで並べ、右に段数の合計を出す。
+    // 予告おじゃま。盤面の中の上端に、板を小さなおじゃまの板で並べ、右に段数の合計を出す。
     // transit を過ぎて降りられる板があれば、橙に点滅させて「盤面が静止した瞬間に降る」ことを知らせ、その瞬間に一度だけ警告音を鳴らす
     this.pendingGfx.clear();
     const rows = b.pendingGarbage.reduce((sum, g) => sum + g.height, 0);
@@ -584,17 +775,25 @@ export class BoardView {
     let px = 0;
     for (const spec of b.pendingGarbage) {
       const w = spec.width * 6;
-      const h = Math.max(5, spec.height * 5);
+      const h = Math.max(6, spec.height * 5);
       const armed = spec.readyAt === undefined || spec.readyAt <= b.frame;
-      this.pendingGfx.fillStyle(armed ? 0xff9a3c : spec.type === "shock" ? 0x8c8c9a : 0xb4b4c2, armed ? pulse : 0.9);
-      this.pendingGfx.fillRect(BoardView.PENDING_X + px, BoardView.PENDING_Y, w, h);
+      const color = armed ? 0xff9a3c : spec.type === "shock" ? 0x9a9aa8 : tint(GARBAGE_COLOR, 0.25);
+      const alpha = armed ? pulse : 0.95;
+      const x = BoardView.PENDING_X + px;
+      const y = BoardView.PENDING_Y;
+      this.pendingGfx.fillStyle(0x0c0820, 0.6 * alpha);
+      this.pendingGfx.fillRoundedRect(x - 1, y - 1, w + 2, h + 2, 3);
+      this.pendingGfx.fillStyle(color, alpha);
+      this.pendingGfx.fillRoundedRect(x, y, w, h, 2.5);
+      this.pendingGfx.fillStyle(0xffffff, 0.35 * alpha);
+      this.pendingGfx.fillRect(x + 2, y + 1, w - 4, 1.5);
       px += w + 4;
     }
     this.pendingWidth = px;
     this.pendingText.setVisible(rows > 0);
     if (rows > 0) {
       this.pendingText.setText(String(rows)).setColor(ready ? "#ffb060" : TEXT_COLOR).setAlpha(ready ? pulse : 1);
-      this.pendingText.setPosition(BoardView.PENDING_X + px + 2, BoardView.PENDING_Y - 3).setOrigin(0, 0);
+      this.pendingText.setPosition(BoardView.PENDING_X + px + 2, BoardView.PENDING_Y - 4).setOrigin(0, 0);
     }
   }
 
@@ -619,12 +818,29 @@ export class BoardView {
   /** 結果を出す。見出しは大きく出て弾みながら収まり、本文は少し遅れて浮かぶ */
   showOverlay(title: string, body: string): void {
     this.overlay.setVisible(true);
-    this.overlayTitle.setColor(this.resultEffect?.outcome === "lose" ? "#d6c9f2" : "#ffe066");
-    this.overlayTitle.setText(title).setScale(2.2).setAlpha(0);
+    this.overlayTitle.setText(title);
+    // 見出しは金色（負けは藤色）のグラデーション。盤面の幅に入らない長さ（GAME OVER）は縮めて収める
+    if (this.resultEffect?.outcome === "lose") gradientFill(this.overlayTitle, "#ffffff", "#b9a8e0");
+    else gradientFill(this.overlayTitle, "#fff6c8", "#ffc23c");
+    const fit = Math.min(1, (BOARD_W - 12) / Math.max(1, this.overlayTitle.width));
+    this.overlayTitle.setScale(2.2 * fit).setAlpha(0);
     this.overlayBody.setText(body).setAlpha(0);
-    if (this.resultEffect) this.overlayBody.setBackgroundColor("#1a1030dd").setPadding(4);
-    this.scene.tweens.add({ targets: this.overlayTitle, scale: 1, alpha: 1, duration: 360, ease: "Back.Out", easeParams: [1.6] });
-    this.scene.tweens.add({ targets: this.overlayBody, alpha: 1, delay: 220, duration: 260 });
+    // 本文の下敷き。盤面の絵や結果の演出の上でも読めるよう、HUD と同じ濃紺の板を敷く
+    const plate = this.overlayPlate;
+    plate.clear();
+    if (body) {
+      const w = Math.min(BOARD_W - 8, this.overlayBody.width + 24);
+      const h = this.overlayBody.height + 14;
+      const x = this.overlayBody.x - w / 2;
+      const y = this.overlayBody.y - this.overlayBody.originY * this.overlayBody.height - 7;
+      plate.fillStyle(PLATE, 0.72);
+      plate.fillRoundedRect(x, y, w, h, 12);
+      plate.lineStyle(1, 0xffffff, 0.18);
+      plate.strokeRoundedRect(x, y, w, h, 12);
+    }
+    plate.setAlpha(0);
+    this.scene.tweens.add({ targets: this.overlayTitle, scale: fit, alpha: 1, duration: 360, ease: "Back.Out", easeParams: [1.6] });
+    this.scene.tweens.add({ targets: [this.overlayBody, plate], alpha: 1, delay: 220, duration: 260 });
   }
 
   hideOverlay(): void {
@@ -634,14 +850,15 @@ export class BoardView {
   }
 }
 
+
 /**
- * 盤面の枠の絵。パネルの外側の帯を塗り、外縁を色の線と光で縁取る（menuCard.ts の paintGlass と同じ作り）。
- * 帯はメニューのカードと違って不透明（縁の色を濃紺に薄く混ぜた色）。角のパネルの隅を隠す蓋（makeCorners）を
- * 同じ色で塗るためで、半透明だと蓋の下のパネルが透ける。中は不透明の濃紺。パネルの色はこの上で読むので、空を透かさない。
+ * 盤面の枠の絵。パネルの外側に縁（ベゼル）を回し、その外に色の光と影を落とす。中は奥へ沈む濃紺の井戸。
+ * 縁は不透明。角のパネルの隅を隠す蓋（makeCorners）を同じ絵で塗るためで、半透明だと蓋の下のパネルが透ける。
+ * 中も不透明で空を透かさない。パネルの色はこの上で読む。
  * Phaser の Graphics ではなく canvas 2D で DPR 倍の大きさに描く。Graphics は WebGL でアンチエイリアスがなく、
- * 丸角の弧が蓋の弧と合わずに角に段差が出た。静止した絵なので 1 度描けばよい。色ごとに 1 枚を使い回す
+ * グラデーションや影も描けない。静止した絵なので 1 度描けばよい。色ごとに 1 枚を使い回す
  */
-function makeFrameTexture(scene: Phaser.Scene, color: number, band: number): string {
+function makeFrameTexture(scene: Phaser.Scene, color: number): string {
   const key = `board-frame-${color.toString(16)}`;
   if (scene.textures.exists(key)) return key;
   const w = BOARD_W + FRAME_EXTENT * 2;
@@ -651,89 +868,121 @@ function makeFrameTexture(scene: Phaser.Scene, color: number, band: number): str
   const ctx = texture.context;
   ctx.scale(DPR, DPR);
   ctx.translate(FRAME_EXTENT, FRAME_EXTENT);
-  const { x, y, bw, bh, r } = frameRect();
-  GLOW_STEPS.forEach(([width, alpha]) => strokeRoundRect(ctx, x, y, bw, bh, r, width, rgba(color, alpha)));
-  paintFrameBody(ctx, color, band, true);
+  const bezel = (): void => roundRect(ctx, -FRAME_PAD, -FRAME_PAD, BOARD_W + FRAME_PAD * 2, BOARD_H + FRAME_PAD * 2, FRAME_RADIUS);
+  // 空に落ちる影と、縁の色の光。影は下へずらして盤面が浮いて見えるように
+  ctx.save();
+  ctx.shadowColor = "rgba(10, 0, 40, 0.5)";
+  ctx.shadowBlur = 16;
+  ctx.shadowOffsetY = 8;
+  bezel();
+  ctx.fillStyle = "#000";
+  ctx.fill();
+  ctx.shadowColor = css(color, 0.6);
+  ctx.shadowBlur = 14;
+  ctx.shadowOffsetY = 0;
+  ctx.fill();
+  ctx.restore();
+  paintFrameBody(ctx, color, true);
   texture.refresh();
   return key;
 }
 
-/** 枠の帯の矩形。盤面の左上を原点にした座標 */
-function frameRect(): { x: number; y: number; bw: number; bh: number; r: number } {
-  return { x: -FRAME_PAD, y: -FRAME_PAD, bw: BOARD_W + FRAME_PAD * 2, bh: BOARD_H + FRAME_PAD * 2, r: FRAME_RADIUS };
-}
-
 /**
- * 枠の本体。帯を塗り、中を濃紺で角のまま塗り、外縁の色の線と内側の白い線を引く。
- * 枠の絵と四隅の蓋の両方で使う。蓋は盤面の角の 10×10 にこれと同じ絵を描いて丸角の弧の内側をくり抜くので、
- * 白い線が角の四角に食い込む部分（線は角から 0.45px 内側を通る）も蓋の上で途切れない
+ * 枠の本体。縁を塗り、中を井戸の色で角のまま塗る。枠の絵と四隅の蓋の両方で使う。
+ * 蓋は盤面の角の四角にこれと同じ絵を描いて丸角の弧の内側をくり抜くので、縁のグラデーションや
+ * 内側の暗い線が蓋の上でも途切れない
  */
-function paintFrameBody(ctx: CanvasRenderingContext2D, color: number, band: number, interior: boolean): void {
-  const { x, y, bw, bh, r } = frameRect();
-  roundRectPath(ctx, x, y, bw, bh, r);
-  ctx.fillStyle = hex(band);
+function paintFrameBody(ctx: CanvasRenderingContext2D, color: number, interior: boolean): void {
+  const x = -FRAME_PAD;
+  const y = -FRAME_PAD;
+  const bw = BOARD_W + FRAME_PAD * 2;
+  const bh = BOARD_H + FRAME_PAD * 2;
+  // 縁。上が明るく下が濃い、枠の色の金属のような帯
+  roundRect(ctx, x, y, bw, bh, FRAME_RADIUS);
+  const band = ctx.createLinearGradient(0, y, 0, y + bh);
+  band.addColorStop(0, css(tint(color, 0.6)));
+  band.addColorStop(0.04, css(tint(color, 0.2)));
+  band.addColorStop(0.5, css(tint(color, -0.05)));
+  band.addColorStop(1, css(tint(color, -0.3)));
+  ctx.fillStyle = band;
   ctx.fill();
-  // 中は角を丸めずに塗る。丸みは蓋（makeCorners）が作る。枠と蓋の両方で弧を描くと、弧の端に半端な段差が出た。
-  // 蓋には中を塗らない（蓋は帯と線だけを持ち、弧の内側は透明でパネルが見える）
+  // 縁の外側の細い光。上ほど強い
+  roundRect(ctx, x + 0.75, y + 0.75, bw - 1.5, bh - 1.5, FRAME_RADIUS - 0.75);
+  const rim = ctx.createLinearGradient(0, y, 0, y + bh);
+  rim.addColorStop(0, "rgba(255, 255, 255, 0.85)");
+  rim.addColorStop(0.3, "rgba(255, 255, 255, 0.3)");
+  rim.addColorStop(1, "rgba(255, 255, 255, 0.12)");
+  ctx.strokeStyle = rim;
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+  // 中は角を丸めずに塗る。丸みは蓋（makeCorners）が作る。蓋には中を塗らない（弧の内側は透明でパネルが見える）
   if (interior) {
-    ctx.fillStyle = hex(BOARD_BG);
+    const well = ctx.createLinearGradient(0, 0, 0, BOARD_H);
+    well.addColorStop(0, css(tint(BOARD_BG, -0.3)));
+    well.addColorStop(0.6, css(BOARD_BG));
+    well.addColorStop(1, css(tint(BOARD_BG, 0.06)));
+    ctx.fillStyle = well;
     ctx.fillRect(0, 0, BOARD_W, BOARD_H);
+    // 列の筋。1 列おきにわずかに明るくし、境目に細い線。パネルの行き先の列を目で追いやすくする
+    for (let c = 0; c < COLS; c++) {
+      if (c % 2 === 1) {
+        ctx.fillStyle = "rgba(255, 255, 255, 0.025)";
+        ctx.fillRect(c * CELL, 0, CELL, BOARD_H);
+      }
+      if (c > 0) {
+        ctx.fillStyle = "rgba(255, 255, 255, 0.045)";
+        ctx.fillRect(c * CELL - 0.5, 0, 1, BOARD_H);
+      }
+    }
+    // 下からせり上がってくる光。枠の色をごく薄く
+    const glow = ctx.createLinearGradient(0, BOARD_H - CELL * 3, 0, BOARD_H);
+    glow.addColorStop(0, css(color, 0));
+    glow.addColorStop(1, css(color, 0.14));
+    ctx.fillStyle = glow;
+    ctx.fillRect(0, BOARD_H - CELL * 3, BOARD_W, CELL * 3);
+    // 上端の影。井戸の奥へ沈んで見える
+    const shadow = ctx.createLinearGradient(0, 0, 0, 26);
+    shadow.addColorStop(0, "rgba(0, 0, 0, 0.45)");
+    shadow.addColorStop(1, "rgba(0, 0, 0, 0)");
+    ctx.fillStyle = shadow;
+    ctx.fillRect(0, 0, BOARD_W, 26);
   }
-  strokeRoundRect(ctx, x, y, bw, bh, r, 2.5, rgba(color, 0.9));
-  strokeRoundRect(ctx, x + 2.5, y + 2.5, bw - 5, bh - 5, r - 2.5, 1, "rgba(255, 255, 255, 0.45)");
-}
-
-function strokeRoundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number, width: number, style: string): void {
-  roundRectPath(ctx, x, y, w, h, r);
-  ctx.lineWidth = width;
-  ctx.strokeStyle = style;
+  // 縁と井戸の境の暗い線。縁の厚みを見せる
+  roundRect(ctx, -1, -1, BOARD_W + 2, BOARD_H + 2, BOARD_RADIUS + 1);
+  ctx.strokeStyle = "rgba(8, 4, 28, 0.7)";
+  ctx.lineWidth = 2;
   ctx.stroke();
 }
 
-const hex = (c: number): string => `#${c.toString(16).padStart(6, "0")}`;
-const rgba = (c: number, a: number): string => `rgba(${(c >> 16) & 0xff}, ${(c >> 8) & 0xff}, ${c & 0xff}, ${a})`;
-
-/** 丸角の矩形のパスを作る。ctx.roundRect は古い Safari にないので arcTo で組む */
-function roundRectPath(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number): void {
-  ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.arcTo(x + w, y, x + w, y + h, r);
-  ctx.arcTo(x + w, y + h, x, y + h, r);
-  ctx.arcTo(x, y + h, x, y, r);
-  ctx.arcTo(x, y, x + w, y, r);
-  ctx.closePath();
-}
-
-/** 2 色を t（0〜1）で混ぜる。 */
-function mix(a: number, b: number, t: number): number {
-  const ch = (shift: number): number => Math.round(((a >> shift) & 0xff) * (1 - t) + ((b >> shift) & 0xff) * t);
-  return (ch(16) << 16) | (ch(8) << 8) | ch(0);
-}
-
 /**
- * 盤面の四隅の蓋。丸角の弧の外側（角の四角から弧を除いた三日月形）を帯の色で塗った絵を、パネルの上に置いて隅を隠す。
- * Phaser の Graphics で描くと WebGL ではアンチエイリアスがなく弧がギザつき、枠の弧とも合わなかったので、
- * canvas 2D で DPR 倍の大きさに描いた 1 枚の絵を 4 隅に反転して置く。盤面の中の丸みはこの蓋だけで作る（枠の中は角のまま塗る）
+ * 盤面の四隅の蓋。丸角の弧の外側（角の四角から弧を除いた三日月形）を縁と同じ絵で塗り、パネルの上に置いて隅を隠す。
+ * 縁は上下でグラデーションが違うので、4 隅それぞれに絵を作る
  */
-function makeCorners(scene: Phaser.Scene, color: number, band: number): Phaser.GameObjects.Image[] {
+function makeCorners(scene: Phaser.Scene, color: number): Phaser.GameObjects.Image[] {
   const r = BOARD_RADIUS;
-  const key = `board-corner-${color.toString(16)}`;
-  if (!scene.textures.exists(key)) {
-    const size = Math.ceil(r * DPR);
-    const texture = scene.textures.createCanvas(key, size, size);
-    if (texture) {
-      const ctx = texture.context;
-      ctx.scale(DPR, DPR);
-      paintFrameBody(ctx, color, band, false);
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
-      ctx.globalCompositeOperation = "destination-out";
-      ctx.beginPath();
-      ctx.arc(r * DPR, r * DPR, r * DPR, 0, Math.PI * 2);
-      ctx.fill();
-      texture.refresh();
+  const spots: [number, number][] = [
+    [0, 0],
+    [BOARD_W - r, 0],
+    [0, BOARD_H - r],
+    [BOARD_W - r, BOARD_H - r],
+  ];
+  return spots.map(([cx, cy], i) => {
+    const key = `board-corner-${color.toString(16)}-${i}`;
+    if (!scene.textures.exists(key)) {
+      const size = Math.ceil(r * DPR);
+      const texture = scene.textures.createCanvas(key, size, size);
+      if (texture) {
+        const ctx = texture.context;
+        ctx.scale(DPR, DPR);
+        ctx.translate(-cx, -cy);
+        paintFrameBody(ctx, color, false);
+        ctx.globalCompositeOperation = "destination-out";
+        ctx.beginPath();
+        ctx.arc(cx < BOARD_W / 2 ? r : BOARD_W - r, cy < BOARD_H / 2 ? r : BOARD_H - r, r, 0, Math.PI * 2);
+        ctx.fill();
+        texture.refresh();
+      }
     }
-  }
-  const at = (x: number, y: number, flipX: boolean, flipY: boolean): Phaser.GameObjects.Image =>
-    scene.add.image(x, y, key).setOrigin(flipX ? 1 : 0, flipY ? 1 : 0).setFlip(flipX, flipY).setScale(1 / DPR);
-  return [at(0, 0, false, false), at(BOARD_W, 0, true, false), at(0, BOARD_H, false, true), at(BOARD_W, BOARD_H, true, true)];
+    return scene.add.image(cx, cy, key).setOrigin(0).setScale(1 / DPR);
+  });
 }

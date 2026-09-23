@@ -114,7 +114,9 @@ export class Button extends Phaser.GameObjects.Container {
       g.fillStyle(0xffffff, 0.1);
       g.fillRoundedRect(-this.boxW / 2 + inset, -this.boxH / 2 + inset, this.boxW - inset * 2, bandH, { tl: top, tr: top, bl: 0, br: 0 });
     }
-    g.lineStyle(2, 0xffffff, look === "hover" ? 0.9 : 0.6);
+    // 色の塗り（ゲーム画面の濃紺の札に合わせたボタン）は、札と同じ細く淡い縁にする
+    if (this.baseColor === 0xffffff) g.lineStyle(2, 0xffffff, look === "hover" ? 0.9 : 0.6);
+    else g.lineStyle(1, 0xffffff, look === "hover" ? 0.5 : 0.25);
     g.strokeRoundedRect(-this.boxW / 2, -this.boxH / 2, this.boxW, this.boxH, r);
     this.txt.setColor(this.baseTextColor);
   }
@@ -164,6 +166,14 @@ export class Button extends Phaser.GameObjects.Container {
     const local = m.applyInverse(x, y);
     return Math.abs(local.x) <= this.width / 2 && Math.abs(local.y) <= this.height / 2;
   }
+}
+
+/** Text の塗りを上から下へのグラデーションにする。連鎖の数字や見出しを、平塗りより立体的に見せる */
+export function gradientFill(text: Phaser.GameObjects.Text, top: string, bottom: string): void {
+  const g = text.context.createLinearGradient(0, 0, 0, text.height);
+  g.addColorStop(0.15, top);
+  g.addColorStop(0.75, bottom);
+  text.setFill(g);
 }
 
 /** 強調色。選ばれた項目・見出しに使う */
