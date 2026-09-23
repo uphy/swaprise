@@ -191,7 +191,7 @@ test("盤面の下のせり上げバーを1本指で押している間はせり�
   const rows = await page.evaluate(() => {
     const s = (window as any).__swaprise.scene;
     const v = s.views[0];
-    const info = v.infoText.getBounds();
+    const info = v.statsBounds();
     const bar = s.raiseHints[0];
     return { boardBottom: v.oy + 12 * 32 * v.scale, barTop: bar.y - bar.barH / 2, barBottom: bar.y + bar.barH / 2, infoTop: info.y };
   });

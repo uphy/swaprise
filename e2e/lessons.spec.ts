@@ -34,7 +34,7 @@ test("レッスン 1: 説明と課の名前を出し、せり上がりもバー�
       nextRow: p.game.boards[0].nextRow.length,
       movesLeft: p.game.boards[0].movesLeft,
       label: v.labelText.text,
-      info: v.infoText.text,
+      info: v.infoLine,
       bar: p.scene.raiseHints[0].visible,
       text: p.scene.children.getByName("lesson-text")?.text,
       reset: Boolean(p.scene.children.getByName("lesson-reset")),

@@ -9,8 +9,8 @@ export const BOARD_H = 12 * CELL;
  */
 export { KIND_COLORS } from "./palette";
 export const KIND_NAMES = ["square", "circle", "triangle", "plus", "hexagon", "cross"];
-export const GARBAGE_COLOR = 0x8a8a96;
-export const GARBAGE_DARK = 0x5c5c68;
+/** おじゃまの板。パネルのどの柄とも紛れない、灰色がかった藤色 */
+export const GARBAGE_COLOR = 0x8c86b0;
 export const BG_COLOR = 0x14141c;
 /** 盤面の中。空（青〜桃）になじむよう、黒ではなくわずかに紫寄りの濃紺。パネルの色はこの上で読む */
 export const BOARD_BG = 0x1c1730;

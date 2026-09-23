@@ -12,7 +12,8 @@ import { musicDanger } from "./musicDanger";
 import { haptics } from "./haptics";
 import { TouchInput } from "./touch";
 import { DPR, applyLayout } from "./hidpi";
-import { Button } from "./ui";
+import { Button, gradientFill } from "./ui";
+import { paintGlass } from "./menuCard";
 import { RaiseBar } from "./RaiseBar";
 import { wakeLock } from "./wakelock";
 import { fullscreen } from "./fullscreen";
@@ -93,6 +94,8 @@ export class GameScene extends Phaser.Scene {
   /** ポーズ画面。暗幕・見出し・ボタンをまとめた Container。 */
   pauseMenu!: Phaser.GameObjects.Container;
   private pauseDim!: Phaser.GameObjects.Rectangle;
+  private pauseCard!: Phaser.GameObjects.Graphics;
+  private pauseGlass!: Phaser.GameObjects.Graphics;
   private pauseTitle!: Phaser.GameObjects.Text;
   private pauseButtons: Button[] = [];
   private hintText!: Phaser.GameObjects.Text;
@@ -245,11 +248,18 @@ export class GameScene extends Phaser.Scene {
     }
 
     // 画面上のポーズボタン
-    this.pauseButton = new Button(this, 0, 0, "❚❚", () => this.togglePause(), { minWidth: 44, minHeight: 30, fontSize: 13 }).setDepth(5);
+    this.pauseButton = new Button(this, 0, 0, "❚❚", () => this.togglePause(), { minWidth: 44, minHeight: 30, fontSize: 13, bg: 0x120c2c, bgAlpha: 0.62, radius: 15 }).setDepth(5);
 
     // ポーズ画面。暗幕をタップしても再開する。ボタンで やり直し・音・振動・メニュー
-    this.pauseDim = this.add.rectangle(0, 0, 10, 10, 0x1a1030, 0.78).setOrigin(0);
-    this.pauseTitle = this.add.text(0, 0, t("PAUSE"), { fontFamily: FONT_UI, fontSize: "36px", color: TEXT_COLOR, fontStyle: "700" }).setOrigin(0.5);
+    this.pauseDim = this.add.rectangle(0, 0, 10, 10, 0x0c0820, 0.72).setOrigin(0);
+    // 見出しとボタンを載せる板。盤面が透けないよう濃紺で塗ってから、メニューと同じ光る縁のガラスを重ねる
+    this.pauseCard = this.add.graphics();
+    this.pauseGlass = this.add.graphics();
+    this.pauseTitle = this.add
+      .text(0, 0, t("PAUSE"), { fontFamily: FONT_UI, fontSize: "34px", color: TEXT_COLOR, fontStyle: "700", stroke: "#1c1238", strokeThickness: 6 })
+      .setShadow(0, 3, "rgba(0, 0, 0, 0.4)", 4, true, false)
+      .setOrigin(0.5);
+    gradientFill(this.pauseTitle, "#ffffff", "#c9b8ff");
     const soundLabel = (): string => t("SOUND: {state}", { state: t(audio.muted ? "OFF" : "ON") });
     const vibLabel = (): string => t("VIBRATION: {state}", { state: t(haptics.enabled ? "ON" : "OFF") });
     this.pauseButtons.push(new Button(this, 0, 0, t("RESUME"), () => this.setPaused(false), { minWidth: 180, minHeight: 40, primary: true }));
@@ -275,7 +285,7 @@ export class GameScene extends Phaser.Scene {
       this.pauseButtons.push(vibBtn);
     }
     this.pauseButtons.push(new Button(this, 0, 0, t("MENU"), () => this.toMenu(), { minWidth: 180, minHeight: 40 }));
-    this.pauseMenu = this.add.container(0, 0, [this.pauseDim, this.pauseTitle, ...this.pauseButtons]).setDepth(30).setVisible(false);
+    this.pauseMenu = this.add.container(0, 0, [this.pauseDim, this.pauseCard, this.pauseGlass, this.pauseTitle, ...this.pauseButtons]).setDepth(30).setVisible(false);
     // ポーズ中の暗幕タップは再開だけに使う（入れ替えにはしない）
     this.input.on("pointerdown", () => {
       if (this.paused && !this.ended) this.setPaused(false);
@@ -394,7 +404,7 @@ export class GameScene extends Phaser.Scene {
     const H = L.height;
     const boards = this.game_.boards;
     // デスクトップは盤面の下にせり上げバーと操作の案内文が並ぶので、上端を詰めて高さ 520 に収める
-    const top = L.phoneLandscape ? 14 : L.portrait ? 52 : 62;
+    const top = L.phoneLandscape ? 14 : L.portrait ? 52 : 56;
     const barH = L.touch ? RAISE_BAR_H : RAISE_BAR_H_MOUSE;
     const placeBoard = (i: number, ox: number, oy: number, scale: number, hud: HudSide = "top"): void => {
       // せり上げバーは操作の要なので盤面の直下に置き、時間・速度・最大連鎖の行はその下。バーのない盤面（CPU・パズル）は行を盤面の直下に戻す
@@ -407,8 +417,9 @@ export class GameScene extends Phaser.Scene {
         this.raiseHints[i].resize(BOARD_W * scale, barH, 48).setPosition(ox + (BOARD_W / 2) * scale, oy + BOARD_H * scale + RAISE_BAR_GAP + barH / 2);
       } else {
         this.raiseHints[i].resize(100, 44, 48);
-        if (hud === "right") this.raiseHints[i].setPosition(ox + BOARD_W + 12 + 50, oy + 150);
-        else this.raiseHints[i].setPosition(ox - 12 - 50, oy + 150);
+        // HUD の列の得点・時間・速度・最大連鎖の札（下端 oy + 166）の下
+        if (hud === "right") this.raiseHints[i].setPosition(ox + BOARD_W + 12 + 50, oy + 198);
+        else this.raiseHints[i].setPosition(ox - 12 - 50, oy + 198);
       }
     };
     if (L.phoneLandscape) {
@@ -418,8 +429,8 @@ export class GameScene extends Phaser.Scene {
       if (boards.length === 1) {
         const ox = Math.floor((W - BOARD_W) / 2);
         placeBoard(0, ox, top, 1, "right");
-        // ポーズボタンは HUD の列の下のほう
-        this.pauseButton.setPosition(ox + BOARD_W + 12 + 50, top + 220);
+        // ポーズボタンは HUD の列の下のほう。パズルはせり上げバーがなく、下に 戻す・進める・ヒント が並ぶので上に詰める
+        this.pauseButton.setPosition(ox + BOARD_W + 12 + 50, top + (this.mode === "puzzle" ? 220 : 256));
       } else {
         placeBoard(0, edge, top, 1, "right");
         placeBoard(1, W - edge - BOARD_W, top, 1, "left");
@@ -447,8 +458,15 @@ export class GameScene extends Phaser.Scene {
       if (L.portrait) this.vsText?.setPosition(W / 2, top + BOARD_H + RAISE_BAR_GAP + barH + INFO_GAP + 40).setFontSize(18).setVisible(true);
       else this.vsText?.setPosition(W / 2, top + BOARD_H / 2).setFontSize(28).setVisible(true);
     }
-    // ポーズボタンは自分の盤面の右上（得点表示の右）。横持ちのスマホは上で決めた
-    if (!L.phoneLandscape) this.pauseButton.setPosition(this.views[0].ox + BOARD_W - 22, top - 24);
+    // ポーズボタンは自分の盤面の右上の外。隣の盤面や画面の端までに余白がなければ盤面の右上の内側に置き、
+    // 得点の板をその分だけ詰める。横持ちのスマホは上で決めた
+    if (!L.phoneLandscape) {
+      const right = this.views[0].ox + BOARD_W;
+      const room = (this.views[1] ? this.views[1].ox : W) - right;
+      const outside = room >= 52;
+      this.pauseButton.setPosition(outside ? right + 6 + 22 : right - 22, top - 24);
+      this.views[0].setHudMaxWidth(outside ? Infinity : BOARD_W - 52);
+    }
     // レッスンの説明は盤面の下（横持ちのスマホは盤面の右）。RESET はその下
     if (this.lessonText) {
       const v = this.views[0];
@@ -500,8 +518,17 @@ export class GameScene extends Phaser.Scene {
     }
 
     this.pauseDim.setSize(W, H);
-    this.pauseTitle.setPosition(W / 2, H / 2 - 40 - this.pauseButtons.length * 23 - 20);
-    this.pauseButtons.forEach((b, i) => b.setPosition(W / 2, H / 2 - (this.pauseButtons.length - 1) * 23 + i * 46));
+    const titleY = H / 2 - 40 - this.pauseButtons.length * 23 - 20 + 16;
+    this.pauseTitle.setPosition(W / 2, titleY);
+    this.pauseButtons.forEach((b, i) => b.setPosition(W / 2, H / 2 - (this.pauseButtons.length - 1) * 23 + i * 46 + 16));
+    const cardTop = titleY - 38;
+    const cardBottom = H / 2 + (this.pauseButtons.length - 1) * 23 + 16 + 20 + 22;
+    const cardW = Math.min(W - 24, 236);
+    // paintGlass は描く前に消すので、濃紺の地は別の Graphics に塗る
+    this.pauseCard.clear();
+    this.pauseCard.fillStyle(0x1c1238, 0.94);
+    this.pauseCard.fillRoundedRect(W / 2 - cardW / 2, cardTop, cardW, cardBottom - cardTop, 16);
+    paintGlass(this.pauseGlass, W / 2, (cardTop + cardBottom) / 2, cardW, cardBottom - cardTop, CARD.violet);
 
     // キー操作の案内。パズルは画面にボタンがあり、盤面の下に置くと重なるので出さない
     this.hintText.setPosition(W / 2, H - 10).setVisible(!L.touch && this.mode !== "puzzle");
@@ -523,13 +550,21 @@ export class GameScene extends Phaser.Scene {
     this.starting = true;
     const texts = this.views.map((v) =>
       this.add
-        .text(v.center.x, v.center.y, "", { fontFamily: FONT_UI, fontSize: "64px", color: "#ffe066", fontStyle: "700", stroke: "#3a1a5a", strokeThickness: 8 })
+        .text(v.center.x, v.center.y, "", { fontFamily: FONT_UI, fontSize: "64px", color: "#ffe066", fontStyle: "700", stroke: "#1c1238", strokeThickness: 9 })
+        .setShadow(0, 5, "rgba(0, 0, 0, 0.4)", 6, true, false)
         .setOrigin(0.5)
         .setScale(v.scale)
         .setDepth(40),
     );
     const show = (label: string, big: boolean): void => {
-      texts.forEach((text, i) => text.setText(label).setScale((big ? 1.8 : 1.5) * this.views[i].scale).setAlpha(1));
+      texts.forEach((text, i) => {
+        text.setText(label).setScale((big ? 1.8 : 1.5) * this.views[i].scale).setAlpha(1);
+        // 数字は金、START は水色から白へのグラデーション。数字ごとに盤面の中央から光の輪が広がる
+        gradientFill(text, big ? "#ffffff" : "#fff6c8", big ? "#7fe3ff" : "#ffc23c");
+        const v = this.views[i];
+        const ring = this.add.image(v.center.x, v.center.y, "ring").setBlendMode(Phaser.BlendModes.ADD).setTint(big ? 0x7fe3ff : 0xffd24a).setScale((0.6 * v.scale) / DPR).setDepth(39);
+        this.tweens.add({ targets: ring, scale: ((big ? 5 : 3.2) * v.scale) / DPR, alpha: 0, duration: big ? 620 : 480, ease: "Cubic.Out", onComplete: () => ring.destroy() });
+      });
       texts.forEach((text, i) => this.tweens.add({ targets: text, scale: this.views[i].scale, duration: 180, ease: "Back.Out" }));
     };
     const STEP = 700;

@@ -34,7 +34,7 @@ test("パズル: 面の名前と残り手数を出し、解どおりに入れ替
       nextRow: p.game.boards[0].nextRow.length,
       movesLeft: p.game.boards[0].movesLeft,
       score: v.labelText.text,
-      text: v.infoText.text,
+      text: v.infoLine,
       // 次の行のパネルは描かない
       nextVisible: v.nextCells.some((img: any) => img.visible),
     };
@@ -57,7 +57,7 @@ test("パズル: 面の名前と残り手数を出し、解どおりに入れ替
     return {
       result: p.game.puzzleResult,
       title: v.overlayTitle.text,
-      text: v.infoText.text,
+      text: v.infoLine,
       next: v.overlay.list.find((o: any) => o.name === "next")?.text ?? null,
       stored: JSON.parse(localStorage.getItem("swaprise.highscores.v1") ?? "{}"),
     };

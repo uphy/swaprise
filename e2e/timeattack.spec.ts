@@ -6,7 +6,7 @@ test("タイムアタック: 完走すると終了理由の見出しを出さず
   await page.waitForTimeout(200);
   const info = await page.evaluate(() => {
     const p = (window as any).__swaprise;
-    return { limit: p.game.timeLimit, text: p.scene.views[0].infoText.text, boards: p.game.boards.length };
+    return { limit: p.game.timeLimit, text: p.scene.views[0].infoLine, boards: p.game.boards.length };
   });
   expect(info.limit).toBe(180);
   expect(info.boards).toBe(1);
@@ -20,7 +20,7 @@ test("タイムアタック: 完走すると終了理由の見出しを出さず
       timeUp: p.game.timeUp,
       gameOver: p.game.boards[0].gameOver,
       title: v.overlayTitle.text,
-      time: v.infoText.text.slice(0, 5),
+      time: v.infoLine.slice(0, 5),
       stored: JSON.parse(localStorage.getItem("swaprise.highscores.v1") ?? "{}"),
     };
   });

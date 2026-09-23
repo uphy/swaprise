@@ -251,7 +251,7 @@ test("エンドレス: ゲームオーバー後は経過時間の表示が止ま
   });
   await page.waitForFunction(() => (window as any).__swaprise.game.finished, null, { timeout: 10_000 });
   const readInfoText = () =>
-    page.evaluate(() => (window as any).__swaprise.scene.views[0].infoText.text as string);
+    page.evaluate(() => (window as any).__swaprise.scene.views[0].infoLine as string);
   const before = await readInfoText();
   await page.waitForTimeout(1500);
   const after = await readInfoText();

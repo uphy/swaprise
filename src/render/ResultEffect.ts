@@ -31,7 +31,7 @@ export class ResultEffect {
       if (!source.visible) continue;
       const x = source.x + CELL / 2;
       const y = source.y + CELL / 2;
-      const image = scene.add.image(x, y, source.texture.key).setScale(1 / DPR).setAlpha(source.alpha);
+      const image = scene.add.image(x, y, source.texture.key, source.frame.name).setScale(1 / DPR).setAlpha(source.alpha);
       // せり上がり中の上下端も、元の表示範囲を保って飛ばす。
       const top = Math.max(0, -source.y);
       const bottom = Math.max(0, source.y + CELL - BOARD_H);

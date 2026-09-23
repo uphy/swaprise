@@ -826,7 +826,7 @@ export class OnlineScene extends Phaser.Scene {
     }
     const view = this.views[me];
     // せり上げバー。GameScene と同じく、盤面の直下に盤面と同じ幅で置き、時間の行をその下へ下げる（横持ちは HUD の列）
-    if (L.phoneLandscape) this.raiseHint?.resize(100, 44, 48).setPosition(view.ox + BOARD_W + 55, view.oy + 180);
+    if (L.phoneLandscape) this.raiseHint?.resize(100, 44, 48).setPosition(view.ox + BOARD_W + 55, view.oy + 198);
     else {
       const barH = L.touch ? 30 : 26;
       this.raiseHint?.resize(BOARD_W, barH, 48).setPosition(view.ox + BOARD_W / 2, view.oy + BOARD_H + 12 + barH / 2);
