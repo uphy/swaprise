@@ -2,7 +2,14 @@
    見た目はトップメニューに合わせる: 薄い暗幕の下に空が透け、中身は色の縁が光る半透明のガラスの札、ボタンは錠剤形 */
 .score-dialog { position: fixed; inset: 0; margin: 0; width: 100%; max-width: none; max-height: none; padding: 0; border: 0; border-radius: 0; background: rgba(26,16,48,.6); color: #f4f4f8; font: 22px/1.5 "Fredoka", "Hiragino Maru Gothic ProN", "BIZ UDPGothic", "Arial Rounded MT Bold", sans-serif; box-sizing: border-box; overflow: hidden; outline: none; touch-action: pan-y; }
 .score-dialog::backdrop { background: transparent; }
-.score-result { z-index: 10; height: 100dvh; background: linear-gradient(180deg, #2a2690 0%, #7c3fbd 55%, #ff7ea6 100%); }
+/* 結果画面は半透明にして、最後の盤面を透かす。文字は大きく太いので、この濃さなら盤面の上でも読める */
+.score-result { z-index: 10; height: 100dvh; background: linear-gradient(180deg, rgba(42,38,144,.86) 0%, rgba(124,63,189,.82) 55%, rgba(255,126,166,.84) 100%); }
+/* 新記録の紙吹雪。結果画面の中身より前に出し、操作は下へ通す */
+.result-confetti { position: fixed; inset: 0; overflow: hidden; pointer-events: none; z-index: 11; }
+.result-confetti i { position: absolute; top: -24px; left: var(--x); width: 12px; height: 12px; border-radius: 3px; box-shadow: inset 0 -3px 0 rgba(0,0,0,.2); animation: result-confetti-fall 2s cubic-bezier(.3,.6,.6,1) both; }
+.result-confetti i:nth-child(3n) { width: 9px; height: 14px; }
+@keyframes result-confetti-fall { from { transform: translate(0, 0) rotate(0); opacity: 1; } 80% { opacity: 1; } to { transform: translate(var(--drift), 105vh) rotate(var(--spin)); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .result-confetti { display: none; } }
 .result-summary strong { font-size: clamp(48px, 16vw, 64px); line-height: 1.2; color: #ffe066; overflow-wrap: anywhere; }
 .result-summary p { margin: 4px 0 8px; }
 .score-result .result-you { background: rgba(255,255,255,.14); color: #ffe066; border-radius: 10px; }

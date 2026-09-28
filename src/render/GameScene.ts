@@ -36,6 +36,11 @@ import { enqueueScore } from "../scores/client";
 import { playFields, track } from "./analytics";
 
 const STEP_MS = 1000 / 60;
+/**
+ * エンドレス・タイムアタックが終わってから HTML の結果画面を出すまでの時間。この間は盤面の GAME OVER / TIME UP と
+ * 閃光（新記録なら紙吹雪）を見せる。タップ・決定キーで飛ばせ、R のやり直しは待たせない
+ */
+const RESULT_DELAY_MS = 1000;
 /** 縦持ちの CPU 対戦で、CPU の盤面を描く大きさ。 */
 const CPU_BOARD_SCALE = 0.5;
 
@@ -908,9 +913,13 @@ export class GameScene extends Phaser.Scene {
       audio.lose();
       haptics.gameOver();
     }
+    // エンドレス・タイムアタックの結果は HTML の結果画面に出す（seed などを指定したカスタムのエンドレスは盤面の結果だけ）
+    const htmlResult = this.mode === "timeattack" || (this.mode === "endless" && this.scoreRun !== null);
     // 結果表示のあと、盤面の中をタップ（クリック）するとやり直す。自分の盤面には RETRY / MENU のボタンも出す
     this.resultTimer = this.time.delayedCall(800, () => {
       this.resultTimer = null;
+      // HTML の結果画面にも RETRY / MENU があり、盤面のボタンはその下から透けて紛らわしいので置かない
+      if (htmlResult) return;
       this.resultPointer = (p: Phaser.Input.Pointer): void => {
         if (this.touches.some((t) => t.cellAt(p.worldX, p.worldY))) this.restart();
       };
@@ -975,15 +984,53 @@ export class GameScene extends Phaser.Scene {
       const submission = this.scoreRun ? { ...this.scoreRun, mode: this.mode, score: b.score, maxChain: b.maxChain, frames: Math.min(b.frame, g.timeLimit ?? b.frame), swaps: b.stats.swaps } : null;
       if (submission) enqueueScore(submission);
       const rankLine = rank === 1 ? t("NEW RECORD!") : rank > 0 ? t("RANK {rank}", { rank }) : "";
-      if (rank === 1 && b.score > 0) this.time.delayedCall(300, () => this.celebrate(this.views[0]));
-      // タイムアタックの完走は通常の終わり方なので、終了理由の見出しを出さず得点を主役にする。
+      const newRecord = rank === 1 && b.score > 0;
+      // 終わった瞬間は盤面に見出しと閃光を出し、新記録なら紙吹雪も撒く。結果画面はそのあと
+      this.flash(0.35);
+      if (newRecord) this.time.delayedCall(300, () => this.celebrate(this.views[0]));
+      // タイムアタックの完走は通常の終わり方なので、結果画面には終了理由の見出しを出さず得点を主役にする。
+      // 盤面には短く TIME UP を出して、時間で終わったことだけ伝える
       const title = g.timeUp ? null : t("GAME OVER");
-      this.views[0].showOverlay(title ?? "", `${t("SCORE")} ${b.score}\n${t("MAX CHAIN")} x${b.maxChain}\n${t("COMBOS")} ${b.stats.combos}  ${t("CHAINS")} ${b.stats.chains}\n${rankLine}`);
-      if (this.mode === "timeattack" || this.scoreRun) showScoreResult(this, {
-        mode: this.mode, title, score: b.score, chain: b.maxChain, combos: b.stats.combos, chains: b.stats.chains, swaps: b.stats.swaps,
-        progress, id: this.scoreRun?.id ?? null, submission, retry: () => this.restart(), menu: () => this.toMenu(),
-        share: canShare() ? (button) => { void this.share({ setText: (text) => { button.textContent = text; } }); } : undefined,
-      });
+      const boardTitle = g.timeUp ? t("TIME UP") : t("GAME OVER");
+      if (!htmlResult) {
+        this.views[0].showOverlay(boardTitle, `${t("SCORE")} ${b.score}\n${t("MAX CHAIN")} x${b.maxChain}\n${t("COMBOS")} ${b.stats.combos}  ${t("CHAINS")} ${b.stats.chains}\n${rankLine}`);
+      } else {
+        // 結果画面は同じ数字を大きく出すので、盤面には見出しだけを出す
+        this.views[0].showOverlay(boardTitle, "");
+        let shown = false;
+        const showResult = (): void => {
+          if (shown || !this.scene.isActive()) return;
+          shown = true;
+          window.clearTimeout(timer);
+          this.events.off("shutdown", cancel);
+          this.input.off("pointerdown", showResult);
+          kb?.off("keydown", onKey);
+          this.input.gamepad?.off("down", onPad);
+          // 結果画面は半透明で、最後の盤面を暗幕なしで透かす
+          this.views[0].hideOverlay();
+          showScoreResult(this, {
+            mode: this.mode as "endless" | "timeattack", title, score: b.score, chain: b.maxChain, combos: b.stats.combos, chains: b.stats.chains, swaps: b.stats.swaps,
+            progress, id: this.scoreRun?.id ?? null, submission, retry: () => this.restart(), menu: () => this.toMenu(), celebrate: newRecord,
+            share: canShare() ? (button) => { void this.share({ setText: (text) => { button.textContent = text; } }); } : undefined,
+          });
+        };
+        // 待つ間にタップ・クリック・決定キー（Z / Space / Enter）を押したら、すぐ結果画面へ進める
+        const kb = this.input.keyboard;
+        const onKey = (e: KeyboardEvent): void => {
+          if (e.code === "KeyZ" || e.code === "Space" || e.code === "Enter" || e.code === "NumpadEnter") showResult();
+        };
+        kb?.on("keydown", onKey);
+        // ゲームパッドは A（入れ替えと同じボタン）
+        const onPad = (_pad: Phaser.Input.Gamepad.Gamepad, button: Phaser.Input.Gamepad.Button): void => {
+          if (button.index === 0) showResult();
+        };
+        this.input.gamepad?.on("down", onPad);
+        this.input.on("pointerdown", showResult);
+        // 待ちは実時間で数える。Phaser の時計は重い端末でフレームが落ちると遅れ、結果画面が何秒も出なかった
+        const timer = window.setTimeout(showResult, RESULT_DELAY_MS);
+        const cancel = (): void => { shown = true; window.clearTimeout(timer); };
+        this.events.once("shutdown", cancel);
+      }
     } else {
       let recordLine = "";
       // 待機中の CPU 戦は VS CPU の記録に混ぜない

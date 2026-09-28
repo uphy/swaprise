@@ -4,6 +4,7 @@ import type { Progress } from "../scores/progress";
 import { enqueueScore, flushScores, pendingScores, playerName, publication, ranking, savePlayerName, setPublication, standing } from "../scores/client";
 import type { Submission } from "../scores/model";
 import { t } from "./i18n";
+import { KIND_COLORS } from "./palette";
 import "./score-dialog.css";
 
 const node = <K extends keyof HTMLElementTagNameMap>(tag: K, text = "") => {
@@ -19,6 +20,8 @@ export function showScoreResult(scene: Phaser.Scene, options: {
   swaps?: number;
   /** 公開の可否が未決なら、この記録を公開するかを結果画面で聞く。決めるまで記録は端末に留まる */
   submission?: Omit<Submission, "name" | "rules"> | null;
+  /** 新記録。結果画面の上に紙吹雪を降らせる（canvas の紙吹雪は結果画面の下に隠れる） */
+  celebrate?: boolean;
 }): void {
   const root = node("section"); root.className = "score-dialog score-result"; root.setAttribute("aria-label", t("RESULT"));
   const shell = node("div"); shell.className = "score-screen";
@@ -92,7 +95,9 @@ export function showScoreResult(scene: Phaser.Scene, options: {
   addButton(footer, "RETRY", options.retry).className = "primary";
   addButton(footer, "MENU", options.menu);
   if (options.share) { const share = addButton(body, "SHARE", () => options.share!(share)); }
-  shell.append(header, body, footer); root.append(shell); document.body.append(root);
+  shell.append(header, body, footer); root.append(shell);
+  if (options.celebrate) root.append(confetti());
+  document.body.append(root);
   // DOM input never leaks through to the board's tap-to-retry handler.
   root.addEventListener("pointerdown", (event) => event.stopPropagation());
   let controller: AbortController | undefined;
@@ -139,4 +144,23 @@ export function showScoreResult(scene: Phaser.Scene, options: {
     window.removeEventListener("swaprise:scores-updated", refresh); window.removeEventListener("online", refresh); window.removeEventListener("storage", privacy);
   });
   void load();
+}
+
+/** 新記録の紙吹雪。パネルの柄の色の小片を結果画面の上から降らせる。操作は下へ通す */
+function confetti(): HTMLElement {
+  const layer = node("div"); layer.className = "result-confetti"; layer.setAttribute("aria-hidden", "true");
+  for (let i = 0; i < 48; i++) {
+    const piece = node("i");
+    const color = KIND_COLORS[i % KIND_COLORS.length];
+    piece.style.setProperty("--x", `${Math.round(Math.random() * 100)}vw`);
+    piece.style.setProperty("--drift", `${Math.round((Math.random() - 0.5) * 30)}vw`);
+    piece.style.setProperty("--spin", `${Math.round((Math.random() - 0.5) * 1440)}deg`);
+    piece.style.animationDelay = `${Math.round(Math.random() * 500)}ms`;
+    piece.style.animationDuration = `${1600 + Math.round(Math.random() * 1200)}ms`;
+    piece.style.background = `#${color.toString(16).padStart(6, "0")}`;
+    layer.append(piece);
+  }
+  // 降り終わったら片付ける
+  window.setTimeout(() => layer.remove(), 3500);
+  return layer;
 }
