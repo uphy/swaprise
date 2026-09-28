@@ -157,6 +157,18 @@ test("レッスン 6: せり上げ続けて天井に届くと GAME OVER で、�
   expect(result).toEqual({ title: "GAME OVER", next: false, lessons: [] });
 });
 
+test("LEARN と PUZZLE では使わない得点の数字を出さず、エンドレスには出す", async ({ page }) => {
+  const scoreVisible = () => page.evaluate(() => (window as any).__swaprise.scene.views[0].scoreText.visible);
+  for (const url of ["/?mode=lesson&lesson=1&bgm=0&countdown=0", "/?mode=puzzle&bgm=0"]) {
+    await page.goto(url);
+    await page.waitForFunction(() => (window as any).__swaprise?.game.boards[0].frame > 0);
+    expect(await scoreVisible()).toBe(false);
+  }
+  await page.goto("/?mode=endless&bgm=0&countdown=0");
+  await page.waitForFunction(() => (window as any).__swaprise?.game.boards[0].frame > 0);
+  expect(await scoreVisible()).toBe(true);
+});
+
 test("メニューの 1 PLAYER に LEARN があり、まだ終えていない最初の課から始まる", async ({ page }) => {
   await page.addInitScript(() => {
     localStorage.setItem("swaprise.highscores.v1", JSON.stringify({ lessons: [0, 1] }));

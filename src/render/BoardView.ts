@@ -201,6 +201,8 @@ export class BoardView {
         this.scoreText.setOrigin(0, 0.5).setPosition(x0 + 10, pillH + 6 + 28);
       }
     }
+    // パズルとレッスンは得点を使わない。数字だけ残すと盤面の右上のポーズボタンの下に潜って桁が欠けて見えた
+    this.scoreText.setVisible(hasScore);
     this.scoreCaption.setVisible(hasScore && !(this.hud === "top" && (this.scale < 1 || this.scoreText.x < this.scoreCaption.x + this.scoreCaption.width)));
   }
 
