@@ -42,12 +42,23 @@ export function showScoreResult(scene: Phaser.Scene, options: {
     // 比べる記録がない初めての結果では「次回から比較できる」の注記を出さない。狭い画面で 2 行を取り、札と公開の問いを帯の下へ押し出していた
   }
   const body = node("div"); body.className = "score-content";
-  /** 本文の中の el を、下の RETRY / MENU の帯より上の見える範囲に入るまでスクロールする。高すぎるときは上端を合わせる */
-  const reveal = (el: HTMLElement): void => {
+  /**
+   * 本文の中の el を、下の RETRY / MENU の帯より上の見える範囲に入るまでスクロールする。高すぎるときは上端を合わせる。
+   * keepScore では得点の行が本文の上端から外れるところまではスクロールしない。収まらなければ el の下が帯に隠れるほうを選ぶ
+   * （横持ちの背の低い画面で、公開の問いを見せるために得点が上へ押し出されていた）
+   */
+  const reveal = (el: HTMLElement, keepScore = false): void => {
+    if (keepScore) {
+      const over = body.getBoundingClientRect().top - scoreLine.getBoundingClientRect().top;
+      if (over > 0) body.scrollTop -= over;
+    }
     const view = body.getBoundingClientRect(), box = el.getBoundingClientRect();
-    if (box.bottom > view.bottom) body.scrollTop += Math.min(box.bottom - view.bottom, box.top - view.top);
+    const room = keepScore ? Math.max(0, scoreLine.getBoundingClientRect().top - view.top) : Infinity;
+    if (box.bottom > view.bottom) body.scrollTop += Math.min(box.bottom - view.bottom, box.top - view.top, room);
     else if (box.top < view.top) body.scrollTop -= view.top - box.top;
   };
+  /** 「公開する」を押して名前の欄を開いたか。開いたあとは得点より名前の欄を見せる */
+  let formOpen = false;
   // 得点も本文と一緒にスクロールさせ、大きな文字でも再開ボタンを画面内に保つ。
   body.append(summary);
   const stats = node("dl"); stats.className = "result-stats";
@@ -86,7 +97,7 @@ export function showScoreResult(scene: Phaser.Scene, options: {
     };
     const publish = node("button", t("PUBLISH")); publish.type = "button"; publish.className = "primary";
     // 名前の欄と 2 回目の「公開する」は札の下に開くので、帯の下に隠れないよう本文をスクロールして見せる
-    publish.onclick = () => { ask.hidden = true; form.hidden = false; reveal(consent); };
+    publish.onclick = () => { ask.hidden = true; form.hidden = false; formOpen = true; reveal(consent); };
     const keep = node("button", t("KEEP PRIVATE")); keep.type = "button"; keep.onclick = () => decide(false);
     buttons.append(publish, keep);
     const confirm = node("button", t("PUBLISH")); confirm.type = "button"; confirm.className = "primary"; confirm.onclick = () => decide(true);
@@ -113,11 +124,12 @@ export function showScoreResult(scene: Phaser.Scene, options: {
     const room = summary.clientWidth, width = scoreLine.getBoundingClientRect().width;
     if (room > 0 && width > room) scoreLine.style.fontSize = `${Math.floor(parseFloat(getComputedStyle(scoreLine).fontSize) * room / width)}px`;
   };
-  fitScore();
-  void document.fonts?.ready.then(() => { if (root.isConnected) { fitScore(); if (!consent.hidden) reveal(consent); } });
-  window.addEventListener("resize", fitScore);
-  // 公開の問いが本文の見える範囲に収まっていなければ、帯より上に来るまでスクロールする
-  if (!consent.hidden) reveal(consent);
+  // 公開の問いが本文の見える範囲に収まっていなければ、得点を上端に残せる範囲で帯より上へスクロールする。
+  // 書体の読み込みのあとと画面の回転のあとも、同じ決まりで合わせ直す（回転で問いが帯の下に回ることがあった）
+  const layout = (): void => { fitScore(); if (!consent.hidden) reveal(consent, !formOpen); };
+  layout();
+  void document.fonts?.ready.then(() => { if (root.isConnected) layout(); });
+  window.addEventListener("resize", layout);
   // DOM input never leaks through to the board's tap-to-retry handler.
   root.addEventListener("pointerdown", (event) => event.stopPropagation());
   let controller: AbortController | undefined;
@@ -162,7 +174,7 @@ export function showScoreResult(scene: Phaser.Scene, options: {
   scene.events.once("shutdown", () => {
     controller?.abort(); root.remove();
     window.removeEventListener("swaprise:scores-updated", refresh); window.removeEventListener("online", refresh); window.removeEventListener("storage", privacy);
-    window.removeEventListener("resize", fitScore);
+    window.removeEventListener("resize", layout);
   });
   void load();
 }

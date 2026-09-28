@@ -91,6 +91,48 @@ for (const [width, height] of [[320, 568], [412, 839]]) {
     }
   });
 }
+// 横持ちの背の低い画面では、得点の行と札が本文の上端から外れず、公開のボタンが RETRY / MENU の帯より上に見える。
+// 公開の問いを見せるための表示時のスクロールで、得点が見出しの下へ押し出されていた
+async function landscapeLayout(page: Page) {
+  return page.evaluate(() => {
+    const root = document.querySelector(".score-result")!;
+    const box = (sel: string) => root.querySelector(sel)!.getBoundingClientRect();
+    const view = box(".score-content"), score = box(".result-summary strong"), stats = box(".result-stats"), ask = box(".result-consent-ask nav");
+    return {
+      scoreVisible: score.top >= view.top - 1 && score.bottom <= view.bottom + 1,
+      statsTopVisible: stats.top >= view.top - 1,
+      askAboveBar: ask.bottom <= box(".score-footer").top + 1,
+    };
+  });
+}
+const allVisible = { scoreVisible: true, statsTopVisible: true, askAboveBar: true };
+async function finishWith12345(page: Page): Promise<void> {
+  await page.goto("/?mode=endless&countdown=0&bgm=0");
+  await page.waitForFunction(() => (window as any).__swaprise?.game.boards[0].frame > 0);
+  await page.evaluate(() => {
+    const p = (window as any).__swaprise;
+    const b = p.game.boards[0];
+    b.score = 12345; b.maxChain = 3; b.stats.swaps = 40;
+    b.gameOver = true; p.game.finished = true;
+  });
+  await expect(page.getByRole("region", { name: "RESULT", exact: true }).getByRole("heading", { name: "Publish this score?" })).toBeVisible();
+  await page.waitForFunction(() => document.fonts.status === "loaded");
+}
+for (const [width, height] of [[568, 320], [640, 360], [740, 360]]) {
+  test(`first result on a ${width}x${height} landscape keeps the score and the publish buttons in view`, async ({ page }) => {
+    await page.setViewportSize({ width, height });
+    await finishWith12345(page);
+    await expect.poll(() => landscapeLayout(page)).toEqual(allVisible);
+  });
+}
+// 縦持ちで結果画面を出したまま横へ回しても、同じ決まりで得点と公開のボタンを見せる
+test("rotating the first result to a short landscape keeps the score and the publish buttons in view", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 568 });
+  await finishWith12345(page);
+  await expect.poll(() => landscapeLayout(page)).toEqual(allVisible);
+  await page.setViewportSize({ width: 568, height: 320 });
+  await expect.poll(() => landscapeLayout(page)).toEqual(allVisible);
+});
 test("keep private stores scores locally, no session or upload requests", async ({ page }) => {
   const requests: string[] = []; page.on("request", (r) => { if (r.url().includes("/api/")) requests.push(r.url()); });
   await page.goto("/?mode=endless&countdown=0&bgm=0");

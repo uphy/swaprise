@@ -83,6 +83,27 @@
   .score-result .result-consent { margin: 8px 0; padding: 8px 10px; }
   .score-result .score-footer button { min-height: 48px; }
 }
+/* 横持ちの背の低い画面（高さ 480px 以下）では、得点を 40px に縮めて札と公開の問いも詰め、得点と公開のボタンをスクロールなしで同じ画面に収める */
+@media (max-height: 480px) and (orientation: landscape) {
+  .score-result .result-summary strong { font-size: 40px; line-height: 1.15; }
+  .score-result .result-summary { margin-bottom: 6px; }
+  .score-result .result-summary p { font-size: 18px; line-height: 1.3; margin: 0; }
+  .score-result .result-stats { margin: 6px 0; gap: 6px; }
+  .score-result .result-stats div { padding: 4px; }
+  .score-result .result-stats dt { font-size: 14px; line-height: 1.3; }
+  .score-result .result-stats dd { font-size: 22px; line-height: 1.2; margin-top: 0; }
+  .score-result .result-consent { margin: 6px 0; padding: 6px 10px; }
+  .score-dialog .result-consent-ask h3 { font-size: 18px; }
+  .score-result .result-consent nav button { min-height: 44px; font-size: 18px; }
+}
+/* さらに背の低い横持ち（568×320 など）では縦に積むと収まらないので、得点を左、札を右に並べ、公開の問いはその下に全幅で置く */
+@media (max-height: 340px) and (orientation: landscape) {
+  .score-result .score-content { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 12px; align-content: start; }
+  .score-result .score-content > * { grid-column: 1 / -1; }
+  .score-result .score-content > .result-summary { grid-column: 1; align-self: center; margin: 0; }
+  .score-result .score-content > .result-stats { grid-column: 2; }
+  .score-result .result-stats.four { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
 @media (min-height: 750px) { .score-screen { padding-top: max(40px, env(safe-area-inset-top)); } }
 @media (max-height: 480px) { .score-screen { padding-top: max(8px, env(safe-area-inset-top)); } .score-screen header { padding-bottom: 8px; } .score-screen header small { display: none; } .score-dialog h2 { margin: 0; } .score-footer { padding-top: 8px; } }
 @media (max-height: 480px) and (min-width: 700px) { .score-tools { display: flex; gap: 12px; } .score-tools nav { flex: 1; min-width: 0; } }
