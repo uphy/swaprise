@@ -59,6 +59,38 @@ test("first result keeps the four stats above the publish question and inside th
   expect(stats.y + stats.height).toBeLessThanOrEqual(footer.y);
   await expect(result.locator(".result-stats dd")).toHaveCount(4);
 });
+// 5 桁の得点でも、得点は 1 行に収まり、4 つの札と公開の問いのボタンが下の RETRY / MENU の帯より上に見える。
+// 「公開する」を押したあとは、名前の欄と 2 回目の「公開する」が帯より上へスクロールされる
+for (const [width, height] of [[320, 568], [412, 839]]) {
+  test(`first result with a 5-digit score stays above RETRY / MENU on ${width}x${height}`, async ({ page }) => {
+    await page.setViewportSize({ width, height });
+    await page.goto("/?mode=endless&countdown=0&bgm=0");
+    await page.waitForFunction(() => (window as any).__swaprise?.game.boards[0].frame > 0);
+    await page.evaluate(() => {
+      const p = (window as any).__swaprise;
+      const b = p.game.boards[0];
+      b.score = 12345; b.maxChain = 3; b.stats.swaps = 40;
+      b.gameOver = true; p.game.finished = true;
+    });
+    const result = page.getByRole("region", { name: "RESULT", exact: true });
+    await expect(result.getByRole("heading", { name: "Publish this score?" })).toBeVisible();
+    const lines = await result.locator(".result-summary strong").evaluate((el) =>
+      el.getBoundingClientRect().height / parseFloat(getComputedStyle(el).fontSize));
+    expect(lines).toBeLessThan(1.6);
+    const barTop = (await result.locator(".score-footer").boundingBox())!.y;
+    const bottom = async (sel: string) => { const b = (await result.locator(sel).boundingBox())!; return b.y + b.height; };
+    expect(await bottom(".result-stats")).toBeLessThanOrEqual(barTop);
+    expect(await bottom(".result-consent-ask nav")).toBeLessThanOrEqual(barTop);
+    await result.locator(".result-consent-ask button.primary").click();
+    const contentTop = (await result.locator(".score-content").boundingBox())!.y;
+    for (const sel of [".result-consent-form input", ".result-consent-form button.primary"]) {
+      await expect.poll(async () => {
+        const b = (await result.locator(sel).boundingBox())!;
+        return b.y >= contentTop - 1 && b.y + b.height <= barTop + 1;
+      }).toBe(true);
+    }
+  });
+}
 test("keep private stores scores locally, no session or upload requests", async ({ page }) => {
   const requests: string[] = []; page.on("request", (r) => { if (r.url().includes("/api/")) requests.push(r.url()); });
   await page.goto("/?mode=endless&countdown=0&bgm=0");

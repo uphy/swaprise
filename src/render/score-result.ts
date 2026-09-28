@@ -28,7 +28,8 @@ export function showScoreResult(scene: Phaser.Scene, options: {
   const header = node("header"); header.append(node("small", t(options.mode === "endless" ? "ENDLESS" : "TIME ATTACK")));
   if (options.title) header.append(node("h2", options.title));
   const summary = node("div"); summary.className = "result-summary";
-  summary.append(node("strong", `${options.score.toLocaleString()} ${t("POINTS")}`));
+  // 得点と POINTS は 1 行に保つ。5 桁以上で狭い画面に収まらなければ、表示してから幅に合わせて文字を縮める（fitScore）
+  const scoreLine = node("strong", `${options.score.toLocaleString()} ${t("POINTS")}`); summary.append(scoreLine);
   if (options.progress) {
     const { best, average, count } = options.progress;
     const bestLine = best === null ? t("First record!") : options.score > best ? t("New best! +{points}", { points: options.score - best })
@@ -37,9 +38,16 @@ export function showScoreResult(scene: Phaser.Scene, options: {
     if (average !== null) {
       const difference = average === 0 ? `${options.score} ${t("POINTS")}` : `${Math.round((options.score - average) / average * 100)}%`;
       summary.append(node("p", t("vs previous {count} average: {difference}", { count, difference: `${options.score >= average ? "+" : ""}${difference}` })));
-    } else summary.append(node("p", t("Recent trend appears from your next game.")));
+    }
+    // 比べる記録がない初めての結果では「次回から比較できる」の注記を出さない。狭い画面で 2 行を取り、札と公開の問いを帯の下へ押し出していた
   }
   const body = node("div"); body.className = "score-content";
+  /** 本文の中の el を、下の RETRY / MENU の帯より上の見える範囲に入るまでスクロールする。高すぎるときは上端を合わせる */
+  const reveal = (el: HTMLElement): void => {
+    const view = body.getBoundingClientRect(), box = el.getBoundingClientRect();
+    if (box.bottom > view.bottom) body.scrollTop += Math.min(box.bottom - view.bottom, box.top - view.top);
+    else if (box.top < view.top) body.scrollTop -= view.top - box.top;
+  };
   // 得点も本文と一緒にスクロールさせ、大きな文字でも再開ボタンを画面内に保つ。
   body.append(summary);
   const stats = node("dl"); stats.className = "result-stats";
@@ -77,7 +85,8 @@ export function showScoreResult(scene: Phaser.Scene, options: {
       consent.hidden = true; void load();
     };
     const publish = node("button", t("PUBLISH")); publish.type = "button"; publish.className = "primary";
-    publish.onclick = () => { ask.hidden = true; form.hidden = false; };
+    // 名前の欄と 2 回目の「公開する」は札の下に開くので、帯の下に隠れないよう本文をスクロールして見せる
+    publish.onclick = () => { ask.hidden = true; form.hidden = false; reveal(consent); };
     const keep = node("button", t("KEEP PRIVATE")); keep.type = "button"; keep.onclick = () => decide(false);
     buttons.append(publish, keep);
     const confirm = node("button", t("PUBLISH")); confirm.type = "button"; confirm.className = "primary"; confirm.onclick = () => decide(true);
@@ -98,6 +107,17 @@ export function showScoreResult(scene: Phaser.Scene, options: {
   shell.append(header, body, footer); root.append(shell);
   if (options.celebrate) root.append(confetti());
   document.body.append(root);
+  // 得点の行が本文の幅を超えたら、はみ出さない大きさまで縮める。書体の読み込みと画面の回転のあとも合わせ直す
+  const fitScore = (): void => {
+    scoreLine.style.fontSize = "";
+    const room = summary.clientWidth, width = scoreLine.getBoundingClientRect().width;
+    if (room > 0 && width > room) scoreLine.style.fontSize = `${Math.floor(parseFloat(getComputedStyle(scoreLine).fontSize) * room / width)}px`;
+  };
+  fitScore();
+  void document.fonts?.ready.then(() => { if (root.isConnected) { fitScore(); if (!consent.hidden) reveal(consent); } });
+  window.addEventListener("resize", fitScore);
+  // 公開の問いが本文の見える範囲に収まっていなければ、帯より上に来るまでスクロールする
+  if (!consent.hidden) reveal(consent);
   // DOM input never leaks through to the board's tap-to-retry handler.
   root.addEventListener("pointerdown", (event) => event.stopPropagation());
   let controller: AbortController | undefined;
@@ -142,6 +162,7 @@ export function showScoreResult(scene: Phaser.Scene, options: {
   scene.events.once("shutdown", () => {
     controller?.abort(); root.remove();
     window.removeEventListener("swaprise:scores-updated", refresh); window.removeEventListener("online", refresh); window.removeEventListener("storage", privacy);
+    window.removeEventListener("resize", fitScore);
   });
   void load();
 }

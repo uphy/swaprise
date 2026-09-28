@@ -10,7 +10,8 @@
 .result-confetti i:nth-child(3n) { width: 9px; height: 14px; }
 @keyframes result-confetti-fall { from { transform: translate(0, 0) rotate(0); opacity: 1; } 80% { opacity: 1; } to { transform: translate(var(--drift), 105vh) rotate(var(--spin)); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .result-confetti { display: none; } }
-.result-summary strong { font-size: clamp(48px, 16vw, 64px); line-height: 1.2; color: #ffe066; overflow-wrap: anywhere; }
+/* 得点と POINTS は 1 行に保つ。幅に収まらない桁数では score-result.ts の fitScore が文字を縮める */
+.result-summary strong { font-size: clamp(48px, 16vw, 64px); line-height: 1.2; color: #ffe066; white-space: nowrap; }
 .result-summary p { margin: 4px 0 8px; }
 .score-result .result-you { background: rgba(255,255,255,.14); color: #ffe066; border-radius: 10px; }
 .score-result nav { flex-wrap: wrap; }
@@ -69,6 +70,19 @@
 .result-consent nav { display: flex; gap: 12px; margin-top: 10px; }
 .score-result .result-consent nav button { flex: 1; min-height: 48px; font-size: 20px; }
 .result-stats dd { font-size: 34px; font-weight: 600; margin: 6px 0 0; overflow-wrap: anywhere; }
+/* 背の低いスマホ（iPhone SE の 568px など）では、見出し・札・公開の問いを詰めて、4 つの札と公開のボタンを RETRY / MENU の帯より上に収める */
+@media (max-height: 700px) {
+  .score-result .score-screen header { padding-bottom: 8px; }
+  .score-result h2 { font-size: 28px; line-height: 1.3; }
+  .score-result .result-summary { margin-bottom: 8px; }
+  .score-result .result-summary p { margin: 0 0 4px; }
+  .score-result .result-stats { margin: 8px 0; gap: 6px; }
+  .score-result .result-stats div { padding: 6px 4px; }
+  .score-result .result-stats dt { font-size: 16px; line-height: 1.3; }
+  .score-result .result-stats dd { font-size: 26px; line-height: 1.2; margin-top: 2px; }
+  .score-result .result-consent { margin: 8px 0; padding: 8px 10px; }
+  .score-result .score-footer button { min-height: 48px; }
+}
 @media (min-height: 750px) { .score-screen { padding-top: max(40px, env(safe-area-inset-top)); } }
 @media (max-height: 480px) { .score-screen { padding-top: max(8px, env(safe-area-inset-top)); } .score-screen header { padding-bottom: 8px; } .score-screen header small { display: none; } .score-dialog h2 { margin: 0; } .score-footer { padding-top: 8px; } }
 @media (max-height: 480px) and (min-width: 700px) { .score-tools { display: flex; gap: 12px; } .score-tools nav { flex: 1; min-width: 0; } }
