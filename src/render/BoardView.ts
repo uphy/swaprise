@@ -142,6 +142,14 @@ export class BoardView {
     return { x: this.ox + (BOARD_W / 2) * this.scale, y: this.oy + (BOARD_H / 2) * this.scale };
   }
 
+  /**
+   * 半分の大きさで描く CPU の盤面か。背の低い縦持ちのレッスンは盤面を 0.9 倍ほどに縮めるが、
+   * 名前の札は 1 段のままでよいので、ここには入れない
+   */
+  private get compact(): boolean {
+    return this.scale < 0.75;
+  }
+
   /** 画面上の位置と大きさを決める。生成直後とレイアウト変更時に呼ぶ。 */
   place(ox: number, oy: number, scale = 1, hud: HudSide = "top", infoY = BOARD_H + 14): void {
     this.ox = ox;
@@ -182,7 +190,7 @@ export class BoardView {
       g.fillStyle(0xffffff, 0.35);
       g.fillRoundedRect(x + 4, cy - pillH / 2 + 2, pillW - 8, pillH * 0.38, { tl: pillH * 0.3, tr: pillH * 0.3, bl: 2, br: 2 });
     };
-    if (this.hud === "top" && this.scale < 1) {
+    if (this.hud === "top" && this.compact) {
       // 小さく描く相手の盤面は幅が足りないので、名前の札と得点を 2 段に積む（画面では盤面の上 12〜60px）
       pill(0, -52);
       label.setOrigin(0.5, 0.5).setPosition(pillW / 2, -52);
@@ -251,7 +259,7 @@ export class BoardView {
     label.setVisible(true);
     // パズルとレッスンは得点を使わない。数字だけ残すと盤面の右上のポーズボタンの下に潜って桁が欠けて見えた
     this.scoreText.setVisible(hasScore);
-    this.scoreCaption.setVisible(hasScore && !(this.hud === "top" && (this.scale < 1 || this.scoreText.x < this.scoreCaption.x + this.scoreCaption.width)));
+    this.scoreCaption.setVisible(hasScore && !(this.hud === "top" && (this.compact || this.scoreText.x < this.scoreCaption.x + this.scoreCaption.width)));
   }
 
   /** 盤面の上の名前と得点の板に使える幅。盤面の右上にポーズボタンを置くときに狭める */
