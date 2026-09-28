@@ -56,4 +56,12 @@ test("タイムアタック: 残り時間は得点と同じ大きさで盤面の
   expect(Number(count.text)).toBeGreaterThanOrEqual(4);
   expect(Number(count.text)).toBeLessThanOrEqual(5);
   expect(count.alpha).toBeLessThan(0.6);
+  // 数字は盤面の井戸の上、パネルの下に描き、パネルの色を濁らせない
+  const order = await page.evaluate(() => {
+    const v = (window as any).__swaprise.scene.views[0];
+    return { count: v.root.getIndex(v.countText), frame: v.root.getIndex(v.frame), panel: v.root.getIndex(v.cells[0][0]), next: v.root.getIndex(v.nextCells[0]) };
+  });
+  expect(order.count).toBeGreaterThan(order.frame);
+  expect(order.count).toBeLessThan(order.panel);
+  expect(order.count).toBeLessThan(order.next);
 });

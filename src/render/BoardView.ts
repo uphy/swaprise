@@ -427,8 +427,9 @@ export class BoardView {
       .text(0, 0, "", { fontFamily: FONT_UI, fontSize: "14px", color: TEXT_COLOR, fontStyle: "700", stroke: HUD_INK, strokeThickness: 3 })
       .setVisible(false);
     this.stopBar = scene.add.graphics();
-    // 残り 10 秒の数字はパネルの上、HUD と結果の表示の下
-    if (this.countText) this.root.add(this.countText);
+    // 残り 10 秒の数字は盤面の井戸（枠の絵）の上、パネルの下に置き、パネルの隙間と空いたところにだけ見せる。
+    // パネルの上に半透明で重ねると、黄が橙に、水色が灰色に濁って見えた
+    if (this.countText) this.root.addAt(this.countText, this.root.getIndex(this.frame) + 1);
     this.root.add([this.hudGfx, this.labelText, this.scoreCaption, this.scoreText, this.statsGfx, this.pendingGfx, this.pendingText, this.stopBar]);
     if (this.timeCaption && this.timeText) this.root.add([this.timeCaption, this.timeText]);
 
