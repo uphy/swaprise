@@ -35,6 +35,8 @@
 .score-dialog details { margin-top: 18px; border-top: 1px solid rgba(255,255,255,.25); }
 .score-dialog summary { cursor: pointer; padding: 14px 0; min-height: 28px; font-size: 18px; color: #e6e2f7; }
 .score-dialog button { min-height: 56px; padding: 10px 12px; border: 2px solid rgba(255,255,255,.6); border-radius: 999px; background: linear-gradient(180deg, rgba(255,255,255,.12) 0%, rgba(255,255,255,.12) 45%, rgba(255,255,255,0) 45%) , rgba(255,255,255,.2); color: #f4f4f8; font: inherit; font-weight: 600; font-size: 20px; cursor: pointer; touch-action: manipulation; }
+/* 大文字の見出し・ボタン・札の見出しはカーニングを切る（ボタンの font: inherit より後ろに置く）。同梱の Fredoka は I と V の組を詰めすぎ、KEEP PRIVATE が KEEP PRMATE に見えた（合字を切っても直らない） */
+.score-dialog button, .score-dialog h2, .score-dialog h3, .score-dialog dt, .score-dialog header small { font-kerning: none; }
 .score-dialog button[aria-pressed=true], .score-dialog button.primary { color: #2a2050; background: #ffe066; border-color: #fff4bf; }
 .score-dialog :focus-visible { outline: 2px solid #ffe066; outline-offset: 2px; }
 .score-dialog nav { display: flex; gap: 8px; margin-bottom: 10px; }
@@ -97,7 +99,8 @@
   .score-result .result-stats dd { font-size: 22px; line-height: 1.2; margin-top: 0; }
   .score-result .result-consent { margin: 6px 0; padding: 6px 10px; }
   .score-dialog .result-consent-ask h3 { font-size: 18px; }
-  .score-result .result-consent nav button { min-height: 44px; font-size: 18px; }
+  /* 左右の余白を詰めて KEEP PRIVATE を 1 行に保つ（カーニングを切ると少し幅が増え、568×320 では 2 行に折れた） */
+  .score-result .result-consent nav button { min-height: 44px; font-size: 18px; padding-inline: 6px; }
 }
 /* さらに背の低い横持ち（568×320 など）では縦に積むと収まらないので、得点を左、札を右に並べ、公開の問いはその下に全幅で置く */
 @media (max-height: 340px) and (orientation: landscape) {

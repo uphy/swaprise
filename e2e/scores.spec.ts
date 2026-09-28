@@ -171,6 +171,14 @@ for (const [width, height] of [[320, 568], [375, 667], [412, 839]]) {
     expect(await bottomFade(page)).toEqual({ faded: false, askClear: true });
   });
 }
+// 同梱の Fredoka は I と V の組を詰めすぎ、KEEP PRIVATE が KEEP PRMATE に見えた。大文字のボタンと見出しはカーニングを切る
+test("KEEP PRIVATE and the headings are drawn without kerning so IV does not read as M", async ({ page }) => {
+  await finishWith12345(page);
+  const result = page.getByRole("region", { name: "RESULT", exact: true });
+  for (const target of [result.getByRole("button", { name: "KEEP PRIVATE" }), result.getByRole("button", { name: "PUBLISH", exact: true }), result.getByRole("heading", { name: "Publish this score?" })]) {
+    expect(await target.evaluate((el) => getComputedStyle(el).fontKerning)).toBe("none");
+  }
+});
 test("keep private stores scores locally, no session or upload requests", async ({ page }) => {
   const requests: string[] = []; page.on("request", (r) => { if (r.url().includes("/api/")) requests.push(r.url()); });
   await page.goto("/?mode=endless&countdown=0&bgm=0");

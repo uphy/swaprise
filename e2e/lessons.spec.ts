@@ -23,6 +23,17 @@ async function tickUntilFinished(page: Page, max = 3000): Promise<void> {
   }, max);
 }
 
+// 同梱の Fredoka は I と V の組を詰めすぎ、canvas の「ACTIVE CHAIN」が「ACTME CHAIN」に読めた。Fredoka の文字はカーニングを切って描く
+test("レッスン 5: ACTIVE CHAIN の見出しをカーニングなしで描き、IV が M に見えない", async ({ page }) => {
+  await openLesson(page, 5);
+  await page.waitForFunction(() => (window as any).__swaprise.scene.children.list.some((o: any) => o.type === "Text" && o.text.includes("ACTIVE CHAIN")));
+  const kerning = await page.evaluate(() => (window as any).__swaprise.scene.children.list
+    .filter((o: any) => o.type === "Text" && /Fredoka/.test(o.style.fontFamily))
+    .map((o: any) => [o.text.split("\n")[0], o.context.fontKerning]));
+  expect(kerning.length).toBeGreaterThan(0);
+  for (const [text, value] of kerning) expect(value, text).toBe("none");
+});
+
 test("レッスン 1: 説明と課の名前を出し、せり上がりもバーもなく、3 枚消すと NICE! になって記録が残り、NEXT LESSON で次の課へ", async ({ page }) => {
   await openLesson(page, 1);
   const info = await page.evaluate(() => {
