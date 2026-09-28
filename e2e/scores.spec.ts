@@ -60,8 +60,9 @@ test("first result keeps the four stats above the publish question and inside th
   await expect(result.locator(".result-stats dd")).toHaveCount(4);
 });
 // 5 桁の得点でも、得点は 1 行に収まり、4 つの札と公開の問いのボタンが下の RETRY / MENU の帯より上に見える。
-// 「公開する」を押したあとは、名前の欄と 2 回目の「公開する」が帯より上へスクロールされる
-for (const [width, height] of [[320, 568], [412, 839]]) {
+// 「公開する」を押したあとは、名前の欄と 2 回目の「公開する」が帯より上へスクロールされる。
+// 568×320 の横持ちでは名前の欄の全体が本文の見える高さより高く、2 回目の「公開する」が帯の下に半分隠れていた
+for (const [width, height] of [[320, 568], [412, 839], [568, 320]]) {
   test(`first result with a 5-digit score stays above RETRY / MENU on ${width}x${height}`, async ({ page }) => {
     await page.setViewportSize({ width, height });
     await page.goto("/?mode=endless&countdown=0&bgm=0");

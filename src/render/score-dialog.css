@@ -109,6 +109,13 @@
   .score-result .score-content > .result-summary { grid-column: 1; align-self: center; margin: 0; }
   .score-result .score-content > .result-stats { grid-column: 2; }
   .score-result .result-stats.four { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  /* 「公開する」のあとの説明は小さくし、名前の欄と 2 回目の公開する / 公開しないを横に並べて、欄の高さを見える範囲（約 190px）に収める */
+  .score-result .result-consent-form { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 10px; align-items: end; }
+  .score-result .result-consent-form > p { grid-column: 1 / -1; font-size: 15px; line-height: 1.3; }
+  .score-result .result-consent-form label { margin: 4px 0 0; font-size: 16px; line-height: 1.3; }
+  .score-dialog .result-consent-form input[type=text] { min-height: 44px; margin-top: 2px; padding: 6px 10px; font-size: 18px; }
+  .score-result .result-consent-form nav { margin: 0; }
+  .score-result .result-consent-form nav button { flex: none; white-space: nowrap; padding-inline: 14px; }
 }
 @media (min-height: 750px) { .score-screen { padding-top: max(40px, env(safe-area-inset-top)); } }
 @media (max-height: 480px) { .score-screen { padding-top: max(8px, env(safe-area-inset-top)); } .score-screen header { padding-bottom: 8px; } .score-screen header small { display: none; } .score-dialog h2 { margin: 0; } .score-footer { padding-top: 8px; } }

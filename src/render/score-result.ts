@@ -59,6 +59,8 @@ export function showScoreResult(scene: Phaser.Scene, options: {
   };
   /** 「公開する」を押して名前の欄を開いたか。開いたあとは得点より名前の欄を見せる */
   let formOpen = false;
+  /** 名前の欄を開いたあとに見せる範囲。欄の全体が入らなければ、欄の上端より 2 回目の「公開する」の行を帯より上に見せる */
+  let revealForm = (): void => { reveal(consent); };
   // 得点も本文と一緒にスクロールさせ、大きな文字でも再開ボタンを画面内に保つ。
   body.append(summary);
   const stats = node("dl"); stats.className = "result-stats";
@@ -97,7 +99,9 @@ export function showScoreResult(scene: Phaser.Scene, options: {
     };
     const publish = node("button", t("PUBLISH")); publish.type = "button"; publish.className = "primary";
     // 名前の欄と 2 回目の「公開する」は札の下に開くので、帯の下に隠れないよう本文をスクロールして見せる
-    publish.onclick = () => { ask.hidden = true; form.hidden = false; formOpen = true; reveal(consent); };
+    // 背の低い横持ち（568×320 など）では欄の全体が入らないので、2 回目の「公開する」の行を優先して帯より上に合わせる
+    revealForm = () => { reveal(consent); reveal(confirmNav); };
+    publish.onclick = () => { ask.hidden = true; form.hidden = false; formOpen = true; revealForm(); };
     const keep = node("button", t("KEEP PRIVATE")); keep.type = "button"; keep.onclick = () => decide(false);
     buttons.append(publish, keep);
     const confirm = node("button", t("PUBLISH")); confirm.type = "button"; confirm.className = "primary"; confirm.onclick = () => decide(true);
@@ -126,7 +130,11 @@ export function showScoreResult(scene: Phaser.Scene, options: {
   };
   // 公開の問いが本文の見える範囲に収まっていなければ、得点を上端に残せる範囲で帯より上へスクロールする。
   // 書体の読み込みのあとと画面の回転のあとも、同じ決まりで合わせ直す（回転で問いが帯の下に回ることがあった）
-  const layout = (): void => { fitScore(); if (!consent.hidden) reveal(consent, !formOpen); peek(); };
+  const layout = (): void => {
+    fitScore();
+    if (!consent.hidden) { if (formOpen) revealForm(); else reveal(consent, true); }
+    peek();
+  };
   /**
    * 本文の下端でボタンや文字が途中で切れているときだけ、下端を薄くぼかして「下に続きがある」と見せる
    * （横持ちの背の低い画面で、SHARE の上半分が帯の上にのぞいて壊れて見えた）。
