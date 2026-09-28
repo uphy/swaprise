@@ -118,11 +118,23 @@ async function finishWith12345(page: Page): Promise<void> {
   await expect(page.getByRole("region", { name: "RESULT", exact: true }).getByRole("heading", { name: "Publish this score?" })).toBeVisible();
   await page.waitForFunction(() => document.fonts.status === "loaded");
 }
+const scoreSize = (page: Page) => page.locator(".score-result .result-summary strong").evaluate((el) => parseFloat(getComputedStyle(el).fontSize));
 for (const [width, height] of [[568, 320], [640, 360], [740, 360]]) {
   test(`first result on a ${width}x${height} landscape keeps the score and the publish buttons in view`, async ({ page }) => {
     await page.setViewportSize({ width, height });
     await finishWith12345(page);
     await expect.poll(() => landscapeLayout(page)).toEqual(allVisible);
+    expect(await scoreSize(page)).toBe(40);
+  });
+}
+// 高さ 390〜412px の横持ちは、得点を縮めなくても公開のボタンまで帯より上に収まる。
+// 高さ 480px 以下をまとめて 40px に縮めていたので、以前は 64px で読めていた得点が小さくなっていた
+for (const [width, height] of [[844, 390], [839, 412], [915, 412]]) {
+  test(`first result on a ${width}x${height} landscape keeps the 64px score with the publish buttons in view`, async ({ page }) => {
+    await page.setViewportSize({ width, height });
+    await finishWith12345(page);
+    await expect.poll(() => landscapeLayout(page)).toEqual(allVisible);
+    expect(await scoreSize(page)).toBe(64);
   });
 }
 // 縦持ちで結果画面を出したまま横へ回しても、同じ決まりで得点と公開のボタンを見せる
