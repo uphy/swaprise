@@ -26,6 +26,10 @@ export function announceOpponentChains(events: BoardEvent[], mine: BoardView): v
     audio.opponentChain();
   }
 }
+/** 連鎖の吹き出しの大きさの倍率。x2 を 1 倍に、x3 1.25 倍、x4 1.4 倍、x5 以上 1.6 倍 */
+export function chainPopupScale(chain: number): number {
+  return chain >= 5 ? 1.6 : chain === 4 ? 1.4 : chain === 3 ? 1.25 : 1;
+}
 /** 盤面と横置きの HUD の間隔。 */
 const HUD_GAP = 12;
 /**
@@ -446,7 +450,7 @@ export class BoardView {
           if (soundOn) audio.match(e.panels, e.chain);
           if (hapticOn) haptics.match(e.panels, e.chain);
           this.flashMatched();
-          this.popup(e.x, e.y, e.panels, e.chain);
+          this.popup(e);
           break;
         case "pop":
           if (soundOn) audio.pop(this.popIndex++);
@@ -535,50 +539,80 @@ export class BoardView {
   }
 
   /**
-   * 「4」「x2」の吹き出し。同時消しは赤、連鎖は連鎖数で色が上がり、数が増えるほど大きく出る。
-   * 出た瞬間に大きく弾んでから、少し浮いて消える
+   * 「4」「x2」の吹き出し。同時消しは赤、連鎖は連鎖数で色が上がり、数が増えるほど大きく出る（x2 を 1 倍に x3 1.25 倍、x4 1.4 倍、x5 以上 1.6 倍）。
+   * 消えるパネルに重ねると同じ色で読めないので、揃った範囲の 1 段上に濃紺の板を敷いて出す。上に場所がなければ範囲の中ほどに出し、
+   * どちらも盤面の中に収める。出た瞬間に大きく弾んでから、少し浮いて消える
    */
-  private popup(x: number, y: number, panels: number, chain: number): void {
-    const px = Math.min(BOARD_W - 30, Math.max(30, x * CELL + CELL / 2));
-    const py = (ROWS - 1 - y) * CELL;
+  private popup(e: { panels: number; chain: number; left: number; right: number; top: number; bottom: number }): void {
+    const { panels, chain } = e;
     const items: { text: string; caption: string; color: string; size: number }[] = [];
     if (panels >= 4) items.push({ text: String(panels), caption: "COMBO", color: "#ff5c6c", size: 22 + Math.min(12, (panels - 4) * 2) });
-    if (chain >= 2) items.push({ text: `x${chain}`, caption: "CHAIN", color: chainColor(chain), size: 26 + Math.min(22, (chain - 2) * 3) });
-    if (items.length) this.ring(px, py + CELL / 2, Phaser.Display.Color.HexStringToColor(items[items.length - 1].color).color, 1.2 + Math.min(2, chain * 0.25));
-    // 見出し（COMBO / CHAIN）の下に数字。2 つあれば縦に積む。1 つ目の数字の中心が揃った行の上端に来る
-    let top = py - 26;
-    items.forEach((it) => {
+    if (chain >= 2) items.push({ text: `x${chain}`, caption: "CHAIN", color: chainColor(chain), size: Math.round(26 * chainPopupScale(chain)) });
+    // 連鎖が伸びたら得点の文字も弾む
+    if (chain >= 2) this.scoreBump = 1;
+    if (!items.length) return;
+    const rise = this.board.riseProgress * CELL;
+    const groupTop = (ROWS - 1 - e.top) * CELL - rise;
+    const groupBottom = (ROWS - e.bottom) * CELL - rise;
+    const groupX = ((e.left + e.right + 1) / 2) * CELL;
+    this.ring(groupX, (groupTop + groupBottom) / 2, Phaser.Display.Color.HexStringToColor(items[items.length - 1].color).color, 1.2 + Math.min(2, chain * 0.25));
+    // 見出し（COMBO / CHAIN）の下に数字。2 つあれば縦に積む。先に作って大きさを測ってから置く
+    const parts = items.map((it) => {
       const caption = this.scene.add
-        .text(px, top, it.caption, { fontFamily: FONT_UI, fontSize: "10px", fontStyle: "700", color: "#ffffff", stroke: HUD_INK, strokeThickness: 4 })
+        .text(0, 0, it.caption, { fontFamily: FONT_UI, fontSize: "10px", fontStyle: "700", color: "#ffffff", stroke: HUD_INK, strokeThickness: 4 })
         .setOrigin(0.5, 0)
         .setAlpha(0);
       const main = this.scene.add
-        .text(px, top + 9, it.text, { fontFamily: FONT_UI, fontSize: `${it.size}px`, fontStyle: "700", color: it.color, stroke: HUD_INK, strokeThickness: 6 })
+        .text(0, 0, it.text, { fontFamily: FONT_UI, fontSize: `${it.size}px`, fontStyle: "700", color: it.color, stroke: HUD_INK, strokeThickness: 7 })
         .setShadow(0, 3, "rgba(0, 0, 0, 0.4)", 4, true, false)
         .setOrigin(0.5, 0)
-        .setScale(1.9)
         .setAlpha(0);
       gradientFill(main, "#ffffff", it.color);
-      top += 9 + main.height - 8;
+      return { caption, main, color: it.color };
+    });
+    const padX = 6;
+    const padY = 3;
+    const stackH = parts.reduce((h, p) => h + 9 + p.main.height - 8, 0) + 8;
+    const w = Math.min(BOARD_W - 4, Math.max(...parts.map((p) => Math.max(p.main.width, p.caption.width))) + padX * 2);
+    const h = stackH + padY * 2;
+    // 揃った範囲の 1 段上。上に場所がなければ範囲の中ほど。どちらも盤面の中に収める
+    let top = groupTop - 4 - h;
+    if (top < 2) top = (groupTop + groupBottom) / 2 - h / 2;
+    top = Math.max(2, Math.min(BOARD_H - h - 2, top));
+    const px = Math.max(w / 2 + 2, Math.min(BOARD_W - w / 2 - 2, groupX));
+    // 同じ色のパネルの上でも読めるよう、濃紺の板に連鎖の色の縁を付ける
+    const plate = this.scene.add.graphics().setAlpha(0);
+    const edge = Phaser.Display.Color.HexStringToColor(parts[parts.length - 1].color).color;
+    plate.fillStyle(PLATE, 0.82);
+    plate.fillRoundedRect(px - w / 2, top, w, h, 10);
+    plate.lineStyle(2, edge, 0.9);
+    plate.strokeRoundedRect(px - w / 2, top, w, h, 10);
+    this.root.add(plate);
+    this.lastPopup = { x: px - w / 2, y: top, width: w, height: h, size: items[items.length - 1].size };
+    let y = top + padY;
+    const targets: Phaser.GameObjects.GameObject[] = [plate];
+    parts.forEach(({ caption, main }) => {
+      caption.setPosition(px, y);
+      main.setPosition(px, y + 9).setScale(1.9);
+      y += 9 + main.height - 8;
       this.root.add([caption, main]);
+      targets.push(caption, main);
       this.scene.tweens.add({ targets: main, scale: 1, alpha: 1, duration: 180, ease: "Back.Out", easeParams: [2.2] });
       this.scene.tweens.add({ targets: caption, alpha: 1, duration: 140, delay: 60 });
-      this.scene.tweens.add({
-        targets: [main, caption],
-        y: "-=34",
-        alpha: 0,
-        delay: 440 + Math.min(400, chain * 40),
-        duration: 420,
-        ease: "Quad.In",
-        onComplete: () => {
-          main.destroy();
-          caption.destroy();
-        },
-      });
     });
-    // 連鎖が伸びたら得点の文字も弾む
-    if (chain >= 2) this.scoreBump = 1;
+    this.scene.tweens.add({ targets: plate, alpha: 1, duration: 140 });
+    this.scene.tweens.add({
+      targets,
+      y: "-=20",
+      alpha: 0,
+      delay: 440 + Math.min(400, chain * 40),
+      duration: 420,
+      ease: "Quad.In",
+      onComplete: () => targets.forEach((o) => o.destroy()),
+    });
   }
+  /** 直近の吹き出しの範囲（盤面の局所座標）と数字の大きさ。e2e が盤面の中に収まることを確かめる */
+  lastPopup: { x: number; y: number; width: number; height: number; size: number } | null = null;
 
   /** 予告おじゃまのバーの左端と上端（局所座標）。盤面の中の上端に置く。HUD やポーズのボタンと重ならず、どの向きでも同じ場所に出る */
   private static readonly PENDING_X = 4;

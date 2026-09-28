@@ -69,7 +69,8 @@ export const NO_INPUT: Input = { moveX: 0, moveY: 0, swap: false, raise: false }
 export type BoardEvent =
   | { type: "swap" }
   | { type: "move" }
-  | { type: "match"; panels: number; chain: number; x: number; y: number; score: number }
+  /** x, y は最も上の行の左端のパネル。left / right / top / bottom は揃ったパネル全体の範囲（y は下から数える） */
+  | { type: "match"; panels: number; chain: number; x: number; y: number; score: number; left: number; right: number; top: number; bottom: number }
   | { type: "pop"; x: number; y: number; index: number }
   | { type: "chainEnd"; chain: number }
   | { type: "land"; x: number; y: number }
