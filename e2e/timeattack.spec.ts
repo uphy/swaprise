@@ -64,4 +64,22 @@ test("タイムアタック: 残り時間は得点と同じ大きさで盤面の
   expect(order.count).toBeGreaterThan(order.frame);
   expect(order.count).toBeLessThan(order.panel);
   expect(order.count).toBeLessThan(order.next);
+  // 盤面がパネルで埋まっていても数字の形が読めるよう、細く薄い輪郭だけをパネルの上（カーソルの下）に重ねる
+  const outline = await page.evaluate(() => {
+    const v = (window as any).__swaprise.scene.views[0], o = v.countOutline;
+    return {
+      visible: o.visible, text: o.text, same: o.text === v.countText.text, alpha: o.alpha, stroke: o.style.strokeThickness, fill: o.style.color,
+      index: v.root.getIndex(o), lastPanel: Math.max(...v.cells.flat().map((c: unknown) => v.root.getIndex(c)), ...v.nextCells.map((c: unknown) => v.root.getIndex(c))), cursor: v.root.getIndex(v.cursor),
+    };
+  });
+  expect(outline.visible).toBe(true);
+  expect(outline.same).toBe(true);
+  expect(outline.index).toBeGreaterThan(outline.lastPanel);
+  expect(outline.index).toBeLessThan(outline.cursor);
+  expect(outline.alpha).toBeLessThanOrEqual(0.6);
+  expect(outline.stroke).toBeLessThanOrEqual(4);
+  expect(outline.fill).toBe("rgba(0,0,0,0)");
+  // 時間切れで数字と一緒に消える
+  await page.evaluate(() => { const p = (window as any).__swaprise; p.game.boards[0].frame = p.game.timeLimit; });
+  await page.waitForFunction(() => !(window as any).__swaprise.scene.views[0].countOutline.visible);
 });

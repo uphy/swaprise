@@ -46,6 +46,10 @@ const HUD_INK = "#1c1238";
 const PLATE = 0x120c2c;
 /** 連鎖の吹き出しの板の不透明度。下のパネルが透けて見える濃さ */
 const POPUP_PLATE_ALPHA = 0.6;
+/** 最後の 10 秒の数字の、パネルの上に重ねる輪郭の色・太さ・不透明度。細く薄くして、パネルの色をほとんど変えない */
+const COUNT_OUTLINE = "#fff0f2";
+const COUNT_OUTLINE_WIDTH = 3;
+const COUNT_OUTLINE_ALPHA = 0.5;
 /** 時間・速度・最大連鎖の札の高さ */
 const CHIP_H = 20;
 
@@ -86,6 +90,8 @@ export class BoardView {
   readonly timeText: Phaser.GameObjects.Text | null = null;
   /** 最後の 10 秒に盤面の上へ大きく半透明に出す秒の数字 */
   readonly countText: Phaser.GameObjects.Text | null = null;
+  /** 秒の数字の細い輪郭だけをパネルの上に重ねる。数字の塗りはパネルの下なので、盤面が埋まっていても形が読めるように */
+  readonly countOutline: Phaser.GameObjects.Text | null = null;
   private countShown = -1;
   /** 名前の札と得点の板 */
   private readonly hudGfx: Phaser.GameObjects.Graphics;
@@ -422,6 +428,11 @@ export class BoardView {
         .setOrigin(0.5)
         .setAlpha(0.4)
         .setVisible(false);
+      this.countOutline = scene.add
+        .text(BOARD_W / 2, BOARD_H / 2, "", { fontFamily: FONT_UI, fontSize: "150px", color: "rgba(0,0,0,0)", fontStyle: "700", stroke: COUNT_OUTLINE, strokeThickness: COUNT_OUTLINE_WIDTH })
+        .setOrigin(0.5)
+        .setAlpha(COUNT_OUTLINE_ALPHA)
+        .setVisible(false);
     }
     this.statsGfx = scene.add.graphics();
     this.pendingGfx = scene.add.graphics();
@@ -432,6 +443,8 @@ export class BoardView {
     // 残り 10 秒の数字は盤面の井戸（枠の絵）の上、パネルの下に置き、パネルの隙間と空いたところにだけ見せる。
     // パネルの上に半透明で重ねると、黄が橙に、水色が灰色に濁って見えた
     if (this.countText) this.root.addAt(this.countText, this.root.getIndex(this.frame) + 1);
+    // 輪郭だけはパネル（次の段も含む）の上、四隅の蓋とカーソルの下に重ねる。細く薄い線なので、パネルの色はほとんど変わらない
+    if (this.countOutline) this.root.addAt(this.countOutline, this.root.getIndex(this.corners[0]));
     this.root.add([this.hudGfx, this.labelText, this.scoreCaption, this.scoreText, this.statsGfx, this.pendingGfx, this.pendingText, this.stopBar]);
     if (this.timeCaption && this.timeText) this.root.add([this.timeCaption, this.timeText]);
 
@@ -910,12 +923,18 @@ export class BoardView {
     if (!text) return;
     if (seconds === this.countShown) return;
     this.countShown = seconds;
+    const outline = this.countOutline;
     if (seconds <= 0) {
       text.setVisible(false);
+      outline?.setVisible(false);
       return;
     }
     text.setText(String(seconds)).setVisible(true).setScale(1.25).setAlpha(0.55);
     this.scene.tweens.add({ targets: text, scale: 1, alpha: 0.35, duration: 360, ease: "Cubic.Out" });
+    if (outline) {
+      outline.setText(String(seconds)).setVisible(true).setScale(1.25);
+      this.scene.tweens.add({ targets: outline, scale: 1, duration: 360, ease: "Cubic.Out" });
+    }
   }
 
   /** 盤面の枠からはみ出す部分を切り取る。完全に外なら false。py は局所座標。 */
