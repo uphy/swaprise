@@ -22,6 +22,9 @@ for (const mode of ["endless", "timeattack"]) {
     const result = page.getByRole("region", { name: "RESULT", exact: true });
     await expect(result.getByRole("heading", { name: "Publish this score?" })).toBeVisible();
     await expect(result.getByRole("heading", { name: "YOUR RANKING" })).toBeHidden();
+    // 名前の欄は「公開する」を押してから開く。押しただけではまだ送らない
+    await expect(result.getByRole("textbox")).toHaveCount(0);
+    await result.getByRole("button", { name: "PUBLISH", exact: true }).click();
     await expect(result.getByRole("textbox")).toHaveValue("Existing");
     expect(posts.length).toBe(0);
     await result.getByRole("textbox").fill("New name");
@@ -37,6 +40,25 @@ for (const mode of ["endless", "timeattack"]) {
     await expect(page.getByRole("heading", { name: "Publish this score?" })).toHaveCount(0);
   });
 }
+test("first result keeps the four stats above the publish question and inside the screen", async ({ page }) => {
+  await page.goto("/?mode=endless&countdown=0&bgm=0");
+  await page.waitForFunction(() => (window as any).__swaprise?.game.boards[0].frame > 0);
+  await page.evaluate(() => {
+    const p = (window as any).__swaprise;
+    const b = p.game.boards[0];
+    b.score = 777; b.maxChain = 3; b.stats.swaps = 40;
+    b.gameOver = true; p.game.finished = true;
+  });
+  const result = page.getByRole("region", { name: "RESULT", exact: true });
+  await expect(result.getByRole("heading", { name: "Publish this score?" })).toBeVisible();
+  const box = async (sel: string) => (await result.locator(sel).boundingBox())!;
+  const stats = await box(".result-stats");
+  const consent = await box(".result-consent");
+  const footer = await box(".score-footer");
+  expect(stats.y + stats.height).toBeLessThanOrEqual(consent.y);
+  expect(stats.y + stats.height).toBeLessThanOrEqual(footer.y);
+  await expect(result.locator(".result-stats dd")).toHaveCount(4);
+});
 test("keep private stores scores locally, no session or upload requests", async ({ page }) => {
   const requests: string[] = []; page.on("request", (r) => { if (r.url().includes("/api/")) requests.push(r.url()); });
   await page.goto("/?mode=endless&countdown=0&bgm=0");
@@ -50,12 +72,15 @@ test("keep private stores scores locally, no session or upload requests", async 
 test("undecided publication is asked again on the next result, and R while typing does not restart", async ({ page }) => {
   await page.goto("/?mode=endless&countdown=0&bgm=0");
   await finish(page);
+  await page.getByRole("button", { name: "PUBLISH", exact: true }).click();
   const input = page.getByRole("region", { name: "RESULT", exact: true }).getByRole("textbox");
   await input.click();
   await input.pressSequentially("Rr");
   await expect(input).toHaveValue("Rr");
   expect(await page.evaluate(() => (window as any).__swaprise.game.finished)).toBe(true);
   await page.getByRole("button", { name: "RETRY", exact: true }).click();
+  // 前のプレイの結果画面が消えて、新しいプレイが始まってから終わらせる
+  await expect(page.locator(".score-result")).toHaveCount(0);
   await finish(page);
   await expect(page.getByRole("heading", { name: "Publish this score?" })).toBeVisible();
   expect(await page.evaluate(() => localStorage.getItem("swaprise.scores.publish.v1"))).toBeNull();

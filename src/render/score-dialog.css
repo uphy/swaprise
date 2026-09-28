@@ -51,12 +51,16 @@
 @media (min-width: 600px) { .result-stats.four { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 .result-stats div { padding: 12px 4px; border-radius: 12px; background: rgba(20,12,50,.3); text-align: center; }
 .result-stats dt { font-size: 18px; }
-.result-consent { padding: 16px; border-radius: 12px; background: rgba(20,12,50,.3); margin: 20px 0; }
+.result-consent { padding: 10px 12px; border-radius: 12px; background: rgba(20,12,50,.3); margin: 12px 0; }
+/* 問いと 2 つのボタンは 1 行に並べ、幅が足りなければボタンだけ次の行へ回す。名前の欄は「公開する」のあとに開く */
+.result-consent-ask { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; }
+.score-dialog .result-consent-ask h3 { flex: 1 1 auto; margin: 0; font-size: 20px; }
+.score-dialog .result-consent-ask nav { flex: 1 1 260px; margin: 0; }
 .result-consent h3 { margin: 0 0 6px; }
 .score-result .result-consent p { font-size: 18px; line-height: 1.35; margin: 0; }
 .result-consent label { display: block; margin: 10px 0; font-size: 18px; }
 .result-consent nav { display: flex; gap: 12px; margin-top: 10px; }
-.score-result .result-consent nav button { flex: 1; min-height: 56px; font-size: 20px; }
+.score-result .result-consent nav button { flex: 1; min-height: 48px; font-size: 20px; }
 .result-stats dd { font-size: 34px; font-weight: 600; margin: 6px 0 0; overflow-wrap: anywhere; }
 @media (min-height: 750px) { .score-screen { padding-top: max(40px, env(safe-area-inset-top)); } }
 @media (max-height: 480px) { .score-screen { padding-top: max(8px, env(safe-area-inset-top)); } .score-screen header { padding-bottom: 8px; } .score-screen header small { display: none; } .score-dialog h2 { margin: 0; } .score-footer { padding-top: 8px; } }

@@ -47,28 +47,39 @@ export function showScoreResult(scene: Phaser.Scene, options: {
     const stat = node("div"); stat.append(node("dt", t(label)), node("dd", String(value))); stats.append(stat);
   }
   body.append(stats);
-  // 初めての記録では、遊ぶ前ではなくここで公開の可否を聞く。決めるまで順位の欄は出さず、決めたら同じ場所が順位に変わる
-  const consent = node("section"); consent.className = "result-consent"; consent.hidden = true; summary.after(consent);
+  // 初めての記録では、遊ぶ前ではなくここで公開の可否を聞く。決めるまで順位の欄は出さず、決めたら同じ場所が順位に変わる。
+  // 得点と 4 つの札（最大連鎖など）を先に見せたいので、札の下に 1 行（問い・公開する・公開しない）だけ置き、
+  // 名前の欄と公開される内容の説明は「公開する」を押してから開く
+  const consent = node("section"); consent.className = "result-consent"; consent.hidden = true; stats.after(consent);
   if (options.submission && publication() === null) {
     const submission = options.submission;
     consent.hidden = false;
-    consent.append(node("h3", t("Publish this score?")));
-    consent.append(node("p", t("Your name, score, chain and date will be public. You can change this in settings.")));
+    const ask = node("div"); ask.className = "result-consent-ask";
+    ask.append(node("h3", t("Publish this score?")));
+    const buttons = node("nav"); ask.append(buttons);
+    consent.append(ask);
+    const form = node("div"); form.className = "result-consent-form"; form.hidden = true;
+    form.append(node("p", t("Your name, score, chain and date will be public. You can change this in settings.")));
     const label = node("label", t("Name (optional)"));
     const input = node("input"); input.type = "text"; input.maxLength = 40; input.value = playerName(); input.placeholder = t("Guest");
-    label.append(input); consent.append(label);
+    label.append(input); form.append(label);
+    const confirmNav = node("nav"); form.append(confirmNav);
+    consent.append(form);
     // 名前を打つ間は Phaser のキー（R で再挑戦、ESC でメニュー）を止める
     const keyboard = scene.input.keyboard;
     input.addEventListener("focus", () => { if (keyboard) { keyboard.enabled = false; keyboard.disableGlobalCapture(); } });
     input.addEventListener("blur", () => { if (keyboard) { keyboard.enabled = true; keyboard.enableGlobalCapture(); } });
-    const buttons = node("nav"); consent.append(buttons);
     const decide = (publish: boolean): void => {
       if (publish) { savePlayerName(input.value); setPublication(true); enqueueScore(submission); } else setPublication(false);
       consent.hidden = true; void load();
     };
-    const publish = node("button", t("PUBLISH")); publish.type = "button"; publish.className = "primary"; publish.onclick = () => decide(true);
+    const publish = node("button", t("PUBLISH")); publish.type = "button"; publish.className = "primary";
+    publish.onclick = () => { ask.hidden = true; form.hidden = false; };
     const keep = node("button", t("KEEP PRIVATE")); keep.type = "button"; keep.onclick = () => decide(false);
     buttons.append(publish, keep);
+    const confirm = node("button", t("PUBLISH")); confirm.type = "button"; confirm.className = "primary"; confirm.onclick = () => decide(true);
+    const cancel = node("button", t("KEEP PRIVATE")); cancel.type = "button"; cancel.onclick = () => decide(false);
+    confirmNav.append(confirm, cancel);
   }
   const heading = node("h3", t("YOUR RANKING")); body.append(heading);
   const status = node("p"); status.setAttribute("role", "status"); body.append(status);
