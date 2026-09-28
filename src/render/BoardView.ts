@@ -79,6 +79,12 @@ export class BoardView {
   /** 得点の見出し（SCORE）と数字 */
   private readonly scoreCaption: Phaser.GameObjects.Text;
   private readonly scoreText: Phaser.GameObjects.Text;
+  /** タイムアタックの残り時間。得点と同じ大きさで盤面の上に出す（下の札の並びには入れない） */
+  private readonly timeCaption: Phaser.GameObjects.Text | null = null;
+  readonly timeText: Phaser.GameObjects.Text | null = null;
+  /** 最後の 10 秒に盤面の上へ大きく半透明に出す秒の数字 */
+  readonly countText: Phaser.GameObjects.Text | null = null;
+  private countShown = -1;
   /** 名前の札と得点の板 */
   private readonly hudGfx: Phaser.GameObjects.Graphics;
   /** 得点の板を描いたときの数字の幅。桁が増えたら描き直す */
@@ -176,6 +182,29 @@ export class BoardView {
         plate(-4, -38, 4 + 10 + this.scoreText.width + 14, 30);
         this.scoreText.setOrigin(0, 0.5).setPosition(10, -23);
       }
+    } else if (this.hud === "top" && this.timeText && this.timeCaption) {
+      // タイムアタックは名前の札を省き、左に残り時間、右に得点の板を同じ大きさで並べる。
+      // 幅が足りなければ SCORE、次に TIME の見出しを省く
+      const cy = -24;
+      const plateH = 30;
+      const room = Math.min(this.hudMaxW, BOARD_W) + 4;
+      const timeW = (cap: boolean): number => 10 + (cap ? this.timeCaption!.width + 6 : 0) + this.timeText!.width + 12;
+      const scoreW = (cap: boolean): number => 10 + (cap ? this.scoreCaption.width + 6 : 0) + this.scoreText.width + 14;
+      let timeCap = true;
+      let scoreCap = true;
+      if (timeW(true) + 6 + scoreW(true) > room) scoreCap = false;
+      if (timeW(true) + 6 + scoreW(false) > room) timeCap = false;
+      label.setVisible(false);
+      plate(-4, cy - plateH / 2, timeW(timeCap), plateH);
+      this.timeCaption.setOrigin(0, 0.5).setPosition(6, cy + 1).setVisible(timeCap);
+      this.timeText.setOrigin(0, 0.5).setPosition(6 + (timeCap ? this.timeCaption.width + 6 : 0), cy);
+      const sx = -4 + room - scoreW(scoreCap);
+      plate(sx, cy - plateH / 2, scoreW(scoreCap), plateH);
+      this.scoreCaption.setOrigin(0, 0.5).setPosition(sx + 10, cy + 1);
+      this.scoreText.setOrigin(0, 0.5).setPosition(sx + 10 + (scoreCap ? this.scoreCaption.width + 6 : 0), cy);
+      this.scoreCaption.setVisible(scoreCap);
+      this.scoreText.setVisible(true);
+      return;
     } else if (this.hud === "top") {
       const cy = -24;
       const plateH = 30;
@@ -204,7 +233,14 @@ export class BoardView {
         this.scoreCaption.setOrigin(0, 0).setPosition(x0 + 11, pillH + 10);
         this.scoreText.setOrigin(0, 0.5).setPosition(x0 + 10, pillH + 6 + 28);
       }
+      // タイムアタックの残り時間は得点の下に同じ大きさの板で
+      if (this.timeText && this.timeCaption) {
+        plate(x0, pillH + 54, colW, 42);
+        this.timeCaption.setOrigin(0, 0).setPosition(x0 + 11, pillH + 58).setVisible(true);
+        this.timeText.setOrigin(0, 0.5).setPosition(x0 + 10, pillH + 54 + 28);
+      }
     }
+    label.setVisible(true);
     // パズルとレッスンは得点を使わない。数字だけ残すと盤面の右上のポーズボタンの下に潜って桁が欠けて見えた
     this.scoreText.setVisible(hasScore);
     this.scoreCaption.setVisible(hasScore && !(this.hud === "top" && (this.scale < 1 || this.scoreText.x < this.scoreCaption.x + this.scoreCaption.width)));
@@ -249,7 +285,7 @@ export class BoardView {
     } else {
       const right = this.hud === "right";
       const edge = right ? BOARD_W + HUD_GAP : -HUD_GAP;
-      const top = this.style ? 30 : 78;
+      const top = this.style ? 30 : this.timeText ? 126 : 78;
       this.chips.forEach((_, i) => drawChip(i, right ? edge : edge - widths[i], top + i * (CHIP_H + gap), widths[i]));
     }
   }
@@ -374,13 +410,27 @@ export class BoardView {
     this.scoreText = scene.add
       .text(0, 0, "000000", { fontFamily: FONT_UI, fontSize: "20px", color: TEXT_COLOR, fontStyle: "700" })
       .setShadow(0, 2, HUD_INK, 3, false, true);
+    if (timeLimit !== null && !style) {
+      this.timeCaption = scene.add.text(0, 0, "TIME", { fontFamily: FONT_UI, fontSize: "9px", color: TEXT_DIM, fontStyle: "700" });
+      this.timeText = scene.add
+        .text(0, 0, "2:00", { fontFamily: FONT_UI, fontSize: "20px", color: TEXT_COLOR, fontStyle: "700" })
+        .setShadow(0, 2, HUD_INK, 3, false, true);
+      this.countText = scene.add
+        .text(BOARD_W / 2, BOARD_H / 2, "", { fontFamily: FONT_UI, fontSize: "150px", color: "#ff8a94", fontStyle: "700", stroke: HUD_INK, strokeThickness: 8 })
+        .setOrigin(0.5)
+        .setAlpha(0.4)
+        .setVisible(false);
+    }
     this.statsGfx = scene.add.graphics();
     this.pendingGfx = scene.add.graphics();
     this.pendingText = scene.add
       .text(0, 0, "", { fontFamily: FONT_UI, fontSize: "14px", color: TEXT_COLOR, fontStyle: "700", stroke: HUD_INK, strokeThickness: 3 })
       .setVisible(false);
     this.stopBar = scene.add.graphics();
+    // 残り 10 秒の数字はパネルの上、HUD と結果の表示の下
+    if (this.countText) this.root.add(this.countText);
     this.root.add([this.hudGfx, this.labelText, this.scoreCaption, this.scoreText, this.statsGfx, this.pendingGfx, this.pendingText, this.stopBar]);
+    if (this.timeCaption && this.timeText) this.root.add([this.timeCaption, this.timeText]);
 
     this.overlay = scene.add.container(BOARD_W / 2, BOARD_H / 2).setVisible(false);
     // 暗幕は盤面の角に合わせて丸める（矩形だと角が枠の縁にはみ出す）。上下を濃く、中央を少し明るく
@@ -783,10 +833,20 @@ export class BoardView {
     }
     const mm = String(Math.floor(seconds / 60)).padStart(2, "0");
     const ss = String(seconds % 60).padStart(2, "0");
-    // 残り10秒を切ったら赤く
-    const stats: { caption: string; value: string; color?: string }[] = [
-      { caption: "TIME", value: `${mm}:${ss}`, color: this.timeLimit !== null && seconds <= 10 ? "#ff8a94" : undefined },
-    ];
+    const stats: { caption: string; value: string; color?: string }[] = [];
+    if (this.timeText && this.timeCaption) {
+      // タイムアタックの残り時間は盤面の上の板。残り 10 秒を切ったら赤くし、盤面の上にも秒を大きく半透明に出す
+      const text = `${Math.floor(seconds / 60)}:${ss}`;
+      const color = seconds <= 10 ? "#ff8a94" : TEXT_COLOR;
+      if (text !== this.timeText.text || this.timeText.style.color !== color) {
+        const w = this.timeText.width;
+        this.timeText.setText(text).setColor(color);
+        if (Math.abs(this.timeText.width - w) > 3) this.layoutHud();
+      }
+      this.drawCountdown(active && !b.gameOver && b.frame < this.timeLimit! && seconds <= 10 ? seconds : 0);
+    } else {
+      stats.push({ caption: "TIME", value: `${mm}:${ss}` });
+    }
     if (this.timeLimit !== null && b.frame >= this.timeLimit && !b.isSettled()) stats.push({ caption: "", value: t("SETTLING"), color: "#ffe066" });
     if (this.showLevel) stats.push({ caption: "SPEED", value: String(b.level) });
     stats.push({ caption: "MAX", value: `x${b.maxChain}` });
@@ -833,6 +893,20 @@ export class BoardView {
       this.pendingText.setText(String(rows)).setColor(ready ? "#ffb060" : TEXT_COLOR).setAlpha(ready ? pulse : 1);
       this.pendingText.setPosition(BoardView.PENDING_X + px + 2, BoardView.PENDING_Y - 4).setOrigin(0, 0);
     }
+  }
+
+  /** 最後の 10 秒の秒の数字。秒が変わるたびに少し大きく出て収まる。0 で消す */
+  private drawCountdown(seconds: number): void {
+    const text = this.countText;
+    if (!text) return;
+    if (seconds === this.countShown) return;
+    this.countShown = seconds;
+    if (seconds <= 0) {
+      text.setVisible(false);
+      return;
+    }
+    text.setText(String(seconds)).setVisible(true).setScale(1.25).setAlpha(0.55);
+    this.scene.tweens.add({ targets: text, scale: 1, alpha: 0.35, duration: 360, ease: "Cubic.Out" });
   }
 
   /** 盤面の枠からはみ出す部分を切り取る。完全に外なら false。py は局所座標。 */
