@@ -1,18 +1,38 @@
 import Phaser from "phaser";
 import type { Board } from "../core";
-import { BOARD_H, BOARD_W } from "./theme";
-import { musicDanger } from "./musicDanger";
+import { COLS } from "../core";
+import { BOARD_H, BOARD_W, CELL } from "./theme";
+import { dangerColumns, musicDanger } from "./musicDanger";
+import { DPR } from "./hidpi";
+import { roundRect } from "./textures";
 
-/** 盤面の外側だけに出す警告。Container に入れるので、拡縮・回転・2人対戦にも追従する。 */
+/** 盤面の枠の形。BoardView の縁の幅と丸み（枠の赤みを縁にぴったり重ねる） */
+export interface FrameShape {
+  pad: number;
+  radius: number;
+  inner: number;
+}
+
+/**
+ * 危険の警告。盤面の外側の赤い光（root、枠の後ろ）と、枠そのものの赤み・危険な列の上端の赤い帯（front、パネルの上）。
+ * Container に入れるので、拡縮・回転・2人対戦にも追従する。
+ * 外側の光だけでは弱く、スマホでは盤面の外に余白がほとんどなくて見えなかったので、枠と列にも出す
+ */
 export class DangerGlow {
   readonly root: Phaser.GameObjects.Container;
+  /** 枠の赤みと列の帯。BoardView が枠の四隅の蓋より上に置く */
+  readonly front: Phaser.GameObjects.Container;
+  private readonly bezel: Phaser.GameObjects.Image;
+  private readonly columnGfx: Phaser.GameObjects.Graphics;
+  /** 危険な列（下から DANGER_ROW 段を超えて積もった列）。e2e が確かめる */
+  columns: boolean[] = new Array(COLS).fill(false);
   private readonly outline: Phaser.GameObjects.Image;
   private readonly top: Phaser.GameObjects.Image;
   private readonly ceiling: Phaser.GameObjects.Rectangle;
   private level = 0;
   private ceilingLevel = 0;
 
-  constructor(scene: Phaser.Scene) {
+  constructor(scene: Phaser.Scene, frame: FrameShape) {
     // 上辺・左右・上隅を一枚で描く。矩形からの距離を使い、角でも辺と同じ赤みにする。
     if (!scene.textures.exists("danger-outline")) {
       const width = BOARD_W + 64;
@@ -51,6 +71,32 @@ export class DangerGlow {
     this.top = scene.add.image(-4, -32, "danger-edge-y").setOrigin(0).setDisplaySize(BOARD_W + 8, 28);
     this.ceiling = scene.add.rectangle(-4, -5, BOARD_W + 8, 3, 0xff8c9e).setOrigin(0).setAlpha(0);
     this.root.add([this.outline, this.top, this.ceiling]);
+    // 枠の縁と同じ形の赤い帯。内側は盤面の丸角でくり抜き、四隅の蓋も覆う
+    const key = `danger-bezel-${frame.pad}-${frame.radius}-${frame.inner}`;
+    if (!scene.textures.exists(key)) {
+      const w = BOARD_W + frame.pad * 2;
+      const h = BOARD_H + frame.pad * 2;
+      const texture = scene.textures.createCanvas(key, Math.ceil(w * DPR), Math.ceil(h * DPR));
+      if (texture) {
+        const ctx = texture.context;
+        ctx.scale(DPR, DPR);
+        ctx.translate(frame.pad, frame.pad);
+        roundRect(ctx, -frame.pad, -frame.pad, w, h, frame.radius);
+        const band = ctx.createLinearGradient(0, -frame.pad, 0, BOARD_H + frame.pad);
+        band.addColorStop(0, "#ff7088");
+        band.addColorStop(0.06, "#f0304f");
+        band.addColorStop(1, "#b0182f");
+        ctx.fillStyle = band;
+        ctx.fill();
+        ctx.globalCompositeOperation = "destination-out";
+        roundRect(ctx, 0, 0, BOARD_W, BOARD_H, frame.inner);
+        ctx.fill();
+        texture.refresh();
+      }
+    }
+    this.bezel = scene.add.image(-frame.pad, -frame.pad, key).setOrigin(0).setScale(1 / DPR).setAlpha(0);
+    this.columnGfx = scene.add.graphics();
+    this.front = scene.add.container(0, 0, [this.bezel, this.columnGfx]).setVisible(false);
   }
 
   update(board: Board, delta: number, active: boolean): void {
@@ -66,5 +112,21 @@ export class DangerGlow {
     this.top.setAlpha(this.ceilingLevel * (0.2 + breath * 0.25));
     this.ceiling.setAlpha(this.ceilingLevel * (0.55 + breath * 0.4));
     this.root.setVisible(this.level > 0.005 || this.ceilingLevel > 0.005);
+    // 枠を赤く染め、危険な列の上端のマスに赤い帯を明滅させる（0.67 秒周期。ゲーム時間に同期するのでポーズ中は止まる）
+    this.bezel.setAlpha(this.level * (0.8 + breath * 0.2));
+    this.columns = danger ? dangerColumns(board) : this.columns.map(() => false);
+    const g = this.columnGfx;
+    g.clear();
+    if (this.level > 0.005) {
+      const blink = (1 + Math.cos(board.frame * Math.PI * 2 / 40)) / 2;
+      this.columns.forEach((on, c) => {
+        if (!on) return;
+        g.fillStyle(0xff4063, this.level * (0.18 + blink * 0.3));
+        g.fillRect(c * CELL, 0, CELL, CELL);
+        g.fillStyle(0xff8c9e, this.level * (0.6 + blink * 0.4));
+        g.fillRect(c * CELL + 2, 0, CELL - 4, 4);
+      });
+    }
+    this.front.setVisible(this.level > 0.005);
   }
 }

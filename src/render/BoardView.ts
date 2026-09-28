@@ -312,7 +312,7 @@ export class BoardView {
   ) {
     this.root = scene.add.container(0, 0);
     this.color = color;
-    this.dangerGlow = new DangerGlow(scene);
+    this.dangerGlow = new DangerGlow(scene, { pad: FRAME_PAD, radius: FRAME_RADIUS, inner: BOARD_RADIUS });
     this.frame = scene.add.image(-FRAME_EXTENT, -FRAME_EXTENT, makeFrameTexture(scene, color)).setOrigin(0).setScale(1 / DPR);
     this.corners = makeCorners(scene, color);
     this.root.add([this.dangerGlow.root, this.frame]);
@@ -332,6 +332,8 @@ export class BoardView {
       this.nextCells.push(img);
     }
     this.root.add(this.corners);
+    // 危険のときの枠の赤みと列の帯は、四隅の蓋とパネルの上に重ねる
+    this.root.add(this.dangerGlow.front);
     this.cursor = scene.add.image(0, 0, "cursor").setOrigin(0).setScale(1 / DPR);
     this.root.add(this.cursor);
     this.touchGfx = scene.add.graphics();
