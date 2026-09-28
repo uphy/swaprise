@@ -23,15 +23,41 @@ async function tickUntilFinished(page: Page, max = 3000): Promise<void> {
   }, max);
 }
 
-// 同梱の Fredoka は I と V の組を詰めすぎ、canvas の「ACTIVE CHAIN」が「ACTME CHAIN」に読めた。Fredoka の文字はカーニングを切って描く
-test("レッスン 5: ACTIVE CHAIN の見出しをカーニングなしで描き、IV が M に見えない", async ({ page }) => {
+// 同梱の Fredoka は I と V の組を詰めすぎ、canvas の「ACTIVE CHAIN」が「ACTME CHAIN」に読めた。Fredoka の大文字だけの行はカーニングを切って描く。
+// 小文字の説明文まで切ると字間が広がって行数が増えたので、説明文は通常のカーニングのまま
+test("レッスン 5: ACTIVE CHAIN の見出しはカーニングなし、小文字の説明文は通常のカーニングで描く", async ({ page }) => {
   await openLesson(page, 5);
   await page.waitForFunction(() => (window as any).__swaprise.scene.children.list.some((o: any) => o.type === "Text" && o.text.includes("ACTIVE CHAIN")));
-  const kerning = await page.evaluate(() => (window as any).__swaprise.scene.children.list
-    .filter((o: any) => o.type === "Text" && /Fredoka/.test(o.style.fontFamily))
-    .map((o: any) => [o.text.split("\n")[0], o.context.fontKerning]));
-  expect(kerning.length).toBeGreaterThan(0);
-  for (const [text, value] of kerning) expect(value, text).toBe("none");
+  const widths = await page.evaluate(() => {
+    const o = (window as any).__swaprise.scene.children.getByName("lesson-text");
+    const [title, body] = o.getWrappedText();
+    const ref = document.createElement("canvas").getContext("2d")!;
+    ref.font = o.context.font;
+    const w = (s: string, k: CanvasFontKerning) => ((ref.fontKerning = k), ref.measureText(s).width);
+    return {
+      title, body,
+      titleText: o.context.measureText(title).width, titleNone: w(title, "none"), titleNormal: w(title, "normal"),
+      bodyText: o.context.measureText(body).width, bodyNone: w(body, "none"), bodyNormal: w(body, "normal"),
+    };
+  });
+  expect(widths.title).toContain("ACTIVE CHAIN");
+  // 見出しはカーニングの有無で幅が変わる（IV の組が詰まる）ので、比べる意味がある
+  expect(widths.titleNone).not.toBe(widths.titleNormal);
+  expect(widths.titleText).toBe(widths.titleNone);
+  expect(widths.bodyNone).not.toBe(widths.bodyNormal);
+  expect(widths.bodyText).toBe(widths.bodyNormal);
+});
+
+// canvas の Fredoka の文字すべてでカーニングを切ったら、320×568 の英語でレッスン 3・5 の説明が 4 行から 5 行に増え、最後の行が画面の下に切れた
+test.describe("iPhone SE・英語", () => {
+  test.use({ viewport: { width: 320, height: 568 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, locale: "en-US" });
+  for (const n of [3, 5]) {
+    test(`レッスン ${n}: 小文字の説明文の字間が広がらず、見出しと合わせて 4 行に収まる`, async ({ page }) => {
+      await openLesson(page, n);
+      const lines = await page.evaluate(() => (window as any).__swaprise.scene.children.getByName("lesson-text").getWrappedText().length);
+      expect(lines).toBe(4);
+    });
+  }
 });
 
 test("レッスン 1: 説明と課の名前を出し、せり上がりもバーもなく、3 枚消すと NICE! になって記録が残り、NEXT LESSON で次の課へ", async ({ page }) => {
