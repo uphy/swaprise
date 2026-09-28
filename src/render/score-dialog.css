@@ -102,6 +102,14 @@
   /* 左右の余白を詰めて KEEP PRIVATE を 1 行に保つ（カーニングを切ると少し幅が増え、568×320 では 2 行に折れた） */
   .score-result .result-consent nav button { min-height: 44px; font-size: 18px; padding-inline: 6px; }
 }
+/* 高さ 381〜420px の横持ち（844×390・839×412・915×412）は 64px の得点のまま収まるが、844×390 では公開の問いの枠の下端が
+   RETRY / MENU の帯に 4px 掛かって角の丸みが切れていた。「初めての記録」の行・札・枠の上下の余白を詰めて、枠ごと帯より上に収める */
+@media (min-height: 381px) and (max-height: 420px) and (orientation: landscape) {
+  .score-result .result-summary { margin-bottom: 4px; }
+  .score-result .result-summary p { margin: 0; }
+  .score-result .result-stats { margin: 6px 0; }
+  .score-result .result-consent { margin: 6px 0; padding: 5px 10px; }
+}
 /* さらに背の低い横持ち（568×320 など）では縦に積むと収まらないので、得点を左、札を右に並べ、公開の問いはその下に全幅で置く */
 @media (max-height: 340px) and (orientation: landscape) {
   .score-result .score-content { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 12px; align-content: start; }

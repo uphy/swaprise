@@ -103,10 +103,12 @@ async function landscapeLayout(page: Page) {
       scoreVisible: score.top >= view.top - 1 && score.bottom <= view.bottom + 1,
       statsTopVisible: stats.top >= view.top - 1,
       askAboveBar: ask.bottom <= box(".score-footer").top + 1,
+      // 公開の問いの枠（角の丸い下端まで）も帯より上。844×390 では枠の下端が帯に 4px 掛かり、丸みが切れていた
+      boxAboveBar: box(".result-consent").bottom <= box(".score-footer").top + 0.5,
     };
   });
 }
-const allVisible = { scoreVisible: true, statsTopVisible: true, askAboveBar: true };
+const allVisible = { scoreVisible: true, statsTopVisible: true, askAboveBar: true, boxAboveBar: true };
 async function finishWith12345(page: Page): Promise<void> {
   await page.goto("/?mode=endless&countdown=0&bgm=0");
   await page.waitForFunction(() => (window as any).__swaprise?.game.boards[0].frame > 0);
