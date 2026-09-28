@@ -370,9 +370,10 @@ export class GameScene extends Phaser.Scene {
       tick: (inputs: Input[]) => this.stepOnce(inputs),
     };
 
-    // パズルは時間と関係がなく、盤面を眺めてから始めるものなので、カウントダウンを置かない
+    // パズルは時間と関係がなく、盤面を眺めてから始めるものなので、カウントダウンを置かない。
+    // レッスンの固定の面（せり上がらない課）も同じ。RESET や R のたびに 3 秒待たされていた。せり上がる課には残す
     const start = (): void => {
-      if (params.get("countdown") === "0" || this.mode === "puzzle") this.beginPlay();
+      if (params.get("countdown") === "0" || this.mode === "puzzle" || this.game_.lesson?.rows) this.beginPlay();
       else this.runCountdown();
     };
     start();
