@@ -126,7 +126,26 @@ export function showScoreResult(scene: Phaser.Scene, options: {
   };
   // 公開の問いが本文の見える範囲に収まっていなければ、得点を上端に残せる範囲で帯より上へスクロールする。
   // 書体の読み込みのあとと画面の回転のあとも、同じ決まりで合わせ直す（回転で問いが帯の下に回ることがあった）
-  const layout = (): void => { fitScore(); if (!consent.hidden) reveal(consent, !formOpen); };
+  const layout = (): void => { fitScore(); if (!consent.hidden) reveal(consent, !formOpen); peek(); };
+  /**
+   * 本文の下端でボタンや文字が途中で切れているときだけ、下端を薄くぼかして「下に続きがある」と見せる
+   * （横持ちの背の低い画面で、SHARE の上半分が帯の上にのぞいて壊れて見えた）。
+   * 切れているものがなければぼかさないので、縦持ちで下端まで収まったボタンには掛からない
+   */
+  const peek = (): void => {
+    const edge = body.getBoundingClientRect().bottom;
+    const cut = [...body.querySelectorAll<HTMLElement>("button, input, h3, p, li, dd")].some((el) => {
+      const box = el.getBoundingClientRect();
+      return box.height > 0 && box.top < edge - 1 && box.bottom > edge + 1;
+    });
+    body.classList.toggle("cut", cut);
+  };
+  let peekFrame = 0;
+  const schedulePeek = (): void => { cancelAnimationFrame(peekFrame); peekFrame = requestAnimationFrame(peek); };
+  body.addEventListener("scroll", schedulePeek, { passive: true });
+  // 順位の読み込みや公開の問いの開閉で中身が変わったら測り直す
+  const changes = new MutationObserver(schedulePeek);
+  changes.observe(body, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ["hidden"] });
   layout();
   void document.fonts?.ready.then(() => { if (root.isConnected) layout(); });
   window.addEventListener("resize", layout);
@@ -172,7 +191,7 @@ export function showScoreResult(scene: Phaser.Scene, options: {
   const privacy = () => { if (publication() !== true) void load(); };
   window.addEventListener("storage", privacy);
   scene.events.once("shutdown", () => {
-    controller?.abort(); root.remove();
+    controller?.abort(); changes.disconnect(); cancelAnimationFrame(peekFrame); root.remove();
     window.removeEventListener("swaprise:scores-updated", refresh); window.removeEventListener("online", refresh); window.removeEventListener("storage", privacy);
     window.removeEventListener("resize", layout);
   });

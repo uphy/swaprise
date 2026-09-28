@@ -145,6 +145,32 @@ test("rotating the first result to a short landscape keeps the score and the pub
   await page.setViewportSize({ width: 568, height: 320 });
   await expect.poll(() => landscapeLayout(page)).toEqual(allVisible);
 });
+// 本文の下端で SHARE などが途中で切れているときは、下端をぼかして続きがあると見せる（上半分だけのぞくと壊れて見えた）。
+// ぼかしは公開のボタンに掛からず、下端まで収まっている縦持ちではぼかさない
+async function bottomFade(page: Page) {
+  return page.evaluate(() => {
+    const body = document.querySelector<HTMLElement>(".score-result .score-content")!;
+    const mask = getComputedStyle(body).maskImage;
+    const faded = mask !== "" && mask !== "none";
+    const ask = document.querySelector(".score-result .result-consent-ask nav")!.getBoundingClientRect();
+    return { faded, askClear: !faded || ask.bottom <= body.getBoundingClientRect().bottom - 24 };
+  });
+}
+for (const [width, height] of [[640, 360], [740, 360]]) {
+  test(`first result on a ${width}x${height} landscape fades the half-visible SHARE at the bottom edge`, async ({ page }) => {
+    await page.setViewportSize({ width, height });
+    await finishWith12345(page);
+    await expect.poll(() => bottomFade(page)).toEqual({ faded: true, askClear: true });
+  });
+}
+for (const [width, height] of [[320, 568], [375, 667], [412, 839]]) {
+  test(`first result on a ${width}x${height} portrait does not fade the publish buttons`, async ({ page }) => {
+    await page.setViewportSize({ width, height });
+    await finishWith12345(page);
+    await expect.poll(() => landscapeLayout(page)).toEqual(allVisible);
+    expect(await bottomFade(page)).toEqual({ faded: false, askClear: true });
+  });
+}
 test("keep private stores scores locally, no session or upload requests", async ({ page }) => {
   const requests: string[] = []; page.on("request", (r) => { if (r.url().includes("/api/")) requests.push(r.url()); });
   await page.goto("/?mode=endless&countdown=0&bgm=0");

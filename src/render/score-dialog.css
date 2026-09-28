@@ -25,6 +25,8 @@
 .score-dialog h2 { font-size: 32px; margin: 4px 0 0; text-shadow: 0 2px 6px #2a1a5a; }
 .score-dialog h3 { font-size: 22px; color: #ffe066; margin: 22px 0 8px; }
 .score-content { overflow-y: auto; min-height: 0; overscroll-behavior: contain; padding: 0 2px 16px; }
+/* 下端でボタンや文字が途中で切れているときだけ（score-result.ts の peek）、下端 24px を薄くぼかして続きがあると見せる */
+.score-content.cut { -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 24px), rgba(0,0,0,.3) calc(100% - 12px), transparent); mask-image: linear-gradient(to bottom, #000 calc(100% - 24px), rgba(0,0,0,.3) calc(100% - 12px), transparent); }
 .score-dialog p { color: #e6e2f7; font-size: 18px; margin: 12px 0; overflow-wrap: anywhere; }
 .score-dialog label { display: block; margin: 18px 0 8px; font-size: 20px; }
 .score-dialog input[type=text] { box-sizing: border-box; display: block; width: 100%; min-height: 58px; margin-top: 8px; background: rgba(20,12,50,.55); color: #fff; padding: 12px; border: 2px solid rgba(255,255,255,.5); border-radius: 12px; font: inherit; font-size: 22px; user-select: text; -webkit-user-select: text; touch-action: manipulation; }
