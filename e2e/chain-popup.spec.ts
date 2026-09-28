@@ -35,4 +35,6 @@ test("連鎖の吹き出しは揃ったパネルの上に出て盤面からは�
   expect(r.x4.size / r.mid.size).toBeCloseTo(1.4, 1);
   expect(r.x5.size / r.mid.size).toBeCloseTo(1.6, 1);
   expect(r.x9.size).toBe(r.x5.size);
+  // 板は半透明で、1 段上のパネル（連鎖で次に落ちてくるものなど）を隠しきらない
+  expect(r.mid.plateAlpha).toBeLessThanOrEqual(0.65);
 });

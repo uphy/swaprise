@@ -44,6 +44,8 @@ const FRAME_EXTENT = FRAME_PAD + 24;
 /** HUD の文字の影と、札の地の色（夜空の紺） */
 const HUD_INK = "#1c1238";
 const PLATE = 0x120c2c;
+/** 連鎖の吹き出しの板の不透明度。下のパネルが透けて見える濃さ */
+const POPUP_PLATE_ALPHA = 0.6;
 /** 時間・速度・最大連鎖の札の高さ */
 const CHIP_H = 20;
 
@@ -638,15 +640,16 @@ export class BoardView {
     if (top < 2) top = (groupTop + groupBottom) / 2 - h / 2;
     top = Math.max(2, Math.min(BOARD_H - h - 2, top));
     const px = Math.max(w / 2 + 2, Math.min(BOARD_W - w / 2 - 2, groupX));
-    // 同じ色のパネルの上でも読めるよう、濃紺の板に連鎖の色の縁を付ける
+    // 同じ色のパネルの上でも読めるよう、濃紺の板に連鎖の色の縁を付ける。板は 0.6 の半透明にして、
+    // 1 段上にある次に落ちてくるパネルなどを透かす（0.82 では 0.4〜0.9 秒ほど隠れていた）。文字は不透明で縁取りがあるので読める
     const plate = this.scene.add.graphics().setAlpha(0);
     const edge = Phaser.Display.Color.HexStringToColor(parts[parts.length - 1].color).color;
-    plate.fillStyle(PLATE, 0.82);
+    plate.fillStyle(PLATE, POPUP_PLATE_ALPHA);
     plate.fillRoundedRect(px - w / 2, top, w, h, 10);
     plate.lineStyle(2, edge, 0.9);
     plate.strokeRoundedRect(px - w / 2, top, w, h, 10);
     this.root.add(plate);
-    this.lastPopup = { x: px - w / 2, y: top, width: w, height: h, size: items[items.length - 1].size };
+    this.lastPopup = { x: px - w / 2, y: top, width: w, height: h, size: items[items.length - 1].size, plateAlpha: POPUP_PLATE_ALPHA };
     let y = top + padY;
     const targets: Phaser.GameObjects.GameObject[] = [plate];
     parts.forEach(({ caption, main }) => {
@@ -670,7 +673,7 @@ export class BoardView {
     });
   }
   /** 直近の吹き出しの範囲（盤面の局所座標）と数字の大きさ。e2e が盤面の中に収まることを確かめる */
-  lastPopup: { x: number; y: number; width: number; height: number; size: number } | null = null;
+  lastPopup: { x: number; y: number; width: number; height: number; size: number; plateAlpha: number } | null = null;
 
   /** 予告おじゃまのバーの左端と上端（局所座標）。盤面の中の上端に置く。HUD やポーズのボタンと重ならず、どの向きでも同じ場所に出る */
   private static readonly PENDING_X = 4;
