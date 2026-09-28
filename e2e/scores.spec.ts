@@ -92,6 +92,29 @@ for (const [width, height] of [[320, 568], [412, 839], [568, 320]]) {
     }
   });
 }
+// 「公開する」を押したあと、得点の行は全体が見えるか、全体が本文の上端より上に送られている（途中で切れて残らない）。
+// 568×320 では下の 14px だけが本文の上端に残り、412×839 でも上の 19px が切れて壊れて見えた
+for (const [width, height] of [[568, 320], [412, 839]]) {
+  test(`after PUBLISH on ${width}x${height} the score line is not left half cut at the top`, async ({ page }) => {
+    await page.setViewportSize({ width, height });
+    await finishWith12345(page);
+    const result = page.getByRole("region", { name: "RESULT", exact: true });
+    await result.locator(".result-consent-ask button.primary").click();
+    await expect(result.locator(".result-consent-form input")).toBeVisible();
+    const state = () => page.evaluate(() => {
+      const root = document.querySelector(".score-result")!;
+      const view = root.querySelector(".score-content")!.getBoundingClientRect();
+      const score = root.querySelector(".result-summary strong")!.getBoundingClientRect();
+      const confirm = root.querySelector(".result-consent-form button.primary")!.getBoundingClientRect();
+      const bar = root.querySelector(".score-footer")!.getBoundingClientRect();
+      return {
+        scoreWhole: score.top >= view.top - 0.5 || score.bottom <= view.top + 0.5,
+        confirmAboveBar: confirm.bottom <= bar.top + 1,
+      };
+    });
+    await expect.poll(state).toEqual({ scoreWhole: true, confirmAboveBar: true });
+  });
+}
 // 横持ちの背の低い画面では、得点の行と札が本文の上端から外れず、公開のボタンが RETRY / MENU の帯より上に見える。
 // 公開の問いを見せるための表示時のスクロールで、得点が見出しの下へ押し出されていた
 async function landscapeLayout(page: Page) {

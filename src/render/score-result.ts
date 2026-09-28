@@ -100,7 +100,14 @@ export function showScoreResult(scene: Phaser.Scene, options: {
     const publish = node("button", t("PUBLISH")); publish.type = "button"; publish.className = "primary";
     // 名前の欄と 2 回目の「公開する」は札の下に開くので、帯の下に隠れないよう本文をスクロールして見せる
     // 背の低い横持ち（568×320 など）では欄の全体が入らないので、2 回目の「公開する」の行を優先して帯より上に合わせる
-    revealForm = () => { reveal(consent); reveal(confirmNav); };
+    // 送るボタンまで見せた結果、得点の行が本文の上端で途中まで切れて残るなら（568×320 では下の 14px だけ残って壊れて見えた）、
+    // 欄の全体が入る限り枠の上端を本文の上端に合わせ、得点を上へ送り切る（回転のあとと同じ見え方）
+    revealForm = () => {
+      reveal(consent); reveal(confirmNav);
+      const view = body.getBoundingClientRect(), score = scoreLine.getBoundingClientRect(), box = consent.getBoundingClientRect();
+      const halfCut = score.top < view.top - 0.5 && score.bottom > view.top + 0.5;
+      if (halfCut && box.height <= view.height) body.scrollTop += box.top - view.top;
+    };
     publish.onclick = () => { ask.hidden = true; form.hidden = false; formOpen = true; revealForm(); };
     const keep = node("button", t("KEEP PRIVATE")); keep.type = "button"; keep.onclick = () => decide(false);
     buttons.append(publish, keep);
