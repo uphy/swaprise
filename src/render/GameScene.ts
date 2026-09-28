@@ -356,6 +356,15 @@ export class GameScene extends Phaser.Scene {
       kb.on("keydown-Y", () => this.puzzleRedo());
       kb.on("keydown-H", () => this.puzzleHint());
     }
+    // 結果のボタン（NEXT / NEXT LESSON / RETRY など）は、入れ替えと同じ決定キー（Z / Space / Enter、ゲームパッドの A）で
+    // 主ボタンを押せる。マウスやタップでしか押せず、キーボードで遊ぶと次へ進めなかった。押しっぱなしの繰り返しは拾わない
+    kb.on("keydown", (e: KeyboardEvent) => {
+      if (!e.repeat && (e.code === "KeyZ" || e.code === "Space" || e.code === "Enter" || e.code === "NumpadEnter")) this.pressResultPrimary();
+    });
+    this.input.gamepad?.on("down", (_pad: Phaser.Input.Gamepad.Gamepad, button: Phaser.Input.Gamepad.Button) => {
+      if (button.index === 0) this.pressResultPrimary();
+    });
+    this.resultKeycap = false;
     kb.on("keydown", () => audio.start());
     this.input.on("pointerdown", () => audio.start());
 
@@ -775,6 +784,36 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
+  /** 結果の主ボタン。盤面の上の黄色のボタン、パズルの失敗なら盤面の下の UNDO。まだ出ていなければ null */
+  private resultPrimary(): Button | null {
+    if (!this.ended || this.paused) return null;
+    const onBoard = this.views[0]?.overlayButtons().find((b) => b.primary);
+    if (onBoard) return onBoard;
+    const undo = this.puzzleButtons?.undo;
+    return undo && undo.primary ? undo : null;
+  }
+
+  private pressResultPrimary(): void {
+    this.resultPrimary()?.emit("pointerdown");
+  }
+
+  /**
+   * キーボードの端末では、結果の主ボタンの右上に Enter の印を付けて、決定キーで押せることを見せる。
+   * ボタンを作る行には手を入れず、出てきたボタンを見つけて足す
+   */
+  private placeResultKeycap(): void {
+    if (this.resultKeycap || this.layout.touch) return;
+    const button = this.resultPrimary();
+    if (!button) return;
+    this.resultKeycap = true;
+    const cap = this.add
+      .text(button.width / 2 - 4, -button.height / 2, "Enter", { fontFamily: FONT_UI, fontSize: "10px", fontStyle: "700", color: "#2a2050", backgroundColor: "#ffffff", padding: { x: 5, y: 2 } })
+      .setOrigin(1, 0.5)
+      .setName("enter-keycap");
+    button.add(cap);
+  }
+  private resultKeycap = false;
+
   /** 画面全体の白い閃き。大きな連鎖と勝利で使う */
   private flash(alpha: number): void {
     const L = this.layout;
@@ -840,6 +879,7 @@ export class GameScene extends Phaser.Scene {
       this.puzzleButtons.hint.setAlpha(settled && !this.ended ? 1 : 0.4);
     }
     this.raiseHints.forEach((h, i) => h.setRaising(this.inputs[i]?.lastRaise ?? false, this.paused ? 0 : delta));
+    if (this.ended) this.placeResultKeycap();
   }
 
   /** 結果を共有する。共有シートがなければクリップボードへコピーし、ボタンの文字で伝える。 */

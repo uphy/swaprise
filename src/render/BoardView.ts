@@ -3,7 +3,7 @@ import { t } from "./i18n";
 import { Board, COLS, EMPTY, ROWS, TIMING, TOTAL_ROWS, isPanel, type BoardEvent } from "../core";
 import { BOARD_BG, BOARD_H, BOARD_W, CARD, CELL, FONT_UI, GARBAGE_COLOR, KIND_COLORS, TEXT_COLOR, TEXT_DIM, chainColor, isTouchDevice } from "./theme";
 import { CURSOR_PAD, css, garbageFrame, roundRect, tint } from "./textures";
-import { gradientFill } from "./ui";
+import { Button, gradientFill } from "./ui";
 import { audio } from "./shared";
 import { haptics } from "./haptics";
 import { DPR } from "./hidpi";
@@ -471,6 +471,11 @@ export class BoardView {
     g.lineStyle(3, 0xffe066, pulse);
     const rise = this.board.riseProgress * CELL;
     for (const { x, y } of this.hintCells) g.strokeRect(x * CELL + 2, (ROWS - 1 - y) * CELL - rise + 2, CELL - 4, CELL - 4);
+  }
+
+  /** 盤面の上に置いた結果のボタン。キーボード・ゲームパッドの決定で主ボタンを押すのに使う */
+  overlayButtons(): Button[] {
+    return this.overlay.visible ? this.overlay.list.filter((o): o is Button => o instanceof Button && o.visible) : [];
   }
 
   /** 結果画面などのボタンを盤面の上に置く。局所座標（盤面の左上が原点）で渡す。 */
