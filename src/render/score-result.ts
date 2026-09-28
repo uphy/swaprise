@@ -13,6 +13,9 @@ const node = <K extends keyof HTMLElementTagNameMap>(tag: K, text = "") => {
 /** 1 手あたりの得点（得点 ÷ 成功した入れ替え）。小数 1 桁。少ない入れ替えで大きく消すほど上がる */
 export const perSwap = (score: number, swaps: number): string => (score / swaps).toFixed(1);
 /** A result screen, not a modal. Keyboard retry/menu remain available. */
+/** 本文の下端をぼかす高さ（score-dialog.css の .score-content.cut と合わせる） */
+const PEEK_FADE = 24;
+
 export function showScoreResult(scene: Phaser.Scene, options: {
   mode: ScoreMode; title: string | null; score: number; chain: number; progress: Progress | null;
   id: string | null; combos: number; chains: number; retry: () => void; menu: () => void; share?: (button: HTMLButtonElement) => void;
@@ -149,11 +152,13 @@ export function showScoreResult(scene: Phaser.Scene, options: {
    */
   const peek = (): void => {
     const edge = body.getBoundingClientRect().bottom;
-    const cut = [...body.querySelectorAll<HTMLElement>("button, input, h3, p, li, dd")].some((el) => {
-      const box = el.getBoundingClientRect();
-      return box.height > 0 && box.top < edge - 1 && box.bottom > edge + 1;
-    });
-    body.classList.toggle("cut", cut);
+    const boxes = [...body.querySelectorAll<HTMLElement>("button, input, h3, p, li, dd")].map((el) => ({ el, box: el.getBoundingClientRect() })).filter(({ box }) => box.height > 0);
+    const cut = boxes.some(({ box }) => box.top < edge - 1 && box.bottom > edge + 1);
+    // 帯の下にまるごと隠れたものがあり、まだ下へスクロールできるときもぼかす（844×390 では SHARE が帯の下に隠れ、続きの手がかりがなかった）。
+    // ただし見えているボタン・入力欄の下端がぼかしの範囲（下端 24px）に入るならぼかさない（320×568 の縦持ちの公開のボタンなど）
+    const below = body.scrollTop + body.clientHeight < body.scrollHeight - 1 && boxes.some(({ box }) => box.top >= edge - 1)
+      && !boxes.some(({ el, box }) => (el.tagName === "BUTTON" || el.tagName === "INPUT") && box.top < edge - 1 && box.bottom > edge - PEEK_FADE);
+    body.classList.toggle("cut", cut || below);
   };
   let peekFrame = 0;
   const schedulePeek = (): void => { cancelAnimationFrame(peekFrame); peekFrame = requestAnimationFrame(peek); };

@@ -109,6 +109,9 @@
   .score-result .result-summary p { margin: 0; }
   .score-result .result-stats { margin: 6px 0; }
   .score-result .result-consent { margin: 6px 0; padding: 5px 10px; }
+  /* 帯の下に隠れた SHARE の手がかりに本文の下端をぼかすので、公開のボタンをぼかしの範囲（下端 24px）より上へ上げる */
+  .score-result .result-summary p { font-size: 20px; line-height: 1.3; }
+  .score-result .result-stats div { padding: 3px 4px; }
 }
 /* さらに背の低い横持ち（568×320 など）では縦に積むと収まらないので、得点を左、札を右に並べ、公開の問いはその下に全幅で置く */
 @media (max-height: 340px) and (orientation: landscape) {

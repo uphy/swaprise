@@ -189,6 +189,31 @@ for (const [width, height] of [[640, 360], [740, 360]]) {
     await expect.poll(() => bottomFade(page)).toEqual({ faded: true, askClear: true });
   });
 }
+// 844×390・839×412・915×412 では SHARE が帯の下にまるごと隠れ、まだ 71〜93px スクロールできるのに続きの手がかりがなかった。
+// 公開のボタンをぼかしの範囲より上に上げ、下端をぼかす
+for (const [width, height] of [[844, 390], [839, 412], [915, 412]]) {
+  test(`first result on a ${width}x${height} landscape hints at the SHARE below the bar`, async ({ page }) => {
+    await page.setViewportSize({ width, height });
+    await finishWith12345(page);
+    await expect.poll(() => landscapeLayout(page)).toEqual(allVisible);
+    await expect.poll(() => bottomFade(page)).toEqual({ faded: true, askClear: true });
+  });
+}
+// 途中で切れたものがなくても、帯の下にまるごと隠れたものがあってまだ下へスクロールできるなら、下端をぼかす
+test("the bottom edge fades when a button is wholly hidden below the bar and the body can still scroll", async ({ page }) => {
+  await page.setViewportSize({ width: 844, height: 390 });
+  await finishWith12345(page);
+  const share = page.getByRole("region", { name: "RESULT", exact: true }).getByRole("button", { name: "SHARE" });
+  // SHARE を下へずらして、帯の下にまるごと隠す（スクロールで測り直させる）
+  await share.evaluate((el) => {
+    el.style.marginTop = "80px";
+    const body = el.closest<HTMLElement>(".score-content")!;
+    body.dispatchEvent(new Event("scroll"));
+  });
+  const hidden = await share.evaluate((el) => el.getBoundingClientRect().top >= el.closest(".score-content")!.getBoundingClientRect().bottom);
+  expect(hidden).toBe(true);
+  await expect.poll(() => bottomFade(page)).toEqual({ faded: true, askClear: true });
+});
 for (const [width, height] of [[320, 568], [375, 667], [412, 839]]) {
   test(`first result on a ${width}x${height} portrait does not fade the publish buttons`, async ({ page }) => {
     await page.setViewportSize({ width, height });
