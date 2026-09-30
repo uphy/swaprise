@@ -360,7 +360,7 @@ export class Board {
     this.updateLevel();
     if (!resolving) this.updateRise(input);
     else {
-      if (this.stopTimer > 0) this.stopTimer--;
+      this.tickStop();
       if (this.shakeTimer > 0) this.shakeTimer--;
     }
     this.updateChainEnd();
@@ -1041,8 +1041,20 @@ export class Board {
 
   // ------------------------------------------------------------------- rise
 
+  /**
+   * せり上がりの停止を 1 フレーム減らす。消去・変身の途中と、連鎖が続いている間（2 連鎖目以降の消去から連鎖の終わりまで。
+   * 段の間の落下も含む）は減らさない。もともとせり上がらない時間に停止を使い切ると、連鎖で得た停止が連鎖の終わりには
+   * ほとんど残らない（3 連鎖の 3 秒が約 1 秒、2 連鎖の 2 秒が約 0.1 秒）。原作も消えている間は停止を減らさない。
+   * 原作は段の間の落下では減るが、ここでは連鎖の締めに出す秒数とゲージを揃えるため連鎖が終わるまで減らさない
+   */
+  private tickStop(): void {
+    if (this.stopTimer === 0) return;
+    if (this.chain > 1 || this.hasMatched() || this.hasTransforming()) return;
+    this.stopTimer--;
+  }
+
   private updateRise(input: Input): void {
-    if (this.stopTimer > 0) this.stopTimer--;
+    this.tickStop();
     if (this.shakeTimer > 0) this.shakeTimer--;
     const busy = this.hasMatched() || this.hasTransforming();
     const touching = this.topTouching();

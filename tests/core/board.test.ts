@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { Board, COLS, EMPTY, ROWS, TIMING, isEmptyCell, isPanel } from "../../src/core";
+import { Board, COLS, EMPTY, NO_INPUT, ROWS, TIMING, isEmptyCell, isPanel } from "../../src/core";
 import { emptyBoard, matches, moveCursor, press, run } from "./helpers";
 
 /** 縦4個同時消しができる盤面。(0,2) の 3 を右へ抜くと上の 0 0 が落ちて col0 が 0 0 0 0 になる。 */
@@ -301,8 +301,48 @@ describe("連鎖", () => {
     const before = b.riseProgress;
     run(b, 10);
     expect(b.riseProgress).toBe(before);
-    run(b, b.stopTimer + 5);
+    // 停止は連鎖が終わってから減り始める
+    for (let f = 0; f < 600 && b.stopTimer > 0; f++) run(b, 1);
+    run(b, 5);
     expect(b.riseProgress).toBeGreaterThan(before);
+  });
+
+  // 時間切れのあとの片付け（resolving、入力とせり上がりを止めて消去と落下だけ進める）でも同じ
+  for (const resolving of [false, true]) {
+    it(`停止は連鎖の途中（消去・落下）には減らず、連鎖が終わった時点で最後に得た長さがまるごと残り、そこから 1 フレームずつ減る${resolving ? "（片付け中）" : ""}`, () => {
+      const b = emptyBoard();
+      b.setColumns(CHAIN3);
+      moveCursor(b, 0, 4);
+      b.tick({ ...NO_INPUT, swap: true });
+      let ended = false;
+      for (let f = 0; f < 400 && !ended; f++) {
+        const stopBefore = b.stopTimer;
+        b.tick(NO_INPUT, resolving);
+        ended = b.events.some((e) => e.type === "chainEnd");
+        // 新しい停止を得たとき以外は、連鎖の途中で減らない
+        if (!b.events.some((e) => e.type === "match")) expect(b.stopTimer).toBe(stopBefore);
+      }
+      expect(ended).toBe(true);
+      expect(b.stopTimer).toBe(TIMING.stopChainBase + TIMING.stopChainPerExtra);
+      expect(b.stopTimer).toBe(b.stopTotal);
+      for (let i = 0; i < 60; i++) b.tick(NO_INPUT, resolving);
+      expect(b.stopTimer).toBe(b.stopTotal - 60);
+    });
+  }
+
+  it("同時消しの停止は、消えている間は減らない", () => {
+    const b = emptyBoard();
+    b.setColumns(COMBO4);
+    moveCursor(b, 0, 2);
+    let got = false;
+    for (let f = 0; f < 200 && !got; f++) {
+      b.tick(f === 0 ? { ...NO_INPUT, swap: true } : NO_INPUT);
+      got = b.events.some((e) => e.type === "match");
+    }
+    expect(b.stopTimer).toBe(TIMING.stopComboBase);
+    // 点滅と揃った柄を見せている間
+    run(b, TIMING.flash + TIMING.face);
+    expect(b.stopTimer).toBe(TIMING.stopComboBase);
   });
 });
 

@@ -43,6 +43,8 @@ test("連鎖の終わりに連鎖数・得点・停止秒数の締めを出し�
   expect(r.stopTimer).toBeGreaterThan(0);
   expect(r.stopping).toBe(true);
   expect(r.text).toMatch(/^STOP \d+\.\ds$/);
+  // 停止は連鎖の途中に減らないので、締めを出した時点のゲージは締めの秒数（3 秒）とほぼ同じ
+  expect(Number(r.text.match(/[\d.]+/)![0])).toBeGreaterThanOrEqual(2.5);
   expect(r.textW).toBeLessThanOrEqual(r.barW);
   // 締めは 1 秒弱で消える
   await page.waitForFunction(() => {
