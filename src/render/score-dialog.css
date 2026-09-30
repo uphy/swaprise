@@ -159,6 +159,9 @@
 .rec-main strong { font-size: .85em; overflow-wrap: anywhere; }
 .rec-score { font-size: 1.3em; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.1; }
 .rec-meta { display: grid; justify-items: end; gap: .1em; font-size: .62em; color: #d9d4f2; white-space: nowrap; }
+/* 結果画面の一覧の決まり（.score-dialog li span は 18px の block）が行の得点と札に効いて、得点が MAX CHAIN より小さく出ていた。行の中では外す */
+.score-dialog .rec-row .rec-score { display: inline; margin-top: 0; font-size: 1.3em; color: inherit; }
+.score-dialog .rec-row .rec-meta span { display: block; margin-top: 0; font-size: inherit; color: inherit; }
 .rec-bar { width: 4em; height: .4em; border-radius: .2em; background: rgba(255,255,255,.18); overflow: hidden; }
 .rec-bar div { height: 100%; background: #ffe066; border-radius: .2em; }
 @media (pointer: coarse), (max-width: 600px) {

@@ -94,3 +94,24 @@ test("結果画面の SHARE で navigator.share に得点が渡る", async ({ pa
   // URL は結果の共有 URL。貼った先で Worker がこの得点のカードを出す。ポートは PREVIEW_PORT で変わるので固定しない
   expect(shared[0].url).toMatch(/^http:\/\/127\.0\.0\.1:\d+\/r\?m=endless&s=777&c=3(&id=[0-9a-f-]{36})?$/);
 });
+
+test("RECORDS の行は得点がいちばん大きい。最大連鎖・1 手あたり・日付・順位より大きく出す", async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem("swaprise.highscores.v1", JSON.stringify({ timeattack: [{ score: 1684, maxChain: 3, date: "2026-09-28", swaps: 79 }] }));
+  });
+  await page.goto("/?bgm=0&opening=0");
+  await page.waitForFunction(() => (window as any).__swapriseScenes?.menu?.children.getByName("records"));
+  // 開き方は上のテスト（RECORDS をタップ）で確かめているので、ここは直に開く
+  await page.evaluate(() => (window as any).__swapriseScenes.menu.showRecords());
+  const row = page.getByRole("listitem").filter({ hasText: "1,684" });
+  await expect(row).toContainText("MAX CHAIN ×3");
+  const sizes = await row.evaluate((li) => {
+    const px = (el: Element) => parseFloat(getComputedStyle(el).fontSize);
+    const height = (el: Element) => el.getBoundingClientRect().height;
+    const score = li.querySelector(".rec-score")!;
+    const others = [li.querySelector("b")!, ...li.querySelectorAll(".rec-meta span")];
+    return { score: px(score), scoreHeight: height(score), others: others.map(px), otherHeights: others.map(height) };
+  });
+  for (const size of sizes.others) expect(sizes.score).toBeGreaterThan(size * 1.3);
+  for (const h of sizes.otherHeights) expect(sizes.scoreHeight).toBeGreaterThan(h);
+});
