@@ -827,7 +827,7 @@ export class MenuScene extends Phaser.Scene {
       });
       const index = state.stage * PUZZLES_PER_STAGE + state.face;
       const st = PUZZLES[index];
-      info.setText(`${t("PUZZLE")} ${puzzleName(index)}   ${st.moves} ${st.moves === 1 ? "MOVE" : "MOVES"}${cleared.has(index) ? t("   CLEARED") : ""}`);
+      info.setText(`${t(st.moves === 1 ? "PUZZLE {name}   {moves} MOVE" : "PUZZLE {name}   {moves} MOVES", { name: puzzleName(index), moves: st.moves })}${cleared.has(index) ? t("   CLEARED") : ""}`);
     };
     refresh();
     dim.on("pointerdown", (_p: Phaser.Input.Pointer, _x: number, _y: number, event: Phaser.Types.Input.EventData) => {

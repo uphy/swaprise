@@ -336,3 +336,37 @@ test("パズル: 目標の文言は日本語でも出す", async ({ browser }) =
   expect(await page.evaluate(() => (window as any).__swaprise.scene.children.getByName("puzzle-goal")?.text)).toBe("1手ですべてのパネルを消そう");
   await context.close();
 });
+
+test("メニュー: 面選びの手数は日本語でも日本語で出す (U6)", async ({ browser }) => {
+  const context = await browser.newContext({ locale: "ja-JP" });
+  await context.addInitScript(() => {
+    localStorage.setItem("swaprise.highscores.v1", JSON.stringify({ puzzle: [0] }));
+  });
+  const page = await context.newPage();
+  await page.goto("/?bgm=0&opening=0");
+  await page.waitForFunction(() => Boolean((window as any).__swapriseScenes?.menu));
+  await page.waitForTimeout(200);
+  await page.keyboard.press("Enter");
+  await page.waitForTimeout(150);
+  await page.keyboard.press("ArrowDown");
+  await page.waitForTimeout(100);
+  await page.keyboard.press("ArrowDown");
+  await page.waitForTimeout(100);
+  await page.keyboard.press("Enter");
+  await page.waitForFunction(() => Boolean((window as any).__swapriseScenes.menu.children.getByName("puzzle-picker")));
+  const read = () =>
+    page.evaluate(() => {
+      const panel = (window as any).__swapriseScenes.menu.children.getByName("puzzle-picker");
+      return panel.list.map((o: any) => o.text).filter((t: any) => typeof t === "string" && t.startsWith("パズル 1-"));
+    });
+  // 2 面目（1 手）
+  expect(await read()).toEqual(["パズル 1-2   1手"]);
+  // 1 面目はクリア済み。左へ送る
+  await page.keyboard.press("ArrowLeft");
+  await page.waitForTimeout(100);
+  const texts = await read();
+  expect(texts).toHaveLength(1);
+  expect(texts[0]).toMatch(/^パズル 1-1   \d+手   クリア済み$/);
+  expect(texts[0]).not.toMatch(/MOVE/);
+  await context.close();
+});
