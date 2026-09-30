@@ -58,12 +58,22 @@ test("パズル: 面の名前と残り手数を出し、解どおりに入れ替
       result: p.game.puzzleResult,
       title: v.overlayTitle.text,
       text: v.infoLine,
+      body: v.overlayBody.text,
       next: v.overlay.list.find((o: any) => o.name === "next")?.text ?? null,
       stored: JSON.parse(localStorage.getItem("swaprise.highscores.v1") ?? "{}"),
+      undo: { alpha: p.scene.puzzleButtons.undo.alpha, enabled: Boolean(p.scene.puzzleButtons.undo.input?.enabled) },
     };
   });
   expect(result.result).toBe("clear");
   expect(result.title).toBe("CLEAR");
+  // 残り手数（いつも 0）ではなく、解いた面と段の中の進みを出す
+  expect(result.body).toBe("1-1 CLEAR  1/10");
+  expect(result.body).not.toContain("MOVES LEFT");
+  // クリアのあとは手を戻せないので、UNDO は暗く、押せない
+  expect(result.undo).toEqual({ alpha: 0.4, enabled: false });
+  await page.keyboard.press("u");
+  await page.waitForTimeout(100);
+  expect(await page.evaluate(() => (window as any).__swaprise.game.puzzleResult)).toBe("clear");
   expect(result.text).toBe("MOVES 0");
   expect(result.next).toBe("NEXT  1-2");
   expect(result.stored.puzzle).toEqual([0]);

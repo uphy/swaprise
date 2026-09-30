@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { Game, LESSONS, PUZZLES, puzzleName, type CpuLevel, type GameMode, type Input, NO_INPUT } from "../core";
+import { Game, LESSONS, PUZZLES, PUZZLES_PER_STAGE, puzzleName, type CpuLevel, type GameMode, type Input, NO_INPUT } from "../core";
 import { lessonText } from "./lessonText";
 import { hintSentence, noHintSentence } from "./puzzleHint";
 import { loadHighScores, recordCpuResult, recordLessonDone, recordPuzzleClear, recordScore } from "./highscore";
@@ -913,7 +913,7 @@ export class GameScene extends Phaser.Scene {
     this.views.forEach((v) => v.draw(this.paused || this.starting ? 0 : delta, !this.ended));
     if (this.puzzleButtons) {
       const settled = this.game_.boards[0].isSettled();
-      this.puzzleButtons.undo.setAlpha(settled && this.game_.puzzleMoves.length > 0 ? 1 : 0.4);
+      this.puzzleButtons.undo.setAlpha(settled && this.game_.puzzleMoves.length > 0 && this.game_.puzzleResult !== "clear" ? 1 : 0.4);
       this.puzzleButtons.redo.setAlpha(settled && !this.ended && this.game_.puzzleCanRedo ? 1 : 0.4);
       this.puzzleButtons.hint.setAlpha(settled && !this.ended ? 1 : 0.4);
     }
@@ -1055,7 +1055,10 @@ export class GameScene extends Phaser.Scene {
       const b = g.boards[0];
       if (g.puzzleResult === "clear") {
         recordPuzzleClear(this.stage);
-        this.views[0].showOverlay(t("CLEAR"), t("MOVES LEFT {count}", { count: b.movesLeft ?? 0 }));
+        // 残り手数は全部消した時点でいつも 0 なので出さず、どの面を解いたかと段の中の進み（1-1 なら 1/10）を出す。
+        // クリアのあとは手を戻せない（Game.puzzleUndo が断る）ので、UNDO は押せない見た目にして当たり判定も外す
+        this.views[0].showOverlay(t("CLEAR"), t("{name} CLEAR  {face}/{total}", { name: puzzleName(this.stage), face: (this.stage % PUZZLES_PER_STAGE) + 1, total: PUZZLES_PER_STAGE }));
+        this.puzzleButtons?.undo.disableInteractive();
       } else {
         this.views[0].showOverlay(t("FAILED"), t("{count} PANELS LEFT", { count: b.panelCount() }));
       }
