@@ -10,6 +10,7 @@ import {
   TOTAL_ROWS,
   clearTiming,
   type ClearTiming,
+  deathGrace,
   riseFramesPerRow,
 } from "./constants";
 import { garbageFromChain, garbageFromCombo, garbageFromShock, type GarbageSpec, type IncomingGarbage } from "./garbage";
@@ -78,7 +79,13 @@ export class Board {
   stopTotal = 0;
   stopPinch = false;
   shakeTimer = 0;
+  /** 天井に触れている間に数えた猶予（フレーム）。deathGrace(level) を超えるとゲームオーバー。天井から離れると 0 に戻る */
   deathTimer = 0;
+  /**
+   * 描画用（読み取り専用）。天井に触れているが、消去・変身・落下・停止・着地の揺れの間なので猶予を数えていないか。
+   * 盤面の状態から毎フレーム求め直すので、同期検査（syncState）には含めない
+   */
+  deathHeld = false;
   /** 現在の連鎖数。1は連鎖していない状態。 */
   chain = 1;
   maxChain = 1;
@@ -1091,10 +1098,12 @@ export class Board {
   private updateStatus(): void {
     const touching = this.topTouching();
     // 消去・変身に加えて落下も待つ。消して下に空間が空いたのに、落ちる前にゲームオーバーになるのを防ぐ
-    const busy = this.hasMatched() || this.hasTransforming() || this.hasFalling();
+    // 停止中と着地の揺れの間も数えない。連鎖で得た停止で天井際を粘れる（原作どおり）
+    const busy = this.hasMatched() || this.hasTransforming() || this.hasFalling() || this.stopTimer > 0 || this.shakeTimer > 0;
+    this.deathHeld = touching && busy;
     if (touching && !busy) {
       this.deathTimer++;
-      if (this.deathTimer > TIMING.deathGrace) {
+      if (this.deathTimer > deathGrace(this.level)) {
         this.gameOver = true;
         this.emit({ type: "gameOver" });
       }

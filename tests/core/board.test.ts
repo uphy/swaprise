@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { Board, COLS, EMPTY, NO_INPUT, ROWS, TIMING, isEmptyCell, isPanel } from "../../src/core";
+import { Board, COLS, EMPTY, NO_INPUT, ROWS, TIMING, deathGrace, isEmptyCell, isPanel } from "../../src/core";
 import { emptyBoard, matches, moveCursor, press, run } from "./helpers";
 
 /** 縦4個同時消しができる盤面。(0,2) の 3 を右へ抜くと上の 0 0 が落ちて col0 が 0 0 0 0 になる。 */
@@ -475,6 +475,48 @@ describe("せり上がりとゲームオーバー", () => {
     const events = run(b, TIMING.deathGrace + 2);
     expect(b.gameOver).toBe(true);
     expect(events.some((e) => e.type === "gameOver")).toBe(true);
+  });
+
+  it("天井の猶予はレベル1で 2 秒、レベルが上がるほど縮み、レベル50以上で 1 秒", () => {
+    expect(deathGrace(1)).toBe(120);
+    expect(deathGrace(25)).toBe(91);
+    expect(deathGrace(50)).toBe(60);
+    expect(deathGrace(99)).toBe(60);
+    const col: number[] = [];
+    for (let r = 0; r < ROWS; r++) col.push(r % 2);
+    for (const [level, grace] of [[1, 120], [50, 60]]) {
+      const b = new Board({ seed: 1, kinds: 6, initialHeight: 0, noRise: true, speedLevel: level });
+      b.setColumns([col]);
+      run(b, grace);
+      expect(b.gameOver, `Lv${level}`).toBe(false);
+      expect(b.deathTimer).toBe(grace);
+      run(b, 1);
+      expect(b.gameOver, `Lv${level}`).toBe(true);
+    }
+  });
+
+  it("停止中は天井に触れていても猶予を数えず、停止が切れてから数え始める", () => {
+    const b = emptyBoard();
+    const col: number[] = [];
+    for (let r = 0; r < ROWS; r++) col.push(r % 2);
+    b.setColumns([col]);
+    run(b, 30);
+    expect(b.deathTimer).toBe(30);
+    expect(b.deathHeld).toBe(false);
+    b.stopTimer = 600;
+    run(b, 590);
+    expect(b.gameOver).toBe(false);
+    expect(b.deathTimer).toBe(30);
+    expect(b.deathHeld).toBe(true);
+    run(b, 10);
+    expect(b.stopTimer).toBe(0);
+    expect(b.deathHeld).toBe(false);
+    // 停止が 0 になったフレームから数え直す
+    expect(b.deathTimer).toBe(31);
+    run(b, TIMING.deathGrace - 31);
+    expect(b.gameOver).toBe(false);
+    run(b, 1);
+    expect(b.gameOver).toBe(true);
   });
 
   it("消去中は天井に触れていてもゲームオーバーにならない", () => {

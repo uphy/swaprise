@@ -1,7 +1,7 @@
 import Phaser from "phaser";
 import type { Board } from "../core";
-import { COLS } from "../core";
-import { BOARD_H, BOARD_W, CELL } from "./theme";
+import { COLS, deathGrace } from "../core";
+import { BOARD_H, BOARD_W, CELL, FONT_UI, STOP_COLORS } from "./theme";
 import { dangerColumns, musicDanger } from "./musicDanger";
 import { DPR } from "./hidpi";
 import { roundRect } from "./textures";
@@ -12,6 +12,15 @@ const OUTLINE_REACH = 28;
 const OUTLINE_INSET = 3;
 /** 下辺の光の強さ（上辺を 1 とした割合）。下の角まで回り込ませつつ、目は上の危険に向ける */
 const OUTLINE_BOTTOM = 0.25;
+
+/** 猶予の輪の半径と太さ（px）。上の縁の真ん中に、縁と上端の行に半分ずつ重ねて置く */
+const RING_R = 12;
+const RING_W = 4.5;
+/** 猶予を数えている間の枠の明滅の周期（フレーム）。危険（高さ 9 以上）だけのときは 60 フレームでゆっくり息をする */
+const FAST_BLINK = 16;
+
+/** 天井に触れている間の猶予の見え方。counting は数えている（減っていく）、stop は停止中で守られている、busy は消去・落下の途中で止まっている */
+export type GraceState = "counting" | "stop" | "busy";
 
 /** 盤面の枠の形。BoardView の縁の幅と丸み（枠の赤みを縁にぴったり重ねる） */
 export interface FrameShape {
@@ -38,8 +47,12 @@ export class DangerGlow {
   private readonly outline: Phaser.GameObjects.Image;
   private readonly top: Phaser.GameObjects.Image;
   private readonly ceiling: Phaser.GameObjects.Rectangle;
+  private readonly ringGfx: Phaser.GameObjects.Graphics;
+  private readonly ringText: Phaser.GameObjects.Text;
   private level = 0;
   private ceilingLevel = 0;
+  /** 天井に触れている間の猶予の輪。e2e が確かめる。left は残りの割合（0〜1） */
+  grace: { visible: boolean; state: GraceState; left: number; text: string } = { visible: false, state: "counting", left: 1, text: "" };
 
   /** 枠の形。e2e が光の形と枠の形の対応を確かめる */
   readonly frame: FrameShape;
@@ -127,7 +140,12 @@ export class DangerGlow {
     }
     this.bezel = scene.add.image(-frame.pad, -frame.pad, key).setOrigin(0).setScale(1 / DPR).setAlpha(0);
     this.columnGfx = scene.add.graphics();
-    this.front = scene.add.container(0, 0, [this.bezel, this.columnGfx]).setVisible(false);
+    this.ringGfx = scene.add.graphics();
+    this.ringText = scene.add
+      .text(BOARD_W / 2, -frame.pad / 2, "", { fontFamily: FONT_UI, fontSize: "10px", fontStyle: "700", color: "#ffffff" })
+      .setOrigin(0.5)
+      .setVisible(false);
+    this.front = scene.add.container(0, 0, [this.bezel, this.columnGfx, this.ringGfx, this.ringText]).setVisible(false);
   }
 
   update(board: Board, delta: number, active: boolean): void {
@@ -137,14 +155,18 @@ export class DangerGlow {
     const approach = (value: number, target: number, ms: number): number => target + (value - target) * Math.exp(-Math.max(0, delta) / ms);
     this.level = approach(this.level, danger ? 1 : 0, danger ? 220 : 320);
     this.ceilingLevel = approach(this.ceilingLevel, panic ? 1 : 0, panic ? 140 : 240);
-    // 無音でも天井接触を知らせる。高速点滅にはせず、ゲーム時間に同期した緩い明滅にする。
-    const breath = (1 + Math.cos(board.frame * Math.PI * 2 / 60)) / 2;
+    // 危険（高さ 9 以上）は 1 秒周期の緩い明滅。天井に触れて猶予を数えている間だけ、枠と天井の線を速く明滅させて見分ける。
+    // 停止中や消去・落下の途中で猶予が止まっている間は速めない（ゲーム時間に同期するのでポーズ中は止まる）
+    const graceState: GraceState = !board.deathHeld ? "counting" : board.stopTimer > 0 ? "stop" : "busy";
+    const counting = panic && graceState === "counting";
+    const breath = (1 + Math.cos(board.frame * Math.PI * 2 / (counting ? FAST_BLINK : 60))) / 2;
     this.outline.setAlpha(this.level * 0.65);
     this.top.setAlpha(this.ceilingLevel * (0.2 + breath * 0.25));
     this.ceiling.setAlpha(this.ceilingLevel * (0.55 + breath * 0.4));
     this.root.setVisible(this.level > 0.005 || this.ceilingLevel > 0.005);
     // 枠を赤く染め、危険な列の上端のマスに赤い帯を明滅させる（0.67 秒周期。ゲーム時間に同期するのでポーズ中は止まる）
-    this.bezel.setAlpha(this.level * (0.8 + breath * 0.2));
+    this.bezel.setAlpha(this.level * (counting ? 0.45 + breath * 0.55 : 0.8 + breath * 0.2));
+    this.drawGrace(board, panic, graceState);
     this.columns = danger ? dangerColumns(board) : this.columns.map(() => false);
     const g = this.columnGfx;
     g.clear();
@@ -162,5 +184,43 @@ export class DangerGlow {
       });
     }
     this.front.setVisible(this.level > 0.005);
+  }
+
+  /**
+   * 天井に触れている間、上の縁の真ん中に猶予の残りの輪を出す。数えている間は白い輪が時計回りに減り、中に残りの秒数を出す。
+   * 停止中は輪と数字を停止のゲージと同じ水色にして、守られていて減らないことを示す。消去・落下の途中は白のまま止める
+   */
+  private drawGrace(board: Board, panic: boolean, state: GraceState): void {
+    const g = this.ringGfx;
+    g.clear();
+    const total = deathGrace(board.level);
+    const left = Math.max(0, Math.min(1, 1 - board.deathTimer / total));
+    const alpha = this.ceilingLevel;
+    const visible = panic && alpha > 0.005;
+    const seconds = Math.max(0, (total - board.deathTimer) / 60);
+    // 縦持ちの CPU 戦の相手の盤面（半分の大きさ）では数字が読めないので、輪だけにする
+    const small = (this.front.parentContainer?.scaleX ?? 1) < 0.75;
+    this.grace = { visible, state, left, text: visible && !small ? seconds.toFixed(1) : "" };
+    this.ringText.setVisible(visible && !small);
+    if (!visible) return;
+    const cx = BOARD_W / 2;
+    const cy = -this.frame.pad / 2;
+    const stop = state === "stop";
+    const color = stop ? STOP_COLORS.normal.fill : 0xffffff;
+    // 地の円（夜空の紺）と、減った分の暗い赤の溝
+    g.fillStyle(0x1c1238, 0.9 * alpha);
+    g.fillCircle(cx, cy, RING_R + RING_W / 2 + 1.5);
+    g.lineStyle(RING_W, stop ? 0x1d4f73 : 0x7a1830, alpha);
+    g.strokeCircle(cx, cy, RING_R);
+    if (left > 0) {
+      g.lineStyle(RING_W, color, alpha);
+      g.beginPath();
+      g.arc(cx, cy, RING_R, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * left, false);
+      g.strokePath();
+    }
+    this.ringText
+      .setText(this.grace.text)
+      .setColor(stop ? STOP_COLORS.normal.text : "#ffffff")
+      .setAlpha(alpha);
   }
 }

@@ -48,8 +48,13 @@ export const TIMING = {
   transformHover: 45,
   /** 手動せり上げで1段上がるのにかかるフレーム数。 */
   manualRisePerRow: 4,
-  /** 天井に触れてからゲームオーバーになるまでの猶予。 */
-  deathGrace: 60,
+  /**
+   * 天井に触れてからゲームオーバーになるまでの猶予（レベル1）。レベルが上がると deathGraceMin まで縮む（deathGrace()）。
+   * 消去・変身・落下・停止・着地の揺れの間は数えない。原作の対戦も低いレベルほど長く（約2秒）、高いレベルでは短い
+   */
+  deathGrace: 120,
+  /** レベル50以上の猶予。 */
+  deathGraceMin: 60,
   /**
    * 連鎖フラグ付きのパネルが着地して揃わなかったあと、フラグを保つフレーム数。
    * この間に隣を入れ替えて揃えれば連鎖として数える。原作にはない緩和で、連鎖を少し作りやすくする。
@@ -98,6 +103,12 @@ export function clearTiming(level: number): ClearTiming {
     hoverSwap: lerp(TIMING.hoverSwap, 4),
     transformHover: lerp(TIMING.transformHover, 24),
   };
+}
+
+/** 天井に触れてからゲームオーバーになるまでの猶予（フレーム）。レベル1で TIMING.deathGrace、レベル50以上で TIMING.deathGraceMin */
+export function deathGrace(level: number): number {
+  const t = Math.max(0, Math.min(1, (level - 1) / 49));
+  return Math.round(TIMING.deathGrace + (TIMING.deathGraceMin - TIMING.deathGrace) * t);
 }
 
 /**
