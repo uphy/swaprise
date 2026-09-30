@@ -222,24 +222,37 @@ test.describe("日本語での対戦結果", () => {
   });
 });
 
-test("危険のときは枠そのものを赤く染め、危険な列の上端のマスに赤い帯を出す", async ({ page }) => {
+test("危険のときは枠そのものを赤く染め、危険な列の上端のマスを薄い赤で塗り、端の列は盤面の丸い内角に沿わせる", async ({ page }) => {
   await start(page, "endless");
   const result = await page.evaluate(() => {
     const { game, scene } = (window as any).__swaprise;
     const b = game.boards[0];
     const glow = scene.views[0].dangerGlow;
     const before = { front: glow.front.visible, bezel: glow.bezel.alpha };
-    // 左端の列だけ 10 段。ほかの列は低い
-    b.setColumns([[0, 1, 2, 3, 4, 0, 1, 2, 3, 4], [1], [2], [3], [4], [0]]);
+    // 左端と右端の列だけ 10 段。ほかの列は低い
+    b.setColumns([[0, 1, 2, 3, 4, 0, 1, 2, 3, 4], [1], [2], [3], [4], [1, 2, 3, 4, 0, 1, 2, 3, 4, 0]]);
     b.noRise = true;
     for (let i = 0; i < 60; i++) scene.update(0, 1000 / 60);
     const frontIndex = scene.views[0].root.list.indexOf(glow.front);
     const cornerIndex = Math.max(...scene.views[0].corners.map((c: any) => scene.views[0].root.list.indexOf(c)));
-    return { before, front: glow.front.visible, bezel: glow.bezel.alpha, columns: glow.columns, above: frontIndex > cornerIndex };
+    return {
+      before,
+      front: glow.front.visible,
+      bezel: glow.bezel.alpha,
+      columns: glow.columns,
+      above: frontIndex > cornerIndex,
+      tints: glow.tints,
+      inner: glow.frame?.inner,
+    };
   });
   expect(result.before).toEqual({ front: false, bezel: 0 });
   expect(result.front).toBe(true);
   expect(result.bezel).toBeGreaterThan(0.5);
-  expect(result.columns).toEqual([true, false, false, false, false, false]);
+  expect(result.columns).toEqual([true, false, false, false, false, true]);
   expect(result.above).toBe(true);
+  // 塗りは危険な列に1つずつで、上端の線は引かない。端の列は外側の上の角だけ盤面の内角と同じ丸みにする
+  expect(result.tints).toEqual([
+    { column: 0, radius: { tl: result.inner, tr: 0, bl: 0, br: 0 } },
+    { column: 5, radius: { tl: 0, tr: result.inner, bl: 0, br: 0 } },
+  ]);
 });

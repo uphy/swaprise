@@ -31,6 +31,8 @@ export class DangerGlow {
   private readonly columnGfx: Phaser.GameObjects.Graphics;
   /** 危険な列（下から DANGER_ROW 段を超えて積もった列）。e2e が確かめる */
   columns: boolean[] = new Array(COLS).fill(false);
+  /** いま塗っている危険な列と、その角の丸み。e2e が確かめる */
+  tints: { column: number; radius: { tl: number; tr: number; bl: number; br: number } }[] = [];
   private readonly outline: Phaser.GameObjects.Image;
   private readonly top: Phaser.GameObjects.Image;
   private readonly ceiling: Phaser.GameObjects.Rectangle;
@@ -139,14 +141,17 @@ export class DangerGlow {
     this.columns = danger ? dangerColumns(board) : this.columns.map(() => false);
     const g = this.columnGfx;
     g.clear();
+    this.tints = [];
     if (this.level > 0.005) {
       const blink = (1 + Math.cos(board.frame * Math.PI * 2 / 40)) / 2;
       this.columns.forEach((on, c) => {
         if (!on) return;
+        // 上端のマスを薄い赤で塗るだけにする。以前は上端に明るい線も引いていたが、赤く染めた枠の縁と重なって見え、
+        // 盤面の丸い内角にもまっすぐな線が食い込んでいた。左右の端の列は、外側の上の角を盤面の内角と同じ丸みにする
+        const radius = { tl: c === 0 ? this.frame.inner : 0, tr: c === COLS - 1 ? this.frame.inner : 0, bl: 0, br: 0 };
         g.fillStyle(0xff4063, this.level * (0.18 + blink * 0.3));
-        g.fillRect(c * CELL, 0, CELL, CELL);
-        g.fillStyle(0xff8c9e, this.level * (0.6 + blink * 0.4));
-        g.fillRect(c * CELL + 2, 0, CELL - 4, 4);
+        g.fillRoundedRect(c * CELL, 0, CELL, CELL, radius);
+        this.tints.push({ column: c, radius });
       });
     }
     this.front.setVisible(this.level > 0.005);
