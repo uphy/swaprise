@@ -33,6 +33,8 @@ test("メニューが表示され、キーボードでエンドレスを開始�
   page.on("console", (m) => {
     if (m.type() === "error") errors.push(m.text());
   });
+  // レッスンを 1 つ終えた人の 1 PLAYER は枠が ENDLESS。記録のない人は LEARN に枠が置かれる（first-time.spec.ts）
+  await page.addInitScript(() => localStorage.setItem("swaprise.highscores.v1", JSON.stringify({ lessons: [0] })));
   await page.goto("/?bgm=0&countdown=0&opening=0");
   await expect(page.locator("canvas")).toBeVisible();
   await page.waitForTimeout(500);

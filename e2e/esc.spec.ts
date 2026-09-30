@@ -3,6 +3,8 @@ import { expect, test } from "@playwright/test";
 test("メニューから始めたゲームを Esc で抜けると、メニューが描画されて再度始められる", async ({ page }) => {
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
+  // レッスンを 1 つ終えた人の 1 PLAYER は枠が ENDLESS。記録のない人は LEARN に枠が置かれる（first-time.spec.ts）
+  await page.addInitScript(() => localStorage.setItem("swaprise.highscores.v1", JSON.stringify({ lessons: [0] })));
   await page.goto("/?bgm=0&countdown=0&opening=0");
   // メニューができてから押す。固定の待ちだけだと、ビルド直後の最初の読み込みで間に合わず Enter が落ちた
   await page.waitForFunction(() => Boolean((window as any).__swapriseScenes?.menu));

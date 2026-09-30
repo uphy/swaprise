@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import { Game, LESSONS, PUZZLES, PUZZLES_PER_STAGE, puzzleName, type CpuLevel, type GameMode, type Input, NO_INPUT } from "../core";
 import { lessonText } from "./lessonText";
+import { endlessHintPending, showEndlessHint } from "./firstTime";
 import { hintSentence, noHintSentence } from "./puzzleHint";
 import { loadHighScores, recordCpuResult, recordLessonDone, recordPuzzleClear, recordScore } from "./highscore";
 import { recordProgress } from "../scores/progress";
@@ -244,6 +245,8 @@ export class GameScene extends Phaser.Scene {
       const h = this.game_.lesson.hint;
       if (h) this.views[0].setHint([h, { x: h.x + 1, y: h.y }]);
     }
+    // 初めての ENDLESS だけ、盤面の上の空いた段に操作の一文を出し、最初の入れ替えで消す（src/render/firstTime.ts）
+    if (this.mode === "endless" && endlessHintPending(loadHighScores())) showEndlessHint(this, this.views[0], boards[0], this.layout.touch);
 
     // パズルの 戻す・進める・ヒント。手を打ち直すたびに最初からやり直さなくて済むようにする。
     // ヒントは 1 回目で次の手の技法を文で、2 回目で入れ替えるマスを盤面に光らせる
@@ -363,7 +366,7 @@ export class GameScene extends Phaser.Scene {
     });
     // キーボード向けの案内。タッチ端末では出さない（ボタンがある）
     this.hintText = this.add
-      .text(0, 0, t("P: pause   R: restart   Esc: menu   M: mute"), { fontFamily: FONT_UI, fontSize: "12px", color: "rgba(255,255,255,0.55)" })
+      .text(0, 0, this.mode === "versus" ? t("P: pause   R: restart   Esc: menu   M: mute") : t("←↑↓→: move   Z: swap   X: raise   P: pause   R: restart   Esc: menu   M: mute"), { fontFamily: FONT_UI, fontSize: "12px", color: "rgba(255,255,255,0.55)" })
       .setOrigin(0.5);
     // 戻る操作の案内。盤面の外（画面の下端、横持ちのスマホは上端）に数秒だけ出す
     this.backHintText = this.add
