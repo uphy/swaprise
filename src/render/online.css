@@ -290,3 +290,8 @@
   flex: none;
   font-variant-numeric: tabular-nums;
 }
+/* 大文字の見出しとボタンはカーニングを切る（ボタンの font: inherit に戻されないよう最後に置く）。同梱の Fredoka は I と V の組を詰めすぎ、大文字の IV が M に見える */
+.online-ui h1,
+.online-ui button {
+  font-kerning: none;
+}

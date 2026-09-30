@@ -136,6 +136,12 @@ export class MenuCard {
 
   private paint(): void {
     paintGlass(this.bg, 0, 0, this.spec.w, this.spec.h, this.spec.color, this.hot);
+    // 選んでいるカードは外側を太い白の線で囲む。明るさの差だけでは、もともと色の縁が光るカードのどれが選ばれているか分からなかった
+    if (this.hot) {
+      const { w, h } = this.spec;
+      this.bg.lineStyle(3, 0xffffff, 1);
+      this.bg.strokeRoundedRect(-w / 2 - 5, -h / 2 - 5, w + 10, h + 10, RADIUS + 5);
+    }
   }
 
   /** 指が乗っている・キー操作の対象。地を明るくし縁を強める */

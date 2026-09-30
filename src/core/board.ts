@@ -931,7 +931,12 @@ export class Board {
       cell.popAt = ct.flash + ct.face + i * ct.popInterval;
       cell.removeAt = ct.flash + ct.face + n * ct.popInterval + TIMING.popTail;
     });
-    this.emit({ type: "match", panels: n, chain: chainNow, x: list[0].x, y: list[0].y, score: gained });
+    // 揃ったパネルの範囲。描画側が吹き出しを消えるパネルに重ねず、その上に出すのに使う
+    const xs = list.map((p) => p.x);
+    this.emit({
+      type: "match", panels: n, chain: chainNow, x: list[0].x, y: list[0].y, score: gained,
+      left: Math.min(...xs), right: Math.max(...xs), top: list[0].y, bottom: list[n - 1].y,
+    });
     this.triggerGarbageTransform(list);
     this.updateLevel();
   }

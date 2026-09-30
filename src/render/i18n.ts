@@ -7,7 +7,6 @@ const JA: Record<string, string> = {
   "RESULT": "結果", "POINTS": "点", "First record!": "初めての記録！", "New best! +{points}": "自己ベスト更新！ ＋{points}",
   "Matched your best!": "自己ベストと同点！", "{points} to your best": "自己ベストまであと{points}",
   "vs previous {count} average: {difference}": "直近{count}回の平均比 {difference}",
-  "Recent trend appears from your next game.": "次回から直近の成績と比較できます。",
   "YOUR RANKING": "今回の順位", "VIEW RANKING": "ランキングを見る", "REFRESH": "再取得", "THIS RUN": "今回", "YOUR BEST": "自己ベスト",
   "Private record · only your progress is shown.": "公開オフ · 自分の成績のみ表示しています。",
   "Upload pending. Your rank will appear after publishing.": "送信待ちです。公開後に順位を表示します。",

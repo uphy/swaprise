@@ -140,22 +140,45 @@ test("落下中のおじゃまが天井を通過しただけでは外周の警�
   expect(visible).toEqual([false]);
 });
 
-test("ピンチの赤い光が左右の上隅まで途切れずにつながる", async ({ page }) => {
+test("ピンチの赤い光が枠の丸い角に沿って一周し、角と光の間に隙間を出さず、下辺は上辺より淡い", async ({ page }) => {
   await start(page, "endless");
   const alpha = await page.evaluate(() => {
     const scene = (window as any).__swaprise.scene;
+    const glow = scene.views[0].dangerGlow;
     const texture = scene.textures.get("danger-outline").getSourceImage();
-    if (!(texture instanceof HTMLCanvasElement)) return null;
+    if (!(texture instanceof HTMLCanvasElement) || !glow) return null;
     const context = texture.getContext("2d")!;
-    const at = (x: number, y: number) => context.getImageData(x, y, 1, 1).data[3];
-    // 上辺・左右の上隅を、枠から同じ距離で比較する。
-    return { top: at(128, 24), left: at(24, 24), right: at(texture.width - 25, 24), inside: at(128, 80) };
+    // 盤面の座標で指定し、光の画像の座標に直して読む
+    const margin = -glow.outline.x;
+    const boardW = texture.width - margin * 2;
+    const at = (bx: number, by: number) => context.getImageData(Math.floor(bx + margin), Math.floor(by + margin), 1, 1).data[3];
+    // 枠の縁の幅と角の丸み（BoardView の FRAME_PAD・FRAME_RADIUS）
+    const { pad, radius } = glow.frame ?? { pad: 7, radius: 15 };
+    // 枠の左上・右上の角の丸みの中心と、そこから斜め外への点
+    const diag = (cx: number, sx: number, distance: number) => at(cx + sx * distance / Math.SQRT2, -pad + radius - distance / Math.SQRT2);
+    return {
+      // 枠の外形から 6px 外の点を、上辺と左右の上隅で比べる
+      top: at(boardW / 2, -pad - 6),
+      left: diag(-pad + radius, -1, radius + 6),
+      right: diag(boardW + pad - radius, 1, radius + 6),
+      // 丸い枠の角のすぐ外（以前は四角い光の穴の内側で透明になり、背景の青が透けていた）
+      gap: diag(-pad + radius, -1, radius + 1),
+      inside: at(boardW / 2, 40),
+      // 下辺と左下の角も、枠の外形から 6px 外（以前は光が下端で水平に途切れ、下には無かった）
+      bottom: at(boardW / 2, texture.height - margin * 2 + pad + 6),
+      bottomLeft: at(-pad + radius - (radius + 6) / Math.SQRT2, texture.height - margin * 2 + pad - radius + (radius + 6) / Math.SQRT2),
+    };
   });
   expect(alpha).not.toBeNull();
   expect(alpha!.top).toBeGreaterThan(100);
-  expect(alpha!.left).toBe(alpha!.top);
-  expect(alpha!.right).toBe(alpha!.top);
+  expect(Math.abs(alpha!.left - alpha!.top)).toBeLessThanOrEqual(8);
+  expect(Math.abs(alpha!.right - alpha!.top)).toBeLessThanOrEqual(8);
+  expect(alpha!.gap).toBeGreaterThan(150);
   expect(alpha!.inside).toBe(0);
+  // 下辺も下の角まで途切れずに回るが、上辺より淡い（危険は上から来るので上を強くする）
+  expect(alpha!.bottom).toBeGreaterThan(10);
+  expect(alpha!.bottom).toBeLessThan(alpha!.top * 0.5);
+  expect(Math.abs(alpha!.bottomLeft - alpha!.bottom)).toBeLessThanOrEqual(8);
 });
 
 test("CPU戦の空色は自分の積み上がりに応じて変わり、復帰とポーズに追従する", async ({ page }) => {
@@ -204,4 +227,39 @@ test.describe("日本語での対戦結果", () => {
     });
     expect(titles).toEqual(["WIN", "LOSE"]);
   });
+});
+
+test("危険のときは枠そのものを赤く染め、危険な列の上端のマスを薄い赤で塗り、端の列は盤面の丸い内角に沿わせる", async ({ page }) => {
+  await start(page, "endless");
+  const result = await page.evaluate(() => {
+    const { game, scene } = (window as any).__swaprise;
+    const b = game.boards[0];
+    const glow = scene.views[0].dangerGlow;
+    const before = { front: glow.front.visible, bezel: glow.bezel.alpha };
+    // 左端と右端の列だけ 10 段。ほかの列は低い
+    b.setColumns([[0, 1, 2, 3, 4, 0, 1, 2, 3, 4], [1], [2], [3], [4], [1, 2, 3, 4, 0, 1, 2, 3, 4, 0]]);
+    b.noRise = true;
+    for (let i = 0; i < 60; i++) scene.update(0, 1000 / 60);
+    const frontIndex = scene.views[0].root.list.indexOf(glow.front);
+    const cornerIndex = Math.max(...scene.views[0].corners.map((c: any) => scene.views[0].root.list.indexOf(c)));
+    return {
+      before,
+      front: glow.front.visible,
+      bezel: glow.bezel.alpha,
+      columns: glow.columns,
+      above: frontIndex > cornerIndex,
+      tints: glow.tints,
+      inner: glow.frame?.inner,
+    };
+  });
+  expect(result.before).toEqual({ front: false, bezel: 0 });
+  expect(result.front).toBe(true);
+  expect(result.bezel).toBeGreaterThan(0.5);
+  expect(result.columns).toEqual([true, false, false, false, false, true]);
+  expect(result.above).toBe(true);
+  // 塗りは危険な列に1つずつで、上端の線は引かない。端の列は外側の上の角だけ盤面の内角と同じ丸みにする
+  expect(result.tints).toEqual([
+    { column: 0, radius: { tl: result.inner, tr: 0, bl: 0, br: 0 } },
+    { column: 5, radius: { tl: 0, tr: result.inner, bl: 0, br: 0 } },
+  ]);
 });

@@ -291,7 +291,7 @@ test("エンドレス: 14 連鎖以上の吹き出しも数字で出す", async 
   await waitForGame(page);
   const texts = await page.evaluate(() => {
     const v = (window as any).__swaprise.scene.views[0];
-    v.popup(2, 3, 3, 14);
+    v.popup({ panels: 3, chain: 14, left: 2, right: 4, top: 3, bottom: 3 });
     return v.root.list.filter((o: any) => o.type === "Text").map((o: any) => o.text);
   });
   expect(texts).toContain("x14");

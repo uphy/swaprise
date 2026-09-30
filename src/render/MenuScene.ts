@@ -710,8 +710,8 @@ export class MenuScene extends Phaser.Scene {
     const right = cx + 34 * fit;
     [0, 0, 0].forEach((k, i) => panel.add(this.add.image(right + i * step, row, `panel-${k}-bright`).setScale(s)));
     panel.add(this.add.image(right + step * 3, row, "panel-1").setScale(s));
-    panel.add(this.add.text(right + step, row + 26, "x3!", { fontFamily: FONT_UI, fontSize: "14px", fontStyle: "700", color: "#7cf57a" }).setOrigin(0.5));
-    return 66;
+    // 揃った 3 枚に「x3」のような数は添えない。ゲーム中の「x3」は 3 連鎖の意味で、3 枚揃いと読み違える
+    return 48;
   }
 
   /**

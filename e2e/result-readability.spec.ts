@@ -57,7 +57,7 @@ test("短いタイムアタックでも大きな戦績画面を出し、完走�
   page.on("request", (r) => { if (r.url().includes("/api/")) requests.push(r.url()); });
   await page.goto("/?mode=timeattack&time=1&seed=7&bgm=0&countdown=0");
   const result = page.locator(".score-result");
-  await expect(result).toBeVisible({ timeout: 10000 });
+  await expect(result).toBeVisible({ timeout: 15000 });
   await expect(result).not.toContainText("時間切れ");
   await expect(result.locator("h2")).toHaveCount(0);
   expect(await result.locator(".result-summary strong").evaluate(el => parseFloat(getComputedStyle(el).fontSize))).toBeGreaterThanOrEqual(60);

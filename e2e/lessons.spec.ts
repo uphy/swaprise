@@ -23,6 +23,33 @@ async function tickUntilFinished(page: Page, max = 3000): Promise<void> {
   }, max);
 }
 
+// 同梱の Fredoka は I と V の組を詰めすぎ、canvas の「ACTIVE CHAIN」が「ACTME CHAIN」に読めた。Fredoka の大文字だけの行はカーニングを切って描く。
+// 小文字の説明文まで切ると字間が広がって行数が増えたので、説明文は通常のカーニングのまま。
+// 行数は環境の字幅で変わる（Linux の Chromium は字幅を丸めて広く測り、通常のカーニングでも 320×568 で 5 行になる）ので、行数ではなく字幅で確かめる。
+// 説明の最後の行が画面に収まることは、下の背の低い縦持ちのテストで確かめる
+test("レッスン 5: ACTIVE CHAIN の見出しはカーニングなし、小文字の説明文は通常のカーニングで描く", async ({ page }) => {
+  await openLesson(page, 5);
+  await page.waitForFunction(() => (window as any).__swaprise.scene.children.list.some((o: any) => o.type === "Text" && o.text.includes("ACTIVE CHAIN")));
+  const widths = await page.evaluate(() => {
+    const o = (window as any).__swaprise.scene.children.getByName("lesson-text");
+    const [title, body] = o.getWrappedText();
+    const ref = document.createElement("canvas").getContext("2d")!;
+    ref.font = o.context.font;
+    const w = (s: string, k: CanvasFontKerning) => ((ref.fontKerning = k), ref.measureText(s).width);
+    return {
+      title, body,
+      titleText: o.context.measureText(title).width, titleNone: w(title, "none"), titleNormal: w(title, "normal"),
+      bodyText: o.context.measureText(body).width, bodyNone: w(body, "none"), bodyNormal: w(body, "normal"),
+    };
+  });
+  expect(widths.title).toContain("ACTIVE CHAIN");
+  // 見出しはカーニングの有無で幅が変わる（IV の組が詰まる）ので、比べる意味がある
+  expect(widths.titleNone).not.toBe(widths.titleNormal);
+  expect(widths.titleText).toBe(widths.titleNone);
+  expect(widths.bodyNone).not.toBe(widths.bodyNormal);
+  expect(widths.bodyText).toBe(widths.bodyNormal);
+});
+
 test("レッスン 1: 説明と課の名前を出し、せり上がりもバーもなく、3 枚消すと NICE! になって記録が残り、NEXT LESSON で次の課へ", async ({ page }) => {
   await openLesson(page, 1);
   const info = await page.evaluate(() => {
@@ -157,6 +184,18 @@ test("レッスン 6: せり上げ続けて天井に届くと GAME OVER で、�
   expect(result).toEqual({ title: "GAME OVER", next: false, lessons: [] });
 });
 
+test("LEARN と PUZZLE では使わない得点の数字を出さず、エンドレスには出す", async ({ page }) => {
+  const scoreVisible = () => page.evaluate(() => (window as any).__swaprise.scene.views[0].scoreText.visible);
+  for (const url of ["/?mode=lesson&lesson=1&bgm=0&countdown=0", "/?mode=puzzle&bgm=0"]) {
+    await page.goto(url);
+    await page.waitForFunction(() => (window as any).__swaprise?.game.boards[0].frame > 0);
+    expect(await scoreVisible()).toBe(false);
+  }
+  await page.goto("/?mode=endless&bgm=0&countdown=0");
+  await page.waitForFunction(() => (window as any).__swaprise?.game.boards[0].frame > 0);
+  expect(await scoreVisible()).toBe(true);
+});
+
 test("メニューの 1 PLAYER に LEARN があり、まだ終えていない最初の課から始まる", async ({ page }) => {
   await page.addInitScript(() => {
     localStorage.setItem("swaprise.highscores.v1", JSON.stringify({ lessons: [0, 1] }));
@@ -269,12 +308,59 @@ test.describe("スマホ・日本語", () => {
       const p = (window as any).__swaprise;
       const stuck = p.scene.children.getByName("lesson-stuck");
       const reset = p.scene.children.getByName("lesson-reset");
-      return { visible: stuck.visible, stuckBottom: stuck.y + stuck.height, resetTop: reset.y - 16, screen: p.layout.height };
+      return { visible: stuck.visible, stuckTop: stuck.y, stuckBottom: stuck.y + stuck.height, resetTop: reset.y - reset.height / 2, resetBottom: reset.y + reset.height / 2, screen: p.layout.height };
     });
     expect(pos.visible).toBe(true);
-    expect(pos.stuckBottom).toBeLessThan(pos.resetTop);
-    expect(pos.resetTop + 32).toBeLessThan(pos.screen);
+    // RESET は盤面の上の行にあり、案内（説明の下）とは縦に離れている
+    expect(pos.resetBottom).toBeLessThan(pos.stuckTop);
+    expect(pos.resetTop).toBeGreaterThanOrEqual(0);
+    expect(pos.stuckBottom).toBeLessThanOrEqual(pos.screen);
     await page.evaluate(() => (window as any).__swaprise.scene.scene.resume());
     await page.screenshot({ path: `${SHOT}/lesson-1-stuck-phone-ja.png` });
   });
 });
+
+// 背の低い縦持ち（論理の高さ約 533px）では、説明と RESET を盤面の下に積むと画面の下にはみ出し、
+// 説明の最後の行が切れて RESET が見えなかった。盤面を縮めて説明を収め、RESET は盤面の上の行に置く
+for (const [w, h] of [[320, 568], [360, 640], [375, 667]]) {
+  for (const locale of ["en-US", "ja-JP"]) {
+    test.describe(`${w}×${h}・${locale}`, () => {
+      test.use({ viewport: { width: w, height: h }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, locale });
+      test("レッスン 1〜6 で説明の最後の行と RESET が画面に収まり、盤面・名前の札・ポーズボタンと重ならない", async ({ page }) => {
+        for (let n = 1; n <= 6; n++) {
+          await openLesson(page, n);
+          const r = await page.evaluate(() => {
+            const p = (window as any).__swaprise;
+            const s = p.scene;
+            const text = s.children.getByName("lesson-text");
+            const reset = s.children.getByName("lesson-reset");
+            const v = s.views[0];
+            const label = v.labelText.getBounds();
+            const pause = s.pauseButton;
+            return {
+              screen: p.layout.height,
+              width: p.layout.width,
+              textTop: text.y,
+              textBottom: text.y + text.height,
+              boardBottom: v.oy + 384 * v.scale,
+              reset: reset ? { top: reset.y - reset.height / 2, bottom: reset.y + reset.height / 2, left: reset.x - reset.width / 2, right: reset.x + reset.width / 2 } : null,
+              boardTop: v.oy,
+              labelRight: label.right,
+              pauseLeft: pause.x - pause.width / 2,
+            };
+          });
+          const at = `lesson ${n}`;
+          expect(r.textBottom, at).toBeLessThanOrEqual(r.screen);
+          expect(r.textTop, at).toBeGreaterThan(r.boardBottom);
+          if (n <= 5) expect(r.reset, at).not.toBeNull();
+          if (r.reset) {
+            expect(r.reset.top, at).toBeGreaterThanOrEqual(0);
+            expect(r.reset.bottom, at).toBeLessThanOrEqual(r.boardTop);
+            expect(r.reset.left, at).toBeGreaterThan(r.labelRight);
+            expect(r.reset.right, at).toBeLessThanOrEqual(r.pauseLeft);
+          }
+        }
+      });
+    });
+  }
+}

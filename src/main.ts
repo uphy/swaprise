@@ -7,6 +7,7 @@ import { MenuScene } from "./render/MenuScene";
 import { OpeningScene } from "./render/OpeningScene";
 import { BG_COLOR, layoutFor } from "./render/theme";
 import { DPR, installHiDpiText } from "./render/hidpi";
+import { installNoKerningText } from "./render/kerning";
 import { waitForUpdate } from "./render/update";
 import { setDocumentLanguage } from "./render/i18n";
 import { startScoreSync } from "./scores/client";
@@ -28,6 +29,7 @@ Promise.all([waitForUpdate(), loadFonts()]).then(() => {
   trackVisit();
   startScoreSync();
   installHiDpiText();
+  installNoKerningText();
   const layout = layoutFor("menu");
 
   // タッチ端末の既定は全画面。最初のタップで入り、戻る操作などで抜けても次のタップで取り直す

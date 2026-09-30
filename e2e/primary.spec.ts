@@ -88,3 +88,29 @@ test("パズルの面選びは PLAY が主ボタンで、選んだ面は主ボ�
   expect(info.primary).toEqual(["PLAY"]);
   expect(info.selected).toBeGreaterThan(0);
 });
+
+test("キーボードの決定キーで結果の主ボタンを押せ、主ボタンに Enter の印が付く（レッスンの NEXT LESSON・パズルの NEXT）", async ({ page }) => {
+  await page.goto("/?mode=lesson&lesson=1&bgm=0&countdown=0");
+  await page.waitForFunction(() => Boolean((window as any).__swaprise?.game));
+  await page.evaluate(() => {
+    const p = (window as any).__swaprise;
+    p.scene.scene.pause();
+    p.tick([{ moveX: 0, moveY: 0, swap: true, raise: false, cursorTo: { x: 3, y: 1 } }]);
+    for (let i = 0; i < 3000 && !p.game.finished; i++) p.tick([{ moveX: 0, moveY: 0, swap: false, raise: false }]);
+    p.scene.scene.resume();
+  });
+  await overlayButtons(page);
+  await page.waitForFunction(() => {
+    const next = (window as any).__swaprise.scene.views[0].overlay.list.find((o: any) => o.name === "next");
+    return next?.list.some((o: any) => o.name === "enter-keycap");
+  });
+  await page.keyboard.press("Enter");
+  await page.waitForFunction(() => (window as any).__swaprise.scene.lesson === 1 && !(window as any).__swaprise.scene.ended);
+
+  await page.goto("/?mode=puzzle&stage=1-1&bgm=0");
+  await page.waitForFunction(() => (window as any).__swaprise?.game.boards[0].frame > 0);
+  await page.evaluate(() => { const g = (window as any).__swaprise.game; g.puzzleResult = "clear"; g.finished = true; });
+  await page.waitForFunction(() => (window as any).__swaprise.scene.views[0].overlay.list.some((o: any) => o.name === "next"));
+  await page.keyboard.press("Space");
+  await page.waitForFunction(() => (window as any).__swaprise?.game?.stage === 1);
+});

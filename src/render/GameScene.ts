@@ -32,10 +32,18 @@ const RAISE_BAR_H_MOUSE = 22;
 const RAISE_BAR_GAP = 12;
 /** せり上げバーの下端から時間などの行までの隙間 */
 const INFO_GAP = 8;
+/** 縦持ちのレッスンで、盤面（せり上がる課はその下の時間の行）から説明までの隙間と、説明の下端から画面の下端までに残す余白 */
+const LESSON_TEXT_GAP = 18;
+const LESSON_BOTTOM_MARGIN = 8;
 import { enqueueScore } from "../scores/client";
 import { playFields, track } from "./analytics";
 
 const STEP_MS = 1000 / 60;
+/**
+ * エンドレス・タイムアタックが終わってから HTML の結果画面を出すまでの時間。この間は盤面の GAME OVER / TIME UP と
+ * 閃光（新記録なら紙吹雪）を見せる。タップ・決定キーで飛ばせ、R のやり直しは待たせない
+ */
+const RESULT_DELAY_MS = 1000;
 /** 縦持ちの CPU 対戦で、CPU の盤面を描く大きさ。 */
 const CPU_BOARD_SCALE = 0.5;
 
@@ -210,7 +218,8 @@ export class GameScene extends Phaser.Scene {
         .setOrigin(0.5, 0)
         .setDepth(5)
         .setName("lesson-text");
-      if (this.game_.lesson.rows) this.lessonReset = new Button(this, 0, 0, t("RESET"), () => this.restart(), { minWidth: 96, minHeight: 32, fontSize: 13 }).setDepth(5).setName("lesson-reset");
+      // 縦持ちでは盤面の上の行（ポーズボタンの左）に置くので、名前の札とぶつからないよう小さめにする
+      if (this.game_.lesson.rows) this.lessonReset = new Button(this, 0, 0, t("RESET"), () => this.restart(), { minWidth: 64, minHeight: 30, fontSize: 13, padX: 20 }).setDepth(5).setName("lesson-reset");
       this.lessonStuckText?.destroy();
       this.lessonStuckText = this.add
         .text(0, 0, t("The board changed. RESET puts it back."), { fontFamily: FONT_UI, fontSize: "13px", color: "#ffe066", align: "center", wordWrap: { width: BOARD_W + 60, useAdvancedWrap: true } })
@@ -351,6 +360,15 @@ export class GameScene extends Phaser.Scene {
       kb.on("keydown-Y", () => this.puzzleRedo());
       kb.on("keydown-H", () => this.puzzleHint());
     }
+    // 結果のボタン（NEXT / NEXT LESSON / RETRY など）は、入れ替えと同じ決定キー（Z / Space / Enter、ゲームパッドの A）で
+    // 主ボタンを押せる。マウスやタップでしか押せず、キーボードで遊ぶと次へ進めなかった。押しっぱなしの繰り返しは拾わない
+    kb.on("keydown", (e: KeyboardEvent) => {
+      if (!e.repeat && (e.code === "KeyZ" || e.code === "Space" || e.code === "Enter" || e.code === "NumpadEnter")) this.pressResultPrimary();
+    });
+    this.input.gamepad?.on("down", (_pad: Phaser.Input.Gamepad.Gamepad, button: Phaser.Input.Gamepad.Button) => {
+      if (button.index === 0) this.pressResultPrimary();
+    });
+    this.resultKeycap = false;
     kb.on("keydown", () => audio.start());
     this.input.on("pointerdown", () => audio.start());
 
@@ -370,9 +388,10 @@ export class GameScene extends Phaser.Scene {
       tick: (inputs: Input[]) => this.stepOnce(inputs),
     };
 
-    // パズルは時間と関係がなく、盤面を眺めてから始めるものなので、カウントダウンを置かない
+    // パズルは時間と関係がなく、盤面を眺めてから始めるものなので、カウントダウンを置かない。
+    // レッスンの固定の面（せり上がらない課）も同じ。RESET や R のたびに 3 秒待たされていた。せり上がる課には残す
     const start = (): void => {
-      if (params.get("countdown") === "0" || this.mode === "puzzle") this.beginPlay();
+      if (params.get("countdown") === "0" || this.mode === "puzzle" || this.game_.lesson?.rows) this.beginPlay();
       else this.runCountdown();
     };
     start();
@@ -395,6 +414,36 @@ export class GameScene extends Phaser.Scene {
   /** 背景の空。レッスンはパズルと同じ空を使う */
   private sky(): SkyName {
     return this.mode === "lesson" ? "puzzle" : this.mode;
+  }
+
+  /** 縦持ちのレッスンの説明の折り返し幅 */
+  private lessonWrapWidth(): number {
+    return Math.min(this.layout.width - 16, BOARD_W + 60);
+  }
+
+  /** 盤面の下端からレッスンの説明までにある、せり上げバーと時間の行の高さ（せり上がる課だけ） */
+  private lessonBarSpace(): number {
+    return this.raiseHints[0]?.visible ? RAISE_BAR_GAP + (this.layout.touch ? RAISE_BAR_H : RAISE_BAR_H_MOUSE) + INFO_GAP : 0;
+  }
+
+  /**
+   * 縦持ちのレッスンで盤面を描く大きさ。説明（見出しと本文、または見出しと届かない手のあとの案内の高いほう）の行数から要る高さを測り、
+   * 盤面の下に収まらなければ盤面を小さくする。背の低い縦持ち（320×568 などで論理の高さ約 533px）では説明の最後の行が画面の下に切れていた。
+   * 案内が出ても盤面の大きさが変わらないよう、両方の高さを測って大きいほうに合わせる
+   */
+  private lessonBoardScale(top: number): number {
+    const lesson = this.game_.lesson;
+    if (!lesson || !this.lessonText || !this.layout.portrait) return 1;
+    const wrap = this.lessonWrapWidth();
+    const text = lessonText(lesson.id, this.layout.touch);
+    const shown = this.lessonText.text;
+    this.lessonText.setWordWrapWidth(wrap, true).setText(`${text.title}\n${text.body}`);
+    const full = this.lessonText.height;
+    this.lessonText.setText(text.title);
+    const stuck = this.lessonText.height + 6 + (this.lessonStuckText?.setWordWrapWidth(wrap, true).height ?? 0);
+    this.lessonText.setText(shown);
+    const room = this.layout.height - LESSON_BOTTOM_MARGIN - Math.max(full, stuck) - LESSON_TEXT_GAP - this.lessonBarSpace() - top;
+    return Math.min(1, room / BOARD_H);
   }
 
   /** 現在のレイアウトに合わせて、盤面と UI の位置を決める。 */
@@ -439,7 +488,8 @@ export class GameScene extends Phaser.Scene {
         this.pauseButton.setPosition(W / 2, H - 26);
       }
     } else if (boards.length === 1) {
-      placeBoard(0, Math.floor((W - BOARD_W) / 2), top, 1);
+      const scale = this.lessonBoardScale(top);
+      placeBoard(0, Math.floor((W - BOARD_W * scale) / 2), top, scale);
     } else if (this.mode === "cpu" && L.portrait) {
       // 自分の盤面はエンドレスと同じ大きさ。CPU の盤面は右に小さく
       const cpuW = BOARD_W * CPU_BOARD_SCALE;
@@ -461,23 +511,22 @@ export class GameScene extends Phaser.Scene {
     // ポーズボタンは自分の盤面の右上の外。隣の盤面や画面の端までに余白がなければ盤面の右上の内側に置き、
     // 得点の板をその分だけ詰める。横持ちのスマホは上で決めた
     if (!L.phoneLandscape) {
-      const right = this.views[0].ox + BOARD_W;
+      const right = this.views[0].ox + BOARD_W * this.views[0].scale;
       const room = (this.views[1] ? this.views[1].ox : W) - right;
       const outside = room >= 52;
       this.pauseButton.setPosition(outside ? right + 6 + 22 : right - 22, top - 24);
       this.views[0].setHudMaxWidth(outside ? Infinity : BOARD_W - 52);
     }
-    // レッスンの説明は盤面の下（横持ちのスマホは盤面の右）。RESET はその下
+    // レッスンの説明は盤面の下（横持ちのスマホは盤面の右）。RESET は縦持ちなら盤面の上の行のポーズボタンの左、横長なら説明の下
     if (this.lessonText) {
       const v = this.views[0];
-      const barH = this.raiseHints[0]?.visible ? RAISE_BAR_GAP + (L.touch ? RAISE_BAR_H : RAISE_BAR_H_MOUSE) + INFO_GAP : 0;
       if (L.portrait) {
-        // 縦持ちは盤面の下
-        this.lessonText.setOrigin(0.5, 0).setAlign("center").setWordWrapWidth(Math.min(W - 16, BOARD_W + 60), true).setPosition(v.ox + BOARD_W / 2, top + BOARD_H + barH + 18);
-        this.lessonStuckText?.setOrigin(0.5, 0).setAlign("center").setWordWrapWidth(Math.min(W - 16, BOARD_W + 60), true).setPosition(v.ox + BOARD_W / 2, this.lessonText.y + this.lessonText.height + 6);
-        // 案内が出ている間は、その高さ（日本語は 2 行になる）の分だけ RESET を下げる
-        const below = this.lessonStuck && this.lessonStuckText ? this.lessonStuckText.y + this.lessonStuckText.height : this.lessonText.y + this.lessonText.height;
-        this.lessonReset?.setPosition(v.ox + BOARD_W / 2, below + 22);
+        // 縦持ちは盤面の下。盤面は lessonBoardScale() で、説明の最後の行まで画面に収まる大きさにしてある
+        const cx = v.ox + (BOARD_W * v.scale) / 2;
+        this.lessonText.setOrigin(0.5, 0).setAlign("center").setWordWrapWidth(this.lessonWrapWidth(), true).setPosition(cx, top + BOARD_H * v.scale + this.lessonBarSpace() + LESSON_TEXT_GAP);
+        this.lessonStuckText?.setOrigin(0.5, 0).setAlign("center").setWordWrapWidth(this.lessonWrapWidth(), true).setPosition(cx, this.lessonText.y + this.lessonText.height + 6);
+        // 説明の下に置くと、背の低い縦持ち（論理の高さ約 533px）では画面の下にはみ出していた
+        if (this.lessonReset) this.lessonReset.setPosition(this.pauseButton.x - 22 - 6 - this.lessonReset.width / 2, this.pauseButton.y);
       } else {
         // 横長（PC・横持ちのスマホ）は盤面の右。横持ちのスマホは HUD の列（幅 100）の右に置く
         const left = v.ox + BOARD_W + (L.phoneLandscape ? 124 : 28);
@@ -485,7 +534,7 @@ export class GameScene extends Phaser.Scene {
         this.lessonText.setOrigin(0, 0).setAlign("left").setWordWrapWidth(sideW, true).setPosition(left, top + (L.phoneLandscape ? 4 : 0));
         this.lessonStuckText?.setOrigin(0, 0).setAlign("left").setWordWrapWidth(sideW, true).setPosition(left, this.lessonText.y + this.lessonText.height + 8);
         const below = this.lessonStuck && this.lessonStuckText ? this.lessonStuckText.y + this.lessonStuckText.height : this.lessonText.y + this.lessonText.height;
-        this.lessonReset?.setPosition(left + 52, below + 26);
+        if (this.lessonReset) this.lessonReset.setPosition(left + this.lessonReset.width / 2 + 4, below + 26);
       }
     }
 
@@ -769,6 +818,36 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
+  /** 結果の主ボタン。盤面の上の黄色のボタン、パズルの失敗なら盤面の下の UNDO。まだ出ていなければ null */
+  private resultPrimary(): Button | null {
+    if (!this.ended || this.paused) return null;
+    const onBoard = this.views[0]?.overlayButtons().find((b) => b.primary);
+    if (onBoard) return onBoard;
+    const undo = this.puzzleButtons?.undo;
+    return undo && undo.primary ? undo : null;
+  }
+
+  private pressResultPrimary(): void {
+    this.resultPrimary()?.emit("pointerdown");
+  }
+
+  /**
+   * キーボードの端末では、結果の主ボタンの右上に Enter の印を付けて、決定キーで押せることを見せる。
+   * ボタンを作る行には手を入れず、出てきたボタンを見つけて足す
+   */
+  private placeResultKeycap(): void {
+    if (this.resultKeycap || this.layout.touch) return;
+    const button = this.resultPrimary();
+    if (!button) return;
+    this.resultKeycap = true;
+    const cap = this.add
+      .text(button.width / 2 - 4, -button.height / 2, "Enter", { fontFamily: FONT_UI, fontSize: "10px", fontStyle: "700", color: "#2a2050", backgroundColor: "#ffffff", padding: { x: 5, y: 2 } })
+      .setOrigin(1, 0.5)
+      .setName("enter-keycap");
+    button.add(cap);
+  }
+  private resultKeycap = false;
+
   /** 画面全体の白い閃き。大きな連鎖と勝利で使う */
   private flash(alpha: number): void {
     const L = this.layout;
@@ -834,6 +913,7 @@ export class GameScene extends Phaser.Scene {
       this.puzzleButtons.hint.setAlpha(settled && !this.ended ? 1 : 0.4);
     }
     this.raiseHints.forEach((h, i) => h.setRaising(this.inputs[i]?.lastRaise ?? false, this.paused ? 0 : delta));
+    if (this.ended) this.placeResultKeycap();
   }
 
   /** 結果を共有する。共有シートがなければクリップボードへコピーし、ボタンの文字で伝える。 */
@@ -907,9 +987,13 @@ export class GameScene extends Phaser.Scene {
       audio.lose();
       haptics.gameOver();
     }
+    // エンドレス・タイムアタックの結果は HTML の結果画面に出す（seed などを指定したカスタムのエンドレスは盤面の結果だけ）
+    const htmlResult = this.mode === "timeattack" || (this.mode === "endless" && this.scoreRun !== null);
     // 結果表示のあと、盤面の中をタップ（クリック）するとやり直す。自分の盤面には RETRY / MENU のボタンも出す
     this.resultTimer = this.time.delayedCall(800, () => {
       this.resultTimer = null;
+      // HTML の結果画面にも RETRY / MENU があり、盤面のボタンはその下から透けて紛らわしいので置かない
+      if (htmlResult) return;
       this.resultPointer = (p: Phaser.Input.Pointer): void => {
         if (this.touches.some((t) => t.cellAt(p.worldX, p.worldY))) this.restart();
       };
@@ -974,15 +1058,53 @@ export class GameScene extends Phaser.Scene {
       const submission = this.scoreRun ? { ...this.scoreRun, mode: this.mode, score: b.score, maxChain: b.maxChain, frames: Math.min(b.frame, g.timeLimit ?? b.frame), swaps: b.stats.swaps } : null;
       if (submission) enqueueScore(submission);
       const rankLine = rank === 1 ? t("NEW RECORD!") : rank > 0 ? t("RANK {rank}", { rank }) : "";
-      if (rank === 1 && b.score > 0) this.time.delayedCall(300, () => this.celebrate(this.views[0]));
-      // タイムアタックの完走は通常の終わり方なので、終了理由の見出しを出さず得点を主役にする。
+      const newRecord = rank === 1 && b.score > 0;
+      // 終わった瞬間は盤面に見出しと閃光を出し、新記録なら紙吹雪も撒く。結果画面はそのあと
+      this.flash(0.35);
+      if (newRecord) this.time.delayedCall(300, () => this.celebrate(this.views[0]));
+      // タイムアタックの完走は通常の終わり方なので、結果画面には終了理由の見出しを出さず得点を主役にする。
+      // 盤面には短く TIME UP を出して、時間で終わったことだけ伝える
       const title = g.timeUp ? null : t("GAME OVER");
-      this.views[0].showOverlay(title ?? "", `${t("SCORE")} ${b.score}\n${t("MAX CHAIN")} x${b.maxChain}\n${t("COMBOS")} ${b.stats.combos}  ${t("CHAINS")} ${b.stats.chains}\n${rankLine}`);
-      if (this.mode === "timeattack" || this.scoreRun) showScoreResult(this, {
-        mode: this.mode, title, score: b.score, chain: b.maxChain, combos: b.stats.combos, chains: b.stats.chains, swaps: b.stats.swaps,
-        progress, id: this.scoreRun?.id ?? null, submission, retry: () => this.restart(), menu: () => this.toMenu(),
-        share: canShare() ? (button) => { void this.share({ setText: (text) => { button.textContent = text; } }); } : undefined,
-      });
+      const boardTitle = g.timeUp ? t("TIME UP") : t("GAME OVER");
+      if (!htmlResult) {
+        this.views[0].showOverlay(boardTitle, `${t("SCORE")} ${b.score}\n${t("MAX CHAIN")} x${b.maxChain}\n${t("COMBOS")} ${b.stats.combos}  ${t("CHAINS")} ${b.stats.chains}\n${rankLine}`);
+      } else {
+        // 結果画面は同じ数字を大きく出すので、盤面には見出しだけを出す
+        this.views[0].showOverlay(boardTitle, "");
+        let shown = false;
+        const showResult = (): void => {
+          if (shown || !this.scene.isActive()) return;
+          shown = true;
+          window.clearTimeout(timer);
+          this.events.off("shutdown", cancel);
+          this.input.off("pointerdown", showResult);
+          kb?.off("keydown", onKey);
+          this.input.gamepad?.off("down", onPad);
+          // 結果画面は半透明で、最後の盤面を暗幕なしで透かす
+          this.views[0].hideOverlay();
+          showScoreResult(this, {
+            mode: this.mode as "endless" | "timeattack", title, score: b.score, chain: b.maxChain, combos: b.stats.combos, chains: b.stats.chains, swaps: b.stats.swaps,
+            progress, id: this.scoreRun?.id ?? null, submission, retry: () => this.restart(), menu: () => this.toMenu(), celebrate: newRecord,
+            share: canShare() ? (button) => { void this.share({ setText: (text) => { button.textContent = text; } }); } : undefined,
+          });
+        };
+        // 待つ間にタップ・クリック・決定キー（Z / Space / Enter）を押したら、すぐ結果画面へ進める
+        const kb = this.input.keyboard;
+        const onKey = (e: KeyboardEvent): void => {
+          if (e.code === "KeyZ" || e.code === "Space" || e.code === "Enter" || e.code === "NumpadEnter") showResult();
+        };
+        kb?.on("keydown", onKey);
+        // ゲームパッドは A（入れ替えと同じボタン）
+        const onPad = (_pad: Phaser.Input.Gamepad.Gamepad, button: Phaser.Input.Gamepad.Button): void => {
+          if (button.index === 0) showResult();
+        };
+        this.input.gamepad?.on("down", onPad);
+        this.input.on("pointerdown", showResult);
+        // 待ちは実時間で数える。Phaser の時計は重い端末でフレームが落ちると遅れ、結果画面が何秒も出なかった
+        const timer = window.setTimeout(showResult, RESULT_DELAY_MS);
+        const cancel = (): void => { shown = true; window.clearTimeout(timer); };
+        this.events.once("shutdown", cancel);
+      }
     } else {
       let recordLine = "";
       // 待機中の CPU 戦は VS CPU の記録に混ぜない

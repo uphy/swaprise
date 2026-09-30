@@ -81,3 +81,61 @@ test("time up blocks input, settles the last chain, then posts final points with
   await page.getByRole("button", { name: "RETRY", exact: true }).click();
   await expect(page.locator(".score-result")).toHaveCount(0);
 });
+
+/** 終わらせて、終わった時刻と結果画面が出た時刻（ページの performance.now）を返す。skip なら終わった直後に Enter を送る */
+async function endAndTime(page: Page, score: number, skip: boolean): Promise<{ title: string; shownAtEnd: boolean; wait: number }> {
+  await page.waitForFunction(() => (window as any).__swaprise?.game.boards[0].frame > 0 && !(window as any).__swaprise.scene.ended);
+  return page.evaluate(({ score, skip }) => new Promise((resolve) => {
+    const p = (window as any).__swaprise;
+    let endedAt = 0;
+    let title = "";
+    let shownAtEnd = false;
+    const observer = new MutationObserver(() => {
+      if (!document.querySelector(".score-result") || !endedAt) return;
+      observer.disconnect();
+      resolve({ title, shownAtEnd, wait: performance.now() - endedAt });
+    });
+    observer.observe(document.body, { childList: true });
+    p.game.boards[0].score = score; p.game.boards[0].gameOver = true; p.game.finished = true;
+    const poll = (): void => {
+      if (!p.scene.ended) { requestAnimationFrame(poll); return; }
+      endedAt = performance.now();
+      title = p.scene.views[0].overlayTitle.text;
+      shownAtEnd = Boolean(document.querySelector(".score-result"));
+      if (skip) window.dispatchEvent(new KeyboardEvent("keydown", { code: "Enter", key: "Enter", keyCode: 13 }));
+    };
+    poll();
+  }), { score, skip });
+}
+for (const mode of ["endless", "timeattack"]) {
+  test(`${mode}: the board shows the end for a moment before the result, and Enter skips the wait`, async ({ page }) => {
+    await page.addInitScript(() => localStorage.setItem("swaprise.scores.publish.v1", "false"));
+    await page.goto(`/?mode=${mode}&bgm=0&countdown=0`);
+    // 終わった直後は結果画面ではなく盤面の見出しが見えていて、約 1 秒で結果画面に替わる
+    const first = await endAndTime(page, 500, false);
+    expect(first.shownAtEnd).toBe(false);
+    expect(first.title).toBe("GAME OVER");
+    expect(first.wait).toBeGreaterThanOrEqual(900);
+    await expect(page.locator(".score-result")).toBeVisible();
+    // 新記録なので紙吹雪が結果画面の上に降る。結果画面は半透明で、盤面が透ける
+    await expect(page.locator(".score-result .result-confetti")).toHaveCount(1);
+    expect(await page.locator(".score-result").evaluate((el) => getComputedStyle(el).backgroundImage)).toMatch(/rgba\(/);
+
+    // やり直した 2 回目は、Enter で待たずに結果画面へ進む（新記録でないので紙吹雪はない）
+    await page.getByRole("button", { name: "RETRY", exact: true }).click();
+    await expect(page.locator(".score-result")).toHaveCount(0);
+    const second = await endAndTime(page, 100, true);
+    expect(second.wait).toBeLessThan(600);
+    await expect(page.locator(".score-result .result-confetti")).toHaveCount(0);
+  });
+}
+test("R during the end display retries at once without waiting for the result", async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem("swaprise.scores.publish.v1", "false"));
+  await page.goto("/?mode=endless&bgm=0&countdown=0");
+  await page.waitForFunction(() => (window as any).__swaprise?.game.boards[0].frame > 0);
+  await page.evaluate(() => { const p = (window as any).__swaprise; (window as any).__oldGame = p.game; p.game.boards[0].gameOver = true; p.game.finished = true; });
+  await page.waitForFunction(() => (window as any).__swaprise.scene.ended);
+  await page.keyboard.press("r");
+  await page.waitForFunction(() => (window as any).__swaprise.game !== (window as any).__oldGame, null, { timeout: 600 });
+  await expect(page.locator(".score-result")).toHaveCount(0);
+});

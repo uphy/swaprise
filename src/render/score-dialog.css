@@ -2,8 +2,16 @@
    見た目はトップメニューに合わせる: 薄い暗幕の下に空が透け、中身は色の縁が光る半透明のガラスの札、ボタンは錠剤形 */
 .score-dialog { position: fixed; inset: 0; margin: 0; width: 100%; max-width: none; max-height: none; padding: 0; border: 0; border-radius: 0; background: rgba(26,16,48,.6); color: #f4f4f8; font: 22px/1.5 "Fredoka", "Hiragino Maru Gothic ProN", "BIZ UDPGothic", "Arial Rounded MT Bold", sans-serif; box-sizing: border-box; overflow: hidden; outline: none; touch-action: pan-y; }
 .score-dialog::backdrop { background: transparent; }
-.score-result { z-index: 10; height: 100dvh; background: linear-gradient(180deg, #2a2690 0%, #7c3fbd 55%, #ff7ea6 100%); }
-.result-summary strong { font-size: clamp(48px, 16vw, 64px); line-height: 1.2; color: #ffe066; overflow-wrap: anywhere; }
+/* 結果画面は半透明にして、最後の盤面を透かす。文字は大きく太いので、この濃さなら盤面の上でも読める */
+.score-result { z-index: 10; height: 100dvh; background: linear-gradient(180deg, rgba(42,38,144,.86) 0%, rgba(124,63,189,.82) 55%, rgba(255,126,166,.84) 100%); }
+/* 新記録の紙吹雪。結果画面の中身より前に出し、操作は下へ通す */
+.result-confetti { position: fixed; inset: 0; overflow: hidden; pointer-events: none; z-index: 11; }
+.result-confetti i { position: absolute; top: -24px; left: var(--x); width: 12px; height: 12px; border-radius: 3px; box-shadow: inset 0 -3px 0 rgba(0,0,0,.2); animation: result-confetti-fall 2s cubic-bezier(.3,.6,.6,1) both; }
+.result-confetti i:nth-child(3n) { width: 9px; height: 14px; }
+@keyframes result-confetti-fall { from { transform: translate(0, 0) rotate(0); opacity: 1; } 80% { opacity: 1; } to { transform: translate(var(--drift), 105vh) rotate(var(--spin)); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .result-confetti { display: none; } }
+/* 得点と POINTS は 1 行に保つ。幅に収まらない桁数では score-result.ts の fitScore が文字を縮める */
+.result-summary strong { font-size: clamp(48px, 16vw, 64px); line-height: 1.2; color: #ffe066; white-space: nowrap; }
 .result-summary p { margin: 4px 0 8px; }
 .score-result .result-you { background: rgba(255,255,255,.14); color: #ffe066; border-radius: 10px; }
 .score-result nav { flex-wrap: wrap; }
@@ -17,6 +25,8 @@
 .score-dialog h2 { font-size: 32px; margin: 4px 0 0; text-shadow: 0 2px 6px #2a1a5a; }
 .score-dialog h3 { font-size: 22px; color: #ffe066; margin: 22px 0 8px; }
 .score-content { overflow-y: auto; min-height: 0; overscroll-behavior: contain; padding: 0 2px 16px; }
+/* 下端でボタンや文字が途中で切れているときだけ（score-result.ts の peek）、下端 24px を薄くぼかして続きがあると見せる */
+.score-content.cut { -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 24px), rgba(0,0,0,.3) calc(100% - 12px), transparent); mask-image: linear-gradient(to bottom, #000 calc(100% - 24px), rgba(0,0,0,.3) calc(100% - 12px), transparent); }
 .score-dialog p { color: #e6e2f7; font-size: 18px; margin: 12px 0; overflow-wrap: anywhere; }
 .score-dialog label { display: block; margin: 18px 0 8px; font-size: 20px; }
 .score-dialog input[type=text] { box-sizing: border-box; display: block; width: 100%; min-height: 58px; margin-top: 8px; background: rgba(20,12,50,.55); color: #fff; padding: 12px; border: 2px solid rgba(255,255,255,.5); border-radius: 12px; font: inherit; font-size: 22px; user-select: text; -webkit-user-select: text; touch-action: manipulation; }
@@ -25,6 +35,8 @@
 .score-dialog details { margin-top: 18px; border-top: 1px solid rgba(255,255,255,.25); }
 .score-dialog summary { cursor: pointer; padding: 14px 0; min-height: 28px; font-size: 18px; color: #e6e2f7; }
 .score-dialog button { min-height: 56px; padding: 10px 12px; border: 2px solid rgba(255,255,255,.6); border-radius: 999px; background: linear-gradient(180deg, rgba(255,255,255,.12) 0%, rgba(255,255,255,.12) 45%, rgba(255,255,255,0) 45%) , rgba(255,255,255,.2); color: #f4f4f8; font: inherit; font-weight: 600; font-size: 20px; cursor: pointer; touch-action: manipulation; }
+/* 大文字の見出し・ボタン・札の見出しはカーニングを切る（ボタンの font: inherit より後ろに置く）。同梱の Fredoka は I と V の組を詰めすぎ、KEEP PRIVATE が KEEP PRMATE に見えた（合字を切っても直らない） */
+.score-dialog button, .score-dialog h2, .score-dialog h3, .score-dialog dt, .score-dialog header small { font-kerning: none; }
 .score-dialog button[aria-pressed=true], .score-dialog button.primary { color: #2a2050; background: #ffe066; border-color: #fff4bf; }
 .score-dialog :focus-visible { outline: 2px solid #ffe066; outline-offset: 2px; }
 .score-dialog nav { display: flex; gap: 8px; margin-bottom: 10px; }
@@ -51,16 +63,81 @@
 @media (min-width: 600px) { .result-stats.four { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 .result-stats div { padding: 12px 4px; border-radius: 12px; background: rgba(20,12,50,.3); text-align: center; }
 .result-stats dt { font-size: 18px; }
-.result-consent { padding: 16px; border-radius: 12px; background: rgba(20,12,50,.3); margin: 20px 0; }
+.result-consent { padding: 10px 12px; border-radius: 12px; background: rgba(20,12,50,.3); margin: 12px 0; }
+/* 問いと 2 つのボタンは 1 行に並べ、幅が足りなければボタンだけ次の行へ回す。名前の欄は「公開する」のあとに開く */
+.result-consent-ask { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; }
+.score-dialog .result-consent-ask h3 { flex: 1 1 auto; margin: 0; font-size: 20px; }
+.score-dialog .result-consent-ask nav { flex: 1 1 260px; margin: 0; }
 .result-consent h3 { margin: 0 0 6px; }
 .score-result .result-consent p { font-size: 18px; line-height: 1.35; margin: 0; }
 .result-consent label { display: block; margin: 10px 0; font-size: 18px; }
 .result-consent nav { display: flex; gap: 12px; margin-top: 10px; }
-.score-result .result-consent nav button { flex: 1; min-height: 56px; font-size: 20px; }
+.score-result .result-consent nav button { flex: 1; min-height: 48px; font-size: 20px; }
 .result-stats dd { font-size: 34px; font-weight: 600; margin: 6px 0 0; overflow-wrap: anywhere; }
+/* 背の低いスマホ（iPhone SE の 568px など）では、見出し・札・公開の問いを詰めて、4 つの札と公開のボタンを RETRY / MENU の帯より上に収める */
+@media (max-height: 700px) {
+  .score-result .score-screen header { padding-bottom: 8px; }
+  .score-result h2 { font-size: 28px; line-height: 1.3; }
+  .score-result .result-summary { margin-bottom: 8px; }
+  .score-result .result-summary p { margin: 0 0 4px; }
+  .score-result .result-stats { margin: 8px 0; gap: 6px; }
+  .score-result .result-stats div { padding: 6px 4px; }
+  .score-result .result-stats dt { font-size: 16px; line-height: 1.3; }
+  .score-result .result-stats dd { font-size: 26px; line-height: 1.2; margin-top: 2px; }
+  .score-result .result-consent { margin: 8px 0; padding: 8px 10px; }
+  .score-result .score-footer button { min-height: 48px; }
+}
+/* 横持ちの背の低い画面（高さ 380px 以下）では、得点を 40px に縮めて札と公開の問いも詰め、得点と公開のボタンをスクロールなしで同じ画面に収める。
+   844×390・839×412・915×412 は 64px の得点のままでも公開のボタンまで収まるので、縮めない */
+@media (max-height: 380px) and (orientation: landscape) {
+  .score-result .result-summary strong { font-size: 40px; line-height: 1.15; }
+  .score-result .result-summary { margin-bottom: 6px; }
+  .score-result .result-summary p { font-size: 18px; line-height: 1.3; margin: 0; }
+  .score-result .result-stats { margin: 6px 0; gap: 6px; }
+  .score-result .result-stats div { padding: 4px; }
+  .score-result .result-stats dt { font-size: 14px; line-height: 1.3; }
+  .score-result .result-stats dd { font-size: 22px; line-height: 1.2; margin-top: 0; }
+  .score-result .result-consent { margin: 6px 0; padding: 6px 10px; }
+  .score-dialog .result-consent-ask h3 { font-size: 18px; }
+  /* 左右の余白を詰めて KEEP PRIVATE を 1 行に保つ（カーニングを切ると少し幅が増え、568×320 では 2 行に折れた） */
+  .score-result .result-consent nav button { min-height: 44px; font-size: 18px; padding-inline: 6px; }
+}
+/* 高さ 381〜420px の横持ち（844×390・839×412・915×412）は 64px の得点のまま収まるが、844×390 では公開の問いの枠の下端が
+   RETRY / MENU の帯に 4px 掛かって角の丸みが切れていた。「初めての記録」の行・札・枠の上下の余白を詰めて、枠ごと帯より上に収める */
+@media (min-height: 381px) and (max-height: 420px) and (orientation: landscape) {
+  .score-result .result-summary { margin-bottom: 4px; }
+  .score-result .result-summary p { margin: 0; }
+  .score-result .result-stats { margin: 6px 0; }
+  .score-result .result-consent { margin: 6px 0; padding: 5px 10px; }
+  /* 帯の下に隠れた SHARE の手がかりに本文の下端をぼかすので、公開のボタンをぼかしの範囲（下端 24px）より上へ上げる */
+  .score-result .result-summary p { font-size: 20px; line-height: 1.3; }
+  .score-result .result-stats div { padding: 3px 4px; }
+}
+/* さらに背の低い横持ち（568×320 など）では縦に積むと収まらないので、得点を左、札を右に並べ、公開の問いはその下に全幅で置く */
+@media (max-height: 340px) and (orientation: landscape) {
+  .score-result .score-content { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 12px; align-content: start; }
+  .score-result .score-content > * { grid-column: 1 / -1; }
+  .score-result .score-content > .result-summary { grid-column: 1; align-self: center; margin: 0; }
+  .score-result .score-content > .result-stats { grid-column: 2; }
+  .score-result .result-stats.four { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  /* 「公開する」のあとの説明は小さくし、名前の欄と 2 回目の公開する / 公開しないを横に並べて、欄の高さを見える範囲（約 190px）に収める */
+  .score-result .result-consent-form { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 10px; align-items: end; }
+  .score-result .result-consent-form > p { grid-column: 1 / -1; font-size: 15px; line-height: 1.3; }
+  .score-result .result-consent-form label { margin: 4px 0 0; font-size: 16px; line-height: 1.3; }
+  .score-dialog .result-consent-form input[type=text] { min-height: 44px; margin-top: 2px; padding: 6px 10px; font-size: 18px; }
+  .score-result .result-consent-form nav { margin: 0; }
+  .score-result .result-consent-form nav button { flex: none; white-space: nowrap; padding-inline: 14px; }
+}
 @media (min-height: 750px) { .score-screen { padding-top: max(40px, env(safe-area-inset-top)); } }
 @media (max-height: 480px) { .score-screen { padding-top: max(8px, env(safe-area-inset-top)); } .score-screen header { padding-bottom: 8px; } .score-screen header small { display: none; } .score-dialog h2 { margin: 0; } .score-footer { padding-top: 8px; } }
 @media (max-height: 480px) and (min-width: 700px) { .score-tools { display: flex; gap: 12px; } .score-tools nav { flex: 1; min-width: 0; } }
+/* 横持ちの背の低い画面では、公開の問いのボタンの文字を折らず、2 つのボタンは広いほうの幅に揃え、残りの幅を問いに回す（足りなければ問いが 2 行になる）。
+   文字の幅は環境で数 px 違い、問いが 7px 広いだけで KEEP PRIVATE が 2 行に折れて枠が 30px 高くなり、公開のボタンが帯の下に掛かった */
+@media (max-height: 420px) and (orientation: landscape) {
+  .score-dialog .result-consent-ask h3 { flex: 1 1 0; min-width: 0; }
+  .score-dialog .result-consent-ask nav { flex: none; display: grid; grid-template-columns: 1fr 1fr; }
+  .score-result .result-consent-ask nav button { white-space: nowrap; }
+}
 
 /* 記録。切り替えは段組みのタブ、中身はモードごとの札。得点を大きく、順位・連鎖・日付を列で揃える。
    大きさは em で書き、スマホでは根元の文字を画面の短辺に合わせて大きくする（ゲーム画面の文字と同じくらいに見えるように） */

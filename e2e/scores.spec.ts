@@ -22,6 +22,9 @@ for (const mode of ["endless", "timeattack"]) {
     const result = page.getByRole("region", { name: "RESULT", exact: true });
     await expect(result.getByRole("heading", { name: "Publish this score?" })).toBeVisible();
     await expect(result.getByRole("heading", { name: "YOUR RANKING" })).toBeHidden();
+    // 名前の欄は「公開する」を押してから開く。押しただけではまだ送らない
+    await expect(result.getByRole("textbox")).toHaveCount(0);
+    await result.getByRole("button", { name: "PUBLISH", exact: true }).click();
     await expect(result.getByRole("textbox")).toHaveValue("Existing");
     expect(posts.length).toBe(0);
     await result.getByRole("textbox").fill("New name");
@@ -37,6 +40,199 @@ for (const mode of ["endless", "timeattack"]) {
     await expect(page.getByRole("heading", { name: "Publish this score?" })).toHaveCount(0);
   });
 }
+test("first result keeps the four stats above the publish question and inside the screen", async ({ page }) => {
+  await page.goto("/?mode=endless&countdown=0&bgm=0");
+  await page.waitForFunction(() => (window as any).__swaprise?.game.boards[0].frame > 0);
+  await page.evaluate(() => {
+    const p = (window as any).__swaprise;
+    const b = p.game.boards[0];
+    b.score = 777; b.maxChain = 3; b.stats.swaps = 40;
+    b.gameOver = true; p.game.finished = true;
+  });
+  const result = page.getByRole("region", { name: "RESULT", exact: true });
+  await expect(result.getByRole("heading", { name: "Publish this score?" })).toBeVisible();
+  const box = async (sel: string) => (await result.locator(sel).boundingBox())!;
+  const stats = await box(".result-stats");
+  const consent = await box(".result-consent");
+  const footer = await box(".score-footer");
+  expect(stats.y + stats.height).toBeLessThanOrEqual(consent.y);
+  expect(stats.y + stats.height).toBeLessThanOrEqual(footer.y);
+  await expect(result.locator(".result-stats dd")).toHaveCount(4);
+});
+// 5 桁の得点でも、得点は 1 行に収まり、4 つの札と公開の問いのボタンが下の RETRY / MENU の帯より上に見える。
+// 「公開する」を押したあとは、名前の欄と 2 回目の「公開する」が帯より上へスクロールされる。
+// 568×320 の横持ちでは名前の欄の全体が本文の見える高さより高く、2 回目の「公開する」が帯の下に半分隠れていた
+for (const [width, height] of [[320, 568], [412, 839], [568, 320]]) {
+  test(`first result with a 5-digit score stays above RETRY / MENU on ${width}x${height}`, async ({ page }) => {
+    await page.setViewportSize({ width, height });
+    await page.goto("/?mode=endless&countdown=0&bgm=0");
+    await page.waitForFunction(() => (window as any).__swaprise?.game.boards[0].frame > 0);
+    await page.evaluate(() => {
+      const p = (window as any).__swaprise;
+      const b = p.game.boards[0];
+      b.score = 12345; b.maxChain = 3; b.stats.swaps = 40;
+      b.gameOver = true; p.game.finished = true;
+    });
+    const result = page.getByRole("region", { name: "RESULT", exact: true });
+    await expect(result.getByRole("heading", { name: "Publish this score?" })).toBeVisible();
+    const lines = await result.locator(".result-summary strong").evaluate((el) =>
+      el.getBoundingClientRect().height / parseFloat(getComputedStyle(el).fontSize));
+    expect(lines).toBeLessThan(1.6);
+    const barTop = (await result.locator(".score-footer").boundingBox())!.y;
+    const bottom = async (sel: string) => { const b = (await result.locator(sel).boundingBox())!; return b.y + b.height; };
+    expect(await bottom(".result-stats")).toBeLessThanOrEqual(barTop);
+    expect(await bottom(".result-consent-ask nav")).toBeLessThanOrEqual(barTop);
+    await result.locator(".result-consent-ask button.primary").click();
+    const contentTop = (await result.locator(".score-content").boundingBox())!.y;
+    for (const sel of [".result-consent-form input", ".result-consent-form button.primary"]) {
+      await expect.poll(async () => {
+        const b = (await result.locator(sel).boundingBox())!;
+        return b.y >= contentTop - 1 && b.y + b.height <= barTop + 1;
+      }).toBe(true);
+    }
+  });
+}
+// 「公開する」を押したあと、得点の行は全体が見えるか、全体が本文の上端より上に送られている（途中で切れて残らない）。
+// 568×320 では下の 14px だけが本文の上端に残り、412×839 でも上の 19px が切れて壊れて見えた
+for (const [width, height] of [[568, 320], [412, 839]]) {
+  test(`after PUBLISH on ${width}x${height} the score line is not left half cut at the top`, async ({ page }) => {
+    await page.setViewportSize({ width, height });
+    await finishWith12345(page);
+    const result = page.getByRole("region", { name: "RESULT", exact: true });
+    await result.locator(".result-consent-ask button.primary").click();
+    await expect(result.locator(".result-consent-form input")).toBeVisible();
+    const state = () => page.evaluate(() => {
+      const root = document.querySelector(".score-result")!;
+      const view = root.querySelector(".score-content")!.getBoundingClientRect();
+      const score = root.querySelector(".result-summary strong")!.getBoundingClientRect();
+      const confirm = root.querySelector(".result-consent-form button.primary")!.getBoundingClientRect();
+      const bar = root.querySelector(".score-footer")!.getBoundingClientRect();
+      return {
+        scoreWhole: score.top >= view.top - 0.5 || score.bottom <= view.top + 0.5,
+        confirmAboveBar: confirm.bottom <= bar.top + 1,
+      };
+    });
+    await expect.poll(state).toEqual({ scoreWhole: true, confirmAboveBar: true });
+  });
+}
+// 横持ちの背の低い画面では、得点の行と札が本文の上端から外れず、公開のボタンが RETRY / MENU の帯より上に見える。
+// 公開の問いを見せるための表示時のスクロールで、得点が見出しの下へ押し出されていた
+async function landscapeLayout(page: Page) {
+  return page.evaluate(() => {
+    const root = document.querySelector(".score-result")!;
+    const box = (sel: string) => root.querySelector(sel)!.getBoundingClientRect();
+    const view = box(".score-content"), score = box(".result-summary strong"), stats = box(".result-stats"), ask = box(".result-consent-ask nav");
+    return {
+      scoreVisible: score.top >= view.top - 1 && score.bottom <= view.bottom + 1,
+      statsTopVisible: stats.top >= view.top - 1,
+      askAboveBar: ask.bottom <= box(".score-footer").top + 1,
+      // 公開の問いの枠（角の丸い下端まで）も帯より上。844×390 では枠の下端が帯に 4px 掛かり、丸みが切れていた
+      boxAboveBar: box(".result-consent").bottom <= box(".score-footer").top + 0.5,
+    };
+  });
+}
+const allVisible = { scoreVisible: true, statsTopVisible: true, askAboveBar: true, boxAboveBar: true };
+async function finishWith12345(page: Page): Promise<void> {
+  await page.goto("/?mode=endless&countdown=0&bgm=0");
+  await page.waitForFunction(() => (window as any).__swaprise?.game.boards[0].frame > 0);
+  await page.evaluate(() => {
+    const p = (window as any).__swaprise;
+    const b = p.game.boards[0];
+    b.score = 12345; b.maxChain = 3; b.stats.swaps = 40;
+    b.gameOver = true; p.game.finished = true;
+  });
+  await expect(page.getByRole("region", { name: "RESULT", exact: true }).getByRole("heading", { name: "Publish this score?" })).toBeVisible();
+  await page.waitForFunction(() => document.fonts.status === "loaded");
+}
+const scoreSize = (page: Page) => page.locator(".score-result .result-summary strong").evaluate((el) => parseFloat(getComputedStyle(el).fontSize));
+for (const [width, height] of [[568, 320], [640, 360], [740, 360]]) {
+  test(`first result on a ${width}x${height} landscape keeps the score and the publish buttons in view`, async ({ page }) => {
+    await page.setViewportSize({ width, height });
+    await finishWith12345(page);
+    await expect.poll(() => landscapeLayout(page)).toEqual(allVisible);
+    // 40px に縮める。568×320 の左の列（約 246px）では字幅の広い環境（Linux の Chromium）で幅に合わせてさらに 1px 縮むので、40px ちょうどは求めない
+    const size = await scoreSize(page);
+    expect(size).toBeLessThanOrEqual(40);
+    expect(size).toBeGreaterThanOrEqual(36);
+  });
+}
+// 高さ 390〜412px の横持ちは、得点を縮めなくても公開のボタンまで帯より上に収まる。
+// 高さ 480px 以下をまとめて 40px に縮めていたので、以前は 64px で読めていた得点が小さくなっていた
+for (const [width, height] of [[844, 390], [839, 412], [915, 412]]) {
+  test(`first result on a ${width}x${height} landscape keeps the 64px score with the publish buttons in view`, async ({ page }) => {
+    await page.setViewportSize({ width, height });
+    await finishWith12345(page);
+    await expect.poll(() => landscapeLayout(page)).toEqual(allVisible);
+    expect(await scoreSize(page)).toBe(64);
+  });
+}
+// 縦持ちで結果画面を出したまま横へ回しても、同じ決まりで得点と公開のボタンを見せる
+test("rotating the first result to a short landscape keeps the score and the publish buttons in view", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 568 });
+  await finishWith12345(page);
+  await expect.poll(() => landscapeLayout(page)).toEqual(allVisible);
+  await page.setViewportSize({ width: 568, height: 320 });
+  await expect.poll(() => landscapeLayout(page)).toEqual(allVisible);
+});
+// 本文の下端で SHARE などが途中で切れているときは、下端をぼかして続きがあると見せる（上半分だけのぞくと壊れて見えた）。
+// ぼかしは公開のボタンに掛からず、下端まで収まっている縦持ちではぼかさない
+async function bottomFade(page: Page) {
+  return page.evaluate(() => {
+    const body = document.querySelector<HTMLElement>(".score-result .score-content")!;
+    const mask = getComputedStyle(body).maskImage;
+    const faded = mask !== "" && mask !== "none";
+    const ask = document.querySelector(".score-result .result-consent-ask nav")!.getBoundingClientRect();
+    return { faded, askClear: !faded || ask.bottom <= body.getBoundingClientRect().bottom - 24 };
+  });
+}
+for (const [width, height] of [[640, 360], [740, 360]]) {
+  test(`first result on a ${width}x${height} landscape fades the half-visible SHARE at the bottom edge`, async ({ page }) => {
+    await page.setViewportSize({ width, height });
+    await finishWith12345(page);
+    await expect.poll(() => bottomFade(page)).toEqual({ faded: true, askClear: true });
+  });
+}
+// 844×390・839×412・915×412 では SHARE が帯の下にまるごと隠れ、まだ 71〜93px スクロールできるのに続きの手がかりがなかった。
+// 公開のボタンをぼかしの範囲より上に上げ、下端をぼかす
+for (const [width, height] of [[844, 390], [839, 412], [915, 412]]) {
+  test(`first result on a ${width}x${height} landscape hints at the SHARE below the bar`, async ({ page }) => {
+    await page.setViewportSize({ width, height });
+    await finishWith12345(page);
+    await expect.poll(() => landscapeLayout(page)).toEqual(allVisible);
+    await expect.poll(() => bottomFade(page)).toEqual({ faded: true, askClear: true });
+  });
+}
+// 途中で切れたものがなくても、帯の下にまるごと隠れたものがあってまだ下へスクロールできるなら、下端をぼかす
+test("the bottom edge fades when a button is wholly hidden below the bar and the body can still scroll", async ({ page }) => {
+  await page.setViewportSize({ width: 844, height: 390 });
+  await finishWith12345(page);
+  const share = page.getByRole("region", { name: "RESULT", exact: true }).getByRole("button", { name: "SHARE" });
+  // SHARE を下へずらして、帯の下にまるごと隠す（スクロールで測り直させる）
+  await share.evaluate((el) => {
+    el.style.marginTop = "80px";
+    const body = el.closest<HTMLElement>(".score-content")!;
+    body.dispatchEvent(new Event("scroll"));
+  });
+  const hidden = await share.evaluate((el) => el.getBoundingClientRect().top >= el.closest(".score-content")!.getBoundingClientRect().bottom);
+  expect(hidden).toBe(true);
+  await expect.poll(() => bottomFade(page)).toEqual({ faded: true, askClear: true });
+});
+for (const [width, height] of [[320, 568], [375, 667], [412, 839]]) {
+  test(`first result on a ${width}x${height} portrait does not fade the publish buttons`, async ({ page }) => {
+    await page.setViewportSize({ width, height });
+    await finishWith12345(page);
+    await expect.poll(() => landscapeLayout(page)).toEqual(allVisible);
+    expect(await bottomFade(page)).toEqual({ faded: false, askClear: true });
+  });
+}
+// 同梱の Fredoka は I と V の組を詰めすぎ、KEEP PRIVATE が KEEP PRMATE に見えた。大文字のボタンと見出しはカーニングを切る
+test("KEEP PRIVATE and the headings are drawn without kerning so IV does not read as M", async ({ page }) => {
+  await finishWith12345(page);
+  const result = page.getByRole("region", { name: "RESULT", exact: true });
+  for (const target of [result.getByRole("button", { name: "KEEP PRIVATE" }), result.getByRole("button", { name: "PUBLISH", exact: true }), result.getByRole("heading", { name: "Publish this score?" })]) {
+    expect(await target.evaluate((el) => getComputedStyle(el).fontKerning)).toBe("none");
+  }
+});
 test("keep private stores scores locally, no session or upload requests", async ({ page }) => {
   const requests: string[] = []; page.on("request", (r) => { if (r.url().includes("/api/")) requests.push(r.url()); });
   await page.goto("/?mode=endless&countdown=0&bgm=0");
@@ -50,12 +246,15 @@ test("keep private stores scores locally, no session or upload requests", async 
 test("undecided publication is asked again on the next result, and R while typing does not restart", async ({ page }) => {
   await page.goto("/?mode=endless&countdown=0&bgm=0");
   await finish(page);
+  await page.getByRole("button", { name: "PUBLISH", exact: true }).click();
   const input = page.getByRole("region", { name: "RESULT", exact: true }).getByRole("textbox");
   await input.click();
   await input.pressSequentially("Rr");
   await expect(input).toHaveValue("Rr");
   expect(await page.evaluate(() => (window as any).__swaprise.game.finished)).toBe(true);
   await page.getByRole("button", { name: "RETRY", exact: true }).click();
+  // 前のプレイの結果画面が消えて、新しいプレイが始まってから終わらせる
+  await expect(page.locator(".score-result")).toHaveCount(0);
   await finish(page);
   await expect(page.getByRole("heading", { name: "Publish this score?" })).toBeVisible();
   expect(await page.evaluate(() => localStorage.getItem("swaprise.scores.publish.v1"))).toBeNull();

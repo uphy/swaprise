@@ -3,7 +3,7 @@ import { t } from "./i18n";
 import { Board, COLS, EMPTY, ROWS, TIMING, TOTAL_ROWS, isPanel, type BoardEvent } from "../core";
 import { BOARD_BG, BOARD_H, BOARD_W, CARD, CELL, FONT_UI, GARBAGE_COLOR, KIND_COLORS, TEXT_COLOR, TEXT_DIM, chainColor, isTouchDevice } from "./theme";
 import { CURSOR_PAD, css, garbageFrame, roundRect, tint } from "./textures";
-import { gradientFill } from "./ui";
+import { Button, gradientFill } from "./ui";
 import { audio } from "./shared";
 import { haptics } from "./haptics";
 import { DPR } from "./hidpi";
@@ -26,6 +26,10 @@ export function announceOpponentChains(events: BoardEvent[], mine: BoardView): v
     audio.opponentChain();
   }
 }
+/** 連鎖の吹き出しの大きさの倍率。x2 を 1 倍に、x3 1.25 倍、x4 1.4 倍、x5 以上 1.6 倍 */
+export function chainPopupScale(chain: number): number {
+  return chain >= 5 ? 1.6 : chain === 4 ? 1.4 : chain === 3 ? 1.25 : 1;
+}
 /** 盤面と横置きの HUD の間隔。 */
 const HUD_GAP = 12;
 /**
@@ -40,6 +44,12 @@ const FRAME_EXTENT = FRAME_PAD + 24;
 /** HUD の文字の影と、札の地の色（夜空の紺） */
 const HUD_INK = "#1c1238";
 const PLATE = 0x120c2c;
+/** 連鎖の吹き出しの板の不透明度。下のパネルが透けて見える濃さ */
+const POPUP_PLATE_ALPHA = 0.6;
+/** 最後の 10 秒の数字の、パネルの上に重ねる輪郭の色・太さ・不透明度。細く薄くして、パネルの色をほとんど変えない */
+const COUNT_OUTLINE = "#fff0f2";
+const COUNT_OUTLINE_WIDTH = 3;
+const COUNT_OUTLINE_ALPHA = 0.5;
 /** 時間・速度・最大連鎖の札の高さ */
 const CHIP_H = 20;
 
@@ -75,6 +85,14 @@ export class BoardView {
   /** 得点の見出し（SCORE）と数字 */
   private readonly scoreCaption: Phaser.GameObjects.Text;
   private readonly scoreText: Phaser.GameObjects.Text;
+  /** タイムアタックの残り時間。得点と同じ大きさで盤面の上に出す（下の札の並びには入れない） */
+  private readonly timeCaption: Phaser.GameObjects.Text | null = null;
+  readonly timeText: Phaser.GameObjects.Text | null = null;
+  /** 最後の 10 秒に盤面の上へ大きく半透明に出す秒の数字 */
+  readonly countText: Phaser.GameObjects.Text | null = null;
+  /** 秒の数字の細い輪郭だけをパネルの上に重ねる。数字の塗りはパネルの下なので、盤面が埋まっていても形が読めるように */
+  readonly countOutline: Phaser.GameObjects.Text | null = null;
+  private countShown = -1;
   /** 名前の札と得点の板 */
   private readonly hudGfx: Phaser.GameObjects.Graphics;
   /** 得点の板を描いたときの数字の幅。桁が増えたら描き直す */
@@ -124,6 +142,14 @@ export class BoardView {
     return { x: this.ox + (BOARD_W / 2) * this.scale, y: this.oy + (BOARD_H / 2) * this.scale };
   }
 
+  /**
+   * 半分の大きさで描く CPU の盤面か。背の低い縦持ちのレッスンは盤面を 0.9 倍ほどに縮めるが、
+   * 名前の札は 1 段のままでよいので、ここには入れない
+   */
+  private get compact(): boolean {
+    return this.scale < 0.75;
+  }
+
   /** 画面上の位置と大きさを決める。生成直後とレイアウト変更時に呼ぶ。 */
   place(ox: number, oy: number, scale = 1, hud: HudSide = "top", infoY = BOARD_H + 14): void {
     this.ox = ox;
@@ -164,7 +190,7 @@ export class BoardView {
       g.fillStyle(0xffffff, 0.35);
       g.fillRoundedRect(x + 4, cy - pillH / 2 + 2, pillW - 8, pillH * 0.38, { tl: pillH * 0.3, tr: pillH * 0.3, bl: 2, br: 2 });
     };
-    if (this.hud === "top" && this.scale < 1) {
+    if (this.hud === "top" && this.compact) {
       // 小さく描く相手の盤面は幅が足りないので、名前の札と得点を 2 段に積む（画面では盤面の上 12〜60px）
       pill(0, -52);
       label.setOrigin(0.5, 0.5).setPosition(pillW / 2, -52);
@@ -172,6 +198,29 @@ export class BoardView {
         plate(-4, -38, 4 + 10 + this.scoreText.width + 14, 30);
         this.scoreText.setOrigin(0, 0.5).setPosition(10, -23);
       }
+    } else if (this.hud === "top" && this.timeText && this.timeCaption) {
+      // タイムアタックは名前の札を省き、左に残り時間、右に得点の板を同じ大きさで並べる。
+      // 幅が足りなければ SCORE、次に TIME の見出しを省く
+      const cy = -24;
+      const plateH = 30;
+      const room = Math.min(this.hudMaxW, BOARD_W) + 4;
+      const timeW = (cap: boolean): number => 10 + (cap ? this.timeCaption!.width + 6 : 0) + this.timeText!.width + 12;
+      const scoreW = (cap: boolean): number => 10 + (cap ? this.scoreCaption.width + 6 : 0) + this.scoreText.width + 14;
+      let timeCap = true;
+      let scoreCap = true;
+      if (timeW(true) + 6 + scoreW(true) > room) scoreCap = false;
+      if (timeW(true) + 6 + scoreW(false) > room) timeCap = false;
+      label.setVisible(false);
+      plate(-4, cy - plateH / 2, timeW(timeCap), plateH);
+      this.timeCaption.setOrigin(0, 0.5).setPosition(6, cy + 1).setVisible(timeCap);
+      this.timeText.setOrigin(0, 0.5).setPosition(6 + (timeCap ? this.timeCaption.width + 6 : 0), cy);
+      const sx = -4 + room - scoreW(scoreCap);
+      plate(sx, cy - plateH / 2, scoreW(scoreCap), plateH);
+      this.scoreCaption.setOrigin(0, 0.5).setPosition(sx + 10, cy + 1);
+      this.scoreText.setOrigin(0, 0.5).setPosition(sx + 10 + (scoreCap ? this.scoreCaption.width + 6 : 0), cy);
+      this.scoreCaption.setVisible(scoreCap);
+      this.scoreText.setVisible(true);
+      return;
     } else if (this.hud === "top") {
       const cy = -24;
       const plateH = 30;
@@ -200,8 +249,17 @@ export class BoardView {
         this.scoreCaption.setOrigin(0, 0).setPosition(x0 + 11, pillH + 10);
         this.scoreText.setOrigin(0, 0.5).setPosition(x0 + 10, pillH + 6 + 28);
       }
+      // タイムアタックの残り時間は得点の下に同じ大きさの板で
+      if (this.timeText && this.timeCaption) {
+        plate(x0, pillH + 54, colW, 42);
+        this.timeCaption.setOrigin(0, 0).setPosition(x0 + 11, pillH + 58).setVisible(true);
+        this.timeText.setOrigin(0, 0.5).setPosition(x0 + 10, pillH + 54 + 28);
+      }
     }
-    this.scoreCaption.setVisible(hasScore && !(this.hud === "top" && (this.scale < 1 || this.scoreText.x < this.scoreCaption.x + this.scoreCaption.width)));
+    label.setVisible(true);
+    // パズルとレッスンは得点を使わない。数字だけ残すと盤面の右上のポーズボタンの下に潜って桁が欠けて見えた
+    this.scoreText.setVisible(hasScore);
+    this.scoreCaption.setVisible(hasScore && !(this.hud === "top" && (this.compact || this.scoreText.x < this.scoreCaption.x + this.scoreCaption.width)));
   }
 
   /** 盤面の上の名前と得点の板に使える幅。盤面の右上にポーズボタンを置くときに狭める */
@@ -243,7 +301,7 @@ export class BoardView {
     } else {
       const right = this.hud === "right";
       const edge = right ? BOARD_W + HUD_GAP : -HUD_GAP;
-      const top = this.style ? 30 : 78;
+      const top = this.style ? 30 : this.timeText ? 126 : 78;
       this.chips.forEach((_, i) => drawChip(i, right ? edge : edge - widths[i], top + i * (CHIP_H + gap), widths[i]));
     }
   }
@@ -306,7 +364,7 @@ export class BoardView {
   ) {
     this.root = scene.add.container(0, 0);
     this.color = color;
-    this.dangerGlow = new DangerGlow(scene);
+    this.dangerGlow = new DangerGlow(scene, { pad: FRAME_PAD, radius: FRAME_RADIUS, inner: BOARD_RADIUS });
     this.frame = scene.add.image(-FRAME_EXTENT, -FRAME_EXTENT, makeFrameTexture(scene, color)).setOrigin(0).setScale(1 / DPR);
     this.corners = makeCorners(scene, color);
     this.root.add([this.dangerGlow.root, this.frame]);
@@ -326,6 +384,8 @@ export class BoardView {
       this.nextCells.push(img);
     }
     this.root.add(this.corners);
+    // 危険のときの枠の赤みと列の帯は、四隅の蓋とパネルの上に重ねる
+    this.root.add(this.dangerGlow.front);
     this.cursor = scene.add.image(0, 0, "cursor").setOrigin(0).setScale(1 / DPR);
     this.root.add(this.cursor);
     this.touchGfx = scene.add.graphics();
@@ -366,13 +426,35 @@ export class BoardView {
     this.scoreText = scene.add
       .text(0, 0, "000000", { fontFamily: FONT_UI, fontSize: "20px", color: TEXT_COLOR, fontStyle: "700" })
       .setShadow(0, 2, HUD_INK, 3, false, true);
+    if (timeLimit !== null && !style) {
+      this.timeCaption = scene.add.text(0, 0, "TIME", { fontFamily: FONT_UI, fontSize: "9px", color: TEXT_DIM, fontStyle: "700" });
+      this.timeText = scene.add
+        .text(0, 0, "2:00", { fontFamily: FONT_UI, fontSize: "20px", color: TEXT_COLOR, fontStyle: "700" })
+        .setShadow(0, 2, HUD_INK, 3, false, true);
+      this.countText = scene.add
+        .text(BOARD_W / 2, BOARD_H / 2, "", { fontFamily: FONT_UI, fontSize: "150px", color: "#ff8a94", fontStyle: "700", stroke: HUD_INK, strokeThickness: 8 })
+        .setOrigin(0.5)
+        .setAlpha(0.4)
+        .setVisible(false);
+      this.countOutline = scene.add
+        .text(BOARD_W / 2, BOARD_H / 2, "", { fontFamily: FONT_UI, fontSize: "150px", color: "rgba(0,0,0,0)", fontStyle: "700", stroke: COUNT_OUTLINE, strokeThickness: COUNT_OUTLINE_WIDTH })
+        .setOrigin(0.5)
+        .setAlpha(COUNT_OUTLINE_ALPHA)
+        .setVisible(false);
+    }
     this.statsGfx = scene.add.graphics();
     this.pendingGfx = scene.add.graphics();
     this.pendingText = scene.add
       .text(0, 0, "", { fontFamily: FONT_UI, fontSize: "14px", color: TEXT_COLOR, fontStyle: "700", stroke: HUD_INK, strokeThickness: 3 })
       .setVisible(false);
     this.stopBar = scene.add.graphics();
+    // 残り 10 秒の数字は盤面の井戸（枠の絵）の上、パネルの下に置き、パネルの隙間と空いたところにだけ見せる。
+    // パネルの上に半透明で重ねると、黄が橙に、水色が灰色に濁って見えた
+    if (this.countText) this.root.addAt(this.countText, this.root.getIndex(this.frame) + 1);
+    // 輪郭だけはパネル（次の段も含む）の上、四隅の蓋とカーソルの下に重ねる。細く薄い線なので、パネルの色はほとんど変わらない
+    if (this.countOutline) this.root.addAt(this.countOutline, this.root.getIndex(this.corners[0]));
     this.root.add([this.hudGfx, this.labelText, this.scoreCaption, this.scoreText, this.statsGfx, this.pendingGfx, this.pendingText, this.stopBar]);
+    if (this.timeCaption && this.timeText) this.root.add([this.timeCaption, this.timeText]);
 
     this.overlay = scene.add.container(BOARD_W / 2, BOARD_H / 2).setVisible(false);
     // 暗幕は盤面の角に合わせて丸める（矩形だと角が枠の縁にはみ出す）。上下を濃く、中央を少し明るく
@@ -415,6 +497,11 @@ export class BoardView {
     for (const { x, y } of this.hintCells) g.strokeRect(x * CELL + 2, (ROWS - 1 - y) * CELL - rise + 2, CELL - 4, CELL - 4);
   }
 
+  /** 盤面の上に置いた結果のボタン。キーボード・ゲームパッドの決定で主ボタンを押すのに使う */
+  overlayButtons(): Button[] {
+    return this.overlay.visible ? this.overlay.list.filter((o): o is Button => o instanceof Button && o.visible) : [];
+  }
+
   /** 結果画面などのボタンを盤面の上に置く。局所座標（盤面の左上が原点）で渡す。 */
   addToOverlay(obj: Phaser.GameObjects.GameObject): void {
     this.overlay.add(obj);
@@ -444,7 +531,7 @@ export class BoardView {
           if (soundOn) audio.match(e.panels, e.chain);
           if (hapticOn) haptics.match(e.panels, e.chain);
           this.flashMatched();
-          this.popup(e.x, e.y, e.panels, e.chain);
+          this.popup(e);
           break;
         case "pop":
           if (soundOn) audio.pop(this.popIndex++);
@@ -533,50 +620,81 @@ export class BoardView {
   }
 
   /**
-   * 「4」「x2」の吹き出し。同時消しは赤、連鎖は連鎖数で色が上がり、数が増えるほど大きく出る。
-   * 出た瞬間に大きく弾んでから、少し浮いて消える
+   * 「4」「x2」の吹き出し。同時消しは赤、連鎖は連鎖数で色が上がり、数が増えるほど大きく出る（x2 を 1 倍に x3 1.25 倍、x4 1.4 倍、x5 以上 1.6 倍）。
+   * 消えるパネルに重ねると同じ色で読めないので、揃った範囲の 1 段上に濃紺の板を敷いて出す。上に場所がなければ範囲の中ほどに出し、
+   * どちらも盤面の中に収める。出た瞬間に大きく弾んでから、少し浮いて消える
    */
-  private popup(x: number, y: number, panels: number, chain: number): void {
-    const px = Math.min(BOARD_W - 30, Math.max(30, x * CELL + CELL / 2));
-    const py = (ROWS - 1 - y) * CELL;
+  private popup(e: { panels: number; chain: number; left: number; right: number; top: number; bottom: number }): void {
+    const { panels, chain } = e;
     const items: { text: string; caption: string; color: string; size: number }[] = [];
     if (panels >= 4) items.push({ text: String(panels), caption: "COMBO", color: "#ff5c6c", size: 22 + Math.min(12, (panels - 4) * 2) });
-    if (chain >= 2) items.push({ text: `x${chain}`, caption: "CHAIN", color: chainColor(chain), size: 26 + Math.min(22, (chain - 2) * 3) });
-    if (items.length) this.ring(px, py + CELL / 2, Phaser.Display.Color.HexStringToColor(items[items.length - 1].color).color, 1.2 + Math.min(2, chain * 0.25));
-    // 見出し（COMBO / CHAIN）の下に数字。2 つあれば縦に積む。1 つ目の数字の中心が揃った行の上端に来る
-    let top = py - 26;
-    items.forEach((it) => {
+    if (chain >= 2) items.push({ text: `x${chain}`, caption: "CHAIN", color: chainColor(chain), size: Math.round(26 * chainPopupScale(chain)) });
+    // 連鎖が伸びたら得点の文字も弾む
+    if (chain >= 2) this.scoreBump = 1;
+    if (!items.length) return;
+    const rise = this.board.riseProgress * CELL;
+    const groupTop = (ROWS - 1 - e.top) * CELL - rise;
+    const groupBottom = (ROWS - e.bottom) * CELL - rise;
+    const groupX = ((e.left + e.right + 1) / 2) * CELL;
+    this.ring(groupX, (groupTop + groupBottom) / 2, Phaser.Display.Color.HexStringToColor(items[items.length - 1].color).color, 1.2 + Math.min(2, chain * 0.25));
+    // 見出し（COMBO / CHAIN）の下に数字。2 つあれば縦に積む。先に作って大きさを測ってから置く
+    const parts = items.map((it) => {
       const caption = this.scene.add
-        .text(px, top, it.caption, { fontFamily: FONT_UI, fontSize: "10px", fontStyle: "700", color: "#ffffff", stroke: HUD_INK, strokeThickness: 4 })
+        .text(0, 0, it.caption, { fontFamily: FONT_UI, fontSize: "10px", fontStyle: "700", color: "#ffffff", stroke: HUD_INK, strokeThickness: 4 })
         .setOrigin(0.5, 0)
         .setAlpha(0);
       const main = this.scene.add
-        .text(px, top + 9, it.text, { fontFamily: FONT_UI, fontSize: `${it.size}px`, fontStyle: "700", color: it.color, stroke: HUD_INK, strokeThickness: 6 })
+        .text(0, 0, it.text, { fontFamily: FONT_UI, fontSize: `${it.size}px`, fontStyle: "700", color: it.color, stroke: HUD_INK, strokeThickness: 7 })
         .setShadow(0, 3, "rgba(0, 0, 0, 0.4)", 4, true, false)
         .setOrigin(0.5, 0)
-        .setScale(1.9)
         .setAlpha(0);
       gradientFill(main, "#ffffff", it.color);
-      top += 9 + main.height - 8;
+      return { caption, main, color: it.color };
+    });
+    const padX = 6;
+    const padY = 3;
+    const stackH = parts.reduce((h, p) => h + 9 + p.main.height - 8, 0) + 8;
+    const w = Math.min(BOARD_W - 4, Math.max(...parts.map((p) => Math.max(p.main.width, p.caption.width))) + padX * 2);
+    const h = stackH + padY * 2;
+    // 揃った範囲の 1 段上。上に場所がなければ範囲の中ほど。どちらも盤面の中に収める
+    let top = groupTop - 4 - h;
+    if (top < 2) top = (groupTop + groupBottom) / 2 - h / 2;
+    top = Math.max(2, Math.min(BOARD_H - h - 2, top));
+    const px = Math.max(w / 2 + 2, Math.min(BOARD_W - w / 2 - 2, groupX));
+    // 同じ色のパネルの上でも読めるよう、濃紺の板に連鎖の色の縁を付ける。板は 0.6 の半透明にして、
+    // 1 段上にある次に落ちてくるパネルなどを透かす（0.82 では 0.4〜0.9 秒ほど隠れていた）。文字は不透明で縁取りがあるので読める
+    const plate = this.scene.add.graphics().setAlpha(0);
+    const edge = Phaser.Display.Color.HexStringToColor(parts[parts.length - 1].color).color;
+    plate.fillStyle(PLATE, POPUP_PLATE_ALPHA);
+    plate.fillRoundedRect(px - w / 2, top, w, h, 10);
+    plate.lineStyle(2, edge, 0.9);
+    plate.strokeRoundedRect(px - w / 2, top, w, h, 10);
+    this.root.add(plate);
+    this.lastPopup = { x: px - w / 2, y: top, width: w, height: h, size: items[items.length - 1].size, plateAlpha: POPUP_PLATE_ALPHA };
+    let y = top + padY;
+    const targets: Phaser.GameObjects.GameObject[] = [plate];
+    parts.forEach(({ caption, main }) => {
+      caption.setPosition(px, y);
+      main.setPosition(px, y + 9).setScale(1.9);
+      y += 9 + main.height - 8;
       this.root.add([caption, main]);
+      targets.push(caption, main);
       this.scene.tweens.add({ targets: main, scale: 1, alpha: 1, duration: 180, ease: "Back.Out", easeParams: [2.2] });
       this.scene.tweens.add({ targets: caption, alpha: 1, duration: 140, delay: 60 });
-      this.scene.tweens.add({
-        targets: [main, caption],
-        y: "-=34",
-        alpha: 0,
-        delay: 440 + Math.min(400, chain * 40),
-        duration: 420,
-        ease: "Quad.In",
-        onComplete: () => {
-          main.destroy();
-          caption.destroy();
-        },
-      });
     });
-    // 連鎖が伸びたら得点の文字も弾む
-    if (chain >= 2) this.scoreBump = 1;
+    this.scene.tweens.add({ targets: plate, alpha: 1, duration: 140 });
+    this.scene.tweens.add({
+      targets,
+      y: "-=20",
+      alpha: 0,
+      delay: 440 + Math.min(400, chain * 40),
+      duration: 420,
+      ease: "Quad.In",
+      onComplete: () => targets.forEach((o) => o.destroy()),
+    });
   }
+  /** 直近の吹き出しの範囲（盤面の局所座標）と数字の大きさ。e2e が盤面の中に収まることを確かめる */
+  lastPopup: { x: number; y: number; width: number; height: number; size: number; plateAlpha: number } | null = null;
 
   /** 予告おじゃまのバーの左端と上端（局所座標）。盤面の中の上端に置く。HUD やポーズのボタンと重ならず、どの向きでも同じ場所に出る */
   private static readonly PENDING_X = 4;
@@ -745,10 +863,20 @@ export class BoardView {
     }
     const mm = String(Math.floor(seconds / 60)).padStart(2, "0");
     const ss = String(seconds % 60).padStart(2, "0");
-    // 残り10秒を切ったら赤く
-    const stats: { caption: string; value: string; color?: string }[] = [
-      { caption: "TIME", value: `${mm}:${ss}`, color: this.timeLimit !== null && seconds <= 10 ? "#ff8a94" : undefined },
-    ];
+    const stats: { caption: string; value: string; color?: string }[] = [];
+    if (this.timeText && this.timeCaption) {
+      // タイムアタックの残り時間は盤面の上の板。残り 10 秒を切ったら赤くし、盤面の上にも秒を大きく半透明に出す
+      const text = `${Math.floor(seconds / 60)}:${ss}`;
+      const color = seconds <= 10 ? "#ff8a94" : TEXT_COLOR;
+      if (text !== this.timeText.text || this.timeText.style.color !== color) {
+        const w = this.timeText.width;
+        this.timeText.setText(text).setColor(color);
+        if (Math.abs(this.timeText.width - w) > 3) this.layoutHud();
+      }
+      this.drawCountdown(active && !b.gameOver && b.frame < this.timeLimit! && seconds <= 10 ? seconds : 0);
+    } else {
+      stats.push({ caption: "TIME", value: `${mm}:${ss}` });
+    }
     if (this.timeLimit !== null && b.frame >= this.timeLimit && !b.isSettled()) stats.push({ caption: "", value: t("SETTLING"), color: "#ffe066" });
     if (this.showLevel) stats.push({ caption: "SPEED", value: String(b.level) });
     stats.push({ caption: "MAX", value: `x${b.maxChain}` });
@@ -794,6 +922,26 @@ export class BoardView {
     if (rows > 0) {
       this.pendingText.setText(String(rows)).setColor(ready ? "#ffb060" : TEXT_COLOR).setAlpha(ready ? pulse : 1);
       this.pendingText.setPosition(BoardView.PENDING_X + px + 2, BoardView.PENDING_Y - 4).setOrigin(0, 0);
+    }
+  }
+
+  /** 最後の 10 秒の秒の数字。秒が変わるたびに少し大きく出て収まる。0 で消す */
+  private drawCountdown(seconds: number): void {
+    const text = this.countText;
+    if (!text) return;
+    if (seconds === this.countShown) return;
+    this.countShown = seconds;
+    const outline = this.countOutline;
+    if (seconds <= 0) {
+      text.setVisible(false);
+      outline?.setVisible(false);
+      return;
+    }
+    text.setText(String(seconds)).setVisible(true).setScale(1.25).setAlpha(0.55);
+    this.scene.tweens.add({ targets: text, scale: 1, alpha: 0.35, duration: 360, ease: "Cubic.Out" });
+    if (outline) {
+      outline.setText(String(seconds)).setVisible(true).setScale(1.25);
+      this.scene.tweens.add({ targets: outline, scale: 1, duration: 360, ease: "Cubic.Out" });
     }
   }
 
