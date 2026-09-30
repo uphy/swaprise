@@ -13,6 +13,8 @@ test("タイムアタック: 完走すると盤面に TIME UP を短く出し、
   // 残り時間は盤面の上の板にあり、下の札の並びには入れない
   expect(info.text).toMatch(/^0:0[123]$/);
   expect(info.info).toMatch(/^SPEED 1/);
+  // 0 点のプレイは記録に残さないので、点を入れてから時間切れを待つ
+  await page.evaluate(() => { (window as any).__swaprise.game.boards[0].score = 120; });
 
   await page.waitForFunction(() => (window as any).__swaprise.game.finished, null, { timeout: 10_000 });
   const result = await page.evaluate(() => {
