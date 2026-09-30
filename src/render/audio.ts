@@ -295,12 +295,26 @@ export class GameAudio {
     this.voice({ wave: "triangle", f: n("g6"), dur: 0.03, gain: 0.15 });
   }
 
-  /** 揃った瞬間。メジャーの分散和音。連鎖で全体が上がり、2連鎖以上できらめきが足され、4枚以上で1音増える。 */
+  /**
+   * 揃った瞬間。メジャーの分散和音。連鎖で全体が上がり（7 連鎖までは 2 半音ずつ、そこから 10 連鎖までは 1 半音ずつ）、
+   * 2 連鎖以上できらめき、3 連鎖から 1 オクターブ下の支え、5 連鎖から和音に揺らぎ（コーラス）、8 連鎖から低い衝撃、
+   * 10 連鎖から太鼓と上の 5 度の輝きを重ねて、段階ごとに音が厚くなる。4 枚以上で 1 音増える。
+   */
   match(panels: number, chain: number): void {
-    const base = st(n("c5"), Math.min(12, (chain - 1) * 2));
+    const rise = chain <= 7 ? (chain - 1) * 2 : 12 + Math.min(3, chain - 7);
+    const base = st(n("c5"), Math.max(0, rise));
     const notes = [0, 4, 7, 12].concat(panels >= 4 ? [16] : []).map((s) => st(base, s));
-    this.arp(notes, { step: 0.04, dur: 0.15, gain: 0.16, echo: 0.3 });
+    this.arp(notes, { step: 0.04, dur: 0.15, gain: 0.16, echo: 0.3, detune: chain >= 5 ? 9 : 0 });
     if (chain >= 2) this.voice({ wave: "sine", f: base * 4, dur: 0.3, gain: 0.08, t: 0.16, echo: 0.4 });
+    if (chain >= 3) this.voice({ wave: "triangle", f: base / 2, dur: 0.22, gain: 0.12, echo: 0.2 });
+    if (chain >= 8) {
+      this.voice({ wave: "sine", f: 120, f2: 42, slide: 0.18, dur: 0.34, gain: 0.4 });
+      this.noise({ type: "highpass", freq: 5000, freq2: 9000, dur: 0.35, gain: 0.07, t: 0.05, echo: 0.4 });
+    }
+    if (chain >= 10) {
+      this.kick(0, 0.7);
+      this.arp([19, 24].map((s) => st(base, s)), { step: 0.05, dur: 0.2, wave: "pulse12", gain: 0.08, t: 0.18, echo: 0.5 });
+    }
   }
 
   /** 1枚ずつ消える音。同じ消去内で index が増えるほど音が高くなる。 */
@@ -310,11 +324,19 @@ export class GameAudio {
     this.voice({ wave: "pulse25", f, f2: f * 1.6, dur: 0.09, gain: 0.08, echo: 0.25, detune: 8 });
   }
 
-  /** 連鎖の終わり。連鎖数ぶん上昇する音階をエコーで残す。 */
+  /**
+   * 連鎖の終わり。連鎖数ぶん（10 音まで）上昇する音階をエコーで残す。
+   * 5 連鎖から最後に長めの和音、8 連鎖からその和音に低音、10 連鎖から太鼓を足す。
+   */
   chainEnd(chain: number): void {
-    const scale = [0, 2, 4, 7, 9, 12, 14, 16];
-    const notes = scale.slice(0, Math.min(chain, 8)).map((s) => st(n("c5"), s));
+    const scale = [0, 2, 4, 7, 9, 12, 14, 16, 19, 21];
+    const count = Math.min(chain, scale.length);
+    const notes = scale.slice(0, count).map((s) => st(n("c5"), s));
     this.arp(notes, { step: 0.05, dur: 0.18, gain: 0.14, echo: 0.45 });
+    const end = count * 0.05;
+    if (chain >= 5) this.chord([12, 16, 19, 24].map((s) => st(n("c5"), s)), { dur: 0.6, wave: "triangle", gain: 0.07, t: end, echo: 0.5, detune: 7 });
+    if (chain >= 8) this.voice({ wave: "sine", f: n("c3"), dur: 0.7, gain: 0.22, t: end });
+    if (chain >= 10) this.kick(end, 0.9);
   }
 
   /** パネルの着地。「コッ」。 */

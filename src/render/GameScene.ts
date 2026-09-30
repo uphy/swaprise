@@ -214,6 +214,8 @@ export class GameScene extends Phaser.Scene {
     this.views.forEach((v, i) => {
       v.stopOnBar = this.raiseHints[i].visible;
       v.chainSummary = Boolean(this.inputs[i]);
+      // 連鎖した瞬間の盤面の揺れと閃光も遊ぶ人の盤面だけ。パズルとレッスンでも連鎖の手応えは出す
+      v.chainFeel = Boolean(this.inputs[i]);
     });
 
     // レッスンの説明。盤面の下に短く出し、迷っていれば盤面の目印を光らせる。固定の面は RESET で最初の形に戻せる
@@ -803,15 +805,8 @@ export class GameScene extends Phaser.Scene {
     if (this.game_.lesson) this.updateLessonHint(this.game_.boards[0].events);
     if (this.puzzleHintLevel > 0 && this.game_.boards[0].events.some((e) => e.type === "swap")) this.clearPuzzleHint();
     this.game_.boards.forEach((b, i) => {
+      // 連鎖の揺れと閃光は BoardView が連鎖した盤面だけに出す（chainFeel）
       this.views[i].handleEvents(b.events, true, Boolean(this.inputs[i]));
-      // 自分の盤面の大きな連鎖は画面ごと揺らし、5 連鎖からは閃光も足す。
-      // 振幅は画面幅に対する比。盤面の大きさが分かる程度にとどめ、揺れで盤面が読めなくならないようにする
-      if (!this.inputs[i]) return;
-      for (const e of b.events) {
-        if (e.type !== "match" || e.chain < 3) continue;
-        this.cameras.main.shake(90 + e.chain * 10, 0.0009 + Math.min(0.0025, e.chain * 0.0003));
-        if (e.chain >= 5) this.flash(Math.min(0.5, 0.15 + e.chain * 0.04));
-      }
     });
   }
 
@@ -875,7 +870,7 @@ export class GameScene extends Phaser.Scene {
   }
   private resultKeycap = false;
 
-  /** 画面全体の白い閃き。大きな連鎖と勝利で使う */
+  /** 画面全体の白い閃き。勝利・クリア・新記録で使う（連鎖の閃光は BoardView が盤面の中だけに出す） */
   private flash(alpha: number): void {
     const L = this.layout;
     const rect = this.add.rectangle(0, 0, L.width, L.height, 0xffffff, alpha).setOrigin(0).setDepth(25);

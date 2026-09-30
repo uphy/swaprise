@@ -33,13 +33,64 @@ export const FONT_UI = '"Fredoka", "Hiragino Maru Gothic ProN", "BIZ UDPGothic",
  */
 export type SkyName = "menu" | "endless" | "timeattack" | "puzzle" | "versus" | "cpu";
 
-/** 連鎖数ごとの吹き出しの色。数が増えるほど熱い色へ */
+/** 連鎖数ごとの吹き出しの色。数が増えるほど熱い色へ。10 連鎖からは白く燃える青 */
 export function chainColor(chain: number): string {
+  if (chain >= 10) return "#7ff0ff";
   if (chain >= 8) return "#ff5cf0";
   if (chain >= 6) return "#ff5c6c";
   if (chain >= 4) return "#ff9a3c";
   if (chain >= 3) return "#ffd23c";
   return "#7cf57a";
+}
+
+/**
+ * 盤面の揺れの型。揺らすのはカメラではなく連鎖した盤面だけ。
+ * dip: 盤面が一瞬沈んで戻る、vertical: 短い縦の揺れ、both: 縦横の揺れ、long: 縦横に長めに揺れて減衰する
+ */
+export type ChainShakeType = "dip" | "vertical" | "both" | "long";
+
+/**
+ * 連鎖数ごとの演出の強さ。連鎖が伸びるほど、揺れの型・吹き出し・閃光・締めの表示が段階で変わる。
+ * 段階の境目は 3・5・6・8・10 連鎖。5 と 8、8 と 10 が色だけでなく揺れと閃光と大きさで見分けられるようにする
+ */
+export interface ChainFx {
+  /** 揺れ。amp はパネル 1 枚の大きさに対する割合（画面の大きさや DPR で変わらない）、ms は長さ */
+  shake: { type: ChainShakeType; amp: number; ms: number };
+  /** 連鎖の吹き出しの大きさ（x2 を 1 倍） */
+  popupScale: number;
+  /** 盤面に重ねる閃光の不透明度（0 は無し）と回数。2 回目は少し遅れて弱く */
+  flash: number;
+  flashCount: number;
+  /** 盤面の中央から広がる大きな光の輪（8 連鎖から） */
+  ring: boolean;
+  /** 締めの表示の見出しの大きさ（2 連鎖を 1 倍）・とどまる長さ（ms）・縁の太さ・外側の光 */
+  summaryScale: number;
+  summaryHold: number;
+  summaryEdge: number;
+  summaryGlow: boolean;
+}
+
+/**
+ * 揺れの上限（パネル 1 枚の割合）。これより大きいと、揺れている間に盤面の列が読めなくなる。
+ * 設定に揺れを切る項目はないので、端末の「視差効果を減らす」（prefers-reduced-motion）が有効なら揺らさない
+ */
+export const CHAIN_SHAKE_MAX = 0.15;
+
+export function chainFx(chain: number): ChainFx {
+  const shake = (type: ChainShakeType, amp: number, ms: number) => ({ type, amp: Math.min(CHAIN_SHAKE_MAX, amp), ms });
+  if (chain >= 10) return { shake: shake("long", 0.14, 640), popupScale: 2.05, flash: 0.45, flashCount: 2, ring: true, summaryScale: 1.6, summaryHold: 1200, summaryEdge: 3, summaryGlow: true };
+  if (chain >= 8) return { shake: shake("long", chain >= 9 ? 0.13 : 0.12, chain >= 9 ? 540 : 480), popupScale: 1.85, flash: 0.36, flashCount: 1, ring: true, summaryScale: 1.5, summaryHold: 1000, summaryEdge: 3, summaryGlow: true };
+  if (chain >= 6) return { shake: shake("both", chain >= 7 ? 0.11 : 0.1, chain >= 7 ? 300 : 270), popupScale: 1.65, flash: 0.28, flashCount: 1, ring: false, summaryScale: 1.4, summaryHold: 850, summaryEdge: 2.5, summaryGlow: false };
+  if (chain === 5) return { shake: shake("both", 0.08, 240), popupScale: 1.5, flash: 0.2, flashCount: 1, ring: false, summaryScale: 1.3, summaryHold: 850, summaryEdge: 2.5, summaryGlow: false };
+  if (chain === 4) return { shake: shake("vertical", 0.055, 190), popupScale: 1.4, flash: 0, flashCount: 0, ring: false, summaryScale: 1.25, summaryHold: 730, summaryEdge: 2, summaryGlow: false };
+  if (chain === 3) return { shake: shake("vertical", 0.04, 160), popupScale: 1.25, flash: 0, flashCount: 0, ring: false, summaryScale: 1.15, summaryHold: 730, summaryEdge: 2, summaryGlow: false };
+  return { shake: shake("dip", 0.03, 120), popupScale: 1, flash: 0, flashCount: 0, ring: false, summaryScale: 1, summaryHold: 730, summaryEdge: 2, summaryGlow: false };
+}
+
+/** 端末で「視差効果を減らす」が有効か。有効なら盤面を揺らさない */
+export function prefersReducedMotion(): boolean {
+  if (typeof window === "undefined") return false;
+  return window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
 }
 
 /**
