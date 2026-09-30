@@ -151,6 +151,43 @@ describe("連鎖", () => {
     expect(events.some((e) => e.type === "chainEnd" && e.chain === 3)).toBe(true);
   });
 
+  it("連鎖の終わりに、その連鎖で得た得点の合計といちばん長い停止を渡す", () => {
+    const b = emptyBoard();
+    b.setColumns(CHAIN3);
+    moveCursor(b, 0, 4);
+    const events = press(b, { swap: true }, 400);
+    const end = events.find((e) => e.type === "chainEnd");
+    // 30 + 80 + 110 点。停止は 3 連鎖の 2 秒 + 1 秒
+    expect(end).toEqual({ type: "chainEnd", chain: 3, score: 220, stop: TIMING.stopChainBase + TIMING.stopChainPerExtra, pinch: false });
+    expect(b.stopTotal).toBe(TIMING.stopChainBase + TIMING.stopChainPerExtra);
+    expect(b.stopPinch).toBe(false);
+  });
+
+  it("危険な状態（天井に届いている）で連鎖すると、停止が 2 倍になったことを渡す", () => {
+    const b = emptyBoard();
+    // 右端の列を天井まで積む（縦にも横にも揃わない並び）
+    b.setColumns([...CHAIN3, [], [], [0, 1, 2, 0, 1, 2, 0, 1, 2, 0, 1, 2]]);
+    moveCursor(b, 0, 4);
+    const events = press(b, { swap: true }, 400);
+    const end = events.find((e) => e.type === "chainEnd");
+    const stop = (TIMING.stopChainBase + TIMING.stopChainPerExtra) * TIMING.stopDangerMultiplier;
+    expect(end).toEqual({ type: "chainEnd", chain: 3, score: 220, stop, pinch: true });
+    expect(b.stopTotal).toBe(stop);
+    expect(b.stopPinch).toBe(true);
+  });
+
+  it("連鎖が終わったあとの次の連鎖は、得点を数え直す", () => {
+    const b = emptyBoard();
+    b.setColumns(CHAIN3);
+    moveCursor(b, 0, 4);
+    press(b, { swap: true }, 400);
+    b.setColumns(CHAIN3);
+    moveCursor(b, 0, 4);
+    const events = press(b, { swap: true }, 400);
+    const end = events.find((e) => e.type === "chainEnd");
+    expect(end && end.type === "chainEnd" ? end.score : -1).toBe(220);
+  });
+
   /**
    * 時間差連鎖。T字の5個消しで col1 は3段、col2/3 は1段落ちる。
    * 先に着地する F F F が2連鎖、遅れて着地する C C C が3連鎖と数えられる。

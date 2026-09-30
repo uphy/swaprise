@@ -205,6 +205,11 @@ export class GameScene extends Phaser.Scene {
         this.touches[i]?.holdRaise(p.id);
       }).setVisible(Boolean(this.inputs[i]) && this.mode !== "puzzle" && !this.game_.lesson?.rows),
     );
+    // 停止時間はせり上げバーを STOP のゲージに切り替えて見せ、連鎖の終わりの締めは遊ぶ人の盤面にだけ出す
+    this.views.forEach((v, i) => {
+      v.stopOnBar = this.raiseHints[i].visible;
+      v.chainSummary = Boolean(this.inputs[i]);
+    });
 
     // レッスンの説明。盤面の下に短く出し、迷っていれば盤面の目印を光らせる。固定の面は RESET で最初の形に戻せる
     this.lessonText?.destroy();
@@ -912,7 +917,11 @@ export class GameScene extends Phaser.Scene {
       this.puzzleButtons.redo.setAlpha(settled && !this.ended && this.game_.puzzleCanRedo ? 1 : 0.4);
       this.puzzleButtons.hint.setAlpha(settled && !this.ended ? 1 : 0.4);
     }
-    this.raiseHints.forEach((h, i) => h.setRaising(this.inputs[i]?.lastRaise ?? false, this.paused ? 0 : delta));
+    this.raiseHints.forEach((h, i) => {
+      const b = this.game_.boards[i];
+      h.setRaising(this.inputs[i]?.lastRaise ?? false, this.paused ? 0 : delta);
+      h.setStop(b.gameOver ? 0 : b.stopTimer, b.stopTotal, b.stopPinch, this.paused ? 0 : delta);
+    });
     if (this.ended) this.placeResultKeycap();
   }
 

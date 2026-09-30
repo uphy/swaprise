@@ -72,7 +72,8 @@ export type BoardEvent =
   /** x, y は最も上の行の左端のパネル。left / right / top / bottom は揃ったパネル全体の範囲（y は下から数える） */
   | { type: "match"; panels: number; chain: number; x: number; y: number; score: number; left: number; right: number; top: number; bottom: number }
   | { type: "pop"; x: number; y: number; index: number }
-  | { type: "chainEnd"; chain: number }
+  /** 連鎖（2 連鎖以上）の終わり。score はその連鎖で得た得点の合計、stop はいちばん長く得た停止（フレーム）、pinch は危険な状態で消して停止が 2 倍になったか */
+  | { type: "chainEnd"; chain: number; score: number; stop: number; pinch: boolean }
   | { type: "land"; x: number; y: number }
   | { type: "garbageLand"; height: number }
   | { type: "garbageTransform"; id: number }

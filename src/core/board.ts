@@ -71,6 +71,12 @@ export class Board {
 
   riseProgress = 0;
   stopTimer = 0;
+  /**
+   * 描画用（読み取り専用）。今の停止時間を与えたときの長さ（フレーム）と、危険な状態で消して 2 倍になったか。
+   * 停止のゲージを「与えた長さのうちの残り」で描き、2 倍なら色を変えるのに使う。シミュレーションはこの値を読まない
+   */
+  stopTotal = 0;
+  stopPinch = false;
   shakeTimer = 0;
   deathTimer = 0;
   /** 現在の連鎖数。1は連鎖していない状態。 */
@@ -124,6 +130,13 @@ export class Board {
   private shockDue = false;
   private stopRaiseFree = false;
   private dropSide = 0;
+  /**
+   * 描画用。いまの連鎖（始まりの消去から）で得た得点・いちばん長い停止（フレーム）・危険で 2 倍になったか。
+   * chainEnd で締めの表示に渡す。シミュレーションはこの値を読まない
+   */
+  private runScore = 0;
+  private runStop = 0;
+  private runPinch = false;
 
   /** 予測の巻き戻し用。乱数のprototypeと盤面オブジェクトの参照は維持する。 */
   copyFrom(source: Board): void {
@@ -876,6 +889,12 @@ export class Board {
       .sort((a, b) => b.y - a.y || a.x - b.x);
     const n = list.length;
     const chaining = list.some(({ x, y }) => this.cells[y][x].chain);
+    // 連鎖の締めの集計。消えている途中のパネルがない状態で連鎖でない消去が起きたら、新しい連鎖の始まりとして数え直す
+    if (!chaining && this.chain === 1 && !this.hasMatched()) {
+      this.runScore = 0;
+      this.runStop = 0;
+      this.runPinch = false;
+    }
     let chainNow = 1;
     this.stats.matches++;
     if (chaining) {
@@ -890,6 +909,7 @@ export class Board {
 
     const gained = matchScore(n, chainNow);
     this.score = capScore(this.score + gained);
+    this.runScore += gained;
     const beforeCleared = this.panelsCleared;
     this.panelsCleared += n;
     // 消した枚数が shockEvery の倍数を跨ぐたびに、次のせり上がり行へビックリパネルを1枚予約する
@@ -906,8 +926,14 @@ export class Board {
     if (this.panic) stop *= TIMING.stopDangerMultiplier;
     stop = Math.min(TIMING.stopMax, stop);
     if (stop > 0) {
+      if (stop >= this.stopTimer) {
+        this.stopTotal = stop;
+        this.stopPinch = this.panic;
+      }
       this.stopTimer = Math.max(this.stopTimer, stop);
       this.stopRaiseFree = true;
+      this.runStop = Math.max(this.runStop, stop);
+      if (this.panic) this.runPinch = true;
     }
 
     // ビックリパネル同士の消去は灰色の板を送る（3個消しでも送れる）。通常パネルの同時消しは幅 n-1 の板。
@@ -984,7 +1010,7 @@ export class Board {
     // 連鎖中に待ちが明けていた同時消しの板も、このとき一緒に送る
     this.send([...this.heldForChain, ...garbageFromChain(this.chain)]);
     this.heldForChain = [];
-    this.emit({ type: "chainEnd", chain: this.chain });
+    this.emit({ type: "chainEnd", chain: this.chain, score: this.runScore, stop: this.runStop, pinch: this.runPinch });
     this.chain = 1;
   }
 

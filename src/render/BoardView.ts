@@ -1,7 +1,7 @@
 import Phaser from "phaser";
 import { t } from "./i18n";
 import { Board, COLS, EMPTY, ROWS, TIMING, TOTAL_ROWS, isPanel, type BoardEvent } from "../core";
-import { BOARD_BG, BOARD_H, BOARD_W, CARD, CELL, FONT_UI, GARBAGE_COLOR, KIND_COLORS, TEXT_COLOR, TEXT_DIM, chainColor, isTouchDevice } from "./theme";
+import { BOARD_BG, BOARD_H, BOARD_W, CARD, CELL, FONT_UI, GARBAGE_COLOR, KIND_COLORS, STOP_COLORS, TEXT_COLOR, TEXT_DIM, chainColor, isTouchDevice, stopSeconds } from "./theme";
 import { CURSOR_PAD, css, garbageFrame, roundRect, tint } from "./textures";
 import { Button, gradientFill } from "./ui";
 import { audio } from "./shared";
@@ -119,8 +119,23 @@ export class BoardView {
   private readonly overlayBody: Phaser.GameObjects.Text;
   /** 結果の本文の下敷き */
   private readonly overlayPlate: Phaser.GameObjects.Graphics;
-  /** 停止時間のゲージ。盤面の下の縁に沿って光る */
+  /** 停止時間のゲージ。せり上げバーのない盤面（CPU）だけ、盤面の下の縁に沿って光る線で出す */
   private readonly stopBar: Phaser.GameObjects.Graphics;
+  /**
+   * 停止時間をせり上げバー（RaiseBar の STOP ゲージ）で見せるか。GameScene・OnlineScene が、バーを出す盤面で true にする。
+   * true の盤面は下の縁の細い線を描かない
+   */
+  stopOnBar = false;
+  /**
+   * 連鎖の終わりに締めの表示（5 CHAIN / +440 / STOP 10s / PINCH ×2）を出すか。遊ぶ人の盤面だけ true にする。
+   * CPU や通信の相手の盤面は小さく描かれることがあり、自分の盤面から目を離せない場面で読ませる意味がないので出さない。
+   * パズルとレッスンは得点も停止も使わないので出さない
+   */
+  chainSummary = false;
+  /** 表示中の締めの表示。次の連鎖が先に終わったら消して出し直す */
+  private summary: Phaser.GameObjects.Container | null = null;
+  /** 直近の締めの表示の中身（1 行ずつ）と範囲（盤面の局所座標）。e2e が読む */
+  lastSummary: { lines: string[]; x: number; y: number; width: number; height: number } | null = null;
   private readonly sparks: Phaser.GameObjects.Particles.ParticleEmitter;
   /** 消えたパネルの破片。柄ごとに 1 つ */
   private readonly emitters: Phaser.GameObjects.Particles.ParticleEmitter[] = [];
@@ -539,6 +554,7 @@ export class BoardView {
           break;
         case "chainEnd":
           if (soundOn && e.chain >= 2) audio.chainEnd(e.chain);
+          if (this.chainSummary && !this.style && e.chain >= 2) this.showSummary(e);
           break;
         case "land":
           if (soundOn) audio.land();
@@ -693,6 +709,87 @@ export class BoardView {
       onComplete: () => targets.forEach((o) => o.destroy()),
     });
   }
+  /**
+   * 連鎖の締め。連鎖が終わった瞬間に、その連鎖で得たもの（連鎖数・得点の合計・せり上がりの停止）を盤面の上寄りに 1 秒弱出す。
+   * 連鎖の吹き出しは「何連鎖目か」しか言わないので、終わりに「それで何が得られたか」をまとめて見せる。
+   * 危険な状態で消して停止が 2 倍になったら「PINCH ×2」を添える。吹き出しと同じ濃紺の板に連鎖の色の縁、数字はグラデーション
+   */
+  private showSummary(e: { chain: number; score: number; stop: number; pinch: boolean }): void {
+    this.summary?.destroy();
+    const color = chainColor(e.chain);
+    const stopColor = e.pinch ? STOP_COLORS.pinch : STOP_COLORS.normal;
+    const head = this.scene.add
+      .text(0, 0, `${e.chain} CHAIN`, { fontFamily: FONT_UI, fontSize: `${Math.round(24 * Math.min(1.3, chainPopupScale(e.chain)))}px`, fontStyle: "700", color, stroke: HUD_INK, strokeThickness: 7 })
+      .setShadow(0, 3, "rgba(0, 0, 0, 0.4)", 4, true, false)
+      .setOrigin(0.5, 0);
+    gradientFill(head, "#ffffff", color);
+    const small = (text: string, fill: string): Phaser.GameObjects.Text =>
+      this.scene.add
+        .text(0, 0, text, { fontFamily: FONT_UI, fontSize: "17px", fontStyle: "700", color: fill, stroke: HUD_INK, strokeThickness: 5 })
+        .setOrigin(0, 0);
+    const score = small(`+${e.score}`, "#ffe066");
+    const stop = small(`STOP ${stopSeconds(e.stop)}`, stopColor.text);
+    const pinch = e.pinch
+      ? this.scene.add
+          .text(0, 0, "PINCH ×2", { fontFamily: FONT_UI, fontSize: "13px", fontStyle: "700", color: "#ffffff", stroke: HUD_INK, strokeThickness: 4 })
+          .setOrigin(0.5, 0)
+      : null;
+    // 並べ方: 1 行目に連鎖数、2 行目に得点と停止を左右に、2 倍なら 3 行目に赤い札で PINCH ×2
+    const gap = 12;
+    const rowW = score.width + gap + stop.width;
+    const padX = 12;
+    const padY = 6;
+    const w = Math.min(BOARD_W - 8, Math.max(head.width, rowW, pinch ? pinch.width + 16 : 0) + padX * 2);
+    let y = padY;
+    head.setPosition(0, y);
+    y += head.height - 6;
+    score.setPosition(-rowW / 2, y);
+    stop.setPosition(-rowW / 2 + score.width + gap, y);
+    y += score.height;
+    const pill = this.scene.add.graphics();
+    if (pinch) {
+      y += 3;
+      const pw = pinch.width + 16;
+      const ph = pinch.height + 2;
+      pill.fillStyle(stopColor.fill, 0.95);
+      pill.fillRoundedRect(-pw / 2, y, pw, ph, ph / 2);
+      pill.lineStyle(1.5, stopColor.light, 1);
+      pill.strokeRoundedRect(-pw / 2, y, pw, ph, ph / 2);
+      pinch.setPosition(0, y + 1);
+      y += ph;
+    }
+    const h = y + padY;
+    const plate = this.scene.add.graphics();
+    plate.fillStyle(PLATE, 0.78);
+    plate.fillRoundedRect(-w / 2, 0, w, h, 12);
+    plate.lineStyle(2, Phaser.Display.Color.HexStringToColor(color).color, 0.95);
+    plate.strokeRoundedRect(-w / 2, 0, w, h, 12);
+    // 盤面の上寄り（上から 3 分の 1 ほど）。予告おじゃまの列（上端）と、相手の大きな連鎖の知らせ（上から 2 段目）の下
+    const top = Math.round(BOARD_H * 0.3);
+    const box = this.scene.add.container(BOARD_W / 2, top + h / 2).setAlpha(0).setScale(1.5);
+    // 弾むときに中心から広がるよう、中身を箱の中心基準に置き直す
+    const parts: (Phaser.GameObjects.Graphics | Phaser.GameObjects.Text)[] = [plate, pill, head, score, stop, ...(pinch ? [pinch] : [])];
+    parts.forEach((p) => (p.y -= h / 2));
+    box.add(parts);
+    this.root.add(box);
+    this.summary = box;
+    this.lastSummary = { lines: [head.text, `${score.text}  ${stop.text}`, ...(pinch ? [pinch.text] : [])], x: BOARD_W / 2 - w / 2, y: top, width: w, height: h };
+    // 大きく弾んで出て、0.55 秒とどまり、浮きながら消える（合わせて約 0.95 秒）
+    this.scene.tweens.add({ targets: box, scale: 1, alpha: 1, duration: 180, ease: "Back.Out", easeParams: [2] });
+    this.scene.tweens.add({
+      targets: box,
+      y: box.y - 16,
+      alpha: 0,
+      delay: 730,
+      duration: 240,
+      ease: "Quad.In",
+      onComplete: () => {
+        box.destroy();
+        if (this.summary === box) this.summary = null;
+      },
+    });
+  }
+
   /** 直近の吹き出しの範囲（盤面の局所座標）と数字の大きさ。e2e が盤面の中に収まることを確かめる */
   lastPopup: { x: number; y: number; width: number; height: number; size: number; plateAlpha: number } | null = null;
 
@@ -882,13 +979,15 @@ export class BoardView {
     stats.push({ caption: "MAX", value: `x${b.maxChain}` });
     this.setStats(stats);
 
-    // 停止時間のゲージ。盤面の下の縁の上に、水色の光る線で残りを示す
-    const stopW = Math.min(1, b.stopTimer / TIMING.stopMax) * (BOARD_W - 8);
+    // 停止時間のゲージ。せり上げバーのない盤面（CPU）は、盤面の下の縁の上に光る線で残りを示す（危険で 2 倍なら赤）。
+    // 遊ぶ人の盤面はせり上げバーが STOP と残りの秒数のゲージに切り替わる
+    const stopW = this.stopOnBar ? 0 : Math.min(1, b.stopTimer / TIMING.stopMax) * (BOARD_W - 8);
     this.stopBar.clear();
     if (stopW > 0) {
-      this.stopBar.fillStyle(0x66ccff, 0.35);
+      const c = b.stopPinch ? STOP_COLORS.pinch : STOP_COLORS.normal;
+      this.stopBar.fillStyle(c.fill, 0.35);
       this.stopBar.fillRoundedRect(4, BOARD_H + 2, stopW, 6, 3);
-      this.stopBar.fillStyle(0xbfeeff, 1);
+      this.stopBar.fillStyle(c.light, 1);
       this.stopBar.fillRoundedRect(4, BOARD_H + 3.5, stopW, 3, 1.5);
     }
 

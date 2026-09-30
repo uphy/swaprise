@@ -42,6 +42,21 @@ export function chainColor(chain: number): string {
   return "#7cf57a";
 }
 
+/**
+ * 停止時間（せり上がりが止まっている間）の色。ふだんは水色、危険な状態で消して 2 倍になったときは赤。
+ * fill はゲージの地、light はゲージの光と縁、text は数字の色
+ */
+export const STOP_COLORS = {
+  normal: { fill: 0x3fb4f0, light: 0xbfeeff, text: "#8fdcff" },
+  pinch: { fill: 0xff5c6c, light: 0xffc2c8, text: "#ff8a94" },
+} as const;
+
+/** 停止の秒数の文字。整数の秒はそのまま（10s）、端数は小数 1 桁（1.3s） */
+export function stopSeconds(frames: number): string {
+  const s = frames / 60;
+  return Number.isInteger(s) ? `${s}s` : `${s.toFixed(1)}s`;
+}
+
 export interface Layout {
   width: number;
   height: number;
