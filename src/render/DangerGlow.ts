@@ -6,6 +6,11 @@ import { dangerColumns, musicDanger } from "./musicDanger";
 import { DPR } from "./hidpi";
 import { roundRect } from "./textures";
 
+/** 外側の赤い光が、枠の外形から外へ届く距離（px） */
+const OUTLINE_REACH = 28;
+/** 光の穴を枠の外形より内側へ寄せる幅（px）。枠の縁の下に隠し、境目に隙間を出さない */
+const OUTLINE_INSET = 3;
+
 /** 盤面の枠の形。BoardView の縁の幅と丸み（枠の赤みを縁にぴったり重ねる） */
 export interface FrameShape {
   pad: number;
@@ -32,20 +37,37 @@ export class DangerGlow {
   private level = 0;
   private ceilingLevel = 0;
 
+  /** 枠の形。e2e が光の形と枠の形の対応を確かめる */
+  readonly frame: FrameShape;
+
   constructor(scene: Phaser.Scene, frame: FrameShape) {
-    // 上辺・左右・上隅を一枚で描く。矩形からの距離を使い、角でも辺と同じ赤みにする。
+    this.frame = frame;
+    // 上辺・左右・上隅を一枚で描く。枠と同じ角丸の形からの距離で濃さを決め、角でも辺と同じ赤みにする。
+    // 以前は角の四角い矩形からの距離にしていたので、丸い枠の角と光の四角い穴の間に隙間ができ、背景の青が透けていた。
+    // 光の穴は枠の外形より少し内側（OUTLINE_INSET）にして、枠の縁の下に隠す
+    const margin = frame.pad - OUTLINE_INSET + OUTLINE_REACH;
     if (!scene.textures.exists("danger-outline")) {
-      const width = BOARD_W + 64;
-      const height = BOARD_H + 36;
+      const width = BOARD_W + margin * 2;
+      const height = margin + BOARD_H + frame.pad;
       const texture = scene.textures.createCanvas("danger-outline", width, height);
       if (texture) {
+        const edge = frame.pad - OUTLINE_INSET;
+        const r = Math.max(0, frame.radius - OUTLINE_INSET);
+        // 角の丸みの中心（盤面の座標）。下は盤面の下端より先まで伸ばすので、下の角は考えない
+        const cx0 = -edge + r;
+        const cx1 = BOARD_W + edge - r;
+        const cy0 = -edge + r;
         const pixels = texture.context.createImageData(width, height);
         for (let y = 0; y < height; y++) {
           for (let x = 0; x < width; x++) {
-            const distance = Math.max(28 - (x + 0.5), x + 0.5 - (width - 28), 28 - (y + 0.5));
-            if (distance <= 0 || distance >= 28) continue;
+            const bx = x + 0.5 - margin;
+            const by = y + 0.5 - margin;
+            const qx = Math.max(cx0 - bx, bx - cx1);
+            const qy = cy0 - by;
+            const distance = Math.hypot(Math.max(qx, 0), Math.max(qy, 0)) + Math.min(Math.max(qx, qy), 0) - r;
+            if (distance <= 0 || distance >= OUTLINE_REACH) continue;
             const offset = (y * width + x) * 4;
-            pixels.data.set([255, 64, 99, Math.round(255 * Math.pow(1 - distance / 28, 2.5))], offset);
+            pixels.data.set([255, 64, 99, Math.round(255 * Math.pow(1 - distance / OUTLINE_REACH, 2.5))], offset);
           }
         }
         texture.context.putImageData(pixels, 0, 0);
@@ -67,7 +89,7 @@ export class DangerGlow {
       }
     }
     this.root = scene.add.container(0, 0).setVisible(false);
-    this.outline = scene.add.image(-32, -32, "danger-outline").setOrigin(0);
+    this.outline = scene.add.image(-margin, -margin, "danger-outline").setOrigin(0);
     this.top = scene.add.image(-4, -32, "danger-edge-y").setOrigin(0).setDisplaySize(BOARD_W + 8, 28);
     this.ceiling = scene.add.rectangle(-4, -5, BOARD_W + 8, 3, 0xff8c9e).setOrigin(0).setAlpha(0);
     this.root.add([this.outline, this.top, this.ceiling]);

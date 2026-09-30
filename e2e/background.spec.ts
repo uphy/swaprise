@@ -140,21 +140,37 @@ test("落下中のおじゃまが天井を通過しただけでは外周の警�
   expect(visible).toEqual([false]);
 });
 
-test("ピンチの赤い光が左右の上隅まで途切れずにつながる", async ({ page }) => {
+test("ピンチの赤い光が枠の丸い角に沿ってつながり、角と光の間に隙間を出さない", async ({ page }) => {
   await start(page, "endless");
   const alpha = await page.evaluate(() => {
     const scene = (window as any).__swaprise.scene;
+    const glow = scene.views[0].dangerGlow;
     const texture = scene.textures.get("danger-outline").getSourceImage();
-    if (!(texture instanceof HTMLCanvasElement)) return null;
+    if (!(texture instanceof HTMLCanvasElement) || !glow) return null;
     const context = texture.getContext("2d")!;
-    const at = (x: number, y: number) => context.getImageData(x, y, 1, 1).data[3];
-    // 上辺・左右の上隅を、枠から同じ距離で比較する。
-    return { top: at(128, 24), left: at(24, 24), right: at(texture.width - 25, 24), inside: at(128, 80) };
+    // 盤面の座標で指定し、光の画像の座標に直して読む
+    const margin = -glow.outline.x;
+    const boardW = texture.width - margin * 2;
+    const at = (bx: number, by: number) => context.getImageData(Math.floor(bx + margin), Math.floor(by + margin), 1, 1).data[3];
+    // 枠の縁の幅と角の丸み（BoardView の FRAME_PAD・FRAME_RADIUS）
+    const { pad, radius } = glow.frame ?? { pad: 7, radius: 15 };
+    // 枠の左上・右上の角の丸みの中心と、そこから斜め外への点
+    const diag = (cx: number, sx: number, distance: number) => at(cx + sx * distance / Math.SQRT2, -pad + radius - distance / Math.SQRT2);
+    return {
+      // 枠の外形から 6px 外の点を、上辺と左右の上隅で比べる
+      top: at(boardW / 2, -pad - 6),
+      left: diag(-pad + radius, -1, radius + 6),
+      right: diag(boardW + pad - radius, 1, radius + 6),
+      // 丸い枠の角のすぐ外（以前は四角い光の穴の内側で透明になり、背景の青が透けていた）
+      gap: diag(-pad + radius, -1, radius + 1),
+      inside: at(boardW / 2, 40),
+    };
   });
   expect(alpha).not.toBeNull();
   expect(alpha!.top).toBeGreaterThan(100);
-  expect(alpha!.left).toBe(alpha!.top);
-  expect(alpha!.right).toBe(alpha!.top);
+  expect(Math.abs(alpha!.left - alpha!.top)).toBeLessThanOrEqual(8);
+  expect(Math.abs(alpha!.right - alpha!.top)).toBeLessThanOrEqual(8);
+  expect(alpha!.gap).toBeGreaterThan(150);
   expect(alpha!.inside).toBe(0);
 });
 
