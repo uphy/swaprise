@@ -24,7 +24,9 @@ async function tickUntilFinished(page: Page, max = 3000): Promise<void> {
 }
 
 // 同梱の Fredoka は I と V の組を詰めすぎ、canvas の「ACTIVE CHAIN」が「ACTME CHAIN」に読めた。Fredoka の大文字だけの行はカーニングを切って描く。
-// 小文字の説明文まで切ると字間が広がって行数が増えたので、説明文は通常のカーニングのまま
+// 小文字の説明文まで切ると字間が広がって行数が増えたので、説明文は通常のカーニングのまま。
+// 行数は環境の字幅で変わる（Linux の Chromium は字幅を丸めて広く測り、通常のカーニングでも 320×568 で 5 行になる）ので、行数ではなく字幅で確かめる。
+// 説明の最後の行が画面に収まることは、下の背の低い縦持ちのテストで確かめる
 test("レッスン 5: ACTIVE CHAIN の見出しはカーニングなし、小文字の説明文は通常のカーニングで描く", async ({ page }) => {
   await openLesson(page, 5);
   await page.waitForFunction(() => (window as any).__swaprise.scene.children.list.some((o: any) => o.type === "Text" && o.text.includes("ACTIVE CHAIN")));
@@ -46,18 +48,6 @@ test("レッスン 5: ACTIVE CHAIN の見出しはカーニングなし、小文
   expect(widths.titleText).toBe(widths.titleNone);
   expect(widths.bodyNone).not.toBe(widths.bodyNormal);
   expect(widths.bodyText).toBe(widths.bodyNormal);
-});
-
-// canvas の Fredoka の文字すべてでカーニングを切ったら、320×568 の英語でレッスン 3・5 の説明が 4 行から 5 行に増え、最後の行が画面の下に切れた
-test.describe("iPhone SE・英語", () => {
-  test.use({ viewport: { width: 320, height: 568 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, locale: "en-US" });
-  for (const n of [3, 5]) {
-    test(`レッスン ${n}: 小文字の説明文の字間が広がらず、見出しと合わせて 4 行に収まる`, async ({ page }) => {
-      await openLesson(page, n);
-      const lines = await page.evaluate(() => (window as any).__swaprise.scene.children.getByName("lesson-text").getWrappedText().length);
-      expect(lines).toBe(4);
-    });
-  }
 });
 
 test("レッスン 1: 説明と課の名前を出し、せり上がりもバーもなく、3 枚消すと NICE! になって記録が残り、NEXT LESSON で次の課へ", async ({ page }) => {

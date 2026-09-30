@@ -131,6 +131,13 @@
 @media (min-height: 750px) { .score-screen { padding-top: max(40px, env(safe-area-inset-top)); } }
 @media (max-height: 480px) { .score-screen { padding-top: max(8px, env(safe-area-inset-top)); } .score-screen header { padding-bottom: 8px; } .score-screen header small { display: none; } .score-dialog h2 { margin: 0; } .score-footer { padding-top: 8px; } }
 @media (max-height: 480px) and (min-width: 700px) { .score-tools { display: flex; gap: 12px; } .score-tools nav { flex: 1; min-width: 0; } }
+/* 横持ちの背の低い画面では、公開の問いのボタンの文字を折らず、2 つのボタンは広いほうの幅に揃え、残りの幅を問いに回す（足りなければ問いが 2 行になる）。
+   文字の幅は環境で数 px 違い、問いが 7px 広いだけで KEEP PRIVATE が 2 行に折れて枠が 30px 高くなり、公開のボタンが帯の下に掛かった */
+@media (max-height: 420px) and (orientation: landscape) {
+  .score-dialog .result-consent-ask h3 { flex: 1 1 0; min-width: 0; }
+  .score-dialog .result-consent-ask nav { flex: none; display: grid; grid-template-columns: 1fr 1fr; }
+  .score-result .result-consent-ask nav button { white-space: nowrap; }
+}
 
 /* 記録。切り替えは段組みのタブ、中身はモードごとの札。得点を大きく、順位・連鎖・日付を列で揃える。
    大きさは em で書き、スマホでは根元の文字を画面の短辺に合わせて大きくする（ゲーム画面の文字と同じくらいに見えるように） */
