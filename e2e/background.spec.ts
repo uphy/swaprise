@@ -140,7 +140,7 @@ test("落下中のおじゃまが天井を通過しただけでは外周の警�
   expect(visible).toEqual([false]);
 });
 
-test("ピンチの赤い光が枠の丸い角に沿ってつながり、角と光の間に隙間を出さない", async ({ page }) => {
+test("ピンチの赤い光が枠の丸い角に沿って一周し、角と光の間に隙間を出さず、下辺は上辺より淡い", async ({ page }) => {
   await start(page, "endless");
   const alpha = await page.evaluate(() => {
     const scene = (window as any).__swaprise.scene;
@@ -164,6 +164,9 @@ test("ピンチの赤い光が枠の丸い角に沿ってつながり、角と�
       // 丸い枠の角のすぐ外（以前は四角い光の穴の内側で透明になり、背景の青が透けていた）
       gap: diag(-pad + radius, -1, radius + 1),
       inside: at(boardW / 2, 40),
+      // 下辺と左下の角も、枠の外形から 6px 外（以前は光が下端で水平に途切れ、下には無かった）
+      bottom: at(boardW / 2, texture.height - margin * 2 + pad + 6),
+      bottomLeft: at(-pad + radius - (radius + 6) / Math.SQRT2, texture.height - margin * 2 + pad - radius + (radius + 6) / Math.SQRT2),
     };
   });
   expect(alpha).not.toBeNull();
@@ -172,6 +175,10 @@ test("ピンチの赤い光が枠の丸い角に沿ってつながり、角と�
   expect(Math.abs(alpha!.right - alpha!.top)).toBeLessThanOrEqual(8);
   expect(alpha!.gap).toBeGreaterThan(150);
   expect(alpha!.inside).toBe(0);
+  // 下辺も下の角まで途切れずに回るが、上辺より淡い（危険は上から来るので上を強くする）
+  expect(alpha!.bottom).toBeGreaterThan(10);
+  expect(alpha!.bottom).toBeLessThan(alpha!.top * 0.5);
+  expect(Math.abs(alpha!.bottomLeft - alpha!.bottom)).toBeLessThanOrEqual(8);
 });
 
 test("CPU戦の空色は自分の積み上がりに応じて変わり、復帰とポーズに追従する", async ({ page }) => {

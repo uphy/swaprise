@@ -10,6 +10,8 @@ import { roundRect } from "./textures";
 const OUTLINE_REACH = 28;
 /** 光の穴を枠の外形より内側へ寄せる幅（px）。枠の縁の下に隠し、境目に隙間を出さない */
 const OUTLINE_INSET = 3;
+/** 下辺の光の強さ（上辺を 1 とした割合）。下の角まで回り込ませつつ、目は上の危険に向ける */
+const OUTLINE_BOTTOM = 0.25;
 
 /** 盤面の枠の形。BoardView の縁の幅と丸み（枠の赤みを縁にぴったり重ねる） */
 export interface FrameShape {
@@ -44,32 +46,37 @@ export class DangerGlow {
 
   constructor(scene: Phaser.Scene, frame: FrameShape) {
     this.frame = frame;
-    // 上辺・左右・上隅を一枚で描く。枠と同じ角丸の形からの距離で濃さを決め、角でも辺と同じ赤みにする。
+    // 枠の外周を一周する光を一枚で描く。枠と同じ角丸の形からの距離で濃さを決め、角でも辺と同じ赤みにする。
     // 以前は角の四角い矩形からの距離にしていたので、丸い枠の角と光の四角い穴の間に隙間ができ、背景の青が透けていた。
-    // 光の穴は枠の外形より少し内側（OUTLINE_INSET）にして、枠の縁の下に隠す
+    // 光の穴は枠の外形より少し内側（OUTLINE_INSET）にして、枠の縁の下に隠す。
+    // 危険は上から来るので、上辺を最も強くし、下へいくほど弱めて下辺は淡く回す（以前は下辺に光がなく、左右の光が下端で水平に途切れていた）
     const margin = frame.pad - OUTLINE_INSET + OUTLINE_REACH;
     if (!scene.textures.exists("danger-outline")) {
       const width = BOARD_W + margin * 2;
-      const height = margin + BOARD_H + frame.pad;
+      const height = BOARD_H + margin * 2;
       const texture = scene.textures.createCanvas("danger-outline", width, height);
       if (texture) {
         const edge = frame.pad - OUTLINE_INSET;
         const r = Math.max(0, frame.radius - OUTLINE_INSET);
-        // 角の丸みの中心（盤面の座標）。下は盤面の下端より先まで伸ばすので、下の角は考えない
+        // 角の丸みの中心（盤面の座標）
         const cx0 = -edge + r;
         const cx1 = BOARD_W + edge - r;
         const cy0 = -edge + r;
+        const cy1 = BOARD_H + edge - r;
         const pixels = texture.context.createImageData(width, height);
         for (let y = 0; y < height; y++) {
           for (let x = 0; x < width; x++) {
             const bx = x + 0.5 - margin;
             const by = y + 0.5 - margin;
             const qx = Math.max(cx0 - bx, bx - cx1);
-            const qy = cy0 - by;
+            const qy = Math.max(cy0 - by, by - cy1);
             const distance = Math.hypot(Math.max(qx, 0), Math.max(qy, 0)) + Math.min(Math.max(qx, qy), 0) - r;
             if (distance <= 0 || distance >= OUTLINE_REACH) continue;
+            // 上端で 1、下端で OUTLINE_BOTTOM の重み。途中はなめらかに下げる
+            const t = Math.min(1, Math.max(0, by / BOARD_H));
+            const weight = 1 - (1 - OUTLINE_BOTTOM) * t * t * (3 - 2 * t);
             const offset = (y * width + x) * 4;
-            pixels.data.set([255, 64, 99, Math.round(255 * Math.pow(1 - distance / OUTLINE_REACH, 2.5))], offset);
+            pixels.data.set([255, 64, 99, Math.round(255 * weight * Math.pow(1 - distance / OUTLINE_REACH, 2.5))], offset);
           }
         }
         texture.context.putImageData(pixels, 0, 0);
