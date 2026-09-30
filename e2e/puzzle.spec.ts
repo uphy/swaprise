@@ -249,3 +249,42 @@ test("パズル: 手数を使い切って FAILED になっても UNDO で 1 手�
   await playSolution(page);
   await page.waitForFunction(() => (window as any).__swaprise.game.puzzleResult === "clear", null, { timeout: 15_000 });
 });
+
+test("メニュー: 面選びを開いている間は後ろのメニュー（題字・カード・下段）を隠し、閉じたときと遊んで戻ったときは出す", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/?bgm=0&opening=0");
+  await page.waitForFunction(() => (window as any).__swapriseScenes?.menu?.cards?.length);
+  await page.waitForTimeout(200);
+  const state = () => page.evaluate(() => {
+    const scene = (window as any).__swapriseScenes.menu;
+    const shown = (o: any) => o.visible;
+    const menu = [...(scene.title?.layers ?? []), ...scene.cards.flatMap((c: any) => c.objects), ...scene.tools, ...scene.footer];
+    const panel = scene.children.getByName("puzzle-picker");
+    return {
+      open: Boolean(panel),
+      menuVisible: menu.filter(shown).length,
+      menuTotal: menu.length,
+    };
+  });
+  const before = await state();
+  expect(before.menuVisible).toBe(before.menuTotal);
+  await page.evaluate(() => (window as any).__swapriseScenes.menu.showPuzzlePicker());
+  const open = await state();
+  expect(open.open).toBe(true);
+  expect(open.menuVisible).toBe(0);
+  await page.keyboard.press("Escape");
+  await page.waitForTimeout(100);
+  const closed = await state();
+  expect(closed.open).toBe(false);
+  expect(closed.menuVisible).toBe(closed.menuTotal);
+  // 面選びから遊び始め、メニューへ戻ったときもメニューが出ている
+  await page.evaluate(() => (window as any).__swapriseScenes.menu.showPuzzlePicker());
+  await page.keyboard.press("Enter");
+  await page.waitForFunction(() => (window as any).__swaprise?.game?.mode === "puzzle");
+  await page.evaluate(() => (window as any).__swaprise.scene.toMenu());
+  await page.waitForFunction(() => (window as any).__swapriseScenes.menu.scene.isActive() && (window as any).__swapriseScenes.menu.cards.length);
+  await page.waitForTimeout(200);
+  const back = await state();
+  expect(back.open).toBe(false);
+  expect(back.menuVisible).toBe(back.menuTotal);
+});

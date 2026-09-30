@@ -175,6 +175,8 @@ export class MenuScene extends Phaser.Scene {
     this.tools = [];
     this.picker = null;
     this.overlay = null;
+    // 面選びから遊び始めると、隠したメニューのまま Scene が使い回される。戻ってきたら出す
+    this.menuShown = true;
     this.toolIndex = -1;
     // 遊んでいる間に新版が見つかっていたら、メニューへ戻ったこのタイミングで切り替える（まもなく reload される）
     if (applyPendingUpdate()) return;
@@ -727,6 +729,8 @@ export class MenuScene extends Phaser.Scene {
     let first = 0;
     while (first < PUZZLES.length - 1 && cleared.has(first)) first++;
     const state = { stage: Math.floor(first / PUZZLES_PER_STAGE), face: first % PUZZLES_PER_STAGE };
+    // 後ろのメニューの文字が暗幕から透けて読めていたので、開いている間はメニューを隠す（記録・設定の板と同じ）
+    this.setMenuShown(false);
     const dim = this.add.rectangle(0, 0, W, H, 0x1a1030, 0.9).setOrigin(0).setInteractive();
     const panel = this.add.container(0, 0, [dim]).setDepth(50).setName("puzzle-picker");
     const compact = H < 560;
@@ -836,6 +840,7 @@ export class MenuScene extends Phaser.Scene {
   private closePicker(): void {
     this.picker?.panel.destroy();
     this.picker = null;
+    this.setMenuShown(true);
   }
 
   private startPuzzle(stage: number): void {
