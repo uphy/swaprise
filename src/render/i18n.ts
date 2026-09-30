@@ -57,7 +57,7 @@ const JA: Record<string, string> = {
   "PUZZLE {name}   {moves} MOVES": "パズル {name}   {moves}手", "   CLEARED": "   クリア済み",
   PAUSE: "ポーズ", RESUME: "再開", RESTART: "最初から", MENU: "メニュー", RETRY: "リトライ", SHARE: "共有",
   COPIED: "コピーしました", "SHARE FAILED": "共有に失敗", "NEXT  {name}": "次へ  {name}",
-  CLEAR: "クリア", FAILED: "失敗", "{name} CLEAR  {face}/{total}": "{name} クリア  {face}/{total}", "{count} PANELS LEFT": "残りパネル {count}",
+  CLEAR: "クリア", FAILED: "失敗", "{name} CLEAR  {face}/{total}": "{name} クリア  {face}/{total}", "CLEAR ALL PANELS IN 1 MOVE": "1手ですべてのパネルを消そう", "CLEAR ALL PANELS IN {moves} MOVES": "{moves}手ですべてのパネルを消そう", "{count} PANELS LEFT": "残りパネル {count}",
   LEARN: "レッスン", "endless · time attack · puzzle · learn": "エンドレス・タイムアタック・パズル・レッスン",
   "{count} / {total} LESSONS": "{count} / {total} レッスン", "all {total} lessons done": "全 {total} レッスンを終えました",
   "LESSON {n} / {total}": "レッスン {n} / {total}", "The board changed. RESET puts it back.": "盤面が変わりました。RESET で最初の形に戻します。", "The board reached the top. Try again and make a 2-chain.": "天井に届きました。もう一度、2連鎖を作りましょう。", RESET: "リセット", "NICE!": "できた！", "NEXT LESSON": "次へ", "PLAY ENDLESS": "エンドレスで遊ぶ",

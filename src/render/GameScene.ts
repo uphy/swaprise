@@ -59,6 +59,9 @@ export interface GameStart {
   lesson?: number;
 }
 
+/** 目標（「1 手で全部消す」）を盤面に出す面の数。最初の段の 1〜3 面 */
+const PUZZLE_GOAL_STAGES = 3;
+
 export class GameScene extends Phaser.Scene {
   private game_!: Game;
   views: BoardView[] = [];
@@ -92,6 +95,8 @@ export class GameScene extends Phaser.Scene {
   private puzzleHintText: Phaser.GameObjects.Text | null = null;
   /** ヒントの段。0 は出していない。手を打つ・戻す・進めるで 0 に戻る */
   private puzzleHintLevel = 0;
+  /** 最初の数面だけ盤面の上のほうに出す目標（「1 手で全部消す」）。ほかの面とモードは null */
+  private puzzleGoal: Phaser.GameObjects.Text | null = null;
   /** 結果画面の部品。パズルで失敗から戻すときに片付ける */
   private resultButtons: Phaser.GameObjects.GameObject[] = [];
   private resultTimer: Phaser.Time.TimerEvent | null = null;
@@ -243,6 +248,7 @@ export class GameScene extends Phaser.Scene {
     this.puzzleButtons = null;
     this.puzzleHintText = null;
     this.puzzleHintLevel = 0;
+    this.puzzleGoal = null;
     this.resultButtons = [];
     this.resultTimer = null;
     this.resultPointer = null;
@@ -259,6 +265,18 @@ export class GameScene extends Phaser.Scene {
         .setDepth(5)
         .setVisible(false)
         .setName("puzzle-hint");
+      // 初めて遊ぶ人は何をすればクリアか分からないので、最初の数面だけ目標と手数を盤面の中の上（空いている段）に出す。
+      // 手数は面ごとの値から作る
+      if (this.stage < PUZZLE_GOAL_STAGES) {
+        const moves = PUZZLES[this.stage].moves;
+        const goal = moves === 1 ? t("CLEAR ALL PANELS IN 1 MOVE") : t("CLEAR ALL PANELS IN {moves} MOVES", { moves });
+        this.puzzleGoal = this.add
+          .text(0, 0, goal, { fontFamily: FONT_UI, fontSize: "16px", fontStyle: "700", color: TEXT_COLOR, align: "center", lineSpacing: 2, wordWrap: { width: BOARD_W - 24, useAdvancedWrap: true } })
+          .setShadow(0, 2, "#1c1238", 4, false, true)
+          .setOrigin(0.5, 0)
+          .setDepth(1)
+          .setName("puzzle-goal");
+      }
     }
 
     // 画面上のポーズボタン
@@ -545,6 +563,10 @@ export class GameScene extends Phaser.Scene {
 
     // パズルの 戻す・進める・ヒント は盤面の下の残り手数の行の下。横長の画面はヒント文を盤面の右に出す。
     // 横持ちのスマホはボタンも HUD の列（ポーズボタンの下）に縦に並べる
+    if (this.puzzleGoal) {
+      const v = this.views[0];
+      this.puzzleGoal.setScale(v.scale).setPosition(v.ox + (BOARD_W * v.scale) / 2, v.oy + 28 * v.scale);
+    }
     if (this.puzzleButtons && this.puzzleHintText) {
       const v = this.views[0];
       const { undo, redo, hint } = this.puzzleButtons;
@@ -916,6 +938,8 @@ export class GameScene extends Phaser.Scene {
       this.puzzleButtons.undo.setAlpha(settled && this.game_.puzzleMoves.length > 0 && this.game_.puzzleResult !== "clear" ? 1 : 0.4);
       this.puzzleButtons.redo.setAlpha(settled && !this.ended && this.game_.puzzleCanRedo ? 1 : 0.4);
       this.puzzleButtons.hint.setAlpha(settled && !this.ended ? 1 : 0.4);
+      // 結果を出している間は目標を隠す（失敗から手を戻したらまた出す）
+      this.puzzleGoal?.setVisible(!this.ended);
     }
     this.raiseHints.forEach((h, i) => {
       const b = this.game_.boards[i];

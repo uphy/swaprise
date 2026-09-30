@@ -298,3 +298,41 @@ test("メニュー: 面選びを開いている間は後ろのメニュー（題
   expect(back.open).toBe(false);
   expect(back.menuVisible).toBe(back.menuTotal);
 });
+
+test("パズル: 最初の段の 1〜3 面だけ、目標と手数を盤面に出す。クリアの結果を出したら隠す", async ({ page }) => {
+  const goal = () => page.evaluate(() => {
+    const p = (window as any).__swaprise;
+    const g = p.scene.children.getByName("puzzle-goal");
+    const v = p.scene.views[0];
+    return g ? { text: g.text, visible: g.visible, moves: p.game.puzzle.moves, inBoard: g.x > v.ox && g.x < v.ox + 192 * v.scale && g.y > v.oy && g.y < v.oy + 100 * v.scale } : null;
+  });
+  for (const stage of ["1-1", "1-2", "1-3"]) {
+    await page.goto(`/?mode=puzzle&stage=${stage}&bgm=0&countdown=0`);
+    await page.waitForFunction(() => (window as any).__swaprise?.game.boards[0].frame > 0);
+    const shown = await goal();
+    expect(shown).not.toBeNull();
+    // 手数は面ごとの値から作る
+    expect(shown!.text).toBe(shown!.moves === 1 ? "CLEAR ALL PANELS IN 1 MOVE" : `CLEAR ALL PANELS IN ${shown!.moves} MOVES`);
+    expect(shown!.visible).toBe(true);
+    expect(shown!.inBoard).toBe(true);
+  }
+  // 解くと結果の見出しと重ならないよう隠す
+  await playSolution(page);
+  await page.waitForFunction(() => (window as any).__swaprise.game.finished, null, { timeout: 15_000 });
+  await page.waitForFunction(() => (window as any).__swaprise.scene.ended);
+  await page.waitForTimeout(100);
+  expect((await goal())!.visible).toBe(false);
+  // 4 面目からは出さない
+  await page.goto("/?mode=puzzle&stage=1-4&bgm=0&countdown=0");
+  await page.waitForFunction(() => (window as any).__swaprise?.game.boards[0].frame > 0);
+  expect(await goal()).toBeNull();
+});
+
+test("パズル: 目標の文言は日本語でも出す", async ({ browser }) => {
+  const context = await browser.newContext({ locale: "ja-JP" });
+  const page = await context.newPage();
+  await page.goto("/?mode=puzzle&stage=1-1&bgm=0&countdown=0");
+  await page.waitForFunction(() => (window as any).__swaprise?.game.boards[0].frame > 0);
+  expect(await page.evaluate(() => (window as any).__swaprise.scene.children.getByName("puzzle-goal")?.text)).toBe("1手ですべてのパネルを消そう");
+  await context.close();
+});
