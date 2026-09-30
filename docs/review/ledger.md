@@ -194,13 +194,13 @@
 | F3 | ENDLESS の長さが腕前より時計で決まる。8秒で1上がる時間の上昇で全員が約310秒でレベル40に届き、`pnpm sim endless` で swiper 平均359秒・4,038点、CASUAL 455秒・8,658点、normal 452秒と差が小さい | 芯 | 中 | 自動で直す | 未着手 | | 案Aを採用。sim で前後を測る |
 | F4 | 記録ゼロで 1 PLAYER を開くと枠は ENDLESS、LEARN は4つのいちばん下。スマホの ENDLESS は操作の案内が出ず、タップでは入れ替わらない。PC の下端の案内に移動・入れ替え・せり上げのキーが無い。HOW TO PLAY にも LEARN への誘いがない | 芯 | 中 | 自動で直す | 未着手 | | 案Cを採用 |
 | F5 | LEARN 6課「RISING BOARD」は乱数の盤面で目標「自分で2連鎖」、枠もヒントもない。その盤面では1手で2連鎖になる手が0で、1〜5課で教えていない「準備の手」が要る | 芯 | 中 | 直さない | 閉じた | | ユーザーの判断（2026-09-30）。以後のレビューで蒸し返さない |
-| F6 | 天井に触れてから60フレーム（1.0秒）でゲームオーバーになり、粘りの駆け引きになりにくい。危険（高さ9以上）と天井接触の見た目がどちらも赤い枠で区別できない | 芯 | 中 | 自動で直す | 未着手 | | 案Cを採用。猶予の長さは sim で前後を測る |
-| U1 | 0点のプレイが「First record!」になり公開を聞かれ、RECORDS にも残る | 不具合・UI | 低 | 自動で直す | 修正済み | caabbae | 判定は0点だけ（入れ替え0回でもせり上がりで点が入るため）。動画 `/tmp/swaprise-core-feel-videos/U1.webm`。`core-feel-ui` の commit、core-feel へは F6 のあと cherry-pick |
-| U2 | RECORDS で得点の数字が MAX CHAIN より小さい | 不具合・UI | 低 | 自動で直す | 修正済み | fc90cac | 動画 `/tmp/swaprise-core-feel-videos/U2.webm`。`core-feel-ui` の commit、core-feel へは F6 のあと cherry-pick |
-| U3 | パズルの選択画面の後ろでメニューの文字が透けて読める | 不具合・UI | 低 | 自動で直す | 修正済み | c93cb0b | 暗幕を濃くする代わりに、面選びの間はメニューを隠す（記録・設定の板と同じ）。動画 `/tmp/swaprise-core-feel-videos/U3.webm`。`core-feel-ui` の commit、core-feel へは F6 のあと cherry-pick |
-| U4 | パズルのクリア画面の「MOVES LEFT 0」が常に0で、UNDO が押せそうなまま | 不具合・UI | 低 | 自動で直す | 修正済み | adec085 | 動画 `/tmp/swaprise-core-feel-videos/U4.webm`。`core-feel-ui` の commit、core-feel へは F6 のあと cherry-pick |
-| U5 | パズル中に目標が書かれていない | 不具合・UI | 低 | 自動で直す | 修正済み | 6997284 | 最初の段の1〜3面だけ。動画 `/tmp/swaprise-core-feel-videos/U5.webm`。`core-feel-ui` の commit、core-feel へは F6 のあと cherry-pick |
-| F7 | せり上がりの停止の残りが、連鎖の途中（消えている間、もともとせり上がらない時間）にも減る。連鎖が終わった時点の残りは 2連鎖で2秒のうち約0.1秒、3連鎖で3秒のうち約1.0秒、5連鎖で5秒のうち約3.5秒。F1 の締めが「STOP 3s」と出る瞬間にゲージはもう 0.5s 付近 | 芯 | 中 | 自動で直す | 未着手 | | F1 の修正中に見つかった。消去中は停止を減らさない（原作の挙動に合わせる）。バランスが変わるので sim で前後を測る |
+| F6 | 天井に触れてから60フレーム（1.0秒）でゲームオーバーになり、粘りの駆け引きになりにくい。危険（高さ9以上）と天井接触の見た目がどちらも赤い枠で区別できない | 芯 | 中 | 自動で直す | 修正済み | 97cf8be | 案C。猶予をレベル1で2秒からレベル50で1秒へ縮め、停止中と着地の揺れの間は数えない。天井に触れている間は猶予の残りの輪と速い明滅。動画 `F6.webm` |
+| U1 | 0点のプレイが「First record!」になり公開を聞かれ、RECORDS にも残る | 不具合・UI | 低 | 自動で直す | 修正済み | a325480 | 判定は0点だけ（入れ替え0回でもせり上がりで点が入るため）。動画 `/tmp/swaprise-core-feel-videos/U1.webm`。`core-feel-ui` から cherry-pick |
+| U2 | RECORDS で得点の数字が MAX CHAIN より小さい | 不具合・UI | 低 | 自動で直す | 修正済み | 6276b21 | 動画 `/tmp/swaprise-core-feel-videos/U2.webm`。`core-feel-ui` から cherry-pick |
+| U3 | パズルの選択画面の後ろでメニューの文字が透けて読める | 不具合・UI | 低 | 自動で直す | 修正済み | 9fac2b6 | 暗幕を濃くする代わりに、面選びの間はメニューを隠す（記録・設定の板と同じ）。動画 `/tmp/swaprise-core-feel-videos/U3.webm`。`core-feel-ui` から cherry-pick |
+| U4 | パズルのクリア画面の「MOVES LEFT 0」が常に0で、UNDO が押せそうなまま | 不具合・UI | 低 | 自動で直す | 修正済み | 6a1383f | 動画 `/tmp/swaprise-core-feel-videos/U4.webm`。`core-feel-ui` から cherry-pick |
+| U5 | パズル中に目標が書かれていない | 不具合・UI | 低 | 自動で直す | 修正済み | 5a89c6c | 最初の段の1〜3面だけ。動画 `/tmp/swaprise-core-feel-videos/U5.webm`。`core-feel-ui` から cherry-pick |
+| F7 | せり上がりの停止の残りが、連鎖の途中（消えている間、もともとせり上がらない時間）にも減る。連鎖が終わった時点の残りは 2連鎖で2秒のうち約0.1秒、3連鎖で3秒のうち約1.0秒、5連鎖で5秒のうち約3.5秒。F1 の締めが「STOP 3s」と出る瞬間にゲージはもう 0.5s 付近 | 芯 | 中 | 自動で直す | 修正済み | 79044bb | 消去中・変身中・連鎖の途中（段の間の落下を含む）は停止を減らさない。段の間の落下で止めるのは原作と違うが、締めの秒数とゲージを揃えるほうを採った。動画 `F7.webm` |
 | U6 | パズルの面選びの「1 MOVE / 2 MOVES」が日本語でも英語のまま（MenuScene が i18n を通していない） | 不具合・UI | 低 | 自動で直す | 未着手 | | U1〜U5 の修正中に見つかった。修正前から |
 | U7 | 共有カード（`src/ogp/spec.ts`）がパズルのクリアで、いつも0の残り手数を「0 MOVES LEFT」と出す | 不具合・UI | 低 | 自動で直す | 未着手 | | U4 と同じ問題が共有カードに残っている |
 
@@ -236,3 +236,6 @@
 - F1（387394b）: 連鎖の終わりに「5 CHAIN +730 STOP 10s」の締めを約0.95秒出し、停止中はせり上げバーを残り秒数のゲージにし、危険で2倍なら「PINCH ×2」と赤いゲージにした。遊ぶ人の盤面だけに出し、CPU・通信の相手は下枠の線のまま。確認: typecheck、unit 248件、`e2e/chain-summary.spec.ts`（新規3件）と周辺の spec。スクリーンショット `/tmp/swaprise-core-feel-videos/shots/F1-*`
 - 新しく出た指摘: F7（停止が連鎖の途中にも減る）。ほかに、停止中でも天井の猶予（60フレーム）が減り、危険な状態で10秒の停止を得ても天井に届いたままなら約1秒で負けることが分かった。F6 で合わせて扱う
 - U1〜U5（`core-feel-ui` の caabbae・fc90cac・c93cb0b・adec085・6997284）: 各件に e2e を足し、U1〜U4 は修正前のコードで落ちることを確かめた。スマホ縦 390×844・320×568、横 844×390、PC 1280×720 を英日で撮った（`/tmp/swaprise-core-feel-shots/U*/`）。新しく U6・U7（低）が見つかった
+- F7（79044bb）: sim（endless は seed 20、duel は 24 試合）の平均生存が CASUAL 452→482秒、SwipePlayer 390→436秒、normal 447→503秒、duel hard 同士 148→167秒。CASUAL と SwipePlayer の差は 62→46秒に縮んだ（なぞるだけでも偶然の連鎖や同時消しで同じように得をする）。F3 で合わせて見る。原作の再現実装（Panel Attack）では、消えている間は停止が減らない（確度は中〜高）
+- F6（97cf8be）: 猶予 120→60 フレーム（レベル1→50）。sim の平均は CASUAL 482→484秒、duel normal 同士 277→291秒（最短 128→185秒）、duel hard 同士 167→186秒、levels の CASUAL vs hard 76→91秒。ENDLESS は負けるのがレベル70前後なのでほぼ変わらない。e2e `e2e/ceiling-grace.spec.ts`。スクリーンショット `/tmp/swaprise-core-feel-videos/shots/F6-*`
+- 確認コマンド: 同じマシンで別の worktree の Playwright が走り load average が 25〜35 あり、unit の ai・puzzle が 5 秒の時間切れで落ちる。`--testTimeout=120000` で回すと全件通る
