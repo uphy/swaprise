@@ -1061,10 +1061,14 @@ export class GameScene extends Phaser.Scene {
       }
     } else if (this.mode === "endless" || this.mode === "timeattack") {
       const b = g.boards[0];
-      const progress = this.scoreRun ? recordProgress(this.mode, b.score, loadHighScores()[this.mode][0]?.score ?? null) : null;
-      const rank = recordScore(this.mode, b.score, b.maxChain, new Date(), b.stats.swaps);
+      // 0 点のプレイ（何も消さずに終わった回）は端末の記録にも公開の対象にもしない。
+      // 残すと「初めての記録！」と出て公開を聞かれ、RECORDS の上位にも 0 点の行が並んでいた。結果画面はふつうに出す
+      const counted = b.score > 0;
+      const run = counted ? this.scoreRun : null;
+      const progress = run ? recordProgress(this.mode, b.score, loadHighScores()[this.mode][0]?.score ?? null) : null;
+      const rank = counted ? recordScore(this.mode, b.score, b.maxChain, new Date(), b.stats.swaps) : 0;
       // 公開の可否をまだ決めていなければ結果画面で聞く。enqueueScore は公開オンのときだけ積む
-      const submission = this.scoreRun ? { ...this.scoreRun, mode: this.mode, score: b.score, maxChain: b.maxChain, frames: Math.min(b.frame, g.timeLimit ?? b.frame), swaps: b.stats.swaps } : null;
+      const submission = run ? { ...run, mode: this.mode, score: b.score, maxChain: b.maxChain, frames: Math.min(b.frame, g.timeLimit ?? b.frame), swaps: b.stats.swaps } : null;
       if (submission) enqueueScore(submission);
       const rankLine = rank === 1 ? t("NEW RECORD!") : rank > 0 ? t("RANK {rank}", { rank }) : "";
       const newRecord = rank === 1 && b.score > 0;
@@ -1093,7 +1097,7 @@ export class GameScene extends Phaser.Scene {
           this.views[0].hideOverlay();
           showScoreResult(this, {
             mode: this.mode as "endless" | "timeattack", title, score: b.score, chain: b.maxChain, combos: b.stats.combos, chains: b.stats.chains, swaps: b.stats.swaps,
-            progress, id: this.scoreRun?.id ?? null, submission, retry: () => this.restart(), menu: () => this.toMenu(), celebrate: newRecord,
+            progress, id: run?.id ?? null, submission, retry: () => this.restart(), menu: () => this.toMenu(), celebrate: newRecord,
             share: canShare() ? (button) => { void this.share({ setText: (text) => { button.textContent = text; } }); } : undefined,
           });
         };
