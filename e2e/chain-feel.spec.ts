@@ -177,6 +177,74 @@ test("揺れはパネル 1 枚の割合で決まり、DPR や画面の幅で変�
   }
 });
 
+/**
+ * 実際に連鎖させ、ゲームのループを止めて描画フレームを 1 つずつ（60Hz なら 1/60 秒ずつ）進め、各フレームで画面に出た盤面のずれを
+ * 連鎖の段ごとに集める。返す値はパネル 1 枚に対する割合（下・上・横それぞれの最大）
+ */
+async function framePeaks(page: Page, hz: number): Promise<Record<number, { down: number; up: number; side: number }>> {
+  await page.goto("/?mode=endless&seed=7&bgm=0&countdown=0");
+  await page.waitForFunction(() => (window as any).__swaprise?.game.boards[0].frame > 0);
+  return page.evaluate(
+    ([cols, hz]) => {
+      const p = (window as any).__swaprise;
+      const g = p.scene.game;
+      const v = p.scene.views[0];
+      const b = p.game.boards[0];
+      g.loop.sleep();
+      b.setColumns(cols);
+      b.riseProgress = 0;
+      b.stopTimer = 0;
+      b.cursor.x = 0;
+      b.cursor.y = 0;
+      const idle = { moveX: 0, moveY: 0, swap: false, raise: false };
+      p.tick(p.game.boards.map((_: unknown, i: number) => (i === 0 ? { ...idle, swap: true } : idle)));
+      v.lastShake = null;
+      const out: Record<number, { down: number; up: number; side: number }> = {};
+      let t = performance.now();
+      for (let f = 0; f < hz * 20; f++) {
+        t += 1000 / hz;
+        g.step(t, 1000 / hz);
+        const ls = v.lastShake;
+        if (!ls) continue;
+        const o = (out[ls.chain] ??= { down: 0, up: 0, side: 0 });
+        const off = v.shakeOffset;
+        o.down = Math.max(o.down, off.y / 32);
+        o.up = Math.max(o.up, -off.y / 32);
+        o.side = Math.max(o.side, Math.abs(off.x) / 32);
+        if (ls.chain === 5 && !v.shake) break;
+      }
+      return out;
+    },
+    [CHAINS[5], hz] as const,
+  );
+}
+
+test("画面の描画フレームで見ても、連鎖の揺れは 2・3・4・5 連鎖で段ごとにはっきり大きくなり、60Hz と 120Hz で大きさが変わらない (F2)", async ({ browser }) => {
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+  const page = await context.newPage();
+  const at60 = await framePeaks(page, 60);
+  const at120 = await framePeaks(page, 120);
+  const msg = JSON.stringify({ at60, at120 });
+  expect(Object.keys(at60).map(Number), msg).toEqual([2, 3, 4, 5]);
+  for (const peaks of [at60, at120]) {
+    // 下への山は段ごとに増え、3 連鎖は 2 連鎖よりはっきり大きい（縦持ちのパネル 41.6 CSS px で 3 連鎖 2.5 px・4 連鎖 3 px 以上）
+    expect(peaks[3].down, msg).toBeGreaterThan(peaks[2].down * 1.3);
+    expect(peaks[4].down, msg).toBeGreaterThan(peaks[3].down * 1.15);
+    expect(peaks[5].down, msg).toBeGreaterThan(peaks[4].down * 1.15);
+    expect(peaks[2].down, msg).toBeGreaterThan(0.04);
+    expect(peaks[3].down, msg).toBeGreaterThan(0.06);
+    expect(peaks[4].down, msg).toBeGreaterThan(0.072);
+    for (const c of [2, 3, 4, 5]) {
+      // 上は得点の板まで（パネルの 6.3%）の隙間に収める
+      expect(peaks[c].up, msg).toBeLessThanOrEqual(0.055 + 1e-6);
+      expect(peaks[c].down, msg).toBeLessThanOrEqual(0.17 + 1e-6);
+    }
+  }
+  // 描画のフレームレートが変わっても、画面に出る下への山はほとんど変わらない
+  for (const c of [2, 3, 4, 5]) expect(Math.abs(at120[c].down - at60[c].down) / at60[c].down, msg).toBeLessThan(0.05);
+  await context.close();
+});
+
 test("段階ごとに揺れの型・吹き出し・閃光・締めがはっきり変わり、揺れはパネルの 17% を超えない", async ({ page }) => {
   await page.goto("/?mode=endless&seed=7&bgm=0&countdown=0");
   await page.waitForFunction(() => (window as any).__swaprise?.game.boards[0].frame > 0);
@@ -189,7 +257,7 @@ test("段階ごとに揺れの型・吹き出し・閃光・締めがはっき�
       v.chainImpact(chain);
       const flash = v.boardFlash?.visible ? v.boardFlash.alpha : 0;
       let frames = 0;
-      // 4ms 刻みで進めて、揺れの山を測る（60fps の刻みでは周期 55ms の縦揺れの山を拾い損ねる）
+      // 4ms 刻みで進めて、揺れの山を測る
       while (v.shake && frames < 1000) {
         v.stepShake(4);
         frames++;
@@ -211,7 +279,6 @@ test("段階ごとに揺れの型・吹き出し・閃光・締めがはっき�
   expect(by(3).shake.peakX).toBe(0);
   expect(by(5).shake.peakX).toBeGreaterThan(0);
   // 大きさ（パネルに対する割合）は連鎖数で増え、上限 17% を超えない。よく出る 2〜4 連鎖でもスマホで見える大きさにする
-  // （縦持ちのパネル約 43 CSS px で、2 連鎖 1.9 px・3 連鎖 2.8 px・4 連鎖 3.4 px・5 連鎖 4.7 px）
   const amps = rows.map((r) => r.shake.amp);
   for (let i = 1; i < amps.length; i++) expect(amps[i]).toBeGreaterThanOrEqual(amps[i - 1]);
   expect(amps.slice(0, 4)).toEqual([0.045, 0.065, 0.08, 0.11]);
@@ -228,8 +295,8 @@ test("段階ごとに揺れの型・吹き出し・閃光・締めがはっき�
     expect(r.shake.peakX / 32).toBeLessThanOrEqual(0.14 + 1e-6);
     expect(r.shake.peakUp / 32).toBeLessThanOrEqual(0.055 + 1e-6);
   }
-  // 3 連鎖からは揺れの前に盤面が 1〜1.6% ふくらむ（2 連鎖は沈むだけ）
-  expect(rows.map((r) => r.shake.punch)).toEqual([0, 0.01, 0.01, 0.013, 0.013, 0.013, 0.016, 0.016, 0.016, 0.016]);
+  // 3 連鎖からは揺れの前に盤面が 1〜1.6% ふくらみ、段ごとに大きくなる（2 連鎖は沈むだけ）
+  expect(rows.map((r) => r.shake.punch)).toEqual([0, 0.01, 0.012, 0.013, 0.0135, 0.014, 0.0145, 0.015, 0.016, 0.016]);
   // 長さ: 8 連鎖からは長めに減衰する
   expect(by(8).frames).toBeGreaterThan(by(7).frames * 1.4);
   expect(by(10).frames).toBeGreaterThan(by(8).frames);

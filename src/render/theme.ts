@@ -98,16 +98,17 @@ export const CHAIN_PUNCH_MS = 80;
 
 /**
  * 揺れの大きさ（パネル比）: 2 連鎖 4.5%（沈むだけ）、3 連鎖 6.5%、4 連鎖 8%、5 連鎖 11%、6 連鎖 12.5%、7 連鎖 13.5%、8 連鎖 15%、9 連鎖 16%、10 連鎖から 17%。
- * 縦持ちのスマホ（パネル約 43 CSS px）で 2 連鎖 1.9 px、3 連鎖 2.8 px、4 連鎖 3.4 px、5 連鎖 4.7 px、10 連鎖 7.3 px。
- * 3 連鎖からは揺れの前に盤面が 1〜1.6% ふくらむ（3・4 連鎖 1%、5〜7 連鎖 1.3%、8 連鎖から 1.6%）
+ * 下への山は描画の最初のフレームに来るよう揺れを始めるので、この大きさがそのまま画面に出る（60Hz でも 120Hz でも同じ）。
+ * 縦持ちのスマホ（パネル 41.6 CSS px）で 2 連鎖 1.9 px、3 連鎖 2.7 px、4 連鎖 3.3 px、5 連鎖 4.6 px、10 連鎖 7.1 px。
+ * 3 連鎖からは揺れの前に盤面が 1〜1.6% ふくらむ（3 連鎖 1%、4 連鎖 1.2%、5 連鎖 1.3%、6 連鎖 1.35%、7 連鎖 1.4%、8 連鎖 1.45%、9 連鎖 1.5%、10 連鎖から 1.6%）
  */
 export function chainFx(chain: number): ChainFx {
   const shake = (type: ChainShakeType, amp: number, ms: number, punch = 0) => ({ type, amp: Math.min(CHAIN_SHAKE_MAX, amp), ms, punch });
   if (chain >= 10) return { shake: shake("long", 0.17, 680, 0.016), popupScale: 2.05, flash: CHAIN_FLASH_MAX, flashCount: 2, ring: true, summaryScale: 1.6, summaryHold: 1200, summaryEdge: 3, summaryGlow: true };
-  if (chain >= 8) return { shake: shake("long", chain >= 9 ? 0.16 : 0.15, chain >= 9 ? 560 : 500, 0.016), popupScale: 1.85, flash: 0.25, flashCount: 1, ring: true, summaryScale: 1.5, summaryHold: 1000, summaryEdge: 3, summaryGlow: true };
-  if (chain >= 6) return { shake: shake("both", chain >= 7 ? 0.135 : 0.125, chain >= 7 ? 320 : 290, 0.013), popupScale: 1.65, flash: 0.2, flashCount: 1, ring: false, summaryScale: 1.4, summaryHold: 850, summaryEdge: 2.5, summaryGlow: false };
+  if (chain >= 8) return { shake: shake("long", chain >= 9 ? 0.16 : 0.15, chain >= 9 ? 560 : 500, chain >= 9 ? 0.015 : 0.0145), popupScale: 1.85, flash: 0.25, flashCount: 1, ring: true, summaryScale: 1.5, summaryHold: 1000, summaryEdge: 3, summaryGlow: true };
+  if (chain >= 6) return { shake: shake("both", chain >= 7 ? 0.135 : 0.125, chain >= 7 ? 320 : 290, chain >= 7 ? 0.014 : 0.0135), popupScale: 1.65, flash: 0.2, flashCount: 1, ring: false, summaryScale: 1.4, summaryHold: 850, summaryEdge: 2.5, summaryGlow: false };
   if (chain === 5) return { shake: shake("both", 0.11, 260, 0.013), popupScale: 1.5, flash: 0.15, flashCount: 1, ring: false, summaryScale: 1.3, summaryHold: 850, summaryEdge: 2.5, summaryGlow: false };
-  if (chain === 4) return { shake: shake("vertical", 0.08, 220, 0.01), popupScale: 1.4, flash: 0, flashCount: 0, ring: false, summaryScale: 1.25, summaryHold: 730, summaryEdge: 2, summaryGlow: false };
+  if (chain === 4) return { shake: shake("vertical", 0.08, 220, 0.012), popupScale: 1.4, flash: 0, flashCount: 0, ring: false, summaryScale: 1.25, summaryHold: 730, summaryEdge: 2, summaryGlow: false };
   if (chain === 3) return { shake: shake("vertical", 0.065, 200, 0.01), popupScale: 1.25, flash: 0, flashCount: 0, ring: false, summaryScale: 1.15, summaryHold: 730, summaryEdge: 2, summaryGlow: false };
   return { shake: shake("dip", 0.045, 150), popupScale: 1, flash: 0, flashCount: 0, ring: false, summaryScale: 1, summaryHold: 730, summaryEdge: 2, summaryGlow: false };
 }

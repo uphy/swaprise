@@ -32,6 +32,8 @@ export function chainPopupScale(chain: number): number {
 }
 /** 連鎖の揺れで盤面が上へずれるときの縮め方。揺れは下へ沈む向きに大きく、上へは 0.35 倍しか跳ね返らない（CHAIN_SHAKE_UP_MAX で止める） */
 const SHAKE_UP_RATIO = 0.35;
+/** 2 連鎖の沈みが底に届くまでの時間（ms）。60Hz なら最初の描画フレーム、120Hz なら 2 フレーム目で底に届く */
+const DIP_FALL_MS = 16;
 /** 連鎖の締めの地の板の不透明度。後ろの盤面が透けて見える薄さにして、文字は縁取りで読ませる */
 const SUMMARY_PLATE_ALPHA = 0.35;
 /** 遊ぶ人が手を動かしたあとの締めの不透明度 */
@@ -175,7 +177,7 @@ export class BoardView {
    * 進行中の揺れ。t は経過 ms（拡大の跳ねがあれば -CHAIN_PUNCH_MS から始まり、0 までは跳ね、0 から揺れる）、
    * amp は局所座標の px（パネル 1 枚 = CELL に対する割合から決める）、punch は跳ねの拡大の割合
    */
-  private shake: { type: ChainShakeType; amp: number; ms: number; punch: number; t: number; phase: number; dir: number } | null = null;
+  private shake: { type: ChainShakeType; amp: number; ms: number; punch: number; t: number; t0: number | null; phase: number; dir: number } | null = null;
   /** 今の揺れのずれ（局所座標）と拡大の倍率。e2e が読む */
   shakeOffset = { x: 0, y: 0, k: 1 };
   /**
@@ -687,7 +689,7 @@ export class BoardView {
     this.lastShake = { chain, type, amp, ms, punch, peakX: 0, peakUp: 0, peakDown: 0, edge: { up: 0, down: 0, side: 0 } };
     // 3 連鎖からは、まず盤面を一瞬ふくらませて「打った」感を出し、戻ってから揺らす（同時だと縁が周りの表示に届く）
     if (!prefersReducedMotion())
-      this.shake = { type, amp: amp * CELL, ms, punch, t: punch > 0 ? -CHAIN_PUNCH_MS : 0, phase: Math.random() * Math.PI * 2, dir: Math.random() < 0.5 ? -1 : 1 };
+      this.shake = { type, amp: amp * CELL, ms, punch, t: punch > 0 ? -CHAIN_PUNCH_MS : 0, t0: null, phase: Math.random() * Math.PI * 2, dir: Math.random() < 0.5 ? -1 : 1 };
     const color = Phaser.Display.Color.HexStringToColor(chainColor(chain)).color;
     if (fx.flash > 0) {
       this.flashBoard(fx.flash, chain >= 6 ? tint(color, 0.7) : 0xffffff);
@@ -730,35 +732,40 @@ export class BoardView {
       }
       return { x: 0, y: 0, k };
     }
-    const p = s.t / s.ms;
+    // 沈むだけの揺れは揺れ始めからの時間で、それ以外は跳ねのあと最初に描くフレームからの時間で進める
+    if (s.t0 === null) s.t0 = s.t;
+    const tau = s.type === "dip" ? s.t : s.t - s.t0;
+    const p = tau / s.ms;
     if (p >= 1) {
       this.shake = null;
       return { x: 0, y: 0, k: 1 };
     }
-    const wave = (period: number, phase = 0): number => Math.sin((2 * Math.PI * s.t) / period + phase);
+    // 縦の揺れは cos で始め、跳ねのあと最初に描くフレームを下への山にする。sin で始めると 60Hz の各フレームが山を外し、
+    // 3・4 連鎖で設計の約 7 割しか画面に出なかった。周期 50ms（60Hz の 3 フレーム）なら次の山もフレームに乗る
+    const wave = (period: number, phase = 0): number => Math.sin((2 * Math.PI * tau) / period + phase);
+    const down = (period: number): number => Math.cos((2 * Math.PI * tau) / period);
     let x = 0;
     let y = 0;
     switch (s.type) {
       case "dip": {
-        // 素早く沈んで、ゆっくり戻る
-        const q = p < 0.3 ? (p / 0.3) * 0.5 : 0.5 + ((p - 0.3) / 0.7) * 0.5;
-        y = s.amp * Math.sin(Math.PI * q);
+        // 最初の 1 フレーム（16ms）で沈み切り、ゆっくり戻る
+        y = tau < DIP_FALL_MS ? s.amp * Math.sin((Math.PI / 2) * (tau / DIP_FALL_MS)) : s.amp * 0.5 * (1 + Math.cos((Math.PI * (tau - DIP_FALL_MS)) / (s.ms - DIP_FALL_MS)));
         break;
       }
       case "vertical":
-        y = s.amp * (1 - p) * wave(55);
+        y = s.amp * (1 - p) * down(50);
         break;
       case "both": {
         const env = s.amp * (1 - p);
         x = env * wave(70, s.phase) * s.dir;
-        y = env * wave(52);
+        y = env * down(50);
         break;
       }
       case "long": {
-        // 周期の違う揺れを重ねて、規則的な渦巻きにならないようにする
+        // 周期の違う揺れを重ねて、規則的な渦巻きにならないようにする。縦はどちらも最初のフレームで下の山になる
         const env = s.amp * Math.pow(1 - p, 1.6);
         x = env * wave(64, s.phase) * s.dir;
-        y = env * (0.7 * wave(47) + 0.3 * wave(29, s.phase));
+        y = env * (0.7 * down(50) + 0.3 * down(100 / 3));
         break;
       }
     }
