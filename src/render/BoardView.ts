@@ -1201,7 +1201,9 @@ export class BoardView {
 
     this.drawHint();
     if (this.style) {
-      this.setStats(this.style === "puzzle" ? [{ caption: "MOVES", value: String(b.movesLeft ?? 0), color: (b.movesLeft ?? 0) <= 1 ? "#ff8a94" : undefined }] : []);
+      // 残り 1 手以下は警告色。ただし全部消して解き終えたあとの 0 手は警告ではないので通常の色に戻す（結果の「1-1 CLEAR」と食い違わない）
+      const moves = b.movesLeft ?? 0;
+      this.setStats(this.style === "puzzle" ? [{ caption: "MOVES", value: String(moves), color: moves <= 1 && b.panelCount() > 0 ? "#ff8a94" : undefined }] : []);
       this.stopBar.clear();
       this.pendingGfx.clear();
       this.pendingText.setVisible(false);

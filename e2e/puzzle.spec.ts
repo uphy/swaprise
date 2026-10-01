@@ -62,6 +62,7 @@ test("パズル: 面の名前と残り手数を出し、解どおりに入れ替
       next: v.overlay.list.find((o: any) => o.name === "next")?.text ?? null,
       stored: JSON.parse(localStorage.getItem("swaprise.highscores.v1") ?? "{}"),
       undo: { alpha: p.scene.puzzleButtons.undo.alpha, enabled: Boolean(p.scene.puzzleButtons.undo.input?.enabled) },
+      movesColor: v.chips[0].value.style.color,
     };
   });
   expect(result.result).toBe("clear");
@@ -75,6 +76,8 @@ test("パズル: 面の名前と残り手数を出し、解どおりに入れ替
   await page.waitForTimeout(100);
   expect(await page.evaluate(() => (window as any).__swaprise.game.puzzleResult)).toBe("clear");
   expect(result.text).toBe("MOVES 0");
+  // 解き終えたあとの残り 0 手は警告ではないので、札を警告色の赤のままにしない (V2)
+  expect(result.movesColor).toBe("#f4f4f8");
   expect(result.next).toBe("NEXT  1-2");
   expect(result.stored.puzzle).toEqual([0]);
 
@@ -120,10 +123,13 @@ test("パズル: 消えない入れ替えで手数を使い切ると FAILED。�
       title: v.overlayTitle.text,
       body: v.overlayBody.text,
       movesLeft: p.game.boards[0].movesLeft,
+      movesColor: v.chips[0].value.style.color,
       stored: JSON.parse(localStorage.getItem("swaprise.highscores.v1") ?? "{}"),
     };
   });
   expect(result.result).toBe("fail");
+  // 解けずに手数が尽きたときは警告色のまま
+  expect(result.movesColor).toBe("#ff8a94");
   expect(result.title).toBe("FAILED");
   expect(result.body).toMatch(/^\d+ PANELS LEFT$/);
   expect(result.movesLeft).toBe(0);
