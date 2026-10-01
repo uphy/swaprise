@@ -51,8 +51,8 @@ export class DangerGlow {
   private readonly ringText: Phaser.GameObjects.Text;
   private level = 0;
   private ceilingLevel = 0;
-  /** 天井に触れている間の猶予の輪。e2e が確かめる。left は残りの割合（0〜1） */
-  grace: { visible: boolean; state: GraceState; left: number; text: string } = { visible: false, state: "counting", left: 1, text: "" };
+  /** 天井に触れている間の猶予の輪。e2e が確かめる。left は残りの割合（0〜1）、icon は輪の中に描いた印（停止中の盾） */
+  grace: { visible: boolean; state: GraceState; left: number; text: string; icon: "shield" | null } = { visible: false, state: "counting", left: 1, text: "", icon: null };
 
   /** 枠の形。e2e が光の形と枠の形の対応を確かめる */
   readonly frame: FrameShape;
@@ -188,7 +188,8 @@ export class DangerGlow {
 
   /**
    * 天井に触れている間、上の縁の真ん中に猶予の残りの輪を出す。数えている間は白い輪が時計回りに減り、中に残りの秒数を出す。
-   * 停止中は輪と数字を停止のゲージと同じ水色にして、守られていて減らないことを示す。消去・落下の途中は白のまま止める
+   * 停止中は輪を停止のゲージと同じ水色にし、数字の代わりに盾の印を出して、守られていて減らないことを示す。
+   * 停止中に猶予の秒数（例「2.0」）を出すと、下のゲージの停止の残り（例「STOP 11.5s」）と読み違えやすかった。消去・落下の途中は白のまま止める
    */
   private drawGrace(board: Board, panic: boolean, state: GraceState): void {
     const g = this.ringGfx;
@@ -200,12 +201,13 @@ export class DangerGlow {
     const seconds = Math.max(0, (total - board.deathTimer) / 60);
     // 縦持ちの CPU 戦の相手の盤面（半分の大きさ）では数字が読めないので、輪だけにする
     const small = (this.front.parentContainer?.scaleX ?? 1) < 0.75;
-    this.grace = { visible, state, left, text: visible && !small ? seconds.toFixed(1) : "" };
-    this.ringText.setVisible(visible && !small);
+    const stop = state === "stop";
+    const showText = visible && !small && !stop;
+    this.grace = { visible, state, left, text: showText ? seconds.toFixed(1) : "", icon: visible && stop ? "shield" : null };
+    this.ringText.setVisible(showText);
     if (!visible) return;
     const cx = BOARD_W / 2;
     const cy = -this.frame.pad / 2;
-    const stop = state === "stop";
     const color = stop ? STOP_COLORS.normal.fill : 0xffffff;
     // 地の円（夜空の紺）と、減った分の暗い赤の溝
     g.fillStyle(0x1c1238, 0.9 * alpha);
@@ -217,6 +219,22 @@ export class DangerGlow {
       g.beginPath();
       g.arc(cx, cy, RING_R, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * left, false);
       g.strokePath();
+    }
+    if (stop) {
+      // 盾の印。上辺が平らで、下へすぼまって尖る形を水色で塗り、中に明るい縦の筋を 1 本入れる
+      const w = 5.5;
+      const top = cy - 6;
+      g.fillStyle(color, alpha);
+      g.beginPath();
+      g.moveTo(cx - w, top);
+      g.lineTo(cx + w, top);
+      g.lineTo(cx + w, cy + 0.5);
+      g.lineTo(cx, cy + 7);
+      g.lineTo(cx - w, cy + 0.5);
+      g.closePath();
+      g.fillPath();
+      g.lineStyle(1.5, STOP_COLORS.normal.light, alpha);
+      g.lineBetween(cx, top + 2, cx, cy + 4);
     }
     this.ringText
       .setText(this.grace.text)

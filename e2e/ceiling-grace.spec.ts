@@ -26,7 +26,7 @@ const grace = (page: Page) =>
   page.evaluate(() => {
     const p = (window as any).__swaprise;
     const g = p.scene.views[0].dangerGlow;
-    return { ...g.grace, deathTimer: p.game.boards[0].deathTimer, gameOver: p.game.boards[0].gameOver };
+    return { ...g.grace, ringText: g.ringText.visible, deathTimer: p.game.boards[0].deathTimer, gameOver: p.game.boards[0].gameOver };
   });
 
 test("高さ 9 の危険では猶予の輪を出さず、天井に届くと輪が出て減り、消して天井から離れると消える", async ({ page }) => {
@@ -67,6 +67,10 @@ test("停止中は天井に届いていても輪が水色で止まって負け�
   expect(held.state).toBe("stop");
   expect(held.deathTimer).toBe(0);
   expect(held.left).toBe(1);
+  // 守られている間は輪の中に秒数を出さず、盾の印だけにする。下のゲージの「STOP 2.5s」と読み違えない (V3)
+  expect(held.text).toBe("");
+  expect(held.ringText).toBe(false);
+  expect(held.icon).toBe("shield");
   // 停止が切れるまで時計を進める（headless は実時間の進みが遅いので、ゲームの時計を直接進める）。切れると数え始める
   await page.evaluate(() => {
     const p = (window as any).__swaprise;
@@ -78,6 +82,10 @@ test("停止中は天井に届いていても輪が水色で止まって負け�
   const counting = await grace(page);
   expect(counting.left).toBeLessThan(1);
   expect(counting.gameOver).toBe(false);
+  // 数えだしたら秒数に戻り、盾は消える
+  expect(counting.text).toMatch(/^\d\.\d$/);
+  expect(counting.ringText).toBe(true);
+  expect(counting.icon).toBeNull();
   await page.evaluate(() => {
     const p = (window as any).__swaprise;
     const idle = { moveX: 0, moveY: 0, swap: false, raise: false };
