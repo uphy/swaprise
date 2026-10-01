@@ -31,6 +31,11 @@ const RAISE_BAR_H = 30;
 const RAISE_BAR_H_MOUSE = 22;
 /** 盤面の下端からせり上げバーまでの隙間。停止時間の青い線（盤面の下 6〜10px）を避ける */
 const RAISE_BAR_GAP = 12;
+/**
+ * マウスの画面での隙間。盤面の縁（下端の 7px 外）からバーまでが 5px（パネルの 16%）しかなく、
+ * いちばん大きな連鎖の揺れ（パネルの 17%）で盤面の縁がバーに届いていた。タッチ端末は縁からバーまで 10px あるので変えない
+ */
+const RAISE_BAR_GAP_MOUSE = 14;
 /** せり上げバーの下端から時間などの行までの隙間 */
 const INFO_GAP = 8;
 /** 縦持ちのレッスンで、盤面（せり上がる課はその下の時間の行）から説明までの隙間と、説明の下端から画面の下端までに残す余白 */
@@ -454,7 +459,7 @@ export class GameScene extends Phaser.Scene {
 
   /** 盤面の下端からレッスンの説明までにある、せり上げバーと時間の行の高さ（せり上がる課だけ） */
   private lessonBarSpace(): number {
-    return this.raiseHints[0]?.visible ? RAISE_BAR_GAP + (this.layout.touch ? RAISE_BAR_H : RAISE_BAR_H_MOUSE) + INFO_GAP : 0;
+    return this.raiseHints[0]?.visible ? (this.layout.touch ? RAISE_BAR_GAP + RAISE_BAR_H : RAISE_BAR_GAP_MOUSE + RAISE_BAR_H_MOUSE) + INFO_GAP : 0;
   }
 
   /**
@@ -486,15 +491,16 @@ export class GameScene extends Phaser.Scene {
     // デスクトップは盤面の下にせり上げバーと操作の案内文が並ぶので、上端を詰めて高さ 520 に収める
     const top = L.phoneLandscape ? 14 : L.portrait ? 52 : 56;
     const barH = L.touch ? RAISE_BAR_H : RAISE_BAR_H_MOUSE;
+    const barGap = L.touch ? RAISE_BAR_GAP : RAISE_BAR_GAP_MOUSE;
     const placeBoard = (i: number, ox: number, oy: number, scale: number, hud: HudSide = "top"): void => {
       // せり上げバーは操作の要なので盤面の直下に置き、時間・速度・最大連鎖の行はその下。バーのない盤面（CPU・パズル）は行を盤面の直下に戻す
       const hasBar = this.raiseHints[i].visible;
-      this.views[i].place(ox, oy, scale, hud, hasBar ? BOARD_H + (RAISE_BAR_GAP + barH + INFO_GAP) / scale : undefined);
+      this.views[i].place(ox, oy, scale, hud, hasBar ? BOARD_H + (barGap + barH + INFO_GAP) / scale : undefined);
       this.touches[i]?.place(ox, oy, scale);
       // せり上げバー。HUD が上なら盤面の直下に盤面と同じ幅で、横なら HUD の列に置く。
       // 当たり判定は指の大きさ（44dp）まで上下に広げる
       if (hud === "top") {
-        this.raiseHints[i].resize(BOARD_W * scale, barH, 48).setPosition(ox + (BOARD_W / 2) * scale, oy + BOARD_H * scale + RAISE_BAR_GAP + barH / 2);
+        this.raiseHints[i].resize(BOARD_W * scale, barH, 48).setPosition(ox + (BOARD_W / 2) * scale, oy + BOARD_H * scale + barGap + barH / 2);
       } else {
         this.raiseHints[i].resize(100, 44, 48);
         // HUD の列の得点・時間・速度・最大連鎖の札（下端 oy + 166）の下
@@ -536,7 +542,7 @@ export class GameScene extends Phaser.Scene {
       placeBoard(0, ox1, top, 1);
       placeBoard(1, ox2, top, 1);
       // 縦持ちでは盤面の隙間が狭いので、盤面の下（せり上げバーと時間の行の下）に置く
-      if (L.portrait) this.vsText?.setPosition(W / 2, top + BOARD_H + RAISE_BAR_GAP + barH + INFO_GAP + 40).setFontSize(18).setVisible(true);
+      if (L.portrait) this.vsText?.setPosition(W / 2, top + BOARD_H + barGap + barH + INFO_GAP + 40).setFontSize(18).setVisible(true);
       else this.vsText?.setPosition(W / 2, top + BOARD_H / 2).setFontSize(28).setVisible(true);
     }
     // ポーズボタンは自分の盤面の右上の外。隣の盤面や画面の端までに余白がなければ盤面の右上の内側に置き、
