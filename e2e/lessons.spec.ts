@@ -27,7 +27,7 @@ async function tickUntilFinished(page: Page, max = 3000): Promise<void> {
 // 小文字の説明文まで切ると字間が広がって行数が増えたので、説明文は通常のカーニングのまま。
 // 行数は環境の字幅で変わる（Linux の Chromium は字幅を丸めて広く測り、通常のカーニングでも 320×568 で 5 行になる）ので、行数ではなく字幅で確かめる。
 // 説明の最後の行が画面に収まることは、下の背の低い縦持ちのテストで確かめる
-test("レッスン 5: ACTIVE CHAIN の見出しはカーニングなし、小文字の説明文は通常のカーニングで描く", async ({ page }) => {
+test("レッスン 5: ACTIVE CHAIN の見出しはカーニングなしで字間を広げ、小文字の説明文は通常のカーニングで描く", async ({ page }) => {
   await openLesson(page, 5);
   await page.waitForFunction(() => (window as any).__swaprise.scene.children.list.some((o: any) => o.type === "Text" && o.text.includes("ACTIVE CHAIN")));
   const widths = await page.evaluate(() => {
@@ -39,13 +39,16 @@ test("レッスン 5: ACTIVE CHAIN の見出しはカーニングなし、小文
     return {
       title, body,
       titleText: o.context.measureText(title).width, titleNone: w(title, "none"), titleNormal: w(title, "normal"),
+      // 大文字だけの行は 1 字ずつ、文字の大きさの 8% の字間を足して描く
+      titleTracked: [...title].reduce((sum: number, ch: string) => sum + ref.measureText(ch).width, 0) + parseFloat(/([\d.]+)px/.exec(ref.font)![1]) * 0.08 * ([...title].length - 1),
       bodyText: o.context.measureText(body).width, bodyNone: w(body, "none"), bodyNormal: w(body, "normal"),
     };
   });
   expect(widths.title).toContain("ACTIVE CHAIN");
   // 見出しはカーニングの有無で幅が変わる（IV の組が詰まる）ので、比べる意味がある
   expect(widths.titleNone).not.toBe(widths.titleNormal);
-  expect(widths.titleText).toBe(widths.titleNone);
+  expect(widths.titleText).toBeCloseTo(widths.titleTracked, 3);
+  expect(widths.titleText).toBeGreaterThan(widths.titleNone);
   expect(widths.bodyNone).not.toBe(widths.bodyNormal);
   expect(widths.bodyText).toBe(widths.bodyNormal);
 });
