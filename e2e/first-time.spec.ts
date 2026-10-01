@@ -166,3 +166,54 @@ test("HOW TO PLAY の最後に LEARN への誘いがあり、ボタンでレッ�
   // まだ終えていない最初の課から
   expect(await page.evaluate(() => ({ mode: (window as any).__swaprise.game.mode, lesson: (window as any).__swaprise.scene.lesson }))).toEqual({ mode: "lesson", lesson: 2 });
 });
+
+/**
+ * メニューのカードの説明（name-caption）の読みやすさ。説明の範囲を画面から切り出し、明るい側 5% の画素（文字）と
+ * 中央値の画素（カードの地）の輝度のコントラスト比を返す
+ */
+async function captionContrast(page: Page, name: string): Promise<number> {
+  const box = await page.evaluate((n) => {
+    const m = (window as any).__swapriseScenes.menu;
+    const b = m.children.getByName(`${n}-caption`).getBounds();
+    const rect = document.querySelector("canvas")!.getBoundingClientRect();
+    const cam = m.cameras.main;
+    const s = (rect.width / m.scale.width) * cam.zoom;
+    return { x: rect.left + (b.x - cam.worldView.x) * s, y: rect.top + (b.y - cam.worldView.y) * s, width: b.width * s, height: b.height * s };
+  }, name);
+  const png = await page.screenshot({ clip: box });
+  return page.evaluate(async (data) => {
+    const img = new Image();
+    img.src = `data:image/png;base64,${data}`;
+    await img.decode();
+    const c = document.createElement("canvas");
+    c.width = img.width;
+    c.height = img.height;
+    const ctx = c.getContext("2d")!;
+    ctx.drawImage(img, 0, 0);
+    const px = ctx.getImageData(0, 0, c.width, c.height).data;
+    const lin = (v: number) => (v / 255 <= 0.03928 ? v / 255 / 12.92 : ((v / 255 + 0.055) / 1.055) ** 2.4);
+    const lum: number[] = [];
+    for (let i = 0; i < px.length; i += 4) lum.push(0.2126 * lin(px[i]) + 0.7152 * lin(px[i + 1]) + 0.0722 * lin(px[i + 2]));
+    lum.sort((a, b) => a - b);
+    const text = lum[Math.floor(lum.length * 0.95)];
+    const ground = lum[Math.floor(lum.length * 0.5)];
+    return (Math.max(text, ground) + 0.05) / (Math.min(text, ground) + 0.05);
+  }, png.toString("base64"));
+}
+
+for (const locale of ["en-US", "ja-JP"]) {
+  test.describe(`LEARN の添え書きの読みやすさ（${locale}）`, () => {
+    test.use({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, locale });
+    test("選ばれて明るくなった LEARN のカードでも、添え書きはほかのカードの説明と同じかそれ以上のコントラストで読める (N3)", async ({ page }) => {
+      await openMenu(page);
+      await page.evaluate(() => { const m = (window as any).__swapriseScenes.menu; m.index = 0; m.select(); });
+      await page.waitForFunction(() => (window as any).__swapriseScenes.menu.cards[3]?.hot);
+      await page.waitForTimeout(400);
+      const learn = await captionContrast(page, "item-learn");
+      const others = await Promise.all(["item-endless", "item-timeattack", "item-puzzle"].map((n) => captionContrast(page, n)));
+      expect(learn, `LEARN ${learn.toFixed(2)} / others ${others.map((o) => o.toFixed(2)).join(", ")}`).toBeGreaterThanOrEqual(Math.min(...others));
+      // 文字は太字
+      expect(await page.evaluate(() => (window as any).__swapriseScenes.menu.children.getByName("item-learn-caption").style.fontStyle)).toBe("700");
+    });
+  });
+}

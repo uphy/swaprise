@@ -24,6 +24,8 @@ interface MenuItem {
   label: string;
   /** ラベルの下に添える小文字（中身の説明や記録）。 */
   caption: string;
+  /** 小文字を白の太字にして目立たせる（menuCard の captionStrong） */
+  captionStrong?: boolean;
   group?: Level;
   start?: { mode: GameMode; cpuLevel?: CpuLevel };
   back?: boolean;
@@ -69,6 +71,7 @@ function itemsFor(level: Level, hs: HighScores): MenuItem[] {
         label: t("LEARN"),
         // 何も遊んでいない人には、ここから始めればよいことを添える（src/render/firstTime.ts）
         caption: isNewPlayer(hs) ? t("new here? start here") : hs.lessons.length >= LESSONS.length ? t("all {total} lessons done", { total: LESSONS.length }) : t("{count} / {total} LESSONS", { count: hs.lessons.length, total: LESSONS.length }),
+        captionStrong: isNewPlayer(hs),
         start: { mode: "lesson" },
         name: "item-learn",
         color: CARD.violet,
@@ -391,7 +394,7 @@ export class MenuScene extends Phaser.Scene {
       if (!half || item.name === "group-online") row++;
       const card = new MenuCard(this, {
         x, y: half ? y + HALF_EXTRA / 2 : y, w: half ? halfW : cardW, h: half ? cardH + HALF_EXTRA : cardH, compact,
-        label: item.label, caption: item.caption, icon: item.icon, narrow: half, color: item.color, name: item.name,
+        label: item.label, caption: item.caption, captionStrong: item.captionStrong, icon: item.icon, narrow: half, color: item.color, name: item.name,
         onPress: () => { focus(); this.select(); },
         onHover: (over) => {
           if (over) focus();

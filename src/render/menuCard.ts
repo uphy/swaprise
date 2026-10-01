@@ -12,6 +12,11 @@ export interface MenuCardSpec {
   label: string;
   /** ラベルの下の小さな説明・記録。 */
   caption: string;
+  /**
+   * 説明を白の太字に濃い影を付けて目立たせる（初めての人への「はじめての人はここから」）。
+   * 選んでいるカードは地が明るくなるので、ふだんの淡い説明の色では読みにくい
+   */
+  captionStrong?: boolean;
   /** ラベルの左に添えるアイコン（menuIcons.ts のテクスチャ）。 */
   icon?: MenuIcon;
   /** 半幅のカード。文字を一回り小さくし、アイコンとラベルを合わせて中央に寄せる */
@@ -93,9 +98,10 @@ export class MenuCard {
       .setOrigin(0.5)
       .setName(spec.name);
     this.caption = scene.add
-      .text(x, y, spec.caption, { fontFamily: FONT_UI, fontSize: "12px", color: TEXT_DIM, align: "center" })
+      .text(x, y, spec.caption, { fontFamily: FONT_UI, fontSize: "12px", color: spec.captionStrong ? TEXT_COLOR : TEXT_DIM, fontStyle: spec.captionStrong ? "700" : "", align: "center" })
       .setOrigin(0.5, 0)
       .setName(`${spec.name}-caption`);
+    if (spec.captionStrong) this.caption.setShadow(0, 1, "#2a1a5a", 4, false, true);
     // 説明がカードの幅に入らなければ、少し小さくし、それでも入らなければ折り返す（半幅のカードの英語）
     if (!shrinkToFit(this.caption, maxW, 10)) this.caption.setWordWrapWidth(maxW, true);
     this.objects.push(this.bg, this.label, this.caption);
