@@ -161,3 +161,48 @@ test("いちばん高い列より上に空きがあれば、締めはその列�
   await page.waitForFunction(() => (window as any).__swaprise.scene.views[0].summary !== null, undefined, { timeout: 15_000 });
   expect((await summaryState(page))!.y).toBe(Math.round(384 * 0.3));
 });
+
+for (const [name, viewport, mobile] of [
+  ["スマホ縦", { width: 390, height: 844 }, true],
+  ["スマホ横", { width: 844, height: 390 }, true],
+  ["PC", { width: 1280, height: 720 }, false],
+] as const) {
+  test(`停止中もせり上げバーの右端に山形を残し、STOP の文字と重ならない（${name}） (N2)`, async ({ browser }) => {
+    const context = await browser.newContext({ viewport, deviceScaleFactor: 2, isMobile: mobile, hasTouch: mobile });
+    const page = await context.newPage();
+    await page.goto("/?mode=endless&seed=7&bgm=0&countdown=0");
+    await page.waitForFunction(() => (window as any).__swaprise?.game.boards[0].frame > 0);
+    // 停止を直に与える。いちばん長い文字（10 秒台、2 倍なら PINCH ×2 付き）と、得た瞬間の閃きで文字が大きくなるときを測る
+    for (const pinch of [false, true]) {
+      await page.evaluate((p) => {
+        const b = (window as any).__swaprise.game.boards[0];
+        b.stopTimer = 659;
+        b.stopTotal = 660;
+        b.stopPinch = p;
+      }, pinch);
+      await page.waitForFunction(() => (window as any).__swaprise.scene.raiseHints[0].stopping);
+      for (let i = 0; i < 2; i++) {
+        const r = await page.evaluate(() => {
+          const bar = (window as any).__swaprise.scene.raiseHints[0];
+          const t = bar.stopText;
+          return { glyph: bar.stopGlyph, w: bar.barW, textRight: t.x + t.displayWidth / 2, textLeft: t.x - t.displayWidth / 2, text: t.text };
+        });
+        expect(r.glyph, `${name} pinch=${pinch}`).not.toBeNull();
+        // 山形はバーの中、右端に寄る
+        expect(r.glyph.x + r.glyph.half).toBeLessThanOrEqual(r.w / 2);
+        expect(r.glyph.x).toBeGreaterThan(r.w / 4);
+        // 文字は山形の左に収まり、バーの左端からもはみ出さない
+        expect(r.textRight, r.text).toBeLessThan(r.glyph.x - r.glyph.half);
+        expect(r.textLeft, r.text).toBeGreaterThanOrEqual(-r.w / 2);
+        await page.waitForTimeout(400);
+      }
+    }
+    // 停止が終わると、ふだんの真ん中の山形に戻る
+    await page.evaluate(() => {
+      (window as any).__swaprise.game.boards[0].stopTimer = 0;
+    });
+    await page.waitForFunction(() => !(window as any).__swaprise.scene.raiseHints[0].stopping);
+    expect(await page.evaluate(() => (window as any).__swaprise.scene.raiseHints[0].stopGlyph)).toBeNull();
+    await context.close();
+  });
+}

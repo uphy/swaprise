@@ -12,7 +12,7 @@ const INK = "#1c1238";
  *
  * せり上がりが止まっている間（連鎖・同時消しの見返り）は、バーを「STOP 7.3s」と残りのゲージに切り替える。
  * ゲージは与えた停止の長さのうちの残りで、左から右へ縮む。危険な状態で消して 2 倍になったときは赤くし、「PINCH ×2」を添える。
- * 止まっている間もバーは押せて、押している間はせり上げの点灯を優先する
+ * 止まっている間もバーは押せて、押している間はせり上げの点灯を優先する。押せることが分かるよう、ゲージの右端に小さな山形を残し、文字はその左に収める
  */
 export class RaiseBar extends Phaser.GameObjects.Container {
   private readonly bg: Phaser.GameObjects.Graphics;
@@ -30,6 +30,8 @@ export class RaiseBar extends Phaser.GameObjects.Container {
   private stopFlash = 0;
   /** 停止の文字。e2e が読む */
   readonly stopText: Phaser.GameObjects.Text;
+  /** 停止中にゲージの右端へ残す山形の範囲（バーの中心基準の x と半幅）。出していなければ null。e2e が読む */
+  stopGlyph: { x: number; half: number } | null = null;
 
   constructor(scene: Phaser.Scene, onPress: (pointer: Phaser.Input.Pointer) => void) {
     super(scene, 0, 0);
@@ -98,6 +100,7 @@ export class RaiseBar extends Phaser.GameObjects.Container {
     this.stopText.setVisible(this.stopping);
     if (this.stopping) {
       this.paintStop(r);
+      this.drawGlyph();
       return;
     }
     if (this.raising) {
@@ -148,7 +151,6 @@ export class RaiseBar extends Phaser.GameObjects.Container {
     const stop = `STOP ${secs}s`;
     const size = Math.max(11, Math.min(15, Math.round(h * 0.5)));
     const t = this.stopText;
-    t.setScale(1 + this.stopFlash * 0.25);
     // 2 倍のときは「PINCH ×2」を添える。1 行に収まらなければ、背の高いバーは 2 行に、低いバーは STOP の見出しを省く。
     // 並べ方はバーの大きさで決まるので、大きさが変わったときだけ測り直す（毎フレーム文字を描き直さない）
     let text = stop;
@@ -158,7 +160,7 @@ export class RaiseBar extends Phaser.GameObjects.Container {
       if (this.pinchFitKey !== key) {
         this.pinchFitKey = key;
         t.setFontSize(size).setText("PINCH ×2   STOP 12.0s");
-        this.pinchFit = t.width <= w - 12 ? "line" : h >= 36 ? "stack" : "short";
+        this.pinchFit = t.width <= w - 12 - this.stopGlyphSpace() ? "line" : h >= 36 ? "stack" : "short";
       }
       if (this.pinchFit === "line") text = `PINCH ×2   ${stop}`;
       else if (this.pinchFit === "stack") {
@@ -168,6 +170,20 @@ export class RaiseBar extends Phaser.GameObjects.Container {
     }
     if (t.style.fontSize !== `${fontSize}px`) t.setFontSize(fontSize);
     if (t.text !== text) t.setText(text);
+    // 文字は右端の山形の左の幅に収める。収まらなければ縮め、閃きで大きくするときも山形に重ねない
+    const room = w - this.stopGlyphSpace() - 8;
+    t.setX(-this.stopGlyphSpace() / 2);
+    t.setScale(Math.min(1 + this.stopFlash * 0.25, room / Math.max(1, t.width)));
+  }
+
+  /** 停止中の山形の半幅。待機中より小さく、バーの右端に置く */
+  private stopGlyphHalf(): number {
+    return Math.min(6, this.barH * 0.22);
+  }
+
+  /** 停止中に右端の山形が占める幅（山形と左右の余白） */
+  private stopGlyphSpace(): number {
+    return this.stopGlyphHalf() * 2 + 12;
   }
   private pinchFitKey = "";
   private pinchFit: "line" | "stack" | "short" = "line";
@@ -181,7 +197,23 @@ export class RaiseBar extends Phaser.GameObjects.Container {
     const half = Math.min(9, h * 0.3);
     const rise = half * 0.55;
     g.clear();
-    if (this.stopping) return;
+    if (this.stopping) {
+      // 止まっている間もせり上げられることを、ゲージの右端の小さな山形で見せる。濃い縁を敷いて、水色・赤のゲージの上でも白い山形が読めるようにする
+      const sh = this.stopGlyphHalf();
+      const sr = sh * 0.6;
+      const x = this.barW / 2 - 6 - sh;
+      this.stopGlyph = { x, half: sh };
+      for (const [width, color, alpha] of [[4.5, 0x120c2c, 0.6], [2.2, 0xffffff, 0.9]] as const) {
+        g.lineStyle(width, color, alpha);
+        g.beginPath();
+        g.moveTo(x - sh, sr / 2);
+        g.lineTo(x, -sr / 2);
+        g.lineTo(x + sh, sr / 2);
+        g.strokePath();
+      }
+      return;
+    }
+    this.stopGlyph = null;
     const chevron = (cy: number, alpha: number): void => {
       g.lineStyle(2.5, this.raising ? 0x2a2050 : 0xffffff, alpha);
       g.beginPath();
