@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { Board, NO_INPUT, TIMING, garbageFromChain, garbageFromCombo } from "../../src/core";
+import { Board, NO_INPUT, TIMING, garbageFromChain, garbageFromCombo, type GarbageSpec } from "../../src/core";
 import { run } from "./helpers";
 
 describe("おじゃまパネルの送り方", () => {
@@ -133,6 +133,33 @@ describe("おじゃまの送出と投下のタイミング", () => {
           { width: 6, height: 2, type: "normal" },
         ],
       },
+    ]);
+  });
+
+  it("連鎖の終わり（chainEnd）に、その連鎖で送る板を、連鎖の途中の同時消しの板も含めて渡す。前の連鎖の板は含めない", () => {
+    const b = new Board({ seed: 1, kinds: 6, initialHeight: 0, noRise: true });
+    b.setColumns([...CHAIN3, [], ...combo4Columns(2, 3)]);
+    const ends: GarbageSpec[][] = [];
+    const tickAll = (frames: number): void => {
+      for (let f = 0; f < frames; f++) {
+        b.tick(NO_INPUT);
+        for (const e of b.events) if (e.type === "chainEnd") ends.push(e.garbage);
+      }
+    };
+    swapAt(b, 0, 4);
+    for (let f = 0; f < 600 && b.chain < 2; f++) tickAll(1);
+    swapAt(b, 4, 2);
+    tickAll(600);
+    // 次の連鎖は数え直す
+    b.setColumns(CHAIN3);
+    swapAt(b, 0, 4);
+    tickAll(600);
+    expect(ends).toEqual([
+      [
+        { width: 3, height: 1, type: "normal" },
+        { width: 6, height: 2, type: "normal" },
+      ],
+      [{ width: 6, height: 2, type: "normal" }],
     ]);
   });
 

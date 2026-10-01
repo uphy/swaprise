@@ -215,6 +215,9 @@ export class GameScene extends Phaser.Scene {
     this.views.forEach((v, i) => {
       v.stopOnBar = this.raiseHints[i].visible;
       v.chainSummary = Boolean(this.inputs[i]);
+      // 対戦（VS CPU・2 PLAYERS）の締めは得点の代わりに相手に送った板を言う
+      v.summaryAttack = this.mode === "cpu" || this.mode === "versus";
+      v.opponentLeft = this.mode === "versus" && i === 1;
       // 連鎖した瞬間の盤面の揺れと閃光も遊ぶ人の盤面だけ。パズルとレッスンでも連鎖の手応えは出す
       v.chainFeel = Boolean(this.inputs[i]);
     });

@@ -24,7 +24,7 @@ const JA: Record<string, string> = {
   "Your name, score, chain and date will be public. Rankings show only your best score on this device. Past names and published records remain when you change this setting.": "名前・スコア・最大連鎖・日付が公開されます。ランキングにはこの端末の自己ベストだけが載ります。名前の変更や公開オフのあとも、公開済みの記録と当時の名前は残ります。",
   "Custom games stay on this device. Failed uploads retry later (up to 50). Turning this off discards pending uploads; an upload already received cannot be recalled.": "カスタム設定は端末内のみの記録です。通信失敗時は最大50件を保存し、あとで再送します。公開オフで未送信分を破棄しますが、サーバーに到着済みの送信は取り消せません。",
   "SAVE AND PLAY": "保存して遊ぶ", SAVE: "保存", LATER: "あとで",
-  "OPPONENT x{chain}!": "相手が {chain} 連鎖！",
+  "OPPONENT x{chain}!": "相手が {chain} 連鎖！", "{arrow} {rows} ROW": "{arrow} {rows}段", "{arrow} {rows} ROWS": "{arrow} {rows}段",
   "Publish this score?": "この記録を公開しますか？", PUBLISH: "公開する", "KEEP PRIVATE": "公開しない",
   "Your name, score, chain and date will be public. You can change this in settings.": "名前・得点・連鎖・日付が誰でも見られるようになります。設定からいつでも変えられます。",
   "PENDING UPLOADS: {count}": "未送信の記録: {count}件", "Loading…": "読み込み中…",

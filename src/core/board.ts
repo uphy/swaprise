@@ -144,6 +144,8 @@ export class Board {
   private runScore = 0;
   private runStop = 0;
   private runPinch = false;
+  /** 描画用。いまの連鎖で相手に送る板（連鎖の中の同時消し・ビックリパネルの板を含む）。chainEnd で締めの表示に渡す */
+  private runGarbage: GarbageSpec[] = [];
 
   /** 予測の巻き戻し用。乱数のprototypeと盤面オブジェクトの参照は維持する。 */
   copyFrom(source: Board): void {
@@ -901,6 +903,7 @@ export class Board {
       this.runScore = 0;
       this.runStop = 0;
       this.runPinch = false;
+      this.runGarbage = [];
     }
     let chainNow = 1;
     this.stats.matches++;
@@ -952,6 +955,7 @@ export class Board {
     const attack = [...garbageFromCombo(normalCount), ...garbageFromShock(shockCount)];
     if (attack.length > 0) {
       this.outbox.push(...attack);
+      this.runGarbage.push(...attack);
       this.outboxAt = this.frame + TIMING.garbageSendDelay;
     }
 
@@ -1015,9 +1019,10 @@ export class Board {
     if (this.hasMatched() || this.hasTransforming() || this.hasChainFlag()) return;
     // 連鎖の板は連鎖が終わってから1枚だけ送る。段階ごとに送ると 7連鎖で 1+2+…+6=21段になり、相手が一瞬で負ける。
     // 連鎖中に待ちが明けていた同時消しの板も、このとき一緒に送る
-    this.send([...this.heldForChain, ...garbageFromChain(this.chain)]);
+    const chainGarbage = garbageFromChain(this.chain);
+    this.send([...this.heldForChain, ...chainGarbage]);
     this.heldForChain = [];
-    this.emit({ type: "chainEnd", chain: this.chain, score: this.runScore, stop: this.runStop, pinch: this.runPinch });
+    this.emit({ type: "chainEnd", chain: this.chain, score: this.runScore, stop: this.runStop, pinch: this.runPinch, garbage: [...this.runGarbage, ...chainGarbage] });
     this.chain = 1;
   }
 

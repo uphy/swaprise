@@ -158,7 +158,7 @@ describe("連鎖", () => {
     const events = press(b, { swap: true }, 400);
     const end = events.find((e) => e.type === "chainEnd");
     // 30 + 80 + 110 点。停止は 3 連鎖の 2 秒 + 1 秒
-    expect(end).toEqual({ type: "chainEnd", chain: 3, score: 220, stop: TIMING.stopChainBase + TIMING.stopChainPerExtra, pinch: false });
+    expect(end).toEqual({ type: "chainEnd", chain: 3, score: 220, stop: TIMING.stopChainBase + TIMING.stopChainPerExtra, pinch: false, garbage: [{ width: 6, height: 2, type: "normal" }] });
     expect(b.stopTotal).toBe(TIMING.stopChainBase + TIMING.stopChainPerExtra);
     expect(b.stopPinch).toBe(false);
   });
@@ -171,7 +171,7 @@ describe("連鎖", () => {
     const events = press(b, { swap: true }, 400);
     const end = events.find((e) => e.type === "chainEnd");
     const stop = (TIMING.stopChainBase + TIMING.stopChainPerExtra) * TIMING.stopDangerMultiplier;
-    expect(end).toEqual({ type: "chainEnd", chain: 3, score: 220, stop, pinch: true });
+    expect(end).toEqual({ type: "chainEnd", chain: 3, score: 220, stop, pinch: true, garbage: [{ width: 6, height: 2, type: "normal" }] });
     expect(b.stopTotal).toBe(stop);
     expect(b.stopPinch).toBe(true);
   });

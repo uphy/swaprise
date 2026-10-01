@@ -1,6 +1,6 @@
 import Phaser from "phaser";
 import { t } from "./i18n";
-import { Board, COLS, EMPTY, ROWS, TIMING, TOTAL_ROWS, isPanel, type BoardEvent } from "../core";
+import { Board, COLS, EMPTY, ROWS, TIMING, TOTAL_ROWS, isPanel, type BoardEvent, type GarbageSpec } from "../core";
 import { BOARD_BG, BOARD_H, BOARD_W, CARD, CELL, CHAIN_PUNCH_MS, CHAIN_PUNCH_PIVOT_Y, CHAIN_SHAKE_SIDE_MAX, CHAIN_SHAKE_UP_MAX, FONT_UI, GARBAGE_COLOR, KIND_COLORS, STOP_COLORS, TEXT_COLOR, TEXT_DIM, chainColor, chainFx, isTouchDevice, prefersReducedMotion, stopSeconds, type ChainShakeType } from "./theme";
 import { CURSOR_PAD, css, garbageFrame, roundRect, tint } from "./textures";
 import { Button, gradientFill } from "./ui";
@@ -40,6 +40,8 @@ const SUMMARY_PLATE_ALPHA = 0.35;
 const SUMMARY_DIM_ALPHA = 0.3;
 /** 危険な状態（PINCH）で消したときに締めがとどまる長さ（ms） */
 const SUMMARY_PINCH_HOLD = 600;
+/** 対戦の締めに出す送った板の文字色。相手の盤面に出る「+N」（incomingPopup）と同じ色にして、同じ板だと分かるようにする */
+const ATTACK_TEXT = "#ff8a94";
 /** 拡大の跳ねの中心（盤面の局所座標） */
 const PUNCH_X = BOARD_W / 2;
 const PUNCH_Y = BOARD_H * CHAIN_PUNCH_PIVOT_Y;
@@ -145,6 +147,13 @@ export class BoardView {
    * パズルとレッスンは得点も停止も使わないので出さない
    */
   chainSummary = false;
+  /**
+   * 締めの 2 行目を、得点の代わりにその連鎖で相手に送った板（▶ 4 ROWS）にするか。対戦（VS CPU・2 PLAYERS・ONLINE）で true にする。
+   * 対戦の勝ち負けを決めるのは相手に降らせる板で、得点ではない。1 人用は得点のまま
+   */
+  summaryAttack = false;
+  /** 相手の盤面がこの盤面の左にあるか（2 PLAYERS の 2P）。送った板の矢印を相手の方へ向ける */
+  opponentLeft = false;
   /** 表示中の締めの表示。次の連鎖が先に終わったら消して出し直す */
   private summary: Phaser.GameObjects.Container | null = null;
   /** 締めの中身。遊ぶ人が手を動かしたら、これの不透明度を下げて盤面を透かす（出入りの動きは summary が持つ） */
@@ -881,10 +890,11 @@ export class BoardView {
   }
   /**
    * 連鎖の締め。連鎖が終わった瞬間に、その連鎖で得たもの（連鎖数・得点の合計・せり上がりの停止）を盤面の上寄りに 1 秒弱出す。
+   * 対戦（summaryAttack）では得点の代わりに、相手に送った板の段数を相手の方を向いた矢印付きで出す。
    * 連鎖の吹き出しは「何連鎖目か」しか言わないので、終わりに「それで何が得られたか」をまとめて見せる。
    * 危険な状態で消して停止が 2 倍になったら「PINCH ×2」を添える。吹き出しと同じ濃紺の板に連鎖の色の縁、数字はグラデーション
    */
-  private showSummary(e: { chain: number; score: number; stop: number; pinch: boolean }): void {
+  private showSummary(e: { chain: number; score: number; stop: number; pinch: boolean; garbage: GarbageSpec[] }): void {
     this.summary?.destroy();
     const color = chainColor(e.chain);
     const edge = Phaser.Display.Color.HexStringToColor(color).color;
@@ -900,7 +910,11 @@ export class BoardView {
       this.scene.add
         .text(0, 0, text, { fontFamily: FONT_UI, fontSize: "17px", fontStyle: "700", color: fill, stroke: HUD_INK, strokeThickness: 7 })
         .setOrigin(0, 0);
-    const score = small(`+${e.score}`, "#ffe066");
+    // 対戦では得点の代わりに、相手に送った板の段数（連鎖の板と連鎖の途中の同時消しの板の厚さの合計）
+    const rows = e.garbage.reduce((sum, g) => sum + g.height, 0);
+    const score = this.summaryAttack
+      ? small(t(rows === 1 ? "{arrow} {rows} ROW" : "{arrow} {rows} ROWS", { arrow: this.opponentLeft ? "◀" : "▶", rows }), ATTACK_TEXT)
+      : small(`+${e.score}`, "#ffe066");
     const stop = small(`STOP ${stopSeconds(e.stop)}`, stopColor.text);
     const pinch = e.pinch
       ? this.scene.add
@@ -1044,7 +1058,7 @@ export class BoardView {
    */
   private incomingPopup(rows: number): void {
     const text = this.scene.add
-      .text(BoardView.PENDING_X + this.pendingWidth + 40, BoardView.PENDING_Y + 12, `+${rows}`, { fontFamily: FONT_UI, fontSize: "24px", fontStyle: "700", color: "#ff8a94", stroke: HUD_INK, strokeThickness: 6 })
+      .text(BoardView.PENDING_X + this.pendingWidth + 40, BoardView.PENDING_Y + 12, `+${rows}`, { fontFamily: FONT_UI, fontSize: "24px", fontStyle: "700", color: ATTACK_TEXT, stroke: HUD_INK, strokeThickness: 6 })
       .setOrigin(0.5)
       .setScale(1.8)
       .setAlpha(0);

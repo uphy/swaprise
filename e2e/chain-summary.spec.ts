@@ -85,6 +85,43 @@ test("CPU 戦は自分の盤面だけに締めとゲージを出し、CPU の盤
   expect(r.cpu).toEqual([false, false]);
 });
 
+test("VS CPU の締めは得点の代わりに相手に送った板の段数を出し、1 人用（ENDLESS・TIME ATTACK）は得点のまま (V1)", async ({ page }) => {
+  await page.goto("/?mode=cpu&cpu=easy&seed=7&bgm=0&countdown=0");
+  await startChain(page, CHAIN3);
+  await page.waitForFunction(() => (window as any).__swaprise.scene.views[0].lastSummary !== null, undefined, { timeout: 15_000 });
+  const vs = await page.evaluate(() => {
+    const p = (window as any).__swaprise;
+    return { lines: p.scene.views[0].lastSummary.lines, cpu: p.scene.views[1].lastSummary };
+  });
+  // 3 連鎖の板は幅 6・厚さ 2 段。停止は残す
+  expect(vs.lines).toEqual(["3 CHAIN", "▶ 2 ROWS  STOP 3s"]);
+  expect(vs.lines.join(" ")).not.toContain("+220");
+  expect(vs.cpu).toBeNull();
+  // 送った板は相手の盤面の予告に届く
+  await page.waitForFunction(() => (window as any).__swaprise.game.boards[1].pendingGarbage.some((g: any) => g.height === 2) || (window as any).__swaprise.game.boards[1].garbage.size > 0);
+
+  for (const mode of ["endless", "timeattack"]) {
+    await page.goto(`/?mode=${mode}&seed=7&bgm=0&countdown=0`);
+    await startChain(page, CHAIN3);
+    await page.waitForFunction(() => (window as any).__swaprise.scene.views[0].lastSummary !== null, undefined, { timeout: 15_000 });
+    const lines = await page.evaluate(() => (window as any).__swaprise.scene.views[0].lastSummary.lines);
+    expect(lines, mode).toEqual(["3 CHAIN", "+220  STOP 3s"]);
+  }
+});
+
+test.describe("日本語", () => {
+  test.use({ locale: "ja-JP" });
+  test("2 PLAYERS の締めは送った板を「▶ 2段」と出す (V1)", async ({ page }) => {
+    await page.goto("/?mode=versus&seed=7&bgm=0&countdown=0");
+    await startChain(page, CHAIN3);
+    await page.waitForFunction(() => (window as any).__swaprise.scene.views[0].lastSummary !== null, undefined, { timeout: 15_000 });
+    const lines = await page.evaluate(() => (window as any).__swaprise.scene.views[0].lastSummary.lines);
+    expect(lines).toEqual(["3 CHAIN", "▶ 2段  STOP 3s"]);
+    // 2P の盤面は相手（1P）が左にあるので、矢印を左へ向ける
+    expect(await page.evaluate(() => (window as any).__swaprise.scene.views.map((v: any) => [v.summaryAttack, v.opponentLeft]))).toEqual([[true, false], [true, true]]);
+  });
+});
+
 /** 表示中の締めの見え方。fade は中身の不透明度（手を動かすと下がる） */
 async function summaryState(page: Page): Promise<{ fade: number; dimmed: boolean; plateAlpha: number; hold: number; y: number; height: number; stackTop: number } | null> {
   return page.evaluate(() => {
