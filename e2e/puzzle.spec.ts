@@ -58,13 +58,26 @@ test("パズル: 面の名前と残り手数を出し、解どおりに入れ替
       result: p.game.puzzleResult,
       title: v.overlayTitle.text,
       text: v.infoLine,
+      body: v.overlayBody.text,
       next: v.overlay.list.find((o: any) => o.name === "next")?.text ?? null,
       stored: JSON.parse(localStorage.getItem("swaprise.highscores.v1") ?? "{}"),
+      undo: { alpha: p.scene.puzzleButtons.undo.alpha, enabled: Boolean(p.scene.puzzleButtons.undo.input?.enabled) },
+      movesColor: v.chips[0].value.style.color,
     };
   });
   expect(result.result).toBe("clear");
   expect(result.title).toBe("CLEAR");
+  // 残り手数（いつも 0）ではなく、解いた面と段の中の進みを出す
+  expect(result.body).toBe("1-1 CLEAR  1/10");
+  expect(result.body).not.toContain("MOVES LEFT");
+  // クリアのあとは手を戻せないので、UNDO は暗く、押せない
+  expect(result.undo).toEqual({ alpha: 0.4, enabled: false });
+  await page.keyboard.press("u");
+  await page.waitForTimeout(100);
+  expect(await page.evaluate(() => (window as any).__swaprise.game.puzzleResult)).toBe("clear");
   expect(result.text).toBe("MOVES 0");
+  // 解き終えたあとの残り 0 手は警告ではないので、札を警告色の赤のままにしない (V2)
+  expect(result.movesColor).toBe("#f4f4f8");
   expect(result.next).toBe("NEXT  1-2");
   expect(result.stored.puzzle).toEqual([0]);
 
@@ -110,10 +123,13 @@ test("パズル: 消えない入れ替えで手数を使い切ると FAILED。�
       title: v.overlayTitle.text,
       body: v.overlayBody.text,
       movesLeft: p.game.boards[0].movesLeft,
+      movesColor: v.chips[0].value.style.color,
       stored: JSON.parse(localStorage.getItem("swaprise.highscores.v1") ?? "{}"),
     };
   });
   expect(result.result).toBe("fail");
+  // 解けずに手数が尽きたときは警告色のまま
+  expect(result.movesColor).toBe("#ff8a94");
   expect(result.title).toBe("FAILED");
   expect(result.body).toMatch(/^\d+ PANELS LEFT$/);
   expect(result.movesLeft).toBe(0);
@@ -248,4 +264,115 @@ test("パズル: 手数を使い切って FAILED になっても UNDO で 1 手�
   // 戻したあと解を打てばクリアできる
   await playSolution(page);
   await page.waitForFunction(() => (window as any).__swaprise.game.puzzleResult === "clear", null, { timeout: 15_000 });
+});
+
+test("メニュー: 面選びを開いている間は後ろのメニュー（題字・カード・下段）を隠し、閉じたときと遊んで戻ったときは出す", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/?bgm=0&opening=0");
+  await page.waitForFunction(() => (window as any).__swapriseScenes?.menu?.cards?.length);
+  await page.waitForTimeout(200);
+  const state = () => page.evaluate(() => {
+    const scene = (window as any).__swapriseScenes.menu;
+    const shown = (o: any) => o.visible;
+    const menu = [...(scene.title?.layers ?? []), ...scene.cards.flatMap((c: any) => c.objects), ...scene.tools, ...scene.footer];
+    const panel = scene.children.getByName("puzzle-picker");
+    return {
+      open: Boolean(panel),
+      menuVisible: menu.filter(shown).length,
+      menuTotal: menu.length,
+    };
+  });
+  const before = await state();
+  expect(before.menuVisible).toBe(before.menuTotal);
+  await page.evaluate(() => (window as any).__swapriseScenes.menu.showPuzzlePicker());
+  const open = await state();
+  expect(open.open).toBe(true);
+  expect(open.menuVisible).toBe(0);
+  await page.keyboard.press("Escape");
+  await page.waitForTimeout(100);
+  const closed = await state();
+  expect(closed.open).toBe(false);
+  expect(closed.menuVisible).toBe(closed.menuTotal);
+  // 面選びから遊び始め、メニューへ戻ったときもメニューが出ている
+  await page.evaluate(() => (window as any).__swapriseScenes.menu.showPuzzlePicker());
+  await page.keyboard.press("Enter");
+  await page.waitForFunction(() => (window as any).__swaprise?.game?.mode === "puzzle");
+  await page.evaluate(() => (window as any).__swaprise.scene.toMenu());
+  await page.waitForFunction(() => (window as any).__swapriseScenes.menu.scene.isActive() && (window as any).__swapriseScenes.menu.cards.length);
+  await page.waitForTimeout(200);
+  const back = await state();
+  expect(back.open).toBe(false);
+  expect(back.menuVisible).toBe(back.menuTotal);
+});
+
+test("パズル: 最初の段の 1〜3 面だけ、目標と手数を盤面に出す。クリアの結果を出したら隠す", async ({ page }) => {
+  const goal = () => page.evaluate(() => {
+    const p = (window as any).__swaprise;
+    const g = p.scene.children.getByName("puzzle-goal");
+    const v = p.scene.views[0];
+    return g ? { text: g.text, visible: g.visible, moves: p.game.puzzle.moves, inBoard: g.x > v.ox && g.x < v.ox + 192 * v.scale && g.y > v.oy && g.y < v.oy + 100 * v.scale } : null;
+  });
+  for (const stage of ["1-1", "1-2", "1-3"]) {
+    await page.goto(`/?mode=puzzle&stage=${stage}&bgm=0&countdown=0`);
+    await page.waitForFunction(() => (window as any).__swaprise?.game.boards[0].frame > 0);
+    const shown = await goal();
+    expect(shown).not.toBeNull();
+    // 手数は面ごとの値から作る
+    expect(shown!.text).toBe(shown!.moves === 1 ? "CLEAR ALL PANELS IN 1 MOVE" : `CLEAR ALL PANELS IN ${shown!.moves} MOVES`);
+    expect(shown!.visible).toBe(true);
+    expect(shown!.inBoard).toBe(true);
+  }
+  // 解くと結果の見出しと重ならないよう隠す
+  await playSolution(page);
+  await page.waitForFunction(() => (window as any).__swaprise.game.finished, null, { timeout: 15_000 });
+  await page.waitForFunction(() => (window as any).__swaprise.scene.ended);
+  await page.waitForTimeout(100);
+  expect((await goal())!.visible).toBe(false);
+  // 4 面目からは出さない
+  await page.goto("/?mode=puzzle&stage=1-4&bgm=0&countdown=0");
+  await page.waitForFunction(() => (window as any).__swaprise?.game.boards[0].frame > 0);
+  expect(await goal()).toBeNull();
+});
+
+test("パズル: 目標の文言は日本語でも出す", async ({ browser }) => {
+  const context = await browser.newContext({ locale: "ja-JP" });
+  const page = await context.newPage();
+  await page.goto("/?mode=puzzle&stage=1-1&bgm=0&countdown=0");
+  await page.waitForFunction(() => (window as any).__swaprise?.game.boards[0].frame > 0);
+  expect(await page.evaluate(() => (window as any).__swaprise.scene.children.getByName("puzzle-goal")?.text)).toBe("1手ですべてのパネルを消そう");
+  await context.close();
+});
+
+test("メニュー: 面選びの手数は日本語でも日本語で出す (U6)", async ({ browser }) => {
+  const context = await browser.newContext({ locale: "ja-JP" });
+  await context.addInitScript(() => {
+    localStorage.setItem("swaprise.highscores.v1", JSON.stringify({ puzzle: [0] }));
+  });
+  const page = await context.newPage();
+  await page.goto("/?bgm=0&opening=0");
+  await page.waitForFunction(() => Boolean((window as any).__swapriseScenes?.menu));
+  await page.waitForTimeout(200);
+  await page.keyboard.press("Enter");
+  await page.waitForTimeout(150);
+  await page.keyboard.press("ArrowDown");
+  await page.waitForTimeout(100);
+  await page.keyboard.press("ArrowDown");
+  await page.waitForTimeout(100);
+  await page.keyboard.press("Enter");
+  await page.waitForFunction(() => Boolean((window as any).__swapriseScenes.menu.children.getByName("puzzle-picker")));
+  const read = () =>
+    page.evaluate(() => {
+      const panel = (window as any).__swapriseScenes.menu.children.getByName("puzzle-picker");
+      return panel.list.map((o: any) => o.text).filter((t: any) => typeof t === "string" && t.startsWith("パズル 1-"));
+    });
+  // 2 面目（1 手）
+  expect(await read()).toEqual(["パズル 1-2   1手"]);
+  // 1 面目はクリア済み。左へ送る
+  await page.keyboard.press("ArrowLeft");
+  await page.waitForTimeout(100);
+  const texts = await read();
+  expect(texts).toHaveLength(1);
+  expect(texts[0]).toMatch(/^パズル 1-1   \d+手   クリア済み$/);
+  expect(texts[0]).not.toMatch(/MOVE/);
+  await context.close();
 });

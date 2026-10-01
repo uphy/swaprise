@@ -10,6 +10,7 @@ import {
   TOTAL_ROWS,
   clearTiming,
   type ClearTiming,
+  deathGrace,
   riseFramesPerRow,
 } from "./constants";
 import { garbageFromChain, garbageFromCombo, garbageFromShock, type GarbageSpec, type IncomingGarbage } from "./garbage";
@@ -71,8 +72,20 @@ export class Board {
 
   riseProgress = 0;
   stopTimer = 0;
+  /**
+   * 描画用（読み取り専用）。今の停止時間を与えたときの長さ（フレーム）と、危険な状態で消して 2 倍になったか。
+   * 停止のゲージを「与えた長さのうちの残り」で描き、2 倍なら色を変えるのに使う。シミュレーションはこの値を読まない
+   */
+  stopTotal = 0;
+  stopPinch = false;
   shakeTimer = 0;
+  /** 天井に触れている間に数えた猶予（フレーム）。deathGrace(level) を超えるとゲームオーバー。天井から離れると 0 に戻る */
   deathTimer = 0;
+  /**
+   * 描画用（読み取り専用）。天井に触れているが、消去・変身・落下・停止・着地の揺れの間なので猶予を数えていないか。
+   * 盤面の状態から毎フレーム求め直すので、同期検査（syncState）には含めない
+   */
+  deathHeld = false;
   /** 現在の連鎖数。1は連鎖していない状態。 */
   chain = 1;
   maxChain = 1;
@@ -124,6 +137,15 @@ export class Board {
   private shockDue = false;
   private stopRaiseFree = false;
   private dropSide = 0;
+  /**
+   * 描画用。いまの連鎖（始まりの消去から）で得た得点・いちばん長い停止（フレーム）・危険で 2 倍になったか。
+   * chainEnd で締めの表示に渡す。シミュレーションはこの値を読まない
+   */
+  private runScore = 0;
+  private runStop = 0;
+  private runPinch = false;
+  /** 描画用。いまの連鎖で相手に送る板（連鎖の中の同時消し・ビックリパネルの板を含む）。chainEnd で締めの表示に渡す */
+  private runGarbage: GarbageSpec[] = [];
 
   /** 予測の巻き戻し用。乱数のprototypeと盤面オブジェクトの参照は維持する。 */
   copyFrom(source: Board): void {
@@ -347,7 +369,7 @@ export class Board {
     this.updateLevel();
     if (!resolving) this.updateRise(input);
     else {
-      if (this.stopTimer > 0) this.stopTimer--;
+      this.tickStop();
       if (this.shakeTimer > 0) this.shakeTimer--;
     }
     this.updateChainEnd();
@@ -876,6 +898,13 @@ export class Board {
       .sort((a, b) => b.y - a.y || a.x - b.x);
     const n = list.length;
     const chaining = list.some(({ x, y }) => this.cells[y][x].chain);
+    // 連鎖の締めの集計。消えている途中のパネルがない状態で連鎖でない消去が起きたら、新しい連鎖の始まりとして数え直す
+    if (!chaining && this.chain === 1 && !this.hasMatched()) {
+      this.runScore = 0;
+      this.runStop = 0;
+      this.runPinch = false;
+      this.runGarbage = [];
+    }
     let chainNow = 1;
     this.stats.matches++;
     if (chaining) {
@@ -890,6 +919,7 @@ export class Board {
 
     const gained = matchScore(n, chainNow);
     this.score = capScore(this.score + gained);
+    this.runScore += gained;
     const beforeCleared = this.panelsCleared;
     this.panelsCleared += n;
     // 消した枚数が shockEvery の倍数を跨ぐたびに、次のせり上がり行へビックリパネルを1枚予約する
@@ -906,8 +936,14 @@ export class Board {
     if (this.panic) stop *= TIMING.stopDangerMultiplier;
     stop = Math.min(TIMING.stopMax, stop);
     if (stop > 0) {
+      if (stop >= this.stopTimer) {
+        this.stopTotal = stop;
+        this.stopPinch = this.panic;
+      }
       this.stopTimer = Math.max(this.stopTimer, stop);
       this.stopRaiseFree = true;
+      this.runStop = Math.max(this.runStop, stop);
+      if (this.panic) this.runPinch = true;
     }
 
     // ビックリパネル同士の消去は灰色の板を送る（3個消しでも送れる）。通常パネルの同時消しは幅 n-1 の板。
@@ -919,6 +955,7 @@ export class Board {
     const attack = [...garbageFromCombo(normalCount), ...garbageFromShock(shockCount)];
     if (attack.length > 0) {
       this.outbox.push(...attack);
+      this.runGarbage.push(...attack);
       this.outboxAt = this.frame + TIMING.garbageSendDelay;
     }
 
@@ -982,9 +1019,10 @@ export class Board {
     if (this.hasMatched() || this.hasTransforming() || this.hasChainFlag()) return;
     // 連鎖の板は連鎖が終わってから1枚だけ送る。段階ごとに送ると 7連鎖で 1+2+…+6=21段になり、相手が一瞬で負ける。
     // 連鎖中に待ちが明けていた同時消しの板も、このとき一緒に送る
-    this.send([...this.heldForChain, ...garbageFromChain(this.chain)]);
+    const chainGarbage = garbageFromChain(this.chain);
+    this.send([...this.heldForChain, ...chainGarbage]);
     this.heldForChain = [];
-    this.emit({ type: "chainEnd", chain: this.chain });
+    this.emit({ type: "chainEnd", chain: this.chain, score: this.runScore, stop: this.runStop, pinch: this.runPinch, garbage: [...this.runGarbage, ...chainGarbage] });
     this.chain = 1;
   }
 
@@ -1015,8 +1053,20 @@ export class Board {
 
   // ------------------------------------------------------------------- rise
 
+  /**
+   * せり上がりの停止を 1 フレーム減らす。消去・変身の途中と、連鎖が続いている間（2 連鎖目以降の消去から連鎖の終わりまで。
+   * 段の間の落下も含む）は減らさない。もともとせり上がらない時間に停止を使い切ると、連鎖で得た停止が連鎖の終わりには
+   * ほとんど残らない（3 連鎖の 3 秒が約 1 秒、2 連鎖の 2 秒が約 0.1 秒）。原作も消えている間は停止を減らさない。
+   * 原作は段の間の落下では減るが、ここでは連鎖の締めに出す秒数とゲージを揃えるため連鎖が終わるまで減らさない
+   */
+  private tickStop(): void {
+    if (this.stopTimer === 0) return;
+    if (this.chain > 1 || this.hasMatched() || this.hasTransforming()) return;
+    this.stopTimer--;
+  }
+
   private updateRise(input: Input): void {
-    if (this.stopTimer > 0) this.stopTimer--;
+    this.tickStop();
     if (this.shakeTimer > 0) this.shakeTimer--;
     const busy = this.hasMatched() || this.hasTransforming();
     const touching = this.topTouching();
@@ -1053,10 +1103,12 @@ export class Board {
   private updateStatus(): void {
     const touching = this.topTouching();
     // 消去・変身に加えて落下も待つ。消して下に空間が空いたのに、落ちる前にゲームオーバーになるのを防ぐ
-    const busy = this.hasMatched() || this.hasTransforming() || this.hasFalling();
+    // 停止中と着地の揺れの間も数えない。連鎖で得た停止で天井際を粘れる（原作どおり）
+    const busy = this.hasMatched() || this.hasTransforming() || this.hasFalling() || this.stopTimer > 0 || this.shakeTimer > 0;
+    this.deathHeld = touching && busy;
     if (touching && !busy) {
       this.deathTimer++;
-      if (this.deathTimer > TIMING.deathGrace) {
+      if (this.deathTimer > deathGrace(this.level)) {
         this.gameOver = true;
         this.emit({ type: "gameOver" });
       }

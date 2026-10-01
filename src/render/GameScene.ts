@@ -1,6 +1,7 @@
 import Phaser from "phaser";
-import { Game, LESSONS, PUZZLES, puzzleName, type CpuLevel, type GameMode, type Input, NO_INPUT } from "../core";
+import { Game, LESSONS, PUZZLES, PUZZLES_PER_STAGE, puzzleName, type CpuLevel, type GameMode, type Input, NO_INPUT } from "../core";
 import { lessonText } from "./lessonText";
+import { endlessHintPending, showEndlessHint } from "./firstTime";
 import { hintSentence, noHintSentence } from "./puzzleHint";
 import { loadHighScores, recordCpuResult, recordLessonDone, recordPuzzleClear, recordScore } from "./highscore";
 import { recordProgress } from "../scores/progress";
@@ -30,6 +31,11 @@ const RAISE_BAR_H = 30;
 const RAISE_BAR_H_MOUSE = 22;
 /** 盤面の下端からせり上げバーまでの隙間。停止時間の青い線（盤面の下 6〜10px）を避ける */
 const RAISE_BAR_GAP = 12;
+/**
+ * マウスの画面での隙間。盤面の縁（下端の 7px 外）からバーまでが 5px（パネルの 16%）しかなく、
+ * いちばん大きな連鎖の揺れ（パネルの 17%）で盤面の縁がバーに届いていた。タッチ端末は縁からバーまで 10px あるので変えない
+ */
+const RAISE_BAR_GAP_MOUSE = 14;
 /** せり上げバーの下端から時間などの行までの隙間 */
 const INFO_GAP = 8;
 /** 縦持ちのレッスンで、盤面（せり上がる課はその下の時間の行）から説明までの隙間と、説明の下端から画面の下端までに残す余白 */
@@ -58,6 +64,9 @@ export interface GameStart {
   /** レッスンの課（0 始まり）。 */
   lesson?: number;
 }
+
+/** 目標（「1 手で全部消す」）を盤面に出す面の数。最初の段の 1〜3 面 */
+const PUZZLE_GOAL_STAGES = 3;
 
 export class GameScene extends Phaser.Scene {
   private game_!: Game;
@@ -92,6 +101,8 @@ export class GameScene extends Phaser.Scene {
   private puzzleHintText: Phaser.GameObjects.Text | null = null;
   /** ヒントの段。0 は出していない。手を打つ・戻す・進めるで 0 に戻る */
   private puzzleHintLevel = 0;
+  /** 最初の数面だけ盤面の上のほうに出す目標（「1 手で全部消す」）。ほかの面とモードは null */
+  private puzzleGoal: Phaser.GameObjects.Text | null = null;
   /** 結果画面の部品。パズルで失敗から戻すときに片付ける */
   private resultButtons: Phaser.GameObjects.GameObject[] = [];
   private resultTimer: Phaser.Time.TimerEvent | null = null;
@@ -205,6 +216,16 @@ export class GameScene extends Phaser.Scene {
         this.touches[i]?.holdRaise(p.id);
       }).setVisible(Boolean(this.inputs[i]) && this.mode !== "puzzle" && !this.game_.lesson?.rows),
     );
+    // 停止時間はせり上げバーを STOP のゲージに切り替えて見せ、連鎖の終わりの締めは遊ぶ人の盤面にだけ出す
+    this.views.forEach((v, i) => {
+      v.stopOnBar = this.raiseHints[i].visible;
+      v.chainSummary = Boolean(this.inputs[i]);
+      // 対戦（VS CPU・2 PLAYERS）の締めは得点の代わりに相手に送った板を言う
+      v.summaryAttack = this.mode === "cpu" || this.mode === "versus";
+      v.opponentLeft = this.mode === "versus" && i === 1;
+      // 連鎖した瞬間の盤面の揺れと閃光も遊ぶ人の盤面だけ。パズルとレッスンでも連鎖の手応えは出す
+      v.chainFeel = Boolean(this.inputs[i]);
+    });
 
     // レッスンの説明。盤面の下に短く出し、迷っていれば盤面の目印を光らせる。固定の面は RESET で最初の形に戻せる
     this.lessonText?.destroy();
@@ -232,12 +253,15 @@ export class GameScene extends Phaser.Scene {
       const h = this.game_.lesson.hint;
       if (h) this.views[0].setHint([h, { x: h.x + 1, y: h.y }]);
     }
+    // 初めての ENDLESS だけ、盤面の上の空いた段に操作の一文を出し、最初の入れ替えで消す（src/render/firstTime.ts）
+    if (this.mode === "endless" && endlessHintPending(loadHighScores())) showEndlessHint(this, this.views[0], boards[0], this.layout.touch);
 
     // パズルの 戻す・進める・ヒント。手を打ち直すたびに最初からやり直さなくて済むようにする。
     // ヒントは 1 回目で次の手の技法を文で、2 回目で入れ替えるマスを盤面に光らせる
     this.puzzleButtons = null;
     this.puzzleHintText = null;
     this.puzzleHintLevel = 0;
+    this.puzzleGoal = null;
     this.resultButtons = [];
     this.resultTimer = null;
     this.resultPointer = null;
@@ -254,6 +278,18 @@ export class GameScene extends Phaser.Scene {
         .setDepth(5)
         .setVisible(false)
         .setName("puzzle-hint");
+      // 初めて遊ぶ人は何をすればクリアか分からないので、最初の数面だけ目標と手数を盤面の中の上（空いている段）に出す。
+      // 手数は面ごとの値から作る
+      if (this.stage < PUZZLE_GOAL_STAGES) {
+        const moves = PUZZLES[this.stage].moves;
+        const goal = moves === 1 ? t("CLEAR ALL PANELS IN 1 MOVE") : t("CLEAR ALL PANELS IN {moves} MOVES", { moves });
+        this.puzzleGoal = this.add
+          .text(0, 0, goal, { fontFamily: FONT_UI, fontSize: "16px", fontStyle: "700", color: TEXT_COLOR, align: "center", lineSpacing: 2, wordWrap: { width: BOARD_W - 24, useAdvancedWrap: true } })
+          .setShadow(0, 2, "#1c1238", 4, false, true)
+          .setOrigin(0.5, 0)
+          .setDepth(1)
+          .setName("puzzle-goal");
+      }
     }
 
     // 画面上のポーズボタン
@@ -338,7 +374,7 @@ export class GameScene extends Phaser.Scene {
     });
     // キーボード向けの案内。タッチ端末では出さない（ボタンがある）
     this.hintText = this.add
-      .text(0, 0, t("P: pause   R: restart   Esc: menu   M: mute"), { fontFamily: FONT_UI, fontSize: "12px", color: "rgba(255,255,255,0.55)" })
+      .text(0, 0, this.mode === "versus" ? t("P: pause   R: restart   Esc: menu   M: mute") : t("←↑↓→: move   Z: swap   X: raise   P: pause   R: restart   Esc: menu   M: mute"), { fontFamily: FONT_UI, fontSize: "12px", color: "rgba(255,255,255,0.55)" })
       .setOrigin(0.5);
     // 戻る操作の案内。盤面の外（画面の下端、横持ちのスマホは上端）に数秒だけ出す
     this.backHintText = this.add
@@ -423,7 +459,7 @@ export class GameScene extends Phaser.Scene {
 
   /** 盤面の下端からレッスンの説明までにある、せり上げバーと時間の行の高さ（せり上がる課だけ） */
   private lessonBarSpace(): number {
-    return this.raiseHints[0]?.visible ? RAISE_BAR_GAP + (this.layout.touch ? RAISE_BAR_H : RAISE_BAR_H_MOUSE) + INFO_GAP : 0;
+    return this.raiseHints[0]?.visible ? (this.layout.touch ? RAISE_BAR_GAP + RAISE_BAR_H : RAISE_BAR_GAP_MOUSE + RAISE_BAR_H_MOUSE) + INFO_GAP : 0;
   }
 
   /**
@@ -455,15 +491,16 @@ export class GameScene extends Phaser.Scene {
     // デスクトップは盤面の下にせり上げバーと操作の案内文が並ぶので、上端を詰めて高さ 520 に収める
     const top = L.phoneLandscape ? 14 : L.portrait ? 52 : 56;
     const barH = L.touch ? RAISE_BAR_H : RAISE_BAR_H_MOUSE;
+    const barGap = L.touch ? RAISE_BAR_GAP : RAISE_BAR_GAP_MOUSE;
     const placeBoard = (i: number, ox: number, oy: number, scale: number, hud: HudSide = "top"): void => {
       // せり上げバーは操作の要なので盤面の直下に置き、時間・速度・最大連鎖の行はその下。バーのない盤面（CPU・パズル）は行を盤面の直下に戻す
       const hasBar = this.raiseHints[i].visible;
-      this.views[i].place(ox, oy, scale, hud, hasBar ? BOARD_H + (RAISE_BAR_GAP + barH + INFO_GAP) / scale : undefined);
+      this.views[i].place(ox, oy, scale, hud, hasBar ? BOARD_H + (barGap + barH + INFO_GAP) / scale : undefined);
       this.touches[i]?.place(ox, oy, scale);
       // せり上げバー。HUD が上なら盤面の直下に盤面と同じ幅で、横なら HUD の列に置く。
       // 当たり判定は指の大きさ（44dp）まで上下に広げる
       if (hud === "top") {
-        this.raiseHints[i].resize(BOARD_W * scale, barH, 48).setPosition(ox + (BOARD_W / 2) * scale, oy + BOARD_H * scale + RAISE_BAR_GAP + barH / 2);
+        this.raiseHints[i].resize(BOARD_W * scale, barH, 48).setPosition(ox + (BOARD_W / 2) * scale, oy + BOARD_H * scale + barGap + barH / 2);
       } else {
         this.raiseHints[i].resize(100, 44, 48);
         // HUD の列の得点・時間・速度・最大連鎖の札（下端 oy + 166）の下
@@ -505,7 +542,7 @@ export class GameScene extends Phaser.Scene {
       placeBoard(0, ox1, top, 1);
       placeBoard(1, ox2, top, 1);
       // 縦持ちでは盤面の隙間が狭いので、盤面の下（せり上げバーと時間の行の下）に置く
-      if (L.portrait) this.vsText?.setPosition(W / 2, top + BOARD_H + RAISE_BAR_GAP + barH + INFO_GAP + 40).setFontSize(18).setVisible(true);
+      if (L.portrait) this.vsText?.setPosition(W / 2, top + BOARD_H + barGap + barH + INFO_GAP + 40).setFontSize(18).setVisible(true);
       else this.vsText?.setPosition(W / 2, top + BOARD_H / 2).setFontSize(28).setVisible(true);
     }
     // ポーズボタンは自分の盤面の右上の外。隣の盤面や画面の端までに余白がなければ盤面の右上の内側に置き、
@@ -540,6 +577,10 @@ export class GameScene extends Phaser.Scene {
 
     // パズルの 戻す・進める・ヒント は盤面の下の残り手数の行の下。横長の画面はヒント文を盤面の右に出す。
     // 横持ちのスマホはボタンも HUD の列（ポーズボタンの下）に縦に並べる
+    if (this.puzzleGoal) {
+      const v = this.views[0];
+      this.puzzleGoal.setScale(v.scale).setPosition(v.ox + (BOARD_W * v.scale) / 2, v.oy + 28 * v.scale);
+    }
     if (this.puzzleButtons && this.puzzleHintText) {
       const v = this.views[0];
       const { undo, redo, hint } = this.puzzleButtons;
@@ -776,15 +817,8 @@ export class GameScene extends Phaser.Scene {
     if (this.game_.lesson) this.updateLessonHint(this.game_.boards[0].events);
     if (this.puzzleHintLevel > 0 && this.game_.boards[0].events.some((e) => e.type === "swap")) this.clearPuzzleHint();
     this.game_.boards.forEach((b, i) => {
+      // 連鎖の揺れと閃光は BoardView が連鎖した盤面だけに出す（chainFeel）
       this.views[i].handleEvents(b.events, true, Boolean(this.inputs[i]));
-      // 自分の盤面の大きな連鎖は画面ごと揺らし、5 連鎖からは閃光も足す。
-      // 振幅は画面幅に対する比。盤面の大きさが分かる程度にとどめ、揺れで盤面が読めなくならないようにする
-      if (!this.inputs[i]) return;
-      for (const e of b.events) {
-        if (e.type !== "match" || e.chain < 3) continue;
-        this.cameras.main.shake(90 + e.chain * 10, 0.0009 + Math.min(0.0025, e.chain * 0.0003));
-        if (e.chain >= 5) this.flash(Math.min(0.5, 0.15 + e.chain * 0.04));
-      }
     });
   }
 
@@ -848,7 +882,7 @@ export class GameScene extends Phaser.Scene {
   }
   private resultKeycap = false;
 
-  /** 画面全体の白い閃き。大きな連鎖と勝利で使う */
+  /** 画面全体の白い閃き。勝利・クリア・新記録で使う（連鎖の閃光は BoardView が盤面の中だけに出す） */
   private flash(alpha: number): void {
     const L = this.layout;
     const rect = this.add.rectangle(0, 0, L.width, L.height, 0xffffff, alpha).setOrigin(0).setDepth(25);
@@ -908,11 +942,17 @@ export class GameScene extends Phaser.Scene {
     this.views.forEach((v) => v.draw(this.paused || this.starting ? 0 : delta, !this.ended));
     if (this.puzzleButtons) {
       const settled = this.game_.boards[0].isSettled();
-      this.puzzleButtons.undo.setAlpha(settled && this.game_.puzzleMoves.length > 0 ? 1 : 0.4);
+      this.puzzleButtons.undo.setAlpha(settled && this.game_.puzzleMoves.length > 0 && this.game_.puzzleResult !== "clear" ? 1 : 0.4);
       this.puzzleButtons.redo.setAlpha(settled && !this.ended && this.game_.puzzleCanRedo ? 1 : 0.4);
       this.puzzleButtons.hint.setAlpha(settled && !this.ended ? 1 : 0.4);
+      // 結果を出している間は目標を隠す（失敗から手を戻したらまた出す）
+      this.puzzleGoal?.setVisible(!this.ended);
     }
-    this.raiseHints.forEach((h, i) => h.setRaising(this.inputs[i]?.lastRaise ?? false, this.paused ? 0 : delta));
+    this.raiseHints.forEach((h, i) => {
+      const b = this.game_.boards[i];
+      h.setRaising(this.inputs[i]?.lastRaise ?? false, this.paused ? 0 : delta);
+      h.setStop(b.gameOver ? 0 : b.stopTimer, b.stopTotal, b.stopPinch, this.paused ? 0 : delta);
+    });
     if (this.ended) this.placeResultKeycap();
   }
 
@@ -1046,16 +1086,23 @@ export class GameScene extends Phaser.Scene {
       const b = g.boards[0];
       if (g.puzzleResult === "clear") {
         recordPuzzleClear(this.stage);
-        this.views[0].showOverlay(t("CLEAR"), t("MOVES LEFT {count}", { count: b.movesLeft ?? 0 }));
+        // 残り手数は全部消した時点でいつも 0 なので出さず、どの面を解いたかと段の中の進み（1-1 なら 1/10）を出す。
+        // クリアのあとは手を戻せない（Game.puzzleUndo が断る）ので、UNDO は押せない見た目にして当たり判定も外す
+        this.views[0].showOverlay(t("CLEAR"), t("{name} CLEAR  {face}/{total}", { name: puzzleName(this.stage), face: (this.stage % PUZZLES_PER_STAGE) + 1, total: PUZZLES_PER_STAGE }));
+        this.puzzleButtons?.undo.disableInteractive();
       } else {
         this.views[0].showOverlay(t("FAILED"), t("{count} PANELS LEFT", { count: b.panelCount() }));
       }
     } else if (this.mode === "endless" || this.mode === "timeattack") {
       const b = g.boards[0];
-      const progress = this.scoreRun ? recordProgress(this.mode, b.score, loadHighScores()[this.mode][0]?.score ?? null) : null;
-      const rank = recordScore(this.mode, b.score, b.maxChain, new Date(), b.stats.swaps);
+      // 0 点のプレイ（何も消さずに終わった回）は端末の記録にも公開の対象にもしない。
+      // 残すと「初めての記録！」と出て公開を聞かれ、RECORDS の上位にも 0 点の行が並んでいた。結果画面はふつうに出す
+      const counted = b.score > 0;
+      const run = counted ? this.scoreRun : null;
+      const progress = run ? recordProgress(this.mode, b.score, loadHighScores()[this.mode][0]?.score ?? null) : null;
+      const rank = counted ? recordScore(this.mode, b.score, b.maxChain, new Date(), b.stats.swaps) : 0;
       // 公開の可否をまだ決めていなければ結果画面で聞く。enqueueScore は公開オンのときだけ積む
-      const submission = this.scoreRun ? { ...this.scoreRun, mode: this.mode, score: b.score, maxChain: b.maxChain, frames: Math.min(b.frame, g.timeLimit ?? b.frame), swaps: b.stats.swaps } : null;
+      const submission = run ? { ...run, mode: this.mode, score: b.score, maxChain: b.maxChain, frames: Math.min(b.frame, g.timeLimit ?? b.frame), swaps: b.stats.swaps } : null;
       if (submission) enqueueScore(submission);
       const rankLine = rank === 1 ? t("NEW RECORD!") : rank > 0 ? t("RANK {rank}", { rank }) : "";
       const newRecord = rank === 1 && b.score > 0;
@@ -1084,7 +1131,7 @@ export class GameScene extends Phaser.Scene {
           this.views[0].hideOverlay();
           showScoreResult(this, {
             mode: this.mode as "endless" | "timeattack", title, score: b.score, chain: b.maxChain, combos: b.stats.combos, chains: b.stats.chains, swaps: b.stats.swaps,
-            progress, id: this.scoreRun?.id ?? null, submission, retry: () => this.restart(), menu: () => this.toMenu(), celebrate: newRecord,
+            progress, id: run?.id ?? null, submission, retry: () => this.restart(), menu: () => this.toMenu(), celebrate: newRecord,
             share: canShare() ? (button) => { void this.share({ setText: (text) => { button.textContent = text; } }); } : undefined,
           });
         };

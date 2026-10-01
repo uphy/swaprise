@@ -744,6 +744,11 @@ export class OnlineScene extends Phaser.Scene {
           i === s.player ? CARD.cyan : CARD.violet,
         ),
     );
+    // 自分の盤面は停止時間をせり上げバーの STOP ゲージで見せ、連鎖の揺れと閃光・連鎖の終わりの締めを出す。相手の盤面は下の縁の線だけ
+    this.views[s.player].stopOnBar = true;
+    this.views[s.player].chainSummary = true;
+    this.views[s.player].summaryAttack = true;
+    this.views[s.player].chainFeel = true;
     this.playerInput = new PlayerInput(this, P1_KEYS, 0);
     this.touch = new TouchInput(this, this.prediction.game.boards[s.player]);
     this.views[s.player].touch = this.touch;
@@ -870,6 +875,8 @@ export class OnlineScene extends Phaser.Scene {
   override update(_time: number, delta: number): void {
     this.bg?.update(this.session?.state?.phase === "suspended" ? 0 : delta);
     this.raiseHint?.setRaising(this.session?.state?.phase === "playing" && this.lastRaise, delta);
+    const mine = this.session && this.prediction?.game.boards[this.session.player];
+    if (mine) this.raiseHint?.setStop(mine.gameOver ? 0 : mine.stopTimer, mine.stopTotal, mine.stopPinch, delta);
     const s = this.session;
     const l = s?.lockstep;
     if (!s || !l) return;

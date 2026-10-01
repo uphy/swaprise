@@ -139,3 +139,33 @@ test("R during the end display retries at once without waiting for the result", 
   await page.waitForFunction(() => (window as any).__swaprise.game !== (window as any).__oldGame, null, { timeout: 600 });
   await expect(page.locator(".score-result")).toHaveCount(0);
 });
+for (const mode of ["endless", "timeattack"]) {
+  test(`${mode}: a 0-point run shows the result but is neither kept on this device nor offered for publishing`, async ({ page }) => {
+    // 公開の可否は未決。0 点では「初めての記録！」も公開の問いも出さず、RECORDS にも進みの記録にも残さない
+    await page.addInitScript(() => localStorage.removeItem("swaprise.scores.publish.v1"));
+    const posts: unknown[] = [];
+    await page.route("**/api/**", (r) => { if (r.request().method() === "POST") posts.push(r.request().url()); return r.fulfill({ json: { ok: true } }); });
+    await page.goto(`/?mode=${mode}&bgm=0&countdown=0`);
+    await finish(page, 0);
+    const result = page.getByRole("region", { name: "RESULT", exact: true });
+    await expect(result).toContainText("0 POINTS");
+    await expect(result).not.toContainText("First record!");
+    await expect(page.locator(".result-consent")).toBeHidden();
+    await expect(page.getByRole("button", { name: "RETRY", exact: true })).toBeVisible();
+    const stored = await page.evaluate((mode) => ({
+      scores: JSON.parse(localStorage.getItem("swaprise.highscores.v1") ?? "{}")[mode] ?? [],
+      progress: Object.keys(localStorage).filter((k) => k.startsWith("swaprise.progress.")),
+      pending: localStorage.getItem("swaprise.scores.pending.v1"),
+    }), mode);
+    expect(stored.scores).toEqual([]);
+    expect(stored.progress).toEqual([]);
+    expect(stored.pending).toBeNull();
+    expect(posts).toEqual([]);
+    // 点を取った次の回は、これまでどおり初めての記録として公開を聞く
+    await page.getByRole("button", { name: "RETRY", exact: true }).click();
+    await expect(page.locator(".score-result")).toHaveCount(0);
+    await finish(page, 120);
+    await expect(page.getByRole("region", { name: "RESULT", exact: true })).toContainText("First record!");
+    await expect(page.locator(".result-consent")).toBeVisible();
+  });
+}

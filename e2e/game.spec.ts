@@ -33,6 +33,8 @@ test("メニューが表示され、キーボードでエンドレスを開始�
   page.on("console", (m) => {
     if (m.type() === "error") errors.push(m.text());
   });
+  // レッスンを 1 つ終えた人の 1 PLAYER は枠が ENDLESS。記録のない人は LEARN に枠が置かれる（first-time.spec.ts）
+  await page.addInitScript(() => localStorage.setItem("swaprise.highscores.v1", JSON.stringify({ lessons: [0] })));
   await page.goto("/?bgm=0&countdown=0&opening=0");
   await expect(page.locator("canvas")).toBeVisible();
   await page.waitForTimeout(500);
@@ -295,4 +297,26 @@ test("エンドレス: 14 連鎖以上の吹き出しも数字で出す", async 
     return v.root.list.filter((o: any) => o.type === "Text").map((o: any) => o.text);
   });
   expect(texts).toContain("x14");
+});
+
+test("名前の札の 1P と札の SPEED は、大文字だけの行として字間を広げて描く", async ({ page }) => {
+  await page.goto("/?mode=endless&seed=7&bgm=0&countdown=0");
+  await page.waitForFunction(() => (window as any).__swaprise?.game.boards[0].frame > 0);
+  const r = await page.evaluate(() => {
+    const { scene } = (window as any).__swaprise;
+    const texts: any[] = [];
+    const walk = (list: any[]) => list.forEach((o) => { if (o.type === "Text") texts.push(o); if (o.list) walk(o.list); });
+    walk(scene.children.list);
+    const ref = document.createElement("canvas").getContext("2d")!;
+    return ["1P", "SPEED"].map((label) => {
+      const o = texts.find((t) => t.text === label);
+      ref.font = o.context.font;
+      ref.fontKerning = "none";
+      return { label, drawn: o.width - o.padding.left - o.padding.right, plain: ref.measureText(label).width, px: parseFloat(/([\d.]+)px/.exec(ref.font)![1]) };
+    });
+  });
+  for (const t of r) {
+    // 字と字の間（字数 - 1 か所）に文字の大きさの 8% ずつ
+    expect(t.drawn, t.label).toBeGreaterThan(t.plain + t.px * 0.08 * (t.label.length - 1) * 0.9);
+  }
 });

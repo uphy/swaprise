@@ -14,6 +14,7 @@ import { DPR, applyLayout } from "./hidpi";
 import { Button } from "./ui";
 import { fullscreen } from "./fullscreen";
 import { loadLastMode, saveLastMode } from "./lastmode";
+import { isNewPlayer } from "./firstTime";
 import { applyPendingUpdate } from "./update";
 import type { GameStart } from "./GameScene";
 import { t } from "./i18n";
@@ -23,6 +24,8 @@ interface MenuItem {
   label: string;
   /** ラベルの下に添える小文字（中身の説明や記録）。 */
   caption: string;
+  /** 小文字を白の太字にして目立たせる（menuCard の captionStrong） */
+  captionStrong?: boolean;
   group?: Level;
   start?: { mode: GameMode; cpuLevel?: CpuLevel };
   back?: boolean;
@@ -66,7 +69,9 @@ function itemsFor(level: Level, hs: HighScores): MenuItem[] {
       { label: t("PUZZLE"), caption: t("{count} / {total} CLEARED", { count: hs.puzzle.length, total: PUZZLES.length }), start: { mode: "puzzle" }, name: "item-puzzle", color: CARD.green },
       {
         label: t("LEARN"),
-        caption: hs.lessons.length >= LESSONS.length ? t("all {total} lessons done", { total: LESSONS.length }) : t("{count} / {total} LESSONS", { count: hs.lessons.length, total: LESSONS.length }),
+        // 何も遊んでいない人には、ここから始めればよいことを添える（src/render/firstTime.ts）
+        caption: isNewPlayer(hs) ? t("new here? start here") : hs.lessons.length >= LESSONS.length ? t("all {total} lessons done", { total: LESSONS.length }) : t("{count} / {total} LESSONS", { count: hs.lessons.length, total: LESSONS.length }),
+        captionStrong: isNewPlayer(hs),
         start: { mode: "lesson" },
         name: "item-learn",
         color: CARD.violet,
@@ -175,6 +180,8 @@ export class MenuScene extends Phaser.Scene {
     this.tools = [];
     this.picker = null;
     this.overlay = null;
+    // 面選びから遊び始めると、隠したメニューのまま Scene が使い回される。戻ってきたら出す
+    this.menuShown = true;
     this.toolIndex = -1;
     // 遊んでいる間に新版が見つかっていたら、メニューへ戻ったこのタイミングで切り替える（まもなく reload される）
     if (applyPendingUpdate()) return;
@@ -387,7 +394,7 @@ export class MenuScene extends Phaser.Scene {
       if (!half || item.name === "group-online") row++;
       const card = new MenuCard(this, {
         x, y: half ? y + HALF_EXTRA / 2 : y, w: half ? halfW : cardW, h: half ? cardH + HALF_EXTRA : cardH, compact,
-        label: item.label, caption: item.caption, icon: item.icon, narrow: half, color: item.color, name: item.name,
+        label: item.label, caption: item.caption, captionStrong: item.captionStrong, icon: item.icon, narrow: half, color: item.color, name: item.name,
         onPress: () => { focus(); this.select(); },
         onHover: (over) => {
           if (over) focus();
@@ -424,14 +431,21 @@ export class MenuScene extends Phaser.Scene {
     this.tools.forEach((b, i) => b.setSelected(i === this.toolIndex));
   }
 
-  /** 下位メニューを開く。前回遊んだモードがその中にあればカーソルをそこへ置く。 */
+  /**
+   * 下位メニューを開く。前回遊んだモードがその中にあればカーソルをそこへ置く。
+   * 何も遊んでいない人（レッスンを 1 つも終えておらず記録もない）の 1 PLAYER は、前回のモードより先に LEARN に枠を置いて見せる。
+   * 記録のない前回のモードは、たいてい迷って入った ENDLESS なので、そこへ戻さない
+   */
   private enterGroup(level: Level): void {
     this.level = level;
     const last = loadLastMode();
     this.index = 0;
+    const learnFirst = level === "1p" && isNewPlayer(loadHighScores());
     if (last && level === "1p") this.index = last.mode === "timeattack" ? 1 : last.mode === "puzzle" ? 2 : last.mode === "lesson" ? 3 : 0;
+    if (learnFirst) this.index = 3;
     if (last && level === "cpu") this.index = last.cpuLevel === "easy" ? 0 : last.cpuLevel === "hard" ? 2 : 1;
     this.toolIndex = -1;
+    if (learnFirst) this.focusVisible = true;
     this.buildList();
   }
 
@@ -533,13 +547,17 @@ export class MenuScene extends Phaser.Scene {
       return;
     }
     if (item.start.mode === "lesson") {
-      // まだ終えていない最初の課から。全部終えていれば最初から
-      const done = new Set(loadHighScores().lessons);
-      const next = LESSONS.findIndex((_, i) => !done.has(i));
-      this.startGame("lesson", undefined, undefined, next < 0 ? 0 : next);
+      this.startLessons();
       return;
     }
     this.startGame(item.start.mode, item.start.cpuLevel);
+  }
+
+  /** レッスンを始める。まだ終えていない最初の課から。全部終えていれば最初から */
+  private startLessons(): void {
+    const done = new Set(loadHighScores().lessons);
+    const next = LESSONS.findIndex((_, i) => !done.has(i));
+    this.startGame("lesson", undefined, undefined, next < 0 ? 0 : next);
   }
 
   private startGame(mode: GameMode, cpuLevel?: CpuLevel, stage?: number, lesson?: number): void {
@@ -603,6 +621,18 @@ export class MenuScene extends Phaser.Scene {
       list.push(b);
     });
     list[0]?.setSelected(true);
+    // 背の低い画面（横持ちのスマホ）で板が画面に収まらないときは、板ごと縮めて画面の中央に収める。
+    // 遊び方の最後に LEARN への誘いを足したら、横持ちで CLOSE が画面の下に切れた
+    const room = H - 12;
+    if (cardH > room) {
+      const s = room / cardH;
+      for (const o of panel.list) {
+        if (o === dim) continue;
+        const g = o as unknown as Phaser.GameObjects.Components.Transform;
+        g.setScale(g.scaleX * s, g.scaleY * s);
+        g.setPosition(cx + (g.x - cx) * s, H / 2 + (g.y - cy) * s);
+      }
+    }
     dim.on("pointerdown", (_p: Phaser.Input.Pointer, _x: number, _y: number, event: Phaser.Types.Input.EventData) => {
       event.stopPropagation();
       this.closeOverlay();
@@ -690,7 +720,11 @@ export class MenuScene extends Phaser.Scene {
       lines.push("");
       lines.push(t("P pause   R restart   Esc menu   M mute   V vibration"));
     }
-    this.openOverlay("howto-panel", t("HOW TO PLAY"), lines.join("\n"), [], CARD.green, (panel, cx, y) => this.drawHowToDiagram(panel, cx, y));
+    // 読むより触って覚えるほうが早いので、最後にレッスンへ誘い、その場で始められるようにする
+    lines.push("");
+    lines.push(t("New here? LEARN teaches the basics in {total} short lessons.", { total: LESSONS.length }));
+    const learn: OverlayButton = { label: t("START LESSONS"), name: "howto-learn", onPress: () => this.startLessons() };
+    this.openOverlay("howto-panel", t("HOW TO PLAY"), lines.join("\n"), [learn], CARD.green, (panel, cx, y) => this.drawHowToDiagram(panel, cx, y));
   }
 
   /**
@@ -727,6 +761,8 @@ export class MenuScene extends Phaser.Scene {
     let first = 0;
     while (first < PUZZLES.length - 1 && cleared.has(first)) first++;
     const state = { stage: Math.floor(first / PUZZLES_PER_STAGE), face: first % PUZZLES_PER_STAGE };
+    // 後ろのメニューの文字が暗幕から透けて読めていたので、開いている間はメニューを隠す（記録・設定の板と同じ）
+    this.setMenuShown(false);
     const dim = this.add.rectangle(0, 0, W, H, 0x1a1030, 0.9).setOrigin(0).setInteractive();
     const panel = this.add.container(0, 0, [dim]).setDepth(50).setName("puzzle-picker");
     const compact = H < 560;
@@ -823,7 +859,7 @@ export class MenuScene extends Phaser.Scene {
       });
       const index = state.stage * PUZZLES_PER_STAGE + state.face;
       const st = PUZZLES[index];
-      info.setText(`${t("PUZZLE")} ${puzzleName(index)}   ${st.moves} ${st.moves === 1 ? "MOVE" : "MOVES"}${cleared.has(index) ? t("   CLEARED") : ""}`);
+      info.setText(`${t(st.moves === 1 ? "PUZZLE {name}   {moves} MOVE" : "PUZZLE {name}   {moves} MOVES", { name: puzzleName(index), moves: st.moves })}${cleared.has(index) ? t("   CLEARED") : ""}`);
     };
     refresh();
     dim.on("pointerdown", (_p: Phaser.Input.Pointer, _x: number, _y: number, event: Phaser.Types.Input.EventData) => {
@@ -836,6 +872,7 @@ export class MenuScene extends Phaser.Scene {
   private closePicker(): void {
     this.picker?.panel.destroy();
     this.picker = null;
+    this.setMenuShown(true);
   }
 
   private startPuzzle(stage: number): void {

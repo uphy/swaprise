@@ -4,11 +4,12 @@
  * どちらも同じ関数を使うので、載せる情報の増減はここだけで済む。
  */
 import type { CardSpec } from "./card";
+import { PUZZLES_PER_STAGE } from "../core/puzzle";
 
 export type ShareVerdict = "win" | "lose" | "draw";
 export type ShareResult =
   | { mode: "endless" | "timeattack"; score: number; chain: number; /** 公開した記録の id。Worker が順位を引く */ id?: string }
-  | { mode: "puzzle"; stage: string; clear: boolean; /** クリア時の残り手数 */ left?: number }
+  | { mode: "puzzle"; stage: string; clear: boolean; /** クリア時の残り手数。全部消した時点でいつも 0 なのでカードには出さない。既に共有された URL を読むために残す */ left?: number }
   | { mode: "lesson"; n: number; total: number }
   | { mode: "cpu"; level: "easy" | "normal" | "hard"; result: ShareVerdict; chain: number }
   | { mode: "versus"; result: ShareVerdict; chain: number }
@@ -134,6 +135,8 @@ const points = (n: number): string => n.toLocaleString("en-US");
 const chainLine = (chain: number): string => `MAX CHAIN ×${chain}`;
 const modeLabel = (mode: ShareResult["mode"]): string =>
   ({ endless: "ENDLESS", timeattack: "TIME ATTACK 2:00", puzzle: "PUZZLE", lesson: "LESSON", cpu: "VS CPU", versus: "VS 2P", online: "ONLINE", invite: "ONLINE" })[mode];
+/** 面の名前（1-1）の後ろの番号から段の中の進み（1 / 10）を作る。結果画面の「1-1 CLEAR 1/10」と同じ数 */
+const puzzleProgress = (stage: string): string => `${stage.split("-")[1]} / ${PUZZLES_PER_STAGE}`;
 const RESULT_WORD: Record<ShareVerdict, string> = { win: "WIN", lose: "LOSE", draw: "DRAW" };
 /** WIN は強調の黄、LOSE は薄い藤色、DRAW と CLEAR は連鎖の緑 */
 const RESULT_COLOR: Record<ShareVerdict, number> = { win: 0xffe066, lose: 0xd9d4f2, draw: 0x7cf57a };
@@ -148,7 +151,7 @@ export function cardSpec(r: ShareResult, standing: ShareStanding | null = null):
     }
     case "puzzle": {
       const subs = [{ text: `STAGE ${r.stage}` }];
-      if (r.clear && r.left !== undefined) subs.push({ text: `${r.left} MOVES LEFT` });
+      if (r.clear) subs.push({ text: puzzleProgress(r.stage) });
       return { mode: modeLabel(r.mode), main: r.clear ? "CLEAR" : "FAILED", mainColor: r.clear ? 0x7cf57a : 0xd9d4f2, subs };
     }
     case "lesson":
@@ -181,7 +184,7 @@ export function cardMeta(r: ShareResult, standing: ShareStanding | null = null):
     case "puzzle":
       return {
         title: `Puzzle Stage ${r.stage} ${r.clear ? "clear" : "failed"}${suffix}`,
-        description: `${r.clear && r.left !== undefined ? `残り ${r.left} 手でクリア。` : ""}連鎖の練習になるパズルも遊べる。${TAGLINE}`,
+        description: `${r.clear ? `パズル ${r.stage} をクリア。` : ""}連鎖の練習になるパズルも遊べる。${TAGLINE}`,
       };
     case "lesson":
       return { title: `Lesson ${r.n} / ${r.total} clear${suffix}`, description: `連鎖の組み方を順に学べるレッスン。${TAGLINE}` };

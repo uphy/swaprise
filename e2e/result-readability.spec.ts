@@ -25,7 +25,8 @@ for (const mode of ["endless", "timeattack", "puzzle"]) {
       });
       expect(text.font).toBeGreaterThanOrEqual(26);
       expect(text.width).toBeLessThanOrEqual(176);
-      expect(text.text).toContain("残り手数");
+      // 残り手数（クリアでは常に 0）でなく、面の番号と段の中の進みを出す (U4)
+      expect(text.text).toMatch(/クリア\s+\d+\/\d+/);
       return;
     }
     await expect(page.locator(".score-result")).toBeVisible();

@@ -1,7 +1,7 @@
 import Phaser from "phaser";
 import { t } from "./i18n";
-import { Board, COLS, EMPTY, ROWS, TIMING, TOTAL_ROWS, isPanel, type BoardEvent } from "../core";
-import { BOARD_BG, BOARD_H, BOARD_W, CARD, CELL, FONT_UI, GARBAGE_COLOR, KIND_COLORS, TEXT_COLOR, TEXT_DIM, chainColor, isTouchDevice } from "./theme";
+import { Board, COLS, EMPTY, ROWS, TIMING, TOTAL_ROWS, isPanel, type BoardEvent, type GarbageSpec } from "../core";
+import { BOARD_BG, BOARD_H, BOARD_W, CARD, CELL, CHAIN_PUNCH_MS, CHAIN_PUNCH_PIVOT_Y, CHAIN_SHAKE_SIDE_MAX, CHAIN_SHAKE_UP_MAX, FONT_UI, GARBAGE_COLOR, KIND_COLORS, STOP_COLORS, TEXT_COLOR, TEXT_DIM, chainColor, chainFx, isTouchDevice, prefersReducedMotion, stopSeconds, type ChainShakeType } from "./theme";
 import { CURSOR_PAD, css, garbageFrame, roundRect, tint } from "./textures";
 import { Button, gradientFill } from "./ui";
 import { audio } from "./shared";
@@ -26,10 +26,25 @@ export function announceOpponentChains(events: BoardEvent[], mine: BoardView): v
     audio.opponentChain();
   }
 }
-/** 連鎖の吹き出しの大きさの倍率。x2 を 1 倍に、x3 1.25 倍、x4 1.4 倍、x5 以上 1.6 倍 */
+/** 連鎖の吹き出しの大きさの倍率。x2 を 1 倍に、x3 1.25 倍、x4 1.4 倍、x5 1.5 倍、x6・x7 1.65 倍、x8・x9 1.85 倍、x10 以上 2.05 倍 */
 export function chainPopupScale(chain: number): number {
-  return chain >= 5 ? 1.6 : chain === 4 ? 1.4 : chain === 3 ? 1.25 : 1;
+  return chainFx(chain).popupScale;
 }
+/** 連鎖の揺れで盤面が上へずれるときの縮め方。揺れは下へ沈む向きに大きく、上へは 0.35 倍しか跳ね返らない（CHAIN_SHAKE_UP_MAX で止める） */
+const SHAKE_UP_RATIO = 0.35;
+/** 2 連鎖の沈みが底に届くまでの時間（ms）。60Hz なら最初の描画フレーム、120Hz なら 2 フレーム目で底に届く */
+const DIP_FALL_MS = 16;
+/** 連鎖の締めの地の板の不透明度。後ろの盤面が透けて見える薄さにして、文字は縁取りで読ませる */
+const SUMMARY_PLATE_ALPHA = 0.35;
+/** 遊ぶ人が手を動かしたあとの締めの不透明度 */
+const SUMMARY_DIM_ALPHA = 0.3;
+/** 危険な状態（PINCH）で消したときに締めがとどまる長さ（ms） */
+const SUMMARY_PINCH_HOLD = 600;
+/** 対戦の締めに出す送った板の文字色。相手の盤面に出る「+N」（incomingPopup）と同じ色にして、同じ板だと分かるようにする */
+const ATTACK_TEXT = "#ff8a94";
+/** 拡大の跳ねの中心（盤面の局所座標） */
+const PUNCH_X = BOARD_W / 2;
+const PUNCH_Y = BOARD_H * CHAIN_PUNCH_PIVOT_Y;
 /** 盤面と横置きの HUD の間隔。 */
 const HUD_GAP = 12;
 /**
@@ -119,8 +134,78 @@ export class BoardView {
   private readonly overlayBody: Phaser.GameObjects.Text;
   /** 結果の本文の下敷き */
   private readonly overlayPlate: Phaser.GameObjects.Graphics;
-  /** 停止時間のゲージ。盤面の下の縁に沿って光る */
+  /** 停止時間のゲージ。せり上げバーのない盤面（CPU）だけ、盤面の下の縁に沿って光る線で出す */
   private readonly stopBar: Phaser.GameObjects.Graphics;
+  /**
+   * 停止時間をせり上げバー（RaiseBar の STOP ゲージ）で見せるか。GameScene・OnlineScene が、バーを出す盤面で true にする。
+   * true の盤面は下の縁の細い線を描かない
+   */
+  stopOnBar = false;
+  /**
+   * 連鎖の終わりに締めの表示（5 CHAIN / +440 / STOP 10s / PINCH ×2）を出すか。遊ぶ人の盤面だけ true にする。
+   * CPU や通信の相手の盤面は小さく描かれることがあり、自分の盤面から目を離せない場面で読ませる意味がないので出さない。
+   * パズルとレッスンは得点も停止も使わないので出さない
+   */
+  chainSummary = false;
+  /**
+   * 締めの 2 行目を、得点の代わりにその連鎖で相手に送った板（▶ 4 ROWS）にするか。対戦（VS CPU・2 PLAYERS・ONLINE）で true にする。
+   * 対戦の勝ち負けを決めるのは相手に降らせる板で、得点ではない。1 人用は得点のまま
+   */
+  summaryAttack = false;
+  /** 相手の盤面がこの盤面の左にあるか（2 PLAYERS の 2P）。送った板の矢印を相手の方へ向ける */
+  opponentLeft = false;
+  /** 表示中の締めの表示。次の連鎖が先に終わったら消して出し直す */
+  private summary: Phaser.GameObjects.Container | null = null;
+  /** 締めの中身。遊ぶ人が手を動かしたら、これの不透明度を下げて盤面を透かす（出入りの動きは summary が持つ） */
+  private summaryFade: Phaser.GameObjects.Container | null = null;
+  /** 手動のせり上げを見分けるための、直前の描画までにせり上げた量（段） */
+  private lastRaised = 0;
+  /**
+   * 直近の締めの表示の中身（1 行ずつ）と範囲（盤面の局所座標）、地の板の不透明度、とどまる長さ、
+   * いちばん高い列の上端（局所座標）、手を動かして薄くしたか。e2e が読む
+   */
+  lastSummary: {
+    lines: string[];
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    scale: number;
+    hold: number;
+    glow: boolean;
+    plateAlpha: number;
+    stackTop: number;
+    dimmed: boolean;
+  } | null = null;
+  /**
+   * 連鎖した瞬間に盤面を揺らし、5 連鎖からは盤面に閃光を重ねるか。遊ぶ人の盤面だけ true にする（CPU の盤面は小さく、揺らすと目障り）。
+   * 揺らすのはこの盤面（枠・パネル・カーソル）だけで、得点などの HUD と画面の他の部分は動かさない。VS では連鎖した側だけが揺れる
+   */
+  chainFeel = false;
+  /**
+   * 進行中の揺れ。t は経過 ms（拡大の跳ねがあれば -CHAIN_PUNCH_MS から始まり、0 までは跳ね、0 から揺れる）、
+   * amp は局所座標の px（パネル 1 枚 = CELL に対する割合から決める）、punch は跳ねの拡大の割合
+   */
+  private shake: { type: ChainShakeType; amp: number; ms: number; punch: number; t: number; t0: number | null; phase: number; dir: number } | null = null;
+  /** 今の揺れのずれ（局所座標）と拡大の倍率。e2e が読む */
+  shakeOffset = { x: 0, y: 0, k: 1 };
+  /**
+   * 直近の揺れの型と大きさ（amp はパネル 1 枚に対する割合、punch は拡大の跳ねの割合）と、揺れている間の横・上・下それぞれの最大のずれ（局所座標）。
+   * edge は拡大の跳ねも含めた、盤面の縁（ベゼル）の外側が上・下・横へ最も動いた量（局所座標）。e2e が読む
+   */
+  lastShake: {
+    chain: number;
+    type: ChainShakeType;
+    amp: number;
+    ms: number;
+    punch: number;
+    peakX: number;
+    peakUp: number;
+    peakDown: number;
+    edge: { up: number; down: number; side: number };
+  } | null = null;
+  /** 盤面に重ねる閃光。使い回す */
+  private boardFlash: Phaser.GameObjects.Graphics | null = null;
   private readonly sparks: Phaser.GameObjects.Particles.ParticleEmitter;
   /** 消えたパネルの破片。柄ごとに 1 つ */
   private readonly emitters: Phaser.GameObjects.Particles.ParticleEmitter[] = [];
@@ -522,9 +607,11 @@ export class BoardView {
       switch (e.type) {
         case "swap":
           if (soundOn) audio.swap();
+          this.dimSummary();
           break;
         case "move":
           if (soundOn) audio.move();
+          this.dimSummary();
           break;
         case "match":
           this.popIndex = 0;
@@ -532,6 +619,7 @@ export class BoardView {
           if (hapticOn) haptics.match(e.panels, e.chain);
           this.flashMatched();
           this.popup(e);
+          if (this.chainFeel && e.chain >= 2) this.chainImpact(e.chain);
           break;
         case "pop":
           if (soundOn) audio.pop(this.popIndex++);
@@ -539,6 +627,7 @@ export class BoardView {
           break;
         case "chainEnd":
           if (soundOn && e.chain >= 2) audio.chainEnd(e.chain);
+          if (this.chainSummary && !this.style && e.chain >= 2) this.showSummary(e);
           break;
         case "land":
           if (soundOn) audio.land();
@@ -597,6 +686,112 @@ export class BoardView {
         });
       }
     }
+  }
+
+  /**
+   * 連鎖の一段ごとの手応え。連鎖数の段階（theme の chainFx）で揺れの型と大きさを変え、5 連鎖からは盤面に閃光、8 連鎖からは盤面いっぱいの光の輪を足す。
+   * 揺れの大きさはパネル 1 枚に対する割合で決め、盤面の局所座標で動かすので、画面の大きさや DPR で強さが変わらない
+   */
+  private chainImpact(chain: number): void {
+    const fx = chainFx(chain);
+    const { type, amp, ms, punch } = fx.shake;
+    this.lastShake = { chain, type, amp, ms, punch, peakX: 0, peakUp: 0, peakDown: 0, edge: { up: 0, down: 0, side: 0 } };
+    // 3 連鎖からは、まず盤面を一瞬ふくらませて「打った」感を出し、戻ってから揺らす（同時だと縁が周りの表示に届く）
+    if (!prefersReducedMotion())
+      this.shake = { type, amp: amp * CELL, ms, punch, t: punch > 0 ? -CHAIN_PUNCH_MS : 0, t0: null, phase: Math.random() * Math.PI * 2, dir: Math.random() < 0.5 ? -1 : 1 };
+    const color = Phaser.Display.Color.HexStringToColor(chainColor(chain)).color;
+    if (fx.flash > 0) {
+      this.flashBoard(fx.flash, chain >= 6 ? tint(color, 0.7) : 0xffffff);
+      if (fx.flashCount > 1) this.scene.time.delayedCall(150, () => this.flashBoard(fx.flash * 0.6, 0xffffff));
+    }
+    if (fx.ring) this.ring(BOARD_W / 2, BOARD_H / 2, color, chain >= 10 ? 7 : 5.5);
+  }
+
+  /** 盤面の井戸に重ねる閃光。盤面の外（HUD や画面の他の部分）は光らせない */
+  private flashBoard(alpha: number, color: number): void {
+    let g = this.boardFlash;
+    if (!g) {
+      g = this.boardFlash = this.scene.add.graphics();
+      // パネルの上、四隅の蓋の下。蓋が丸角の外を隠す
+      this.root.addAt(g, this.root.getIndex(this.corners[0]));
+    }
+    this.scene.tweens.killTweensOf(g);
+    g.clear();
+    g.fillStyle(color, 1);
+    g.fillRoundedRect(0, 0, BOARD_W, BOARD_H, BOARD_RADIUS);
+    g.setAlpha(alpha).setVisible(true);
+    this.scene.tweens.add({ targets: g, alpha: 0, duration: 320, ease: "Quad.Out", onComplete: () => g.setVisible(false) });
+  }
+
+  /** 揺れを 1 描画フレームぶん進め、今のずれ（局所座標）と拡大の倍率を返す */
+  private stepShake(delta: number): { x: number; y: number; k: number } {
+    const s = this.shake;
+    if (!s) return { x: 0, y: 0, k: 1 };
+    // 描画が遅れた端末でも揺れが一瞬で終わらないよう、1 回に進める時間は 2 フレームぶんまで
+    s.t += Math.min(delta, 34);
+    if (s.t < 0) {
+      // 拡大の跳ね: 速くふくらんで、ゆっくり戻る
+      const q = 1 + s.t / CHAIN_PUNCH_MS;
+      const k = 1 + s.punch * Math.sin(Math.PI * (q < 0.35 ? (q / 0.35) * 0.5 : 0.5 + ((q - 0.35) / 0.65) * 0.5));
+      const edge = this.lastShake?.edge;
+      if (edge) {
+        edge.up = Math.max(edge.up, (PUNCH_Y + FRAME_PAD) * (k - 1));
+        edge.down = Math.max(edge.down, (BOARD_H + FRAME_PAD - PUNCH_Y) * (k - 1));
+        edge.side = Math.max(edge.side, (BOARD_W / 2 + FRAME_PAD) * (k - 1));
+      }
+      return { x: 0, y: 0, k };
+    }
+    // 沈むだけの揺れは揺れ始めからの時間で、それ以外は跳ねのあと最初に描くフレームからの時間で進める
+    if (s.t0 === null) s.t0 = s.t;
+    const tau = s.type === "dip" ? s.t : s.t - s.t0;
+    const p = tau / s.ms;
+    if (p >= 1) {
+      this.shake = null;
+      return { x: 0, y: 0, k: 1 };
+    }
+    // 縦の揺れは cos で始め、跳ねのあと最初に描くフレームを下への山にする。sin で始めると 60Hz の各フレームが山を外し、
+    // 3・4 連鎖で設計の約 7 割しか画面に出なかった。周期 50ms（60Hz の 3 フレーム）なら次の山もフレームに乗る
+    const wave = (period: number, phase = 0): number => Math.sin((2 * Math.PI * tau) / period + phase);
+    const down = (period: number): number => Math.cos((2 * Math.PI * tau) / period);
+    let x = 0;
+    let y = 0;
+    switch (s.type) {
+      case "dip": {
+        // 最初の 1 フレーム（16ms）で沈み切り、ゆっくり戻る
+        y = tau < DIP_FALL_MS ? s.amp * Math.sin((Math.PI / 2) * (tau / DIP_FALL_MS)) : s.amp * 0.5 * (1 + Math.cos((Math.PI * (tau - DIP_FALL_MS)) / (s.ms - DIP_FALL_MS)));
+        break;
+      }
+      case "vertical":
+        y = s.amp * (1 - p) * down(50);
+        break;
+      case "both": {
+        const env = s.amp * (1 - p);
+        x = env * wave(70, s.phase) * s.dir;
+        y = env * down(50);
+        break;
+      }
+      case "long": {
+        // 周期の違う揺れを重ねて、規則的な渦巻きにならないようにする。縦はどちらも最初のフレームで下の山になる
+        const env = s.amp * Math.pow(1 - p, 1.6);
+        x = env * wave(64, s.phase) * s.dir;
+        y = env * (0.7 * down(50) + 0.3 * down(100 / 3));
+        break;
+      }
+    }
+    // 上へは小さく跳ね返るだけにする。盤面の上の得点の板との隙間はパネルの 6.3% しかない。
+    // 横は横持ちの札まで 15.6% なので、下ほど大きくは揺らさない
+    if (y < 0) y = Math.max(y * SHAKE_UP_RATIO, -CHAIN_SHAKE_UP_MAX * CELL);
+    x = Math.max(-CHAIN_SHAKE_SIDE_MAX * CELL, Math.min(CHAIN_SHAKE_SIDE_MAX * CELL, x));
+    const peak = this.lastShake;
+    if (peak) {
+      peak.peakX = Math.max(peak.peakX, Math.abs(x));
+      peak.peakUp = Math.max(peak.peakUp, -y);
+      peak.peakDown = Math.max(peak.peakDown, y);
+      peak.edge.up = Math.max(peak.edge.up, -y);
+      peak.edge.down = Math.max(peak.edge.down, y);
+      peak.edge.side = Math.max(peak.edge.side, Math.abs(x));
+    }
+    return { x, y, k: 1 };
   }
 
   /** 1 枚消えるごとに、その柄の破片を飛ばす。 */
@@ -693,6 +888,161 @@ export class BoardView {
       onComplete: () => targets.forEach((o) => o.destroy()),
     });
   }
+  /**
+   * 連鎖の締め。連鎖が終わった瞬間に、その連鎖で得たもの（連鎖数・得点の合計・せり上がりの停止）を盤面の上寄りに 1 秒弱出す。
+   * 対戦（summaryAttack）では得点の代わりに、相手に送った板の段数を相手の方を向いた矢印付きで出す。
+   * 連鎖の吹き出しは「何連鎖目か」しか言わないので、終わりに「それで何が得られたか」をまとめて見せる。
+   * 危険な状態で消して停止が 2 倍になったら「PINCH ×2」を添える。吹き出しと同じ濃紺の板に連鎖の色の縁、数字はグラデーション
+   */
+  private showSummary(e: { chain: number; score: number; stop: number; pinch: boolean; garbage: GarbageSpec[] }): void {
+    this.summary?.destroy();
+    const color = chainColor(e.chain);
+    const edge = Phaser.Display.Color.HexStringToColor(color).color;
+    // 見出しの大きさ・とどまる長さ・縁の太さと光は連鎖数の段階で変わる（theme の chainFx）
+    const fx = chainFx(e.chain);
+    const stopColor = e.pinch ? STOP_COLORS.pinch : STOP_COLORS.normal;
+    const head = this.scene.add
+      .text(0, 0, `${e.chain} CHAIN`, { fontFamily: FONT_UI, fontSize: `${Math.round(24 * fx.summaryScale)}px`, fontStyle: "700", color, stroke: HUD_INK, strokeThickness: 9 })
+      .setShadow(0, 3, "rgba(0, 0, 0, 0.4)", 4, true, false)
+      .setOrigin(0.5, 0);
+    gradientFill(head, "#ffffff", color);
+    const small = (text: string, fill: string): Phaser.GameObjects.Text =>
+      this.scene.add
+        .text(0, 0, text, { fontFamily: FONT_UI, fontSize: "17px", fontStyle: "700", color: fill, stroke: HUD_INK, strokeThickness: 7 })
+        .setOrigin(0, 0);
+    // 対戦では得点の代わりに、相手に送った板の段数（連鎖の板と連鎖の途中の同時消しの板の厚さの合計）
+    const rows = e.garbage.reduce((sum, g) => sum + g.height, 0);
+    const score = this.summaryAttack
+      ? small(t(rows === 1 ? "{arrow} {rows} ROW" : "{arrow} {rows} ROWS", { arrow: this.opponentLeft ? "◀" : "▶", rows }), ATTACK_TEXT)
+      : small(`+${e.score}`, "#ffe066");
+    const stop = small(`STOP ${stopSeconds(e.stop)}`, stopColor.text);
+    const pinch = e.pinch
+      ? this.scene.add
+          .text(0, 0, "PINCH ×2", { fontFamily: FONT_UI, fontSize: "13px", fontStyle: "700", color: "#ffffff", stroke: HUD_INK, strokeThickness: 4 })
+          .setOrigin(0.5, 0)
+      : null;
+    // 並べ方: 1 行目に連鎖数、2 行目に得点と停止を左右に、2 倍なら 3 行目に赤い札で PINCH ×2
+    const gap = 12;
+    const rowW = score.width + gap + stop.width;
+    const padX = 12;
+    const padY = 6;
+    // 見出しは盤面の幅（縁の内側）に入らなければ縮める
+    const headFit = Math.min(1, (BOARD_W - 8 - padX * 2) / head.width);
+    head.setScale(headFit);
+    const w = Math.min(BOARD_W - 8, Math.max(head.displayWidth, rowW, pinch ? pinch.width + 16 : 0) + padX * 2);
+    let y = padY;
+    head.setPosition(0, y);
+    y += head.displayHeight - 6;
+    score.setPosition(-rowW / 2, y);
+    stop.setPosition(-rowW / 2 + score.width + gap, y);
+    y += score.height;
+    const pill = this.scene.add.graphics();
+    if (pinch) {
+      y += 3;
+      const pw = pinch.width + 16;
+      const ph = pinch.height + 2;
+      pill.fillStyle(stopColor.fill, 0.95);
+      pill.fillRoundedRect(-pw / 2, y, pw, ph, ph / 2);
+      pill.lineStyle(1.5, stopColor.light, 1);
+      pill.strokeRoundedRect(-pw / 2, y, pw, ph, ph / 2);
+      pinch.setPosition(0, y + 1);
+      y += ph;
+    }
+    const h = y + padY;
+    const plate = this.scene.add.graphics();
+    // 8 連鎖からは縁の外に連鎖の色の光をにじませる
+    if (fx.summaryGlow) {
+      plate.lineStyle(10, edge, 0.18);
+      plate.strokeRoundedRect(-w / 2, 0, w, h, 12);
+      plate.lineStyle(5, edge, 0.35);
+      plate.strokeRoundedRect(-w / 2, 0, w, h, 12);
+    }
+    // 地の板は薄くして、後ろの盤面（天井際の列）を透かす。文字は暗い太い縁取りで読ませる
+    plate.fillStyle(PLATE, SUMMARY_PLATE_ALPHA);
+    plate.fillRoundedRect(-w / 2, 0, w, h, 12);
+    plate.lineStyle(fx.summaryEdge, edge, 0.95);
+    plate.strokeRoundedRect(-w / 2, 0, w, h, 12);
+    // 10 連鎖からは縁の内側に金の細い線を足して二重の縁にする
+    if (e.chain >= 10) {
+      plate.lineStyle(1.5, 0xffe066, 0.9);
+      plate.strokeRoundedRect(-w / 2 + 4, 4, w - 8, h - 8, 9);
+    }
+    // 置く高さ。ふだんは盤面の上寄り（上から 3 割）で、予告おじゃまの列（上端）と相手の大きな連鎖の知らせ（上から 2 段目）の下。
+    // そこだといちばん高い列に重なるなら、列より上の空きに収まる限り上へ寄せる。空きがなければ元の高さのまま、薄い地と手を動かしたら薄くなることに頼る
+    const stackTop = this.stackTop();
+    const minTop = this.board.pendingGarbage.length ? BoardView.PENDING_Y + Math.max(6, ...this.board.pendingGarbage.map((g) => g.height * 5)) + 4 : 4;
+    let top = Math.round(BOARD_H * 0.3);
+    if (top + h > stackTop - 4 && minTop + h <= stackTop - 4) top = Math.floor(stackTop - 4 - h);
+    const box = this.scene.add.container(BOARD_W / 2, top + h / 2).setAlpha(0).setScale(1.5);
+    const fade = this.scene.add.container(0, 0);
+    // 弾むときに中心から広がるよう、中身を箱の中心基準に置き直す
+    const parts: (Phaser.GameObjects.Graphics | Phaser.GameObjects.Text)[] = [plate, pill, head, score, stop, ...(pinch ? [pinch] : [])];
+    parts.forEach((p) => (p.y -= h / 2));
+    fade.add(parts);
+    box.add(fade);
+    this.root.add(box);
+    this.summary = box;
+    this.summaryFade = fade;
+    // 危険な状態（PINCH）で消したときは、天井際の列を読んで次の手を打つ場面なので短くとどめる
+    const hold = e.pinch ? Math.min(fx.summaryHold, SUMMARY_PINCH_HOLD) : fx.summaryHold;
+    this.lastSummary = {
+      lines: [head.text, `${score.text}  ${stop.text}`, ...(pinch ? [pinch.text] : [])],
+      x: BOARD_W / 2 - w / 2,
+      y: top,
+      width: w,
+      height: h,
+      scale: (head.displayHeight / head.height) * fx.summaryScale,
+      hold,
+      glow: fx.summaryGlow,
+      plateAlpha: SUMMARY_PLATE_ALPHA,
+      stackTop,
+      dimmed: false,
+    };
+    // 大きく弾んで出て、とどまり、浮きながら消える（4 連鎖まで約 0.95 秒、5〜7 連鎖 1.1 秒、8・9 連鎖 1.25 秒、10 連鎖から 1.45 秒）
+    this.scene.tweens.add({ targets: box, scale: 1, alpha: 1, duration: 180, ease: "Back.Out", easeParams: [2] });
+    if (fx.summaryGlow) {
+      // 8 連鎖からは出たあとにもう一度脈打ち、縁から光の粒を散らす
+      this.scene.tweens.add({ targets: box, scale: 1.07, delay: 200, duration: 110, yoyo: true, ease: "Quad.Out" });
+      this.sparks.setParticleTint(tint(edge, 0.35));
+      this.sparks.explode(e.chain >= 10 ? 36 : 20, BOARD_W / 2, top + h / 2);
+    }
+    this.scene.tweens.add({
+      targets: box,
+      y: box.y - 16,
+      alpha: 0,
+      delay: hold,
+      duration: 240,
+      ease: "Quad.In",
+      onComplete: () => {
+        box.destroy();
+        if (this.summary === box) {
+          this.summary = null;
+          this.summaryFade = null;
+        }
+      },
+    });
+  }
+
+  /** いちばん高い列の上端（盤面の局所座標）。パネルもおじゃまもなければ盤面の下端 */
+  private stackTop(): number {
+    const b = this.board;
+    for (let r = ROWS - 1; r >= 0; r--) {
+      for (let c = 0; c < COLS; c++) {
+        const cell = b.cells[r][c];
+        if (cell.kind !== EMPTY || cell.garbage >= 0) return (ROWS - 1 - r) * CELL - b.riseProgress * CELL;
+      }
+    }
+    return BOARD_H;
+  }
+
+  /** 遊ぶ人が入れ替え・カーソル移動・せり上げをしたら、締めをすぐ薄くして盤面を見せる */
+  private dimSummary(): void {
+    const fade = this.summaryFade;
+    if (!fade || !this.lastSummary || this.lastSummary.dimmed) return;
+    this.lastSummary.dimmed = true;
+    this.scene.tweens.add({ targets: fade, alpha: SUMMARY_DIM_ALPHA, duration: 120, ease: "Quad.Out" });
+  }
+
   /** 直近の吹き出しの範囲（盤面の局所座標）と数字の大きさ。e2e が盤面の中に収まることを確かめる */
   lastPopup: { x: number; y: number; width: number; height: number; size: number; plateAlpha: number } | null = null;
 
@@ -708,7 +1058,7 @@ export class BoardView {
    */
   private incomingPopup(rows: number): void {
     const text = this.scene.add
-      .text(BoardView.PENDING_X + this.pendingWidth + 40, BoardView.PENDING_Y + 12, `+${rows}`, { fontFamily: FONT_UI, fontSize: "24px", fontStyle: "700", color: "#ff8a94", stroke: HUD_INK, strokeThickness: 6 })
+      .text(BoardView.PENDING_X + this.pendingWidth + 40, BoardView.PENDING_Y + 12, `+${rows}`, { fontFamily: FONT_UI, fontSize: "24px", fontStyle: "700", color: ATTACK_TEXT, stroke: HUD_INK, strokeThickness: 6 })
       .setOrigin(0.5)
       .setScale(1.8)
       .setAlpha(0);
@@ -736,6 +1086,23 @@ export class BoardView {
     const rise = b.riseProgress * CELL;
     let shake = 0;
     if (b.shakeTimer > 0) shake = Math.sin(b.frame * 1.7) * Math.min(6, b.shakeTimer * 0.5);
+    // 連鎖の揺れ。枠・パネル・カーソルなど盤面の部分だけを動かし、HUD は動かさない。
+    // パネルの切り取り（clip）は揺れる前の位置で決める（枠と一緒に動くので、枠の中の見え方は変わらない）
+    // 手動でせり上げたら締めを薄くする（停止中は自動ではせり上がらないので、締めが出ている間に上がったら手で上げている）
+    const raised = b.stats.manualRows + b.riseProgress;
+    if (raised > this.lastRaised + 1e-9) this.dimSummary();
+    this.lastRaised = raised;
+    // 拡大の跳ねは盤面の部分を (PUNCH_X, PUNCH_Y) を中心に k 倍する。局所座標 (x, y) は (ax(x), ay(y)) に描く
+    const step = (this.shakeOffset = this.stepShake(delta));
+    const { k } = step;
+    const ax = (x: number): number => PUNCH_X + (x - PUNCH_X) * k + step.x;
+    const ay = (y: number): number => PUNCH_Y + (y - PUNCH_Y) * k + step.y;
+    const imgScale = k / DPR;
+    this.frame.setPosition(ax(-FRAME_EXTENT), ay(-FRAME_EXTENT)).setScale(imgScale);
+    this.corners.forEach((c, i) => c.setPosition(ax(i % 2 ? BOARD_W - BOARD_RADIUS : 0), ay(i >= 2 ? BOARD_H - BOARD_RADIUS : 0)).setScale(imgScale));
+    for (const o of [this.dangerGlow.root, this.dangerGlow.front, this.boardFlash, this.hintGfx, this.touchGfx]) o?.setPosition(ax(0), ay(0)).setScale(k);
+    this.countText?.setPosition(ax(BOARD_W / 2), ay(BOARD_H / 2));
+    this.countOutline?.setPosition(ax(BOARD_W / 2), ay(BOARD_H / 2));
     const blink = (b.frame >> 1) & 1;
 
     for (let r = 0; r < DRAW_ROWS; r++) {
@@ -781,7 +1148,7 @@ export class BoardView {
         img.setTexture(key, frame);
         img.setAlpha(key === "white" ? 0.5 : 1);
         const py = (ROWS - 1 - r) * CELL - rise + dy + shake;
-        img.setPosition(c * CELL + dx, py);
+        img.setPosition(ax(c * CELL + dx), ay(py)).setScale(imgScale);
         img.setVisible(visible && this.clip(img, py));
       }
     }
@@ -794,10 +1161,10 @@ export class BoardView {
       }
       img.setTexture(`panel-${b.nextRow[c]}-dark`);
       const py = ROWS * CELL - rise + shake;
-      img.setPosition(c * CELL, py);
+      img.setPosition(ax(c * CELL), ay(py)).setScale(imgScale);
       img.setVisible(this.clip(img, py));
     }
-    this.cursor.setPosition(b.cursor.x * CELL - CURSOR_PAD, (ROWS - 1 - b.cursor.y) * CELL - rise - CURSOR_PAD + shake);
+    this.cursor.setPosition(ax(b.cursor.x * CELL - CURSOR_PAD), ay((ROWS - 1 - b.cursor.y) * CELL - rise - CURSOR_PAD + shake)).setScale(imgScale);
     // カーソルはゆっくり息をするように明滅させる
     this.cursor.setAlpha(0.82 + 0.18 * Math.cos(this.scene.time.now / 260));
     // タッチ端末は直接触れたパネルと移動先の枠を使う。
@@ -834,7 +1201,9 @@ export class BoardView {
 
     this.drawHint();
     if (this.style) {
-      this.setStats(this.style === "puzzle" ? [{ caption: "MOVES", value: String(b.movesLeft ?? 0), color: (b.movesLeft ?? 0) <= 1 ? "#ff8a94" : undefined }] : []);
+      // 残り 1 手以下は警告色。ただし全部消して解き終えたあとの 0 手は警告ではないので通常の色に戻す（結果の「1-1 CLEAR」と食い違わない）
+      const moves = b.movesLeft ?? 0;
+      this.setStats(this.style === "puzzle" ? [{ caption: "MOVES", value: String(moves), color: moves <= 1 && b.panelCount() > 0 ? "#ff8a94" : undefined }] : []);
       this.stopBar.clear();
       this.pendingGfx.clear();
       this.pendingText.setVisible(false);
@@ -882,13 +1251,15 @@ export class BoardView {
     stats.push({ caption: "MAX", value: `x${b.maxChain}` });
     this.setStats(stats);
 
-    // 停止時間のゲージ。盤面の下の縁の上に、水色の光る線で残りを示す
-    const stopW = Math.min(1, b.stopTimer / TIMING.stopMax) * (BOARD_W - 8);
+    // 停止時間のゲージ。せり上げバーのない盤面（CPU）は、盤面の下の縁の上に光る線で残りを示す（危険で 2 倍なら赤）。
+    // 遊ぶ人の盤面はせり上げバーが STOP と残りの秒数のゲージに切り替わる
+    const stopW = this.stopOnBar ? 0 : Math.min(1, b.stopTimer / TIMING.stopMax) * (BOARD_W - 8);
     this.stopBar.clear();
     if (stopW > 0) {
-      this.stopBar.fillStyle(0x66ccff, 0.35);
+      const c = b.stopPinch ? STOP_COLORS.pinch : STOP_COLORS.normal;
+      this.stopBar.fillStyle(c.fill, 0.35);
       this.stopBar.fillRoundedRect(4, BOARD_H + 2, stopW, 6, 3);
-      this.stopBar.fillStyle(0xbfeeff, 1);
+      this.stopBar.fillStyle(c.light, 1);
       this.stopBar.fillRoundedRect(4, BOARD_H + 3.5, stopW, 3, 1.5);
     }
 

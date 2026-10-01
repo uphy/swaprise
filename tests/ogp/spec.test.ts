@@ -49,11 +49,23 @@ describe("カードの中身", () => {
 
   it("勝敗と CLEAR は色付きの単語が主役", () => {
     expect(cardSpec({ mode: "cpu", level: "hard", result: "win", chain: 9 })).toMatchObject({ mode: "VS CPU", main: "WIN", mainColor: 0xffe066, subs: [{ text: "CPU HARD" }, { text: "MAX CHAIN ×9" }] });
-    expect(cardSpec({ mode: "puzzle", stage: "3-2", clear: true, left: 2 })).toMatchObject({ main: "CLEAR", subs: [{ text: "STAGE 3-2" }, { text: "2 MOVES LEFT" }] });
+    expect(cardSpec({ mode: "puzzle", stage: "3-2", clear: true, left: 0 })).toMatchObject({ main: "CLEAR", subs: [{ text: "STAGE 3-2" }, { text: "2 / 10" }] });
     expect(cardSpec({ mode: "puzzle", stage: "3-2", clear: false })).toMatchObject({ main: "FAILED", subs: [{ text: "STAGE 3-2" }] });
     expect(cardSpec({ mode: "online", result: "lose", chain: 3, vs: "Taro", wins: 3, losses: 1 }).subs).toEqual([{ text: "VS Taro  3W 1L" }, { text: "MAX CHAIN ×3" }]);
     expect(cardMeta({ mode: "online", result: "lose", chain: 3, vs: "Taro", wins: 3, losses: 1 }).title).toBe("Lost vs Taro (3W 1L) · max chain x3 – SWAPRISE");
     expect(cardMeta({ mode: "lesson", n: 3, total: 10 }).title).toBe("Lesson 3 / 10 clear – SWAPRISE");
+  });
+
+  it("パズルのクリアは残り手数（いつも 0）を出さず、結果画面と同じく面の番号と段の中の進みを出す (U7)", () => {
+    for (const left of [0, undefined]) {
+      const r: ShareResult = left === undefined ? { mode: "puzzle", stage: "1-1", clear: true } : { mode: "puzzle", stage: "1-1", clear: true, left };
+      const spec = cardSpec(r);
+      expect(spec.subs).toEqual([{ text: "STAGE 1-1" }, { text: "1 / 10" }]);
+      expect(JSON.stringify(spec)).not.toMatch(/MOVES LEFT/);
+      expect(cardMeta(r).description).not.toMatch(/残り/);
+      expect(cardMeta(r).description).toContain("1-1 をクリア。");
+    }
+    expect(cardSpec({ mode: "puzzle", stage: "10-10", clear: true, left: 0 }).subs).toEqual([{ text: "STAGE 10-10" }, { text: "10 / 10" }]);
   });
 
   it("招待は JOIN ME が主役で、誘った人の名前が副情報", () => {

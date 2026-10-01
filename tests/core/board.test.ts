@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { Board, COLS, EMPTY, ROWS, TIMING, isEmptyCell, isPanel } from "../../src/core";
+import { Board, COLS, EMPTY, NO_INPUT, ROWS, TIMING, deathGrace, isEmptyCell, isPanel } from "../../src/core";
 import { emptyBoard, matches, moveCursor, press, run } from "./helpers";
 
 /** 縦4個同時消しができる盤面。(0,2) の 3 を右へ抜くと上の 0 0 が落ちて col0 が 0 0 0 0 になる。 */
@@ -151,6 +151,43 @@ describe("連鎖", () => {
     expect(events.some((e) => e.type === "chainEnd" && e.chain === 3)).toBe(true);
   });
 
+  it("連鎖の終わりに、その連鎖で得た得点の合計といちばん長い停止を渡す", () => {
+    const b = emptyBoard();
+    b.setColumns(CHAIN3);
+    moveCursor(b, 0, 4);
+    const events = press(b, { swap: true }, 400);
+    const end = events.find((e) => e.type === "chainEnd");
+    // 30 + 80 + 110 点。停止は 3 連鎖の 2 秒 + 1 秒
+    expect(end).toEqual({ type: "chainEnd", chain: 3, score: 220, stop: TIMING.stopChainBase + TIMING.stopChainPerExtra, pinch: false, garbage: [{ width: 6, height: 2, type: "normal" }] });
+    expect(b.stopTotal).toBe(TIMING.stopChainBase + TIMING.stopChainPerExtra);
+    expect(b.stopPinch).toBe(false);
+  });
+
+  it("危険な状態（天井に届いている）で連鎖すると、停止が 2 倍になったことを渡す", () => {
+    const b = emptyBoard();
+    // 右端の列を天井まで積む（縦にも横にも揃わない並び）
+    b.setColumns([...CHAIN3, [], [], [0, 1, 2, 0, 1, 2, 0, 1, 2, 0, 1, 2]]);
+    moveCursor(b, 0, 4);
+    const events = press(b, { swap: true }, 400);
+    const end = events.find((e) => e.type === "chainEnd");
+    const stop = (TIMING.stopChainBase + TIMING.stopChainPerExtra) * TIMING.stopDangerMultiplier;
+    expect(end).toEqual({ type: "chainEnd", chain: 3, score: 220, stop, pinch: true, garbage: [{ width: 6, height: 2, type: "normal" }] });
+    expect(b.stopTotal).toBe(stop);
+    expect(b.stopPinch).toBe(true);
+  });
+
+  it("連鎖が終わったあとの次の連鎖は、得点を数え直す", () => {
+    const b = emptyBoard();
+    b.setColumns(CHAIN3);
+    moveCursor(b, 0, 4);
+    press(b, { swap: true }, 400);
+    b.setColumns(CHAIN3);
+    moveCursor(b, 0, 4);
+    const events = press(b, { swap: true }, 400);
+    const end = events.find((e) => e.type === "chainEnd");
+    expect(end && end.type === "chainEnd" ? end.score : -1).toBe(220);
+  });
+
   /**
    * 時間差連鎖。T字の5個消しで col1 は3段、col2/3 は1段落ちる。
    * 先に着地する F F F が2連鎖、遅れて着地する C C C が3連鎖と数えられる。
@@ -264,8 +301,48 @@ describe("連鎖", () => {
     const before = b.riseProgress;
     run(b, 10);
     expect(b.riseProgress).toBe(before);
-    run(b, b.stopTimer + 5);
+    // 停止は連鎖が終わってから減り始める
+    for (let f = 0; f < 600 && b.stopTimer > 0; f++) run(b, 1);
+    run(b, 5);
     expect(b.riseProgress).toBeGreaterThan(before);
+  });
+
+  // 時間切れのあとの片付け（resolving、入力とせり上がりを止めて消去と落下だけ進める）でも同じ
+  for (const resolving of [false, true]) {
+    it(`停止は連鎖の途中（消去・落下）には減らず、連鎖が終わった時点で最後に得た長さがまるごと残り、そこから 1 フレームずつ減る${resolving ? "（片付け中）" : ""}`, () => {
+      const b = emptyBoard();
+      b.setColumns(CHAIN3);
+      moveCursor(b, 0, 4);
+      b.tick({ ...NO_INPUT, swap: true });
+      let ended = false;
+      for (let f = 0; f < 400 && !ended; f++) {
+        const stopBefore = b.stopTimer;
+        b.tick(NO_INPUT, resolving);
+        ended = b.events.some((e) => e.type === "chainEnd");
+        // 新しい停止を得たとき以外は、連鎖の途中で減らない
+        if (!b.events.some((e) => e.type === "match")) expect(b.stopTimer).toBe(stopBefore);
+      }
+      expect(ended).toBe(true);
+      expect(b.stopTimer).toBe(TIMING.stopChainBase + TIMING.stopChainPerExtra);
+      expect(b.stopTimer).toBe(b.stopTotal);
+      for (let i = 0; i < 60; i++) b.tick(NO_INPUT, resolving);
+      expect(b.stopTimer).toBe(b.stopTotal - 60);
+    });
+  }
+
+  it("同時消しの停止は、消えている間は減らない", () => {
+    const b = emptyBoard();
+    b.setColumns(COMBO4);
+    moveCursor(b, 0, 2);
+    let got = false;
+    for (let f = 0; f < 200 && !got; f++) {
+      b.tick(f === 0 ? { ...NO_INPUT, swap: true } : NO_INPUT);
+      got = b.events.some((e) => e.type === "match");
+    }
+    expect(b.stopTimer).toBe(TIMING.stopComboBase);
+    // 点滅と揃った柄を見せている間
+    run(b, TIMING.flash + TIMING.face);
+    expect(b.stopTimer).toBe(TIMING.stopComboBase);
   });
 });
 
@@ -398,6 +475,48 @@ describe("せり上がりとゲームオーバー", () => {
     const events = run(b, TIMING.deathGrace + 2);
     expect(b.gameOver).toBe(true);
     expect(events.some((e) => e.type === "gameOver")).toBe(true);
+  });
+
+  it("天井の猶予はレベル1で 2 秒、レベルが上がるほど縮み、レベル50以上で 1 秒", () => {
+    expect(deathGrace(1)).toBe(120);
+    expect(deathGrace(25)).toBe(91);
+    expect(deathGrace(50)).toBe(60);
+    expect(deathGrace(99)).toBe(60);
+    const col: number[] = [];
+    for (let r = 0; r < ROWS; r++) col.push(r % 2);
+    for (const [level, grace] of [[1, 120], [50, 60]]) {
+      const b = new Board({ seed: 1, kinds: 6, initialHeight: 0, noRise: true, speedLevel: level });
+      b.setColumns([col]);
+      run(b, grace);
+      expect(b.gameOver, `Lv${level}`).toBe(false);
+      expect(b.deathTimer).toBe(grace);
+      run(b, 1);
+      expect(b.gameOver, `Lv${level}`).toBe(true);
+    }
+  });
+
+  it("停止中は天井に触れていても猶予を数えず、停止が切れてから数え始める", () => {
+    const b = emptyBoard();
+    const col: number[] = [];
+    for (let r = 0; r < ROWS; r++) col.push(r % 2);
+    b.setColumns([col]);
+    run(b, 30);
+    expect(b.deathTimer).toBe(30);
+    expect(b.deathHeld).toBe(false);
+    b.stopTimer = 600;
+    run(b, 590);
+    expect(b.gameOver).toBe(false);
+    expect(b.deathTimer).toBe(30);
+    expect(b.deathHeld).toBe(true);
+    run(b, 10);
+    expect(b.stopTimer).toBe(0);
+    expect(b.deathHeld).toBe(false);
+    // 停止が 0 になったフレームから数え直す
+    expect(b.deathTimer).toBe(31);
+    run(b, TIMING.deathGrace - 31);
+    expect(b.gameOver).toBe(false);
+    run(b, 1);
+    expect(b.gameOver).toBe(true);
   });
 
   it("消去中は天井に触れていてもゲームオーバーにならない", () => {
