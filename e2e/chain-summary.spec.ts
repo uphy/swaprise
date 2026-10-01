@@ -84,3 +84,80 @@ test("CPU 戦は自分の盤面だけに締めとゲージを出し、CPU の盤
   expect(r.me).toEqual([true, true]);
   expect(r.cpu).toEqual([false, false]);
 });
+
+/** 表示中の締めの見え方。fade は中身の不透明度（手を動かすと下がる） */
+async function summaryState(page: Page): Promise<{ fade: number; dimmed: boolean; plateAlpha: number; hold: number; y: number; height: number; stackTop: number } | null> {
+  return page.evaluate(() => {
+    const v = (window as any).__swaprise.scene.views[0];
+    const s = v.lastSummary;
+    if (!s || !v.summaryFade) return null;
+    return { fade: v.summaryFade.alpha, dimmed: s.dimmed, plateAlpha: s.plateAlpha, hold: s.hold, y: s.y, height: s.height, stackTop: s.stackTop };
+  });
+}
+
+test("締めの地の板は盤面が透ける薄さで、入れ替え・カーソル移動・せり上げをするとすぐ薄くなる (N1)", async ({ page }) => {
+  await page.goto("/?mode=endless&seed=7&bgm=0&countdown=0");
+  for (const [key, what] of [["z", "入れ替え"], ["ArrowRight", "カーソル移動"], ["x", "せり上げ"]] as const) {
+    await startChain(page, CHAIN3);
+    await page.waitForFunction(() => {
+      const v = (window as any).__swaprise.scene.views[0];
+      return v.lastSummary?.lines[0] === "3 CHAIN" && v.summaryFade?.alpha === 1 && v.summary?.alpha === 1;
+    }, undefined, { timeout: 15_000 });
+    const before = await summaryState(page);
+    expect(before!.plateAlpha, what).toBeLessThanOrEqual(0.4);
+    expect(before!.dimmed, what).toBe(false);
+    // 入れ替えが空振りしない場所（最下段の左端）にカーソルを置く
+    await page.evaluate(() => {
+      const c = (window as any).__swaprise.game.boards[0].cursor;
+      c.x = 0;
+      c.y = 0;
+    });
+    const t0 = Date.now();
+    if (key === "x") {
+      // せり上げは押している間だけ上がる
+      await page.keyboard.down(key);
+      await page.waitForFunction(() => (window as any).__swaprise.scene.views[0].lastSummary.dimmed, undefined, { timeout: 2_000 });
+      await page.keyboard.up(key);
+    } else await page.keyboard.press(key);
+    await page.waitForFunction(() => (window as any).__swaprise.scene.views[0].summaryFade?.alpha <= 0.3 + 1e-6, undefined, { timeout: 2_000, polling: 16 });
+    // 120ms で薄くなる。headless の描画の遅れを見込んで、締めがとどまる長さ（730ms）よりずっと短いことを確かめる
+    expect(Date.now() - t0, what).toBeLessThan(600);
+    expect((await summaryState(page))!.dimmed, what).toBe(true);
+    // 消えるのを待ってから次へ
+    await page.waitForFunction(() => (window as any).__swaprise.scene.views[0].summary === null, undefined, { timeout: 5_000 });
+  }
+});
+
+test("危険な状態（PINCH）で消したときは締めが 0.6 秒ほどで引っ込む (N1)", async ({ page }) => {
+  await page.goto("/?mode=endless&seed=7&bgm=0&countdown=0");
+  await startChain(page, [...CHAIN3, [], [], TALL]);
+  await page.waitForFunction(() => (window as any).__swaprise.scene.views[0].lastSummary !== null, undefined, { timeout: 15_000, polling: 16 });
+  const t0 = Date.now();
+  const s = await summaryState(page);
+  expect(s!.hold).toBe(600);
+  await page.waitForFunction(() => (window as any).__swaprise.scene.views[0].summary === null, undefined, { timeout: 5_000, polling: 16 });
+  // 出る 180ms・とどまる 600ms・消える 240ms
+  expect(Date.now() - t0).toBeLessThan(1_500);
+  // PINCH でなければ 3 連鎖の締めは 730ms とどまる
+  await startChain(page, CHAIN3);
+  await page.waitForFunction(() => (window as any).__swaprise.scene.views[0].lastSummary?.lines[1] === "+220  STOP 3s", undefined, { timeout: 15_000 });
+  expect((await summaryState(page))!.hold).toBe(730);
+});
+
+test("いちばん高い列より上に空きがあれば、締めはその列に重ならない高さに出る (N1)", async ({ page }) => {
+  await page.goto("/?mode=endless&seed=7&bgm=0&countdown=0");
+  // 右端の列を 8 段（盤面の上から 4 段目まで）積む。揃わない並びで、天井には届かない
+  await startChain(page, [...CHAIN3, [], [], [0, 1, 2, 0, 1, 2, 0, 1]]);
+  await page.waitForFunction(() => (window as any).__swaprise.scene.views[0].lastSummary !== null, undefined, { timeout: 15_000 });
+  const s = (await summaryState(page))!;
+  expect(s.stackTop).toBeLessThan(384 * 0.3 + s.height);
+  // ふだんの高さ（上から 3 割）から、列の上の空きへ寄せる
+  expect(s.y).toBeLessThan(Math.round(384 * 0.3));
+  expect(s.y).toBeGreaterThanOrEqual(0);
+  expect(s.y + s.height).toBeLessThanOrEqual(s.stackTop);
+  // 列が低ければふだんの高さのまま
+  await page.waitForFunction(() => (window as any).__swaprise.scene.views[0].summary === null, undefined, { timeout: 5_000 });
+  await startChain(page, CHAIN3);
+  await page.waitForFunction(() => (window as any).__swaprise.scene.views[0].summary !== null, undefined, { timeout: 15_000 });
+  expect((await summaryState(page))!.y).toBe(Math.round(384 * 0.3));
+});
