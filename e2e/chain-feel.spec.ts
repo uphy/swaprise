@@ -265,7 +265,7 @@ test("段階ごとに揺れの型・吹き出し・閃光・締めがはっき�
       const shake = { ...v.lastShake };
       v.popup({ panels: 3, chain, left: 0, right: 2, top: 6, bottom: 6 });
       const popup = { ...v.lastPopup };
-      v.showSummary({ chain, score: 1000, stop: 600, pinch: false });
+      v.showSummary({ chain, score: 1000, stop: 600, pinch: false, garbage: [] });
       const summary = { ...v.lastSummary };
       return { chain, shake, frames, flash, popup, summary };
     });
