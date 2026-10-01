@@ -239,6 +239,8 @@ test("段階ごとに揺れの型・吹き出し・閃光・締めがはっき�
   expect(by(6).flash).toBeGreaterThan(by(5).flash);
   expect(by(8).flash).toBeGreaterThan(by(6).flash);
   expect(by(10).flash).toBeGreaterThan(by(8).flash);
+  // 閃光はパネルの上に重なるので、いちばん強い 10 連鎖でも 0.3 まで
+  expect(by(14).flash).toBeLessThanOrEqual(0.3);
   // 吹き出しの数字は 5・6・8・10 連鎖で大きくなり、盤面の中に収まる
   expect(by(6).popup.size).toBeGreaterThan(by(5).popup.size);
   expect(by(8).popup.size).toBeGreaterThan(by(6).popup.size);
@@ -361,3 +363,84 @@ for (const [name, viewport, mobile] of [
     await context.close();
   });
 }
+
+/**
+ * 大きな連鎖の閃光の瞬間のパネルの見分けやすさ。最下段に 6 種の柄を並べ、閃光が最も濃い瞬間（出た直後）と閃光のないときに
+ * 各パネルの地の色（左上寄りの 1 点）を画面から読み、柄どうしの色の差の平均が何割残るかを返す
+ */
+async function panelContrastUnderFlash(page: Page, chain: number): Promise<{ kept: number; flash: number }> {
+  await page.evaluate(() => {
+    const { scene } = (window as any).__swaprise;
+    scene.scene.pause();
+    const v = scene.views[0];
+    v.board.setColumns([[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 0]]);
+    v.board.riseProgress = 0;
+    // 揺れと跳ねで位置がずれないよう、揺らさずに描く
+    v.stepShake = () => ({ x: 0, y: 0, k: 1 });
+    v.boardFlash?.setVisible(false);
+    v.draw(0);
+  });
+  const sample = async (): Promise<number[][]> => {
+    const pts = await page.evaluate(() => {
+      const { scene } = (window as any).__swaprise;
+      const v = scene.views[0];
+      const rect = document.querySelector("canvas")!.getBoundingClientRect();
+      const cam = scene.cameras.main;
+      const s = (rect.width / scene.scale.width) * cam.zoom;
+      return v.cells[0].map((img: any) => {
+        const b = img.getBounds();
+        return { x: rect.left + (b.x + b.width * 0.22 - cam.worldView.x) * s, y: rect.top + (b.y + b.height * 0.5 - cam.worldView.y) * s };
+      });
+    });
+    const png = await page.screenshot();
+    return page.evaluate(
+      async ([data, points, dpr]) => {
+        const img = new Image();
+        img.src = `data:image/png;base64,${data}`;
+        await img.decode();
+        const c = document.createElement("canvas");
+        c.width = img.width;
+        c.height = img.height;
+        const ctx = c.getContext("2d")!;
+        ctx.drawImage(img, 0, 0);
+        return (points as { x: number; y: number }[]).map((p) => Array.from(ctx.getImageData(Math.round(p.x * (dpr as number)), Math.round(p.y * (dpr as number)), 1, 1).data.slice(0, 3)));
+      },
+      [png.toString("base64"), pts, await page.evaluate(() => window.devicePixelRatio)] as const,
+    );
+  };
+  const spread = (cols: number[][]): number => {
+    let sum = 0;
+    let n = 0;
+    for (let i = 0; i < cols.length; i++)
+      for (let j = i + 1; j < cols.length; j++) {
+        sum += Math.hypot(cols[i][0] - cols[j][0], cols[i][1] - cols[j][1], cols[i][2] - cols[j][2]);
+        n++;
+      }
+    return sum / n;
+  };
+  const before = spread(await sample());
+  // 閃光（と 8 連鎖からの光の輪）を出した瞬間。シーンを止めているので不透明度は出た直後のまま
+  const flash = await page.evaluate((c) => {
+    const v = (window as any).__swaprise.scene.views[0];
+    v.chainImpact(c);
+    v.draw(0);
+    return v.boardFlash.alpha;
+  }, chain);
+  const during = spread(await sample());
+  return { kept: during / before, flash };
+}
+
+test("9 連鎖以上の閃光の瞬間でも、パネルの色の差が 6 割以上残って柄を見分けられ、8 連鎖と 10 連鎖の閃光の強さは違う (N4)", async ({ browser }) => {
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+  const page = await context.newPage();
+  const results: Record<number, { kept: number; flash: number }> = {};
+  for (const chain of [8, 10]) {
+    await page.goto("/?mode=endless&seed=7&bgm=0&countdown=0");
+    await page.waitForFunction(() => (window as any).__swaprise?.game.boards[0].frame > 0);
+    results[chain] = await panelContrastUnderFlash(page, chain);
+  }
+  for (const chain of [8, 10]) expect(results[chain].kept, `${chain} 連鎖 ${JSON.stringify(results[chain])}`).toBeGreaterThan(0.6);
+  expect(results[10].flash).toBeLessThanOrEqual(0.3);
+  expect(results[10].flash).toBeGreaterThan(results[8].flash);
+  await context.close();
+});

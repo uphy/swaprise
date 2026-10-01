@@ -61,7 +61,10 @@ export interface ChainFx {
   shake: { type: ChainShakeType; amp: number; ms: number; punch: number };
   /** 連鎖の吹き出しの大きさ（x2 を 1 倍） */
   popupScale: number;
-  /** 盤面に重ねる閃光の不透明度（0 は無し）と回数。2 回目は少し遅れて弱く */
+  /**
+   * 盤面に重ねる閃光の不透明度（0 は無し）と回数。2 回目は少し遅れて弱く。
+   * 上限は CHAIN_FLASH_MAX。パネルの上に重なるので、これより濃いと光の輪と重なった瞬間に柄が見分けられなくなる
+   */
   flash: number;
   flashCount: number;
   /** 盤面の中央から広がる大きな光の輪（8 連鎖から） */
@@ -79,6 +82,8 @@ export interface ChainFx {
  * 設定に揺れを切る項目はないので、端末の「視差効果を減らす」（prefers-reduced-motion）が有効なら揺らさない
  */
 export const CHAIN_SHAKE_MAX = 0.17;
+/** 閃光の不透明度の上限。0.45 では 10 連鎖の瞬間にパネルの色の差が半分近くまで白んで、柄が見分けられなかった */
+export const CHAIN_FLASH_MAX = 0.3;
 /** 横の揺れの上限（パネル比）。横持ちのスマホで盤面の横に並ぶ札まで 15.6% */
 export const CHAIN_SHAKE_SIDE_MAX = 0.14;
 /** 上へのずれの上限（パネル比）。上へは揺れの 0.35 倍だけ跳ね返り、得点の板まで 6.3% の隙間に収める */
@@ -98,10 +103,10 @@ export const CHAIN_PUNCH_MS = 80;
  */
 export function chainFx(chain: number): ChainFx {
   const shake = (type: ChainShakeType, amp: number, ms: number, punch = 0) => ({ type, amp: Math.min(CHAIN_SHAKE_MAX, amp), ms, punch });
-  if (chain >= 10) return { shake: shake("long", 0.17, 680, 0.016), popupScale: 2.05, flash: 0.45, flashCount: 2, ring: true, summaryScale: 1.6, summaryHold: 1200, summaryEdge: 3, summaryGlow: true };
-  if (chain >= 8) return { shake: shake("long", chain >= 9 ? 0.16 : 0.15, chain >= 9 ? 560 : 500, 0.016), popupScale: 1.85, flash: 0.36, flashCount: 1, ring: true, summaryScale: 1.5, summaryHold: 1000, summaryEdge: 3, summaryGlow: true };
-  if (chain >= 6) return { shake: shake("both", chain >= 7 ? 0.135 : 0.125, chain >= 7 ? 320 : 290, 0.013), popupScale: 1.65, flash: 0.28, flashCount: 1, ring: false, summaryScale: 1.4, summaryHold: 850, summaryEdge: 2.5, summaryGlow: false };
-  if (chain === 5) return { shake: shake("both", 0.11, 260, 0.013), popupScale: 1.5, flash: 0.2, flashCount: 1, ring: false, summaryScale: 1.3, summaryHold: 850, summaryEdge: 2.5, summaryGlow: false };
+  if (chain >= 10) return { shake: shake("long", 0.17, 680, 0.016), popupScale: 2.05, flash: CHAIN_FLASH_MAX, flashCount: 2, ring: true, summaryScale: 1.6, summaryHold: 1200, summaryEdge: 3, summaryGlow: true };
+  if (chain >= 8) return { shake: shake("long", chain >= 9 ? 0.16 : 0.15, chain >= 9 ? 560 : 500, 0.016), popupScale: 1.85, flash: 0.25, flashCount: 1, ring: true, summaryScale: 1.5, summaryHold: 1000, summaryEdge: 3, summaryGlow: true };
+  if (chain >= 6) return { shake: shake("both", chain >= 7 ? 0.135 : 0.125, chain >= 7 ? 320 : 290, 0.013), popupScale: 1.65, flash: 0.2, flashCount: 1, ring: false, summaryScale: 1.4, summaryHold: 850, summaryEdge: 2.5, summaryGlow: false };
+  if (chain === 5) return { shake: shake("both", 0.11, 260, 0.013), popupScale: 1.5, flash: 0.15, flashCount: 1, ring: false, summaryScale: 1.3, summaryHold: 850, summaryEdge: 2.5, summaryGlow: false };
   if (chain === 4) return { shake: shake("vertical", 0.08, 220, 0.01), popupScale: 1.4, flash: 0, flashCount: 0, ring: false, summaryScale: 1.25, summaryHold: 730, summaryEdge: 2, summaryGlow: false };
   if (chain === 3) return { shake: shake("vertical", 0.065, 200, 0.01), popupScale: 1.25, flash: 0, flashCount: 0, ring: false, summaryScale: 1.15, summaryHold: 730, summaryEdge: 2, summaryGlow: false };
   return { shake: shake("dip", 0.045, 150), popupScale: 1, flash: 0, flashCount: 0, ring: false, summaryScale: 1, summaryHold: 730, summaryEdge: 2, summaryGlow: false };
