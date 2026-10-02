@@ -233,6 +233,29 @@ test("KEEP PRIVATE and the headings are drawn without kerning so IV does not rea
     expect(await target.evaluate((el) => getComputedStyle(el).fontKerning)).toBe("none");
   }
 });
+// Fredoka の太字は字の間が狭いので、大文字の見出し・ボタン・札の見出しと得点・札の数字は canvas の大文字の行（文字の大きさの 8%）と同じ 0.08em 広げる。
+// 小文字の問いには足さない
+test("the result headings, buttons and numbers get the same letter spacing as the canvas, the lower-case question does not", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await finishWith12345(page);
+  const result = page.getByRole("region", { name: "RESULT", exact: true });
+  const spacing = (el: Element) => parseFloat(getComputedStyle(el).letterSpacing) / parseFloat(getComputedStyle(el).fontSize);
+  for (const target of [
+    result.locator("h2"),
+    result.getByRole("button", { name: "KEEP PRIVATE" }),
+    result.getByRole("button", { name: "RETRY" }),
+    result.locator(".result-stats dt").first(),
+    result.locator(".result-stats dd").first(),
+  ]) {
+    expect(await target.evaluate(spacing)).toBeCloseTo(0.08, 2);
+  }
+  // 大きな得点の行は、幅に余裕があれば 0.08em 広げる。縦持ちの 390px では 12,345 POINTS が字間なしでも入らず、文字を縮めるほうを取って字間を外す
+  const score = result.locator(".result-summary strong");
+  expect(await score.evaluate((el) => getComputedStyle(el).letterSpacing)).toBe("normal");
+  await page.setViewportSize({ width: 844, height: 390 });
+  await expect.poll(() => score.evaluate(spacing)).toBeCloseTo(0.08, 2);
+  expect(await result.getByRole("heading", { name: "Publish this score?" }).evaluate((el) => getComputedStyle(el).letterSpacing)).toBe("normal");
+});
 test("keep private stores scores locally, no session or upload requests", async ({ page }) => {
   const requests: string[] = []; page.on("request", (r) => { if (r.url().includes("/api/")) requests.push(r.url()); });
   await page.goto("/?mode=endless&countdown=0&bgm=0");

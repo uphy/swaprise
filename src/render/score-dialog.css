@@ -37,6 +37,13 @@
 .score-dialog button { min-height: 56px; padding: 10px 12px; border: 2px solid rgba(255,255,255,.6); border-radius: 999px; background: linear-gradient(180deg, rgba(255,255,255,.12) 0%, rgba(255,255,255,.12) 45%, rgba(255,255,255,0) 45%) , rgba(255,255,255,.2); color: #f4f4f8; font: inherit; font-weight: 600; font-size: 20px; cursor: pointer; touch-action: manipulation; }
 /* 大文字の見出し・ボタン・札の見出しはカーニングを切る（ボタンの font: inherit より後ろに置く）。同梱の Fredoka は I と V の組を詰めすぎ、KEEP PRIVATE が KEEP PRMATE に見えた（合字を切っても直らない） */
 .score-dialog button, .score-dialog h2, .score-dialog h3, .score-dialog dt, .score-dialog header small { font-kerning: none; }
+/* 大文字の見出し・ボタン・札の見出しと、得点・札の数字は字間を 0.08em 広げる。同梱の Fredoka の太字は字の間が狭く、SPEED の E と E や 000 の 0 と 0 がくっついて見えた。
+   canvas の大文字・数字の行（kerning.ts の CAPS_TRACKING、文字の大きさの 8%）と同じ量にして、ゲーム画面と見た目を揃える。
+   日本語の見出し・ボタンと、小文字の問い（Publish this score?）には足さない */
+.score-dialog { --caps-tracking: .08em; }
+.score-dialog button:not(:lang(ja)), .score-dialog h2:not(:lang(ja)), .score-dialog h3:not(:lang(ja)), .score-dialog dt:not(:lang(ja)),
+.result-summary strong, .result-stats dd, .rec-score, .score-dialog .rec-row b { letter-spacing: var(--caps-tracking); }
+.score-dialog .result-consent-ask h3 { letter-spacing: normal; }
 .score-dialog button[aria-pressed=true], .score-dialog button.primary { color: #2a2050; background: #ffe066; border-color: #fff4bf; }
 .score-dialog :focus-visible { outline: 2px solid #ffe066; outline-offset: 2px; }
 .score-dialog nav { display: flex; gap: 8px; margin-bottom: 10px; }

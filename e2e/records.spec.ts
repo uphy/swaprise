@@ -115,3 +115,18 @@ test("RECORDS の行は得点がいちばん大きい。最大連鎖・1 手あ�
   for (const size of sizes.others) expect(sizes.score).toBeGreaterThan(size * 1.3);
   for (const h of sizes.otherHeights) expect(sizes.scoreHeight).toBeGreaterThan(h);
 });
+
+// 得点の数字と大文字の見出し・ボタンは、結果画面と同じく字間を 0.08em 広げる（Fredoka の太字は 0 と 0 がくっついて見えた）
+test("RECORDS の得点・見出し・ボタンは字間を 0.08em 広げる", async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem("swaprise.highscores.v1", JSON.stringify({ timeattack: [{ score: 1684, maxChain: 3, date: "2026-09-28", swaps: 79 }] }));
+  });
+  await page.goto("/?bgm=0&opening=0");
+  await page.waitForFunction(() => (window as any).__swapriseScenes?.menu?.children.getByName("records"));
+  await page.evaluate(() => (window as any).__swapriseScenes.menu.showRecords());
+  const row = page.getByRole("listitem").filter({ hasText: "1,684" });
+  const spacing = (el: Element) => parseFloat(getComputedStyle(el).letterSpacing) / parseFloat(getComputedStyle(el).fontSize);
+  for (const target of [row.locator(".rec-score"), page.getByRole("button", { name: "CLOSE" }), page.locator(".rec-card h3").first()]) {
+    expect(await target.evaluate(spacing)).toBeCloseTo(0.08, 2);
+  }
+});
