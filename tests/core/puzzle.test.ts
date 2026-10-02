@@ -154,7 +154,7 @@ describe("パズル: Board のルール", () => {
     b.cursor.x = 0;
     b.tick({ ...NO_INPUT, swap: true });
     expect(b.movesLeft).toBe(2);
-    // 入れ替えのアニメーション中（4フレーム）は次の入れ替えを受け付けない
+    // 入れ替えのアニメーション中（TIMING.swap フレーム）は次の入れ替えを受け付けない
     b.tick({ ...NO_INPUT, swap: true });
     expect(b.movesLeft).toBe(2);
     expect(settle(b)).toBe(true);
