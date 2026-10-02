@@ -43,8 +43,9 @@ it("未確定の交換を即座に表示し、確定盤面には書き込まな�
   const prediction = new Prediction(l, 0);
   const board = prediction.game.boards[0];
   prediction.advance(12, { ...NO_INPUT, swap: true, cursorTo: { x: 0, y: 0 } });
-  expect(board.cell(0, 0).state).toBe("swapping");
-  expect(l.game.boards[0].cell(0, 0).state).toBe("idle");
+  // 入れ替えはその tick で終わるので、状態ではなく柄で見る。列 0 の最下段（柄 0）と列 1 の最下段（柄 2）が入れ替わる
+  expect(board.cell(0, 0).kind).toBe(2);
+  expect(l.game.boards[0].cell(0, 0).kind).toBe(0);
 });
 
 it("遅れて届いた相手の操作で補正し、確定後は全状態が一致する", () => {
@@ -93,5 +94,5 @@ it("相手の終了が予測だけなら、自分の操作を止めない", () =
   prediction.game.boards[1].gameOver = true;
   prediction.game.finished = true;
   prediction.advance(6, { ...NO_INPUT, swap: true, cursorTo: { x: 0, y: 0 } });
-  expect(prediction.game.boards[0].cell(0, 0).state).toBe("swapping");
+  expect(prediction.game.boards[0].cell(0, 0).kind).toBe(2);
 });

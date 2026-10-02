@@ -610,13 +610,14 @@ test("自分の交換は通信の確定を待たず次のtickで描画する", a
       cursorTo: { x: 0, y: 0 },
     });
     s.update(0, 1000 / 60);
+    // 入れ替えはその tick で終わるので、状態ではなく柄で見る。列 0 の最下段（柄 0）と列 1 の最下段（柄 2）が入れ替わる
     return {
-      visible: s.views[s.session.player].board.cell(0, 0).state,
-      confirmed: board.cell(0, 0).state,
+      visible: s.views[s.session.player].board.cell(0, 0).kind,
+      confirmed: board.cell(0, 0).kind,
     };
   });
-  expect(state.visible).toBe("swapping");
-  expect(state.confirmed).not.toBe("swapping");
+  expect(state.visible).toBe(2);
+  expect(state.confirmed).toBe(0);
   await Promise.all(contexts.map((c) => c.close()));
 });
 

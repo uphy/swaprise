@@ -144,30 +144,34 @@ describe("パズル: Board のルール", () => {
 
   it("成功した入れ替えだけを手と数え、静止していない間は受け付けない", () => {
     const b = new Board({ seed: 1, kinds: 5, initialHeight: 0, moveLimit: 3 });
-    b.setColumns([[0], [1], [], [], [], []]);
-    b.cursor.x = 0;
-    b.cursor.y = 0;
+    b.setColumns([[0, 2], [1], [], [], [], []]);
     // 空同士の入れ替えは失敗するので手数は減らない
     b.cursor.x = 3;
+    b.cursor.y = 0;
     b.tick({ ...NO_INPUT, swap: true });
     expect(b.movesLeft).toBe(3);
+    // 柄 1 を右の空いた列へ動かす。入れ替えはその tick で終わり、盤面は静止している
+    b.cursor.x = 1;
+    b.tick({ ...NO_INPUT, swap: true });
+    expect(b.movesLeft).toBe(2);
+    expect(b.isSettled()).toBe(true);
+    // 柄 2 を下の空いた列の上へ出す。宙に浮いて落ちきるまでは次の入れ替えを受け付けない
     b.cursor.x = 0;
-    b.tick({ ...NO_INPUT, swap: true });
-    expect(b.movesLeft).toBe(2);
-    // 入れ替えのアニメーション中（TIMING.swap フレーム）は次の入れ替えを受け付けない
-    b.tick({ ...NO_INPUT, swap: true });
-    expect(b.movesLeft).toBe(2);
-    expect(settle(b)).toBe(true);
+    b.cursor.y = 1;
     b.tick({ ...NO_INPUT, swap: true });
     expect(b.movesLeft).toBe(1);
-    settle(b);
+    b.cursor.y = 0;
+    b.tick({ ...NO_INPUT, swap: true });
+    expect(b.movesLeft).toBe(1);
+    expect(settle(b)).toBe(true);
     b.tick({ ...NO_INPUT, swap: true });
     expect(b.movesLeft).toBe(0);
     settle(b);
     // 手数が尽きたら入れ替えできない
+    const before = b.toString();
     b.tick({ ...NO_INPUT, swap: true });
     expect(b.movesLeft).toBe(0);
-    expect(b.cell(0, 0).kind).toBe(1);
+    expect(b.toString()).toBe(before);
   });
 });
 
@@ -185,9 +189,9 @@ describe("パズル: Game の判定", () => {
   });
 
   it("手数を使い切ってパネルが残ったら fail。判定は盤面が静止してから", () => {
-    const g = new Game({ mode: "puzzle", seed: 1, puzzle: ONE_MOVE });
-    // 消えない入れ替え
-    g.tick([{ ...NO_INPUT, cursorTo: { x: 0, y: 0 }, swap: true }]);
+    // 上の柄 0 を空いた列の上へ出す。宙に浮いて落ちてから着地しても揃わない
+    const g = new Game({ mode: "puzzle", seed: 1, puzzle: { moves: 1, rows: ["0.....", "1..0.."] } });
+    g.tick([{ ...NO_INPUT, cursorTo: { x: 0, y: 1 }, swap: true }]);
     expect(g.boards[0].movesLeft).toBe(0);
     expect(g.finished).toBe(false);
     for (let i = 0; i < 600 && !g.finished; i++) g.tick([NO_INPUT]);
