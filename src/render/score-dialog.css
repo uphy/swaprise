@@ -79,7 +79,9 @@
 .score-result .result-consent p { font-size: 18px; line-height: 1.35; margin: 0; }
 .result-consent label { display: block; margin: 10px 0; font-size: 18px; }
 .result-consent nav { display: flex; gap: 12px; margin-top: 10px; }
-.score-result .result-consent nav button { flex: 1; min-height: 48px; font-size: 20px; }
+/* 左右の余白は 6px。字間（0.08em）を足すと、字幅を広く測る Linux の Chromium では 320px 幅で PRIVATE が 12px の余白の内側（94px）に入らず、
+   PUBLISH と KEEP PRIVATE が 2 段に分かれて枠が RETRY / MENU の帯に 19px 掛かった。余白を詰めて、字間を残したまま 1 段に並べる */
+.score-result .result-consent nav button { flex: 1; min-height: 48px; font-size: 20px; padding-inline: 6px; }
 .result-stats dd { font-size: 34px; font-weight: 600; margin: 6px 0 0; overflow-wrap: anywhere; }
 /* 背の低いスマホ（iPhone SE の 568px など）では、見出し・札・公開の問いを詰めて、4 つの札と公開のボタンを RETRY / MENU の帯より上に収める */
 @media (max-height: 700px) {
