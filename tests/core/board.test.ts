@@ -49,7 +49,7 @@ describe("カーソルと入れ替え", () => {
     expect(b.cursor).toEqual({ x: COLS - 2, y: ROWS - 1 });
   });
 
-  it("入れ替えは4フレームで完了する", () => {
+  it("入れ替えは TIMING.swap フレームで完了する", () => {
     const b = emptyBoard();
     b.setColumns([[0], [1]]);
     moveCursor(b, 0, 0);
