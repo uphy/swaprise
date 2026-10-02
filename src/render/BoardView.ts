@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import { t } from "./i18n";
 import { Board, COLS, EMPTY, ROWS, TIMING, TOTAL_ROWS, isPanel, type BoardEvent, type GarbageSpec } from "../core";
+import { untracked } from "./kerning";
 import { BOARD_BG, BOARD_H, BOARD_W, CARD, CELL, CHAIN_PUNCH_MS, CHAIN_PUNCH_PIVOT_Y, CHAIN_SHAKE_SIDE_MAX, CHAIN_SHAKE_UP_MAX, FONT_UI, GARBAGE_COLOR, KIND_COLORS, STOP_COLORS, TEXT_COLOR, TEXT_DIM, chainColor, chainFx, isTouchDevice, prefersReducedMotion, stopSeconds, type ChainShakeType } from "./theme";
 import { CURSOR_PAD, css, garbageFrame, roundRect, tint } from "./textures";
 import { Button, gradientFill } from "./ui";
@@ -285,16 +286,18 @@ export class BoardView {
       }
     } else if (this.hud === "top" && this.timeText && this.timeCaption) {
       // タイムアタックは名前の札を省き、左に残り時間、右に得点の板を同じ大きさで並べる。
-      // 幅が足りなければ SCORE、次に TIME の見出しを省く
+      // 幅が足りなければ SCORE、次に TIME の見出しを省く。板の内側の余白は左右とも 10、板の間は 4。
+      // 数字の字間を広げたら（kerning.ts）右の余白 12・14 と間の 6 では 000000 の板と並べた TIME が 5px はみ出して省かれたので、余白を詰めて残す
       const cy = -24;
       const plateH = 30;
+      const gap = 4;
       const room = Math.min(this.hudMaxW, BOARD_W) + 4;
-      const timeW = (cap: boolean): number => 10 + (cap ? this.timeCaption!.width + 6 : 0) + this.timeText!.width + 12;
-      const scoreW = (cap: boolean): number => 10 + (cap ? this.scoreCaption.width + 6 : 0) + this.scoreText.width + 14;
+      const timeW = (cap: boolean): number => 10 + (cap ? this.timeCaption!.width + 6 : 0) + this.timeText!.width + 10;
+      const scoreW = (cap: boolean): number => 10 + (cap ? this.scoreCaption.width + 6 : 0) + this.scoreText.width + 10;
       let timeCap = true;
       let scoreCap = true;
-      if (timeW(true) + 6 + scoreW(true) > room) scoreCap = false;
-      if (timeW(true) + 6 + scoreW(false) > room) timeCap = false;
+      if (timeW(true) + gap + scoreW(true) > room) scoreCap = false;
+      if (timeW(true) + gap + scoreW(false) > room) timeCap = false;
       label.setVisible(false);
       plate(-4, cy - plateH / 2, timeW(timeCap), plateH);
       this.timeCaption.setOrigin(0, 0.5).setPosition(6, cy + 1).setVisible(timeCap);
@@ -550,10 +553,11 @@ export class BoardView {
     dim.fillRoundedRect(-BOARD_W / 2, -BOARD_H / 2, BOARD_W, BOARD_RADIUS * 2, { tl: BOARD_RADIUS, tr: BOARD_RADIUS, bl: 0, br: 0 });
     dim.fillStyle(0x1a1040, 0.7);
     dim.fillRoundedRect(-BOARD_W / 2, BOARD_H / 2 - BOARD_RADIUS * 2, BOARD_W, BOARD_RADIUS * 2, { tl: 0, tr: 0, bl: BOARD_RADIUS, br: BOARD_RADIUS });
-    this.overlayTitle = scene.add
+    // 見出しは盤面の幅に合わせて縮めるので、字間を広げない（広げると GAME OVER が小さくなる）
+    this.overlayTitle = untracked(scene.add
       .text(0, -34, "", { fontFamily: FONT_UI, fontSize: "36px", color: "#ffe066", fontStyle: "700", stroke: HUD_INK, strokeThickness: 7 })
       .setShadow(0, 4, "rgba(0, 0, 0, 0.45)", 6, true, true)
-      .setOrigin(0.5);
+      .setOrigin(0.5));
     this.overlayBody = scene.add
       // レッスンの達成の一言は文なので、盤面の幅で文字単位に折り返す（日本語は空白で折り返せない）
       .text(0, 24, "", { fontFamily: FONT_UI, fontSize: style === "puzzle" ? "20px" : "14px", color: TEXT_COLOR, align: "center", lineSpacing: 3, wordWrap: { width: BOARD_W - 12, useAdvancedWrap: true } })
@@ -901,10 +905,11 @@ export class BoardView {
     // 見出しの大きさ・とどまる長さ・縁の太さと光は連鎖数の段階で変わる（theme の chainFx）
     const fx = chainFx(e.chain);
     const stopColor = e.pinch ? STOP_COLORS.pinch : STOP_COLORS.normal;
-    const head = this.scene.add
+    // 見出しは盤面の幅に入らなければ縮めるので、字間を広げない（広げると 10 連鎖の見出しが 8 連鎖より小さくなる）
+    const head = untracked(this.scene.add
       .text(0, 0, `${e.chain} CHAIN`, { fontFamily: FONT_UI, fontSize: `${Math.round(24 * fx.summaryScale)}px`, fontStyle: "700", color, stroke: HUD_INK, strokeThickness: 9 })
       .setShadow(0, 3, "rgba(0, 0, 0, 0.4)", 4, true, false)
-      .setOrigin(0.5, 0);
+      .setOrigin(0.5, 0));
     gradientFill(head, "#ffffff", color);
     const small = (text: string, fill: string): Phaser.GameObjects.Text =>
       this.scene.add

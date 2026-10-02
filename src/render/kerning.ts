@@ -7,40 +7,47 @@ import Phaser from "phaser";
  * 小文字の説明文まで切ると字間が広がって行数が増え、背の低い縦持ちでレッスンの説明の最後の行が画面の下に切れたので、
  * 小文字を含む行（「IV」の組を含むものを除く）は通常のカーニングで描く。
  * Phaser の Text は 1 行ずつ measureText / fillText / strokeText を呼ぶので、その文脈の関数を包んで行ごとに切り替える。
- * 大文字だけの行は、あわせて字間を CAPS_TRACKING だけ広げる
+ * 小文字を含まない行は、あわせて字間を CAPS_TRACKING だけ広げる
  */
 export function noKerningFor(text: string): boolean {
   return text.includes("IV") || (/[A-Z]/.test(text) && !/[a-z]/.test(text));
 }
 
 /**
- * 大文字だけの行に足す字間（文字の大きさに対する割合）。同梱の Fredoka の太字は字幅が詰まっていて、
- * 名前の札の「1P」は 1 と P が、札の「SPEED」は E と E がくっついて見えた。小文字を含む行は今の字間のまま。
- * 詰まって見えるのは小さい文字（札・ボタン・見出し）なので、CAPS_TRACKING_MAX_PX 以上の大きな文字（連鎖の締めの「10 CHAIN」、
- * メニューのカードの名前）は広げない。締めは盤面の幅に収まるよう縮めているので、広げると 10 連鎖の見出しが 8 連鎖より小さくなった
+ * 小文字を含まない行（大文字・数字・記号の行。札の SPEED、得点の 000000、時間の 0:00 など）に足す字間（文字の大きさに対する割合）。
+ * 同梱の Fredoka の太字は字幅が詰まっていて、名前の札の「1P」は 1 と P が、札の「SPEED」は E と E が、得点の「000000」は 0 と 0 がくっついて見えた。
+ * 小文字を含む行と、かな・漢字を含む行（日本語の字は別の書体で描かれる）は今の字間のまま。
+ * 盤面の幅に収めるために縮める見出し（連鎖の締めの「10 CHAIN」、結果の「GAME OVER」）と題字は、untracked で外す。
+ * 締めは広げると 10 連鎖の見出しが 8 連鎖より小さくなった
  */
 export const CAPS_TRACKING = 0.08;
-export const CAPS_TRACKING_MAX_PX = 24;
 
 export function trackingFor(text: string): boolean {
-  return /[A-Z]/.test(text) && !/[a-z]/.test(text);
+  return /[A-Z0-9]/.test(text) && !/[a-z]/.test(text) && !/[\u3000-\u30ff\u3400-\u9fff\uff00-\uffef]/.test(text);
+}
+
+const UNTRACKED = Symbol("swaprise.untracked");
+
+/** この Text は字間を広げない（盤面の幅に合わせて縮める見出しなど）。setText の前後どちらで呼んでもよい */
+export function untracked<T extends Phaser.GameObjects.Text>(text: T): T {
+  (text.context as CanvasRenderingContext2D & { [UNTRACKED]?: true })[UNTRACKED] = true;
+  return text.updateText();
 }
 
 const WRAPPED = Symbol("swaprise.kerning");
 
 function wrapContext(context: CanvasRenderingContext2D): void {
-  const c = context as CanvasRenderingContext2D & { [WRAPPED]?: true };
+  const c = context as CanvasRenderingContext2D & { [WRAPPED]?: true; [UNTRACKED]?: true };
   if (c[WRAPPED] || !("fontKerning" in c)) return;
   c[WRAPPED] = true;
   const fredoka = () => c.font.includes("Fredoka");
   const set = (text: string) => {
     c.fontKerning = fredoka() && noKerningFor(text) ? "none" : "normal";
   };
-  /** 大文字だけの Fredoka の行なら 1 字ごとに足す幅（px）。そうでなければ 0 */
+  /** 小文字を含まない Fredoka の行なら 1 字ごとに足す幅（px）。そうでなければ 0 */
   const tracking = (text: string): number => {
-    if (!fredoka() || text.length < 2 || !trackingFor(text)) return 0;
-    const px = Number(/(\d+(?:\.\d+)?)px/.exec(c.font)?.[1] ?? 0);
-    return px >= CAPS_TRACKING_MAX_PX ? 0 : px * CAPS_TRACKING;
+    if (c[UNTRACKED] || !fredoka() || text.length < 2 || !trackingFor(text)) return 0;
+    return Number(/(\d+(?:\.\d+)?)px/.exec(c.font)?.[1] ?? 0) * CAPS_TRACKING;
   };
   const measure = c.measureText.bind(c);
   const fill = c.fillText.bind(c);

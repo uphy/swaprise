@@ -320,3 +320,36 @@ test("名前の札の 1P と札の SPEED は、大文字だけの行として字
     expect(t.drawn, t.label).toBeGreaterThan(t.plain + t.px * 0.08 * (t.label.length - 1) * 0.9);
   }
 });
+
+// 数字だけ・数字と大文字と記号だけの行（得点の 000000、時間の 0:00、札の 0:00）も同じく詰まって見えたので、小文字を含まない行は大きさを問わず広げる
+test("得点・時間の数字の行も字間を広げ、盤面の幅に合わせて縮める連鎖の締めの見出しは広げない", async ({ page }) => {
+  await page.goto("/?mode=timeattack&seed=7&bgm=0&countdown=0");
+  await page.waitForFunction(() => (window as any).__swaprise?.game.boards[0].frame > 0);
+  const r = await page.evaluate(() => {
+    const { scene } = (window as any).__swaprise;
+    const v = scene.views[0];
+    v.showSummary({ chain: 10, score: 1000, stop: 600, pinch: false, garbage: [] });
+    const texts: any[] = [];
+    const walk = (list: any[]) => list.forEach((o) => { if (o.type === "Text") texts.push(o); if (o.list) walk(o.list); });
+    walk(scene.children.list);
+    const ref = document.createElement("canvas").getContext("2d")!;
+    const measure = (o: any) => {
+      ref.font = o.context.font;
+      ref.fontKerning = "none";
+      // Phaser の幅は縁取りの太さを含むので、文字の幅は Text の文脈の measureText（kerning.ts が字間を足した幅を返す）で比べる
+      return { text: o.text, drawn: o.context.measureText(o.text).width, plain: ref.measureText(o.text).width, px: parseFloat(/([\d.]+)px/.exec(ref.font)![1]) };
+    };
+    return {
+      tracked: [v.scoreText, v.timeText].map(measure),
+      head: measure(texts.find((t) => t.text === "10 CHAIN")),
+      timeCaption: v.timeCaption.visible,
+    };
+  });
+  expect(r.tracked.map((t) => t.text)).toEqual(["000000", "2:00"]);
+  for (const t of r.tracked) expect(t.drawn, t.text).toBeGreaterThan(t.plain + t.px * 0.08 * (t.text.length - 1) * 0.9);
+  // 広げた数字の板と並べても、残り時間の TIME の見出しは省かれない
+  expect(r.timeCaption).toBe(true);
+  // 締めは 24px より大きい。字間を足さず、カーニングを切った幅のまま
+  expect(r.head.px).toBeGreaterThan(24);
+  expect(r.head.drawn).toBeCloseTo(r.head.plain, 3);
+});

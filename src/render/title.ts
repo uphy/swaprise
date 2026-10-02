@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { untracked } from "./kerning";
 import { FONT_UI } from "./theme";
 
 /** 題字の虹色。左から桃・黄・緑・水・藤 */
@@ -47,13 +48,14 @@ export class TitleArt {
       this.halo.fillEllipse(0, 0, size * 4.9 + 30 + k * 150, size + 12 + k * 90);
     }
     // 押し出しは白い縁と同じ太さの縁を持ち、文字の下辺で厚みに見える。濃い影で背景から浮かせる
-    this.base = scene.add
-      .text(x, y + EXTRUDE_DY, "SWAPRISE", { ...style, color: EXTRUDE_COLOR })
+    // 題字は字の組みを含めた絵なので、小文字を含まない行の字間（kerning.ts）を広げない。光の楕円も今の幅に合わせてある
+    this.base = untracked(scene.add
+      .text(x, y + EXTRUDE_DY, "SWAPRISE", { ...style, color: EXTRUDE_COLOR }))
       .setOrigin(0.5)
       .setStroke(EXTRUDE_COLOR, 5)
       .setShadow(0, 4, "rgba(20, 8, 50, 0.6)", 10, true, true);
     // 白い縁で背景（青〜紫）から切り離す。中は鮮やかな虹色
-    this.text = scene.add.text(x, y, "SWAPRISE", { ...style, color: "#ffffff" }).setOrigin(0.5).setStroke("#ffffff", 5).setName("title");
+    this.text = untracked(scene.add.text(x, y, "SWAPRISE", { ...style, color: "#ffffff" })).setOrigin(0.5).setStroke("#ffffff", 5).setName("title");
     // 虹色。座標は論理 px（canvas の幅は resolution 倍なので使わない）
     const grad = this.text.context.createLinearGradient(0, 0, this.text.width, 0);
     TITLE_STOPS.forEach(([at, c]) => grad.addColorStop(at, c));
