@@ -9,7 +9,16 @@
  * - render: Phaser の描画の JS 側の処理時間（ms、平均）。GPU の時間は含まない
  * - lag: 指がマスの境を越えてから、そのマスの入れ替えが出るまで（ms、平均と最大）
  */
+import { TIMING } from "../core";
+
 export const PERF_ENABLED = typeof location !== "undefined" && new URLSearchParams(location.search).get("perf") === "1";
+
+/**
+ * 追従の遅れが入れ替えの速さから来ているかを実機で確かめる実験。?swap=N で入れ替えにかかるフレーム数（既定 4）を N にする。
+ * N=1 なら入れ替えはその tick で終わり、ドラッグは 1 tick に 1 マス進む。オンライン対戦では相手と食い違うので使わない
+ */
+const swapOverride = typeof location !== "undefined" ? Number(new URLSearchParams(location.search).get("swap")) : 0;
+if (Number.isInteger(swapOverride) && swapOverride >= 1) (TIMING as { swap: number }).swap = swapOverride;
 
 const WINDOW_MS = 2000;
 
@@ -65,7 +74,7 @@ class PerfHud {
     this.mount().textContent =
       `fps ${fps}  frame p95 ${p95}ms\n` +
       `tick/s ${(this.ticks.length / (WINDOW_MS / 1000)).toFixed(0)}  update ${avg(this.updates)}ms  render ${avg(this.renders)}ms\n` +
-      `lag ${avg(this.lags)}ms (max ${lagMax})  dpr ${devicePixelRatio}`;
+      `lag ${avg(this.lags)}ms (max ${lagMax})  swap ${TIMING.swap}f  dpr ${devicePixelRatio}`;
   }
 }
 
