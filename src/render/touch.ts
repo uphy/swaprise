@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import { Board, COLS, ROWS, isEmptyCell, type Input } from "../core";
 import { BOARD_H, BOARD_W, CELL } from "./theme";
+import { PERF_ENABLED, perfHud } from "./perfHud";
 
 /** 横ドラッグを「入れ替え」と判定する移動量（マスの幅に対する割合）。 */
 const SWIPE_RATIO = 0.65;
@@ -22,6 +23,8 @@ interface Drag {
   mode: DragMode;
   /** 指が越えたマスのうち、まだ入れ替えを出していない数。右向きが正。 */
   pending: number;
+  /** ?perf=1 の計測用。指がマスの境を越えた時刻を、まだ入れ替えを出していない分だけ並べる。 */
+  crossedAt: number[];
 }
 
 /**
@@ -144,7 +147,7 @@ export class TouchInput {
       return;
     }
     const panel = !isEmptyCell(this.board.cell(cell.x, cell.y));
-    this.drags.set(p.id, { startX: p.worldX, startY: p.worldY, originX: cell.x, released: false, cellX: cell.x, cellY: cell.y, panel, mode: "pending", pending: 0 });
+    this.drags.set(p.id, { startX: p.worldX, startY: p.worldY, originX: cell.x, released: false, cellX: cell.x, cellY: cell.y, panel, mode: "pending", pending: 0, crossedAt: [] });
   }
 
   private onMove(p: Phaser.Input.Pointer): void {
@@ -160,7 +163,13 @@ export class TouchInput {
       d.mode = "swipe";
       this.stats.drags++;
     }
-    d.pending = target - d.cellX;
+    const pending = target - d.cellX;
+    if (PERF_ENABLED) {
+      if (Math.sign(pending) !== Math.sign(d.pending)) d.crossedAt = [];
+      while (d.crossedAt.length < Math.abs(pending)) d.crossedAt.push(performance.now());
+      d.crossedAt.length = Math.abs(pending);
+    }
+    d.pending = pending;
   }
 
   /** 最後に見たせり上がりの行数。ドラッグ中のパネルの段を追従させる。 */
@@ -203,6 +212,8 @@ export class TouchInput {
       // 掴んでいるパネルの現在の位置で入れ替える
       this.queue.push({ moveX: 0, moveY: 0, swap: true, raise: false, cursorTo: { x: left, y: d.cellY } });
       this.stats.dragSteps++;
+      const crossed = d.crossedAt.shift();
+      if (crossed !== undefined) perfHud.lag(performance.now() - crossed);
       d.cellX = target;
       d.pending -= dir;
       // 入れ替え先の下が空なら、パネルはそこで落ちる。ドラッグはここで終える

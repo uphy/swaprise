@@ -34,6 +34,7 @@ const RAISE_BAR_GAP = 12;
 const INFO_GAP = 8;
 import { enqueueScore } from "../scores/client";
 import { playFields, track } from "./analytics";
+import { PERF_ENABLED, perfHud } from "./perfHud";
 
 const STEP_MS = 1000 / 60;
 /** 縦持ちの CPU 対戦で、CPU の盤面を描く大きさ。 */
@@ -315,6 +316,13 @@ export class GameScene extends Phaser.Scene {
       }, 150);
     };
     window.addEventListener("resize", onResize);
+    // ?perf=1 の計測。Phaser の描画（WebGL へ命令を積むまでの JS）の時間を測る
+    const onPreRender = (): void => perfHud.renderBegin();
+    const onPostRender = (): void => perfHud.renderEnd();
+    if (PERF_ENABLED) {
+      this.game.events.on("prerender", onPreRender);
+      this.game.events.on("postrender", onPostRender);
+    }
     // ゲーム中は画面をスリープさせない。メニューへ戻るときに外す
     void wakeLock.request();
     this.events.once("shutdown", () => {
@@ -323,6 +331,8 @@ export class GameScene extends Phaser.Scene {
       this.game.events.off("blur", onHidden);
       window.removeEventListener("popstate", onPop);
       window.removeEventListener("resize", onResize);
+      this.game.events.off("prerender", onPreRender);
+      this.game.events.off("postrender", onPostRender);
       if (resizeTimer !== null) window.clearTimeout(resizeTimer);
       if (this.backHintTimer !== null) window.clearTimeout(this.backHintTimer);
       this.backHintTimer = null;
@@ -801,13 +811,22 @@ export class GameScene extends Phaser.Scene {
     this.flash(0.3);
   }
 
-  override update(_time: number, delta: number): void {
+  override update(time: number, delta: number): void {
+    if (!PERF_ENABLED) return this.step(delta);
+    perfHud.frame(time);
+    const start = performance.now();
+    this.step(delta);
+    perfHud.update(performance.now() - start);
+  }
+
+  private step(delta: number): void {
     if (!this.paused && !this.ended && !this.starting) {
       this.accumulator += Math.min(delta, 250);
       let steps = 0;
       while (this.accumulator >= STEP_MS && steps < 6) {
         const inputs = this.inputs.map((p) => p.poll());
         this.stepOnce(inputs.length ? inputs : [NO_INPUT]);
+        if (PERF_ENABLED) perfHud.tick();
         this.accumulator -= STEP_MS;
         steps++;
       }
