@@ -295,3 +295,8 @@
 .online-ui button {
   font-kerning: none;
 }
+/* 字間は結果画面（score-dialog.css）と canvas の大文字の行と同じ 0.08em。日本語には足さない */
+.online-ui h1:not(:lang(ja)),
+.online-ui button:not(:lang(ja)) {
+  letter-spacing: .08em;
+}

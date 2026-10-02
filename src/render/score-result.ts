@@ -132,11 +132,18 @@ export function showScoreResult(scene: Phaser.Scene, options: {
   shell.append(header, body, footer); root.append(shell);
   if (options.celebrate) root.append(confetti());
   document.body.append(root);
-  // 得点の行が本文の幅を超えたら、はみ出さない大きさまで縮める。書体の読み込みと画面の回転のあとも合わせ直す
+  // 得点の行が本文の幅を超えたら、まず字間（score-dialog.css の 0.08em）を収まるところまで詰め、字間を外しても超えるなら
+  // はみ出さない大きさまで縮める。字間をそのまま残して縮めると、568×320 の左の列で 40px の得点が 34px になったので、字間より文字の大きさを残す。
+  // 書体の読み込みと画面の回転のあとも合わせ直す
   const fitScore = (): void => {
     scoreLine.style.fontSize = "";
-    const room = summary.clientWidth, width = scoreLine.getBoundingClientRect().width;
-    if (room > 0 && width > room) scoreLine.style.fontSize = `${Math.floor(parseFloat(getComputedStyle(scoreLine).fontSize) * room / width)}px`;
+    scoreLine.style.letterSpacing = "";
+    const room = summary.clientWidth;
+    if (room <= 0 || scoreLine.getBoundingClientRect().width <= room) return;
+    scoreLine.style.letterSpacing = "normal";
+    const width = scoreLine.getBoundingClientRect().width;
+    if (width > room) scoreLine.style.fontSize = `${Math.floor(parseFloat(getComputedStyle(scoreLine).fontSize) * room / width)}px`;
+    else scoreLine.style.letterSpacing = `${Math.floor(((room - width) / [...scoreLine.textContent!].length) * 10) / 10}px`;
   };
   // 公開の問いが本文の見える範囲に収まっていなければ、得点を上端に残せる範囲で帯より上へスクロールする。
   // 書体の読み込みのあとと画面の回転のあとも、同じ決まりで合わせ直す（回転で問いが帯の下に回ることがあった）
