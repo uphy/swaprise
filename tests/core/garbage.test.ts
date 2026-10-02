@@ -329,7 +329,8 @@ describe("おじゃまの変身", () => {
       b.cursor.x = 2;
       b.cursor.y = 0;
       b.tick({ ...NO_INPUT, swap: true });
-      const events = run(b, 30);
+      // 入れ替えはその tick で終わり、同じ tick で揃って変身が始まる
+      const events = [...b.events, ...run(b, 30)];
       expect(events.some((e) => e.type === "garbageTransform"), `seed=${seed}`).toBe(true);
       const kinds = [1, 2, 3, 4].map((y) => [0, 1, 2, 3, 4, 5].map((x) => b.cells[y][x].revealKind));
       for (let y = 0; y < 4; y++)

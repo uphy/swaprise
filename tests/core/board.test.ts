@@ -49,18 +49,15 @@ describe("カーソルと入れ替え", () => {
     expect(b.cursor).toEqual({ x: COLS - 2, y: ROWS - 1 });
   });
 
-  it("入れ替えは TIMING.swap フレームで完了する", () => {
+  it("入れ替えはその tick のうちに終わり、次の tick には静止している", () => {
     const b = emptyBoard();
     b.setColumns([[0], [1]]);
     moveCursor(b, 0, 0);
     press(b, { swap: true });
     expect(b.cell(0, 0).kind).toBe(1);
     expect(b.cell(1, 0).kind).toBe(0);
-    expect(b.cell(0, 0).state).toBe("swapping");
-    run(b, TIMING.swap - 2);
-    expect(b.cell(0, 0).state).toBe("swapping");
-    run(b, 1);
     expect(b.cell(0, 0).state).toBe("idle");
+    expect(b.cell(1, 0).state).toBe("idle");
   });
 
   it("空白側へ動かしたパネルは猶予のあとに落ちる", () => {
