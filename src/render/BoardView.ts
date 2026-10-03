@@ -2,7 +2,7 @@ import Phaser from "phaser";
 import { t } from "./i18n";
 import { Board, COLS, EMPTY, ROWS, TIMING, TOTAL_ROWS, isPanel, type BoardEvent, type GarbageSpec } from "../core";
 import { untracked } from "./kerning";
-import { BOARD_BG, BOARD_H, BOARD_W, CARD, CELL, CHAIN_PUNCH_MS, CHAIN_PUNCH_PIVOT_Y, CHAIN_SHAKE_SIDE_MAX, CHAIN_SHAKE_UP_MAX, FONT_UI, GARBAGE_COLOR, KIND_COLORS, STOP_COLORS, TEXT_COLOR, TEXT_DIM, chainColor, chainFx, isTouchDevice, prefersReducedMotion, stopSeconds, type ChainShakeType } from "./theme";
+import { BOARD_BG, BOARD_H, BOARD_W, CARD, CELL, CHAIN_PUNCH_MS, CHAIN_PUNCH_PIVOT_Y, CHAIN_SHAKE_SIDE_MAX, CHAIN_SHAKE_UP_MAX, FONT_UI, SWAP_SLIDE_MS, GARBAGE_COLOR, KIND_COLORS, STOP_COLORS, TEXT_COLOR, TEXT_DIM, chainColor, chainFx, isTouchDevice, prefersReducedMotion, stopSeconds, type ChainShakeType } from "./theme";
 import { CURSOR_PAD, css, garbageFrame, roundRect, tint } from "./textures";
 import { Button, gradientFill } from "./ui";
 import { audio } from "./shared";
@@ -161,6 +161,14 @@ export class BoardView {
   private summaryFade: Phaser.GameObjects.Container | null = null;
   /** 手動のせり上げを見分けるための、直前の描画までにせり上げた量（段） */
   private lastRaised = 0;
+  /**
+   * 入れ替えたパネルの、論理の位置から描画がまだ遅れている横のずれ（px）。[行][列]。
+   * 論理は 1 tick で入れ替わるので、そのまま描くと 1 フレームで 1 マス跳ぶ。入れ替えのイベントで来た向きにずらして置き、
+   * 毎フレーム SWAP_SLIDE_MS で減らして追いつかせる。セルの object ではなく位置に持つのは、オンラインの予測が確定盤面を
+   * 複製するたびにセルの object を作り直すから。せり上がりで行がずれたら一緒にずらす
+   */
+  private readonly slide: number[][] = Array.from({ length: TOTAL_ROWS }, () => new Array<number>(COLS).fill(0));
+  private lastRisenRows = 0;
   /**
    * 直近の締めの表示の中身（1 行ずつ）と範囲（盤面の局所座標）、地の板の不透明度、とどまる長さ、
    * いちばん高い列の上端（局所座標）、手を動かして薄くしたか。e2e が読む
@@ -614,6 +622,9 @@ export class BoardView {
         case "swap":
           if (soundOn) audio.swap();
           this.dimSummary();
+          // 左に来たパネルは右から、右に来たパネルは左から滑る。空のマスはずらさない（後から落ちてくるパネルに残さない）
+          if (isPanel(this.board.cell(e.x, e.y))) this.slide[e.y][e.x] += CELL;
+          if (isPanel(this.board.cell(e.x + 1, e.y))) this.slide[e.y][e.x + 1] -= CELL;
           break;
         case "move":
           if (soundOn) audio.move();
@@ -1088,6 +1099,27 @@ export class BoardView {
   }
 
   /** 毎描画フレーム呼ぶ。Board の現在状態をそのまま画面に反映する。 */
+  /** 入れ替えの滑りを進める。せり上がった行数ぶん上へずらしてから、残りを指数的に減らす */
+  private stepSlide(delta: number): void {
+    const { slide } = this;
+    const risen = this.board.risenRows - this.lastRisenRows;
+    if (risen !== 0) {
+      this.lastRisenRows = this.board.risenRows;
+      for (let n = 0; n < risen; n++) {
+        slide.unshift(slide.pop()!.fill(0));
+      }
+    }
+    if (delta <= 0) return;
+    const k = Math.exp(-delta / SWAP_SLIDE_MS);
+    for (const row of slide) {
+      for (let c = 0; c < COLS; c++) {
+        if (row[c] === 0) continue;
+        row[c] *= k;
+        if (Math.abs(row[c]) < 0.5) row[c] = 0;
+      }
+    }
+  }
+
   draw(delta = 0, active = true): void {
     const b = this.board;
     const rise = b.riseProgress * CELL;
@@ -1099,6 +1131,7 @@ export class BoardView {
     const raised = b.stats.manualRows + b.riseProgress;
     if (raised > this.lastRaised + 1e-9) this.dimSummary();
     this.lastRaised = raised;
+    this.stepSlide(delta);
     // 拡大の跳ねは盤面の部分を (PUNCH_X, PUNCH_Y) を中心に k 倍する。局所座標 (x, y) は (ax(x), ay(y)) に描く
     const step = (this.shakeOffset = this.stepShake(delta));
     const { k } = step;
@@ -1127,7 +1160,7 @@ export class BoardView {
         let visible = true;
         if (isPanel(cell)) {
           key = `panel-${cell.kind}`;
-          if (cell.state === "swapping") dx = cell.swapFrom * (cell.timer / TIMING.swap) * CELL;
+          dx = this.slide[r][c];
           if (cell.state === "falling") dy = (cell.fallTimer / TIMING.fallPerRow) * CELL;
           // 点滅（flash）→ 揃った柄を明るく見せる（face）→ 1枚ずつ消える
           if (cell.state === "matched") key = cell.flashTimer > 0 && blink ? `panel-${cell.kind}-bright` : cell.flashTimer > 0 ? `panel-${cell.kind}` : `panel-${cell.kind}-bright`;
@@ -1189,8 +1222,7 @@ export class BoardView {
         g.fillRoundedRect(selection.targetX * CELL + 2, top, CELL - 4, bottom - top, 6);
         g.lineStyle(2, 0x8fdcff, 1);
         g.strokeRoundedRect(selection.targetX * CELL + 2, top, CELL - 4, bottom - top, 6);
-        const selected = b.cell(selection.x, selection.y);
-        const dx = selected.state === "swapping" ? selected.swapFrom * (selected.timer / TIMING.swap) * CELL : 0;
+        const dx = this.slide[selection.y][selection.x];
         g.lineStyle(4, 0x1c1238, 0.5);
         g.strokeRoundedRect(selection.x * CELL + dx + 1, top - 1, CELL - 2, Math.max(0, bottom - top + 2), 7);
         g.lineStyle(2.5, 0xffffff, 1);

@@ -83,6 +83,16 @@ describe("カーソルと入れ替え", () => {
   });
 });
 
+describe("入れ替えのイベント", () => {
+  it("入れ替えた 2 マスの左の列と行を持つ（描画が滑る向きに使う）", () => {
+    const b = emptyBoard();
+    b.setColumns([[0, 1], [2, 3], [4, 0], [1, 2], [3, 4], [0, 1]]);
+    moveCursor(b, 2, 1);
+    const events = press(b, { swap: true });
+    expect(events.filter((e) => e.type === "swap")).toEqual([{ type: "swap", x: 2, y: 1 }]);
+  });
+});
+
 describe("消去", () => {
   it("横に3枚揃うと消えて、上のパネルが落ちる", () => {
     const b = emptyBoard();

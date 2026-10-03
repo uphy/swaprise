@@ -67,7 +67,8 @@ export interface Input {
 export const NO_INPUT: Input = { moveX: 0, moveY: 0, swap: false, raise: false };
 
 export type BoardEvent =
-  | { type: "swap" }
+  /** x は入れ替えた 2 マスの左の列、y は行（下から数える）。描画が滑る向きを知るために使う */
+  | { type: "swap"; x: number; y: number }
   | { type: "move" }
   /** x, y は最も上の行の左端のパネル。left / right / top / bottom は揃ったパネル全体の範囲（y は下から数える） */
   | { type: "match"; panels: number; chain: number; x: number; y: number; score: number; left: number; right: number; top: number; bottom: number }

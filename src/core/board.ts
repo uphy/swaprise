@@ -444,7 +444,7 @@ export class Board {
       c.swapFrom = from;
     }
     this.stats.swaps++;
-    this.emit({ type: "swap" });
+    this.emit({ type: "swap", x, y });
     return true;
   }
 

@@ -95,6 +95,13 @@ export const CHAIN_SHAKE_UP_MAX = 0.055;
 export const CHAIN_PUNCH_PIVOT_Y = 0.2;
 /** 拡大の跳ねの長さ（ms）。この間にふくらんで戻り、そのあと揺れる */
 export const CHAIN_PUNCH_MS = 80;
+/**
+ * 入れ替えたパネルが元の位置から描画の上で滑って追いつく時定数（ms）。
+ * 論理は 1 tick で入れ替わり（TIMING.swap）、描画だけが指数的に遅れて追いつく。
+ * 20ms なら 1 フレーム後に 43%、2 フレーム後に 19%、4 フレーム後に 3% が残る。原作の 4 フレームの滑りと同じ長さに見える。
+ * 実機で試すときは ?slide=<ms> で変えられる（theme は Node の単体テストからも読まれるので location がないときは既定値）
+ */
+export const SWAP_SLIDE_MS = typeof location === "undefined" ? 20 : Number(new URLSearchParams(location.search).get("slide") ?? 20);
 
 /**
  * 揺れの大きさ（パネル比）: 2 連鎖 4.5%（沈むだけ）、3 連鎖 6.5%、4 連鎖 8%、5 連鎖 11%、6 連鎖 12.5%、7 連鎖 13.5%、8 連鎖 15%、9 連鎖 16%、10 連鎖から 17%。
